@@ -13,6 +13,49 @@ const DEV_URL = `http://localhost:3000${APP_ROUTE}`;
 let mainWindow = null;
 let serverProcess = null;
 
+const LOADING_HTML =
+  "data:text/html;charset=utf-8," +
+  encodeURIComponent(
+    `<!doctype html><html><head><meta charset="utf-8"><style>
+      html,body{height:100%;margin:0}
+      body{display:flex;align-items:center;justify-content:center;
+        background:#020617;color:#e2e8f0;
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .box{text-align:center}
+      .spinner{width:38px;height:38px;margin:0 auto 18px;border-radius:50%;
+        border:3px solid rgba(139,92,246,.25);border-top-color:#8b5cf6;
+        animation:spin .8s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      p{color:#94a3b8;font-size:14px}
+    </style></head><body><div class="box">
+      <div class="spinner"></div>
+      <p>AI \uD234\uD0B7\uC744 \uC900\uBE44\uD558\uACE0 \uC788\uC5B4\uC694\u2026</p>
+    </div></body></html>`
+  );
+
+function errorHtml(err) {
+  const msg = String(err && err.message ? err.message : err);
+  return (
+    "data:text/html;charset=utf-8," +
+    encodeURIComponent(
+      `<!doctype html><html><head><meta charset="utf-8"><style>
+        html,body{height:100%;margin:0}
+        body{display:flex;align-items:center;justify-content:center;
+          background:#020617;color:#e2e8f0;
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+        .box{max-width:520px;text-align:center;padding:24px}
+        h2{color:#f8fafc;font-size:18px;margin:0 0 10px}
+        p{color:#94a3b8;font-size:13px;line-height:1.6}
+        code{color:#c4b5fd;font-size:12px;word-break:break-all}
+      </style></head><body><div class="box">
+        <h2>\uC571\uC744 \uC2DC\uC791\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694</h2>
+        <p>\uB0B4\uBD80 \uC11C\uBC84\uB97C \uC2DC\uC791\uD558\uB294 \uC911 \uBB38\uC81C\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.</p>
+        <p><code>${msg}</code></p>
+      </div></body></html>`
+    )
+  );
+}
+
 function getFreePort() {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
@@ -83,11 +126,21 @@ async function startProductionServer() {
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
       NODE_ENV: "production",
+      // Critical: without this, forking the Electron binary would launch a
+      // second GUI Electron process instead of running server.js as Node,
+      // so the Next.js server would never come up and no window would appear.
+      ELECTRON_RUN_AS_NODE: "1",
     },
     // Run server.js with Electron's bundled Node runtime.
     execPath: process.execPath,
-    silent: false,
+    stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
+
+  serverProcess.stdout?.on("data", (d) => console.log(`[next] ${d}`));
+  serverProcess.stderr?.on("data", (d) => console.error(`[next] ${d}`));
+  serverProcess.on("exit", (code) =>
+    console.error(`[next] server process exited with code ${code}`)
+  );
 
   const base = `http://127.0.0.1:${port}`;
   await waitForServer(base);
@@ -110,19 +163,32 @@ async function createWindow() {
     },
   });
 
+  // Show the window as soon as its first frame is ready so the user always
+  // sees a window even while the local server is still starting up.
+  mainWindow.once("ready-to-show", () => mainWindow.show());
+
   // Open external links in the OS browser, not inside the app.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
   });
 
-  const url = isDev ? DEV_URL : await startProductionServer();
-  await mainWindow.loadURL(url);
-  mainWindow.show();
-
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  // Immediately render a lightweight loading screen, then swap to the real URL.
+  await mainWindow.loadURL(LOADING_HTML);
+  mainWindow.show();
+
+  try {
+    const url = isDev ? DEV_URL : await startProductionServer();
+    await mainWindow.loadURL(url);
+  } catch (err) {
+    console.error("[main] failed to start app:", err);
+    await mainWindow.loadURL(errorHtml(err));
+    mainWindow.show();
+  }
 }
 
 app.whenReady().then(createWindow);
