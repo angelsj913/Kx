@@ -7,6 +7,8 @@ import GeneratorView from "@/components/GeneratorView";
 import HistoryView from "@/components/HistoryView";
 import { useHistory } from "@/lib/history";
 
+export const dynamic = 'force-dynamic';
+
 export default function AppWorkspace() {
   const [view, setView] = useState<View>("dashboard");
   const history = useHistory();
