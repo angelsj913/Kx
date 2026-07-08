@@ -4,6 +4,17 @@ const fs = require("fs");
 const net = require("net");
 const { fork } = require("child_process");
 
+// Add global error handlers to catch uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  console.error('[uncaughtException] Stack:', err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[unhandledRejection]', reason);
+  console.error('[unhandledRejection] Promise:', promise);
+});
+
 const isDev = !app.isPackaged;
 // The desktop app renders the tool workspace at /app; the site root (/) is a
 // download-only landing page served on the web (Vercel).
@@ -154,13 +165,21 @@ async function createWindow() {
     minWidth: 900,
     minHeight: 640,
     backgroundColor: "#020617",
-    show: false,
+    show: true,
     autoHideMenuBar: true,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
     },
+  });
+
+  // Open DevTools to debug renderer process errors
+  mainWindow.webContents.openDevTools();
+
+  // Detect page load failures
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('[did-fail-load]', errorCode, errorDescription, validatedURL);
   });
 
   // Show the window as soon as its first frame is ready so the user always
