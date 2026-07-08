@@ -34,7 +34,7 @@
     ],
     "win": {
       "target": "nsis",
-      "artifactName": "${productName}-Windows-Installer.${ext}"
+      "artifactName": "AI-Toolkit-Windows-Installer.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -45,7 +45,7 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
-      "artifactName": "${productName}-Mac-Installer.${ext}"
+      "artifactName": "AI-Toolkit-Mac-Installer.${ext}"
     },
     "dmg": {
       "title": "AI Toolkit Installer"

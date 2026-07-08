@@ -5,7 +5,10 @@ const net = require("net");
 const { fork } = require("child_process");
 
 const isDev = !app.isPackaged;
-const DEV_URL = "http://localhost:3000";
+// The desktop app renders the tool workspace at /app; the site root (/) is a
+// download-only landing page served on the web (Vercel).
+const APP_ROUTE = "/app";
+const DEV_URL = `http://localhost:3000${APP_ROUTE}`;
 
 let mainWindow = null;
 let serverProcess = null;
@@ -86,9 +89,9 @@ async function startProductionServer() {
     silent: false,
   });
 
-  const url = `http://127.0.0.1:${port}`;
-  await waitForServer(url);
-  return url;
+  const base = `http://127.0.0.1:${port}`;
+  await waitForServer(base);
+  return `${base}${APP_ROUTE}`;
 }
 
 async function createWindow() {
