@@ -125,9 +125,24 @@ function loadEnvFile() {
 }
 
 async function startProductionServer() {
+  console.log('[startProductionServer] Starting production server');
+  console.log('[startProductionServer] process.resourcesPath:', process.resourcesPath);
+  console.log('[startProductionServer] process.execPath:', process.execPath);
+  
   const port = await getFreePort();
   const standaloneDir = path.join(process.resourcesPath, "standalone");
   const serverJs = path.join(standaloneDir, "server.js");
+  
+  console.log('[startProductionServer] standaloneDir:', standaloneDir);
+  console.log('[startProductionServer] serverJs:', serverJs);
+  
+  if (!fs.existsSync(standaloneDir)) {
+    throw new Error(`Standalone directory not found: ${standaloneDir}`);
+  }
+  
+  if (!fs.existsSync(serverJs)) {
+    throw new Error(`Server.js not found: ${serverJs}`);
+  }
 
   serverProcess = fork(serverJs, [], {
     cwd: standaloneDir,
@@ -147,14 +162,21 @@ async function startProductionServer() {
     stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
 
+  console.log('[startProductionServer] Server process forked, PID:', serverProcess.pid);
+
   serverProcess.stdout?.on("data", (d) => console.log(`[next] ${d}`));
   serverProcess.stderr?.on("data", (d) => console.error(`[next] ${d}`));
   serverProcess.on("exit", (code) =>
     console.error(`[next] server process exited with code ${code}`)
   );
+  serverProcess.on("error", (err) => {
+    console.error('[startProductionServer] Server process error:', err);
+  });
 
   const base = `http://127.0.0.1:${port}`;
+  console.log('[startProductionServer] Waiting for server at:', base);
   await waitForServer(base);
+  console.log('[startProductionServer] Server is ready at:', base);
   return `${base}${APP_ROUTE}`;
 }
 
