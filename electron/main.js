@@ -5,7 +5,7 @@ const net = require("net");
 const { fork } = require("child_process");
 
 // Redirect console output to file for debugging
-const logFile = path.join(app.getPath('userData'), 'app.log');
+const logFile = path.join(path.dirname(process.execPath), 'app.log');
 const logStream = fs.createWriteStream(logFile, { flags: 'a' });
 const originalConsole = { ...console };
 
