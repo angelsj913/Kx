@@ -4,6 +4,26 @@ const fs = require("fs");
 const net = require("net");
 const { fork } = require("child_process");
 
+// Redirect console output to file for debugging
+const logFile = path.join(app.getPath('userData'), 'app.log');
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+const originalConsole = { ...console };
+
+console.log = (...args) => {
+  originalConsole.log(...args);
+  logStream.write(`[LOG] ${args.join(' ')}\n`);
+};
+
+console.error = (...args) => {
+  originalConsole.error(...args);
+  logStream.write(`[ERROR] ${args.join(' ')}\n`);
+};
+
+console.warn = (...args) => {
+  originalConsole.warn(...args);
+  logStream.write(`[WARN] ${args.join(' ')}\n`);
+};
+
 // Add global error handlers to catch uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('[uncaughtException]', err);
