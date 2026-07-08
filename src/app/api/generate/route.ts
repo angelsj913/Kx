@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const SYSTEM_INSTRUCTIONS = {
+  business:
+    "너는 프로페셔널한 비즈니스 커뮤니케이션 전문가야. 사용자가 두서없거나 감정적인 글을 입력하면, 직장 생활이나 공식적인 상황에서 쓰기 좋은 정중하고 세련된 말투로 변환해 줘.",
+  interview:
+    "너는 대기업의 깐깐한 인사담당자야. 사용자가 자기소개서 내용을 입력하면, 이를 분석해서 날카로운 꼬리 질문(압박 질문) 3가지를 뽑아내고, 각각 어떻게 대답하면 좋을지 가이드를 제시해 줘.",
+} as const;
+
+type Mode = keyof typeof SYSTEM_INSTRUCTIONS;
+
+function isMode(value: unknown): value is Mode {
+  return value === "business" || value === "interview";
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -13,9 +26,11 @@ export async function POST(request: Request) {
   }
 
   let prompt: string;
+  let mode: Mode;
   try {
     const body = await request.json();
     prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+    mode = isMode(body?.mode) ? body.mode : "business";
   } catch {
     return NextResponse.json(
       { error: "잘못된 요청 형식입니다." },
@@ -35,6 +50,9 @@ export async function POST(request: Request) {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTIONS[mode],
+      },
     });
 
     const text = response.text ?? "";
