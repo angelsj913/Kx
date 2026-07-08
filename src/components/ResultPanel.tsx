@@ -1,0 +1,171 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import {
+  Sparkles,
+  Copy,
+  Check,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="skeleton-shimmer h-5 w-1/3 rounded-md" />
+      <div className="skeleton-shimmer h-4 w-full rounded-md" />
+      <div className="skeleton-shimmer h-4 w-11/12 rounded-md" />
+      <div className="skeleton-shimmer h-4 w-4/5 rounded-md" />
+      <div className="skeleton-shimmer mt-5 h-5 w-1/4 rounded-md" />
+      <div className="skeleton-shimmer h-4 w-full rounded-md" />
+      <div className="skeleton-shimmer h-4 w-3/4 rounded-md" />
+    </div>
+  );
+}
+
+const FONT_STEPS = [0.875, 1, 1.125, 1.25, 1.4];
+
+export default function ResultPanel({
+  content,
+  loading = false,
+  error = "",
+  fileBaseName = "ai-result",
+}: {
+  content: string;
+  loading?: boolean;
+  error?: string;
+  fileBaseName?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [fontIdx, setFontIdx] = useState(1);
+  const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeout.current) clearTimeout(copyTimeout.current);
+    };
+  }, []);
+
+  function handleCopy() {
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      if (copyTimeout.current) clearTimeout(copyTimeout.current);
+      copyTimeout.current = setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handleExport() {
+    if (!content) return;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    a.href = url;
+    a.download = `${fileBaseName}-${stamp}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const hasResult = !!content && !loading;
+
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 shadow-2xl shadow-black/40 backdrop-blur-md">
+      <div className="flex items-center justify-between border-b border-slate-700/50 px-4 py-3 sm:px-5">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-300">
+          <Sparkles className="h-4 w-4 text-violet-400" />
+          결과
+        </h2>
+        {hasResult && (
+          <div className="flex items-center gap-1.5">
+            <div className="mr-1 flex items-center overflow-hidden rounded-lg border border-slate-700/60">
+              <button
+                type="button"
+                aria-label="글자 작게"
+                onClick={() => setFontIdx((i) => Math.max(0, i - 1))}
+                disabled={fontIdx === 0}
+                className="px-2 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-700/50 disabled:opacity-40"
+              >
+                A-
+              </button>
+              <span className="border-x border-slate-700/60 px-2 py-1.5 text-[11px] font-medium text-slate-500">
+                가
+              </span>
+              <button
+                type="button"
+                aria-label="글자 크게"
+                onClick={() =>
+                  setFontIdx((i) => Math.min(FONT_STEPS.length - 1, i + 1))
+                }
+                disabled={fontIdx === FONT_STEPS.length - 1}
+                className="px-2 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-700/50 disabled:opacity-40"
+              >
+                A+
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-violet-500/50 hover:text-violet-300"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  복사됨
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" />
+                  복사
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-violet-500/50 hover:text-violet-300"
+            >
+              <Download className="h-3.5 w-3.5" />
+              TXT 저장
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        {error ? (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/40 p-4 text-sm text-red-300"
+          >
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+            <span>{error}</span>
+          </div>
+        ) : loading ? (
+          <LoadingSkeleton />
+        ) : content ? (
+          <div
+            className="prose-ai max-w-none"
+            style={{ fontSize: `${FONT_STEPS[fontIdx]}rem` }}
+          >
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-900/60">
+              <Sparkles className="h-7 w-7 text-slate-600" />
+            </div>
+            <p className="text-sm text-slate-500">
+              텍스트를 입력하고 실행하면
+              <br />
+              결과가 여기에 표시됩니다.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
