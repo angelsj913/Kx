@@ -116,6 +116,7 @@
 | `DATABASE_URL` | Neon Postgres 연결 문자열 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 업로드 권한 |
 | `GEMINI_API_KEY` | Gemini 모델 호출용 (서버 전용) |
+| `GROQ_API_KEY` | Groq 무료 모델 폴백용 (서버 전용) |
 | `OPENROUTER_API_KEY` | OpenRouter 무료 모델 폴백용 |
 
 로컬에서 빌드/타입체크만 할 때는 아래처럼 placeholder 값으로 충분함(실제 DB/AI 호출은 안 되지만 `npm run build`/`tsc`는 통과):
@@ -133,7 +134,7 @@ src/lib/useAutosave.ts          디바운스 자동저장 훅
 src/lib/appMode.ts              학생/직장인 모드 상태
 src/lib/models.ts               AI 모델 자동 전환 순서 (사용자에게 비노출)
 src/lib/ai.ts                   generateWithFallback / chatReplyWithFallback
-src/lib/gemini.ts, openrouter.ts  프로바이더별 실제 호출 구현
+src/lib/gemini.ts, groq.ts, openrouter.ts  프로바이더별 실제 호출 구현
 src/lib/prisma.ts               Prisma 클라이언트 싱글턴 (Neon 어댑터)
 src/lib/history.ts              히스토리 fetch 훅 (useHistory)
 src/lib/personas.ts             채팅 페르소나 5종

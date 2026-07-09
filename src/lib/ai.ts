@@ -5,6 +5,7 @@ import {
   type ChatMessage,
 } from "./gemini";
 import { openrouterGenerateForTool, openrouterChatReply } from "./openrouter";
+import { groqGenerateForTool, groqChatReply } from "./groq";
 import { FALLBACK_MODELS, MULTIMODAL_MODELS, type ModelDef } from "./models";
 import type { ToolDef } from "./tools";
 
@@ -35,9 +36,13 @@ async function callModel(
   text?: string,
   audio?: { data: string; mimeType: string }
 ): Promise<string> {
-  return m.provider === "gemini"
-    ? geminiGenerateForTool({ tool, text, audio, model: m.model })
-    : openrouterGenerateForTool({ tool, text: text ?? "", model: m.model });
+  if (m.provider === "gemini") {
+    return geminiGenerateForTool({ tool, text, audio, model: m.model });
+  }
+  if (m.provider === "groq") {
+    return groqGenerateForTool({ tool, text: text ?? "", model: m.model });
+  }
+  return openrouterGenerateForTool({ tool, text: text ?? "", model: m.model });
 }
 
 /** 여러 AI를 순서대로 시도해서, 실패하면 자동으로 다음 것으로 넘어간다. */
@@ -75,17 +80,25 @@ export async function chatReplyWithFallback(args: {
   let lastErr: unknown;
   for (const m of candidates) {
     try {
-      return m.provider === "gemini"
-        ? await geminiChatReply({
-            model: m.model,
-            systemInstruction: args.systemInstruction,
-            messages: args.messages,
-          })
-        : await openrouterChatReply({
-            model: m.model,
-            systemInstruction: args.systemInstruction,
-            messages: args.messages,
-          });
+      if (m.provider === "gemini") {
+        return await geminiChatReply({
+          model: m.model,
+          systemInstruction: args.systemInstruction,
+          messages: args.messages,
+        });
+      }
+      if (m.provider === "groq") {
+        return await groqChatReply({
+          model: m.model,
+          systemInstruction: args.systemInstruction,
+          messages: args.messages,
+        });
+      }
+      return await openrouterChatReply({
+        model: m.model,
+        systemInstruction: args.systemInstruction,
+        messages: args.messages,
+      });
     } catch (err) {
       lastErr = err;
       if (!isRetryableProviderError(err)) throw err;
