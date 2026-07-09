@@ -5,96 +5,89 @@
 ## 프로젝트 개요
 
 - **레포**: `angelsj913/Kx` (GitHub)
-- **브랜치**: `claude/program-display-devices-xb166t`
-- **스택**: Next.js 16.2.10(실제 최신 버전, 학습 데이터의 관행과 다른 부분 있음 — 아래 "Next.js 16 주의사항" 참고) + React 19 + Prisma 7.8.0 + NextAuth(Auth.js) v5 + Tailwind
-- **배포**: Vercel (`kx-chi.vercel.app`) + Electron 데스크톱 패키징 병행
-- **제품 정체성**: "AI 툴킷" — 학생/직장인 모드 전환이 되는 AI 데스크톱 앱. 문서 생성 도구(PPT/엑셀/영상요약/음성정리)와 멀티모달 AI 채팅을 제공.
+- **현재 브랜치**: `claude/memory-sync-verify-0bfkhh` (원격에 푸시 완료, 최신 상태)
+- **스택**: Next.js 16.2.10(학습 데이터의 관행과 다른 부분 있음 — 문서 맨 아래 "Next.js 16 주의사항" 참고) + React 19 + Prisma 7.8.0 + NextAuth(Auth.js) v5 + Tailwind v4 + Framer Motion
+- **배포**: Vercel (프로젝트명 `kx`, 팀 `kxeung9`) + Electron 데스크톱 패키징 병행
+- **제품 정체성**: "AI 툴킷" — 학생/직장인 모드 전환이 되는 AI 데스크톱 앱. 문서 생성 도구(PPT/엑셀/회의록/주간보고/강의노트/레포트 초안)와 멀티모달 AI 채팅을 제공.
 
-## 지금까지 완료한 것
+### Vercel 배포 정보 (다음 세션에서 바로 쓸 수 있도록)
 
-### 1. 초기 버그 수정
-- `global-error.tsx`에 `'use client'` 누락 + prop 이름 오류로 전체 페이지 500 에러 나던 것 수정.
+- Team ID: `team_KALrXzBWXc0zZLIvJypErTaJ` (slug `kxeung9`)
+- Project ID: `prj_65xyEfqWHdlZLz6oXeQOmqVYz4mm` (name `kx`)
+- 이 브랜치 preview 고정 URL(브랜치 alias, 매 푸시마다 자동 갱신됨): `https://kx-git-claude-memory-sync-verify-0bfkhh-kxeung9.vercel.app/`
+- 프로덕션 도메인(`kx-chi.vercel.app`)은 **아직 옛날 버전**(로그인/클라우드 동기화 이전 커밋)을 서빙 중 — 이 브랜치가 `main`에 머지/승격되기 전까지는 그대로임.
+- Preview 배포는 Vercel Deployment Protection(SSO)에 걸려 있어 링크 접근 시 403이 뜰 수 있음 → `get_access_to_vercel_url` MCP 툴로 `_vercel_share` 우회 링크 발급 가능(24시간 유효).
 
-### 2. 홈페이지(`/`)
-- 다운로드 버튼 → OS 선택 모달, "사용 방법" 3단계 가이드, FAQ 섹션 추가.
-- 관련 컴포넌트: `src/components/landing/DownloadCta.tsx`, `HowItWorks.tsx`, `Faq.tsx`.
+## 지금까지 완료한 것 (이번 세션 기준, 최신순 아님 — 진행 순서대로)
 
-### 3. 앱 내부 전면 개편 — 학생/직장인 모드
-- 앱 좌측 상단에 학생 ⇄ 직장인 모드 스위치 (`src/components/ModeSwitch.tsx`, `src/lib/appMode.ts`).
-- 도구 레지스트리 패턴: `src/lib/tools.ts`의 `TOOLS: ToolDef[]` 배열. 각 도구는 `id, appMode(student|office|common), label, title, description, icon, inputType(text|url|audio|chat), outputType(markdown|pptx|xlsx), systemInstruction, placeholder, submitLabel, fileBaseName, short` 필드를 가짐. `toolsForMode(mode)` / `getTool(id)`로 조회.
-- 직장인 도구: 비즈니스 문서/PPT/엑셀 생성.
-- 학생 도구: 강의 영상 요약(YouTube URL), 수업 음성 녹음 정리, 발표자료 작성.
-- 공통(common) 도구: AI 채팅.
-- PPT/엑셀 생성: `src/lib/pptx.ts`(`parseDeck`/`buildPptxBase64`), `src/lib/xlsx.ts`(`parseWorkbook`/`buildXlsxBase64`).
+### 1. 클라우드 동기화 백엔드 복구 확인 + 브랜치 정합화
+- 이전 세션이 "푸시 실패해서 유실됐을 수 있다"고 걱정했던 로그인/DB/Blob 작업(`claude/program-display-devices-xb166t` 브랜치)이 실제로는 GitHub에 정상적으로 올라가 있었음을 확인.
+- 당시 작업 배정 브랜치(`claude/memory-sync-verify-0bfkhh`)는 그 작업이 반영되기 전의 옛날 `main`에서 갈라져 나온 상태였음 → `git fetch` + `git checkout -B`로 `claude/program-display-devices-xb166t` 최신 커밋 위로 재설정한 뒤 이어서 작업.
 
-### 4. AI 채팅 (멀티턴 + 첨부 + 페르소나)
-- `src/components/AiChat.tsx` — 대화형 UI, 이미지/PDF 첨부, 페르소나 선택(`src/lib/personas.ts`, 5종: 만능비서/튜터/컨설턴트/창의파트너/코딩도우미).
+### 2. 랜딩페이지(`/`) 카피 및 UI 개선
+- "사용 방법" 1단계, 기능 카드 2개("로컬 히스토리 보관함"→"끊김 없는 작업 흐름", "안전한 데스크톱 실행"→"세팅 대신 몰입"), FAQ 회원가입 문항을 로그인/클라우드 동기화 흐름에 맞는 프리미엄 카피로 교체.
+- 직장인 모드 기능 카드에 호버 시 상세 설명이 부드럽게 펼쳐지는 인터랙션 추가.
+- 헤더에 UI 전용 "Support" 버튼(클릭 시 아무 동작 없음) + "로그인" 링크(`/login`으로 이동) 추가.
+- `/login`에 실제 구글 로그인 버튼은 그대로 두고, 이메일/비밀번호 입력 필드 + 아이디·비밀번호 찾기 링크를 목업(비활성)으로 추가.
+- **미해결로 남겨둔 것**: FAQ의 "제가 입력한 내용이 밖으로 새어나가지 않나요?" 항목이 여전히 "로컬 처리" 문구라 실제 클라우드 동기화 동작과 어긋남 — 교체할 정확한 카피를 받지 못해 그대로 둠. 다음에 카피를 받으면 `src/components/landing/Faq.tsx` 두 번째 항목만 고치면 됨.
 
-### 5. 대전환 — 계정 시스템 + 클라우드 동기화 (가장 최근 작업, 완료됨)
+### 3. AI 모델 인벤토리 점검 (구현만, 실제 키 상태는 미확인)
+- `src/lib/models.ts`의 `FALLBACK_MODELS` 5개(Gemini 2.5 Flash/Pro → OpenRouter Llama/DeepSeek/Qwen 무료 모델)가 전부 코드상 완전히 연동되어 있음을 확인.
+- 이 샌드박스에도, (당시 확인 가능한 범위에서) Vercel 프로젝트에도 `GEMINI_API_KEY`/`OPENROUTER_API_KEY`가 설정되어 있는지 여부는 **확인할 방법이 없었음**(Vercel MCP에 환경변수 조회 툴 없음) — 사용자가 Vercel 대시보드에서 직접 확인 필요.
 
-사용자가 명시적으로 요구한 3가지 규칙:
-1. **AI를 여러 개 나열해서 고르게 하지 않는다.** 뒤에서 자동으로 "짬뽕"(순서대로 시도 → 실패 시 다음 모델로 자동 전환).
-2. **API 키를 사용자가 직접 입력하지 않는다.** 로그인만 하면 끝 — 서버가 자기 키로 대신 호출.
-3. **API 키 관련 문구/화면 전부 제거.** "API 키 설정" 대신 "내 계정" 화면에서 로그인 상태만 확인.
+### 4. Vercel 배포 실패 버그 수정
+- 모든 브랜치의 Vercel 빌드가 `Can't resolve '@/generated/prisma/client'`로 계속 실패하고 있었음(이전 세션들도 겪었지만 원인 파악 못 함).
+- 원인: `package.json`에 `postinstall` 훅이 없어서, 로컬에서는 수동으로 `npx prisma generate`를 먼저 돌렸기 때문에 못 봤던 문제였음. Vercel은 `npm install` → `npm run build`만 실행하므로 Prisma 클라이언트가 아예 생성되지 않았음.
+- **수정**: `package.json`에 `"postinstall": "prisma generate"` 추가. 이후 배포부터 정상적으로 `READY` 상태로 빌드됨.
 
-추가로 사용자가 정의한 필수 사용자 흐름(9단계): 다운로드 → 설치 → 실행 → **구글 로그인** → AI 사용 → 로그아웃 → **다른 기기에서 같은 계정 로그인** → **이전 채팅/생성 파일을 그대로 이어서 사용**. → **localStorage 방식을 버리고 실제 클라우드 DB + 클라우드 파일 저장소로 완전 전환**해야 함.
+### 5. `/app` 워크스페이스 듀얼 모드 전면 개편 (이번 세션에서 가장 큰 작업)
+사용자가 요청한 "Epic" 스펙 전체 구현:
 
-**구현된 아키텍처:**
-- **인증**: NextAuth(Auth.js) v5, Google 프로바이더, JWT 세션. `src/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`.
-- **라우트 보호**: `src/proxy.ts` (Next 16에서 `middleware.ts`가 아니라 **`proxy.ts`**, 함수명도 `proxy`) — `/app/:path*`를 로그인 여부로 게이트, 미로그인 시 `/login`으로 리다이렉트.
-- **로그인 페이지**: `src/app/login/page.tsx` — "구글로 로그인" 버튼, "Apple로 로그인 (준비 중)" 비활성 버튼.
-- **앱 레이아웃**: `src/app/app/layout.tsx` — 서버에서 `auth()` 재확인 + `SessionProvider` 래핑.
-- **DB**: Neon(서버리스 Postgres) + Prisma 7. `prisma/schema.prisma`, `prisma.config.ts`(Prisma 7은 `datasource.url`을 스키마에 못 씀 — CLI용 설정은 `prisma.config.ts`로, 런타임 연결은 드라이버 어댑터로), `src/lib/prisma.ts`(Neon 어댑터로 `PrismaClient` 생성).
-- **파일 저장**: Vercel Blob (`@vercel/blob`의 `put()`) — 생성된 PPT/엑셀, 채팅 첨부파일을 여기 올리고 URL만 DB에 저장.
-- **AI 모델 자동 전환**: `src/lib/models.ts`(`FALLBACK_MODELS` 5개: Gemini Flash/Pro → OpenRouter 무료 모델 3종, `MULTIMODAL_MODELS`는 Gemini만), `src/lib/ai.ts`(`generateWithFallback()`, `chatReplyWithFallback()`, `isRetryableProviderError()`로 실패 시 다음 모델로 자동 이동). 사용자에게 모델명 절대 노출 안 함.
-- **데이터 모델** (`prisma/schema.prisma`): NextAuth 어댑터 필수 모델(`User/Account/Session/VerificationToken`, 필드명 고정) + 앱 전용 `HistoryItem`(도구 생성 결과 + `fileUrl`/`fileName`), `ChatConversation`(유저·페르소나·제목), `ChatMessage`(role/text/attachments JSON).
-- **API 라우트** (전부 `auth()`로 로그인 확인, 401 처리):
-  - `src/app/api/generate/route.ts` — AI 생성 → Blob 업로드(pptx/xlsx) → `HistoryItem` 저장.
-  - `src/app/api/history/route.ts`(GET 목록/DELETE 전체), `src/app/api/history/[id]/route.ts`(DELETE 단건).
-  - `src/app/api/chat/conversations/route.ts`(GET 목록/POST 새 대화), `.../[id]/route.ts`(GET 메시지 포함 조회/DELETE), `.../[id]/messages/route.ts`(POST — 첨부 Blob 업로드 → 사용자 메시지 저장 → AI 호출 → AI 메시지 저장 → 대화 제목/`updatedAt` 갱신).
-- **UI 갱신**:
-  - `src/components/Account.tsx`(신규) — 로그인 계정 표시 + 로그아웃, API 키 문구 전무.
-  - `src/components/Sidebar.tsx` — "API 키 설정" → "내 계정"(`UserRound` 아이콘).
-  - `src/lib/history.ts` — localStorage 훅 → 서버 fetch 기반 `useHistory()`.
-  - `src/components/HistoryView.tsx`, `src/components/GeneratorView.tsx`, `src/components/FileResultPanel.tsx`, `src/app/app/page.tsx` — 새 서버 기반 데이터 흐름에 맞게 전부 갱신. 히스토리의 pptx/xlsx 항목은 `fileUrl`로 재다운로드 가능.
-  - `src/components/AiChat.tsx` — 대화 목록 패널(생성/전환/삭제) 추가, 메시지가 DB에 저장·복원됨, 페르소나 변경 시 새 대화로 시작.
-  - **삭제된 파일**: `src/lib/apiKeys.ts`, `src/components/ModelSelect.tsx`, `src/components/Settings.tsx`, `src/app/api/chat/route.ts`(→ conversations 라우트로 대체).
+- **인증 게이트**: 기존에 이미 `src/proxy.ts`(엣지 미들웨어) + `src/app/app/layout.tsx`(서버 재확인) 이중으로 완전히 구현되어 있었음 — 재작업 없이 그대로 유지.
+- **신규 구조화 도구 4종** (`src/lib/structured.ts`에 타입/파서, `src/lib/tools.ts`에 도구 정의 추가):
+  - **회의록**(office) — 날짜/참석자/안건 메타데이터 + 액션 아이템(담당자 + 달력 date-picker)
+  - **주간 업무 보고**(office) — 이번 주/다음 주 2단 레이아웃 + 드래그 가능한 진행률 슬라이더
+  - **강의 요약 노트**(student) — 핵심개념·큐(좌) / 강의 필기(우) 능동회상 2단 레이아웃 + 하단 고정 3줄 요약 박스
+  - **레포트·논문 초안**(student) — 클릭 시 스크롤되는 아웃라인 사이드바 + 섹션 편집 + 참고자료 표 + 실시간 글자 수
+  - `ToolDef`에 `outputType: "structured"` 값과 `structuredKind` 필드 추가. 기존 markdown/pptx/xlsx 도구는 전혀 건드리지 않음(순수 추가).
+- **자동 저장**: `src/lib/useAutosave.ts`(디바운스 훅) + `PATCH /api/history/[id]` 라우트 신규 추가. 저장 중일 때만 "저장 중..." 표시, 평소엔 아무것도 안 보임.
+- **모드별 테마**: `src/lib/theme.ts` — 직장인 모드 `#0F172A`(배경)/`#38BDF8`(포인트), 학생 모드 `#1E1B4B`/`#C084FC`. CSS 커스텀 프로퍼티(`--mode-bg`, `--mode-accent`, `--mode-accent-deep`)로 `AppWorkspace` 루트에 주입 → Sidebar/ModeSwitch/Dashboard/GeneratorView/ResultPanel/FileResultPanel/HistoryView 전체에 `transition-colors duration-500`로 적용. AiChat/Account/AudioInput은 범위 밖으로 의도적으로 제외(공통 도구라 모드 색상 안 씀).
+- **전환 애니메이션**: Framer Motion `AnimatePresence`로 모드·도구 전환 시 콘텐츠 페이드 처리(`src/app/app/page.tsx`).
+- **검증**: `tsc --noEmit` / `lint` / `build` 전부 통과. 실제 브라우저(headless Chromium)로 로그인 게이트를 **로컬에서만 임시로** 우회해서(커밋 전 원상복구 완료) 4개 신규 도구의 생성→편집→자동저장 전체 사이클, 모드 전환 애니메이션, 히스토리 연동까지 스크린샷으로 확인함.
 
-**중요 기술 메모 (다음 세션에서 다시 겪을 수 있는 함정들):**
-- Next.js 16: `middleware.ts` 아니라 `src/proxy.ts` + `export function proxy`. Node.js 런타임 고정(Edge 불가, deprecated 경로 제외).
-- Prisma 7: `generator client { provider = "prisma-client", output = "../src/generated/prisma" }` 필수(명시적 output 없으면 에러). `datasource { url = ... }` 스키마에 쓰면 **P1012 에러** — `prisma.config.ts` + 런타임 어댑터(`PrismaNeon`)로 분리해야 함.
-- `react-hooks` 플러그인 v7의 새 규칙 `set-state-in-effect`: `useEffect` 안에서 `useCallback`으로 만든 함수(내부에서 setState 호출)를 직접 호출하면 lint 에러. **해결책**: `useEffect` 안에서 인라인 async IIFE로 fetch+setState를 직접 하고(`(async () => { ...; setX(...); })()`), 이벤트 핸들러에서 쓸 `refetch` 류 함수는 별도 `useCallback`으로 유지. 마운트 시 자동 조회와 사용자 액션에 의한 재조회를 분리해서 처리함(`src/lib/history.ts`, `src/components/AiChat.tsx`, `src/app/app/page.tsx`의 `handleNavigate` 참고).
+### 6. 로컬 전용 `/app-preview` 테스트 하네스 (레포에는 미포함)
+- 사용자가 "로그인 없이 대시보드를 직접 눌러보고 싶다"고 요청 → `/api/generate`, `/api/history` 호출을 클라이언트에서 가로채 예시 데이터로 응답하는 `mockFetch.ts` + 실제 `AppWorkspace`를 그대로 재사용하는 `page.tsx`/`layout.tsx` 3개 파일을 작성.
+- **중요**: 사용자가 "로컬에서만, 배포되는 곳(공유 브랜치/Vercel)에는 올리지 말라"고 명시적으로 선택함 → 이 3개 파일은 **repo에 커밋되어 있지 않음**. `SendUserFile`로 사용자에게 직접 전달했고, 로컬 작업 디렉터리에서도 삭제해서 `git status`가 깨끗한 상태.
+- 사용자가 로컬(Windows, `C:\Users\angel\Desktop\aitool`)에서 이 파일들을 써보려고 시도하다가 **레포 자체를 아직 clone하지 못한 상태**(`package.json`이 없다는 에러)임을 확인 — 아래 "진행 중인 이슈" 참고.
 
-**검증 완료 (이 세션에서 실제로 확인됨):**
-- `npx prisma validate` / `npx prisma generate` ✅
-- `npx tsc --noEmit` ✅ (에러 0개)
-- `npm run lint` ✅ (에러 0개)
-- `npm run build` (Turbopack) ✅ 성공
+## 현재 git 상태 — 정상, 최신
 
-**이 세션에서 검증 불가능했던 것** (실제 키가 있는 환경에서 확인 필요): 진짜 구글 로그인 동작, 실제 DB 읽기/쓰기, Blob 업로드, 기기 간 동기화 시나리오 자체.
+- 마지막 커밋: `adff027` "/app 워크스페이스 듀얼 모드 개편: 신규 구조화 도구 4종 + 모드별 테마 + 자동 저장"
+- `claude/memory-sync-verify-0bfkhh` 브랜치, 원격에 푸시 완료. `git status` 깨끗함(uncommitted 없음).
+- Vercel에 이 커밋 기준 배포가 `READY` 상태로 올라가 있음(위 "Vercel 배포 정보" 참고).
 
-## 현재 git 상태 — ⚠️ 푸시 안 됨, 주의 필요
+## ⚠️ 진행 중인 이슈 — 사용자 로컬(Windows) 개발 환경 설정
 
-- 마지막 커밋: `b79e387` "구글 로그인 + 클라우드 DB/파일 저장소로 전환" (로컬에만 존재, 브랜치 `claude/program-display-devices-xb166t`)
-- **원격(GitHub)에 아직 푸시되지 않음.** 이 세션에서 `git push`(로컬 git 프록시 403)와 GitHub MCP `push_files`/`create_branch`(403 Resource not accessible by integration) 둘 다 쓰기 권한 거부로 실패함. 읽기(`git ls-remote`, `list_branches`)는 정상 동작 — 즉 쓰기 권한만 없는 상태.
-- 사용자에게 확인한 결과: **"나중에 다시 시도"**로 결정. 다음 세션 시작 시 가장 먼저 할 일:
-  1. `git status`/`git log`로 로컬에 이 커밋이 여전히 있는지 확인 (컨테이너가 재활용됐으면 사라졌을 수 있음 — 그 경우 이 문서와 GitHub 원격 `main`을 기준으로 처음부터 다시 구현해야 함).
-  2. 있다면 `git push -u origin claude/program-display-devices-xb166t` 재시도. 안 되면 GitHub MCP `push_files`로 재시도.
-  3. 그래도 403이면 사용자에게 GitHub App(레포 `angelsj913/Kx`)의 쓰기 권한 상태를 확인해달라고 요청.
-- 원격 `main`은 이 브랜치보다 훨씬 뒤처져 있음 (이번 세션 작업 이전의 여러 단계가 원격에 없음 — 학생/직장인 모드, AI 채팅 등도 포함해서 46개 파일 diff).
+사용자가 `C:\Users\angel\Desktop\aitool` 폴더에서 로컬로 `/app-preview` 테스트 하네스를 돌려보려고 시도 중인데, **아직 레포를 성공적으로 clone하지 못함**(`npm install`/`npm run dev` 둘 다 `package.json`을 못 찾는다는 에러). 다음 세션(또는 이 세션 계속)에서 가장 먼저 확인할 것:
+
+1. 사용자가 `git --version`으로 Git이 설치되어 있는지 확인했는지.
+2. `git clone -b claude/memory-sync-verify-0bfkhh https://github.com/angelsj913/Kx.git aitool2` 명령이 실제로 성공했는지(폴더가 새로 생기고 `Receiving objects...` 로그가 찍혔는지).
+3. clone 성공 확인 후(`dir package.json`으로 확인) → `npm install` → `npx prisma generate` → 아래 3개 파일을 `src/app/app-preview/`에 추가 → `npm run dev` → `http://localhost:3000/app-preview` 순서로 안내 이어가기.
+4. 이 3개 파일(레포에는 없음, 사용자에게 이미 전달했지만 세션이 끊기면 다시 전달해야 할 수 있음): `src/app/app-preview/page.tsx`, `layout.tsx`, `mockFetch.ts` — 내용은 커밋 `adff027`의 `src/app/app/page.tsx` + `src/lib/theme.ts` 등을 그대로 재사용하는 방식으로 작성됨(자세한 내용은 이 세션 대화 기록 참고, 필요하면 새로 작성 가능).
 
 ## 앞으로 할 일 (우선순위 순)
 
-1. **[최우선] 푸시 완료** — 위 "현재 git 상태" 참고. 이게 안 되면 이 세션의 모든 작업이 컨테이너와 함께 사라질 위험이 있음.
-2. **실제 크리덴셜 설정 (사용자가 집에서 진행)** — 아래 "환경변수" 표 참고. `AUTH_GOOGLE_ID`/`SECRET`(Google Cloud Console), `DATABASE_URL`(Neon 프로젝트 생성), `BLOB_READ_WRITE_TOKEN`(Vercel Blob), `AUTH_SECRET`, `GEMINI_API_KEY`/`OPENROUTER_API_KEY`.
-3. **실제 동작 검증** — 크리덴셜 설정 후: 구글 로그인 → AI 채팅/생성 → 로그아웃 → 다른 기기에서 같은 계정 로그인 → 히스토리/채팅 이어보기 전체 시나리오를 실제로 테스트.
-4. **Electron 데스크톱 앱과 클라우드 연동** (이번 작업 범위 밖으로 명시적으로 미뤄둔 것):
-   - 현재 Electron 앱은 설치본마다 자기만의 로컬 서버를 띄우는 구조 → 기기 간 동기화와 근본적으로 안 맞음. 배포된 클라우드 API(Vercel)를 바라보도록 변경 필요.
-   - Google OAuth는 Electron `BrowserWindow` 안에서 막힘(`disallowed_useragent`) → 시스템 기본 브라우저로 열어서 처리(`shell.openExternal` + 커스텀 프로토콜 또는 loopback 리다이렉트 방식) 구현 필요.
-5. **마이그레이션(`prisma migrate`) 실행** — 지금까지는 `prisma validate`/`generate`만 했고, 실제 Neon DB에 스키마를 반영하는 `prisma migrate dev`(또는 `deploy`)는 실행한 적 없음(로컬에 placeholder `DATABASE_URL`만 있었음). 진짜 DB 연결 후 필요.
-6. **Vercel 환경변수 등록** — 배포 환경(Vercel 프로젝트 설정)에 위 환경변수들을 실제로 등록해야 배포본에서 로그인/DB/Blob이 동작함.
+1. **[진행 중] 사용자 로컬 개발 환경 clone 완료 지원** — 위 이슈 참고.
+2. **실제 크리덴셜 Vercel 등록 여부 확인** — `DATABASE_URL`(Neon), `AUTH_GOOGLE_ID`/`SECRET`(Google Cloud Console), `AUTH_SECRET`, `BLOB_READ_WRITE_TOKEN`(Vercel Blob), `GEMINI_API_KEY`/`OPENROUTER_API_KEY`. Vercel MCP에는 환경변수 조회 툴이 없어서 코드로는 확인 불가 — 사용자가 Vercel 프로젝트 설정 화면에서 직접 확인해야 함.
+3. **실제 로그인 플로우 검증** (크리덴셜 확인/등록 후) — 구글 로그인 → AI 생성(신규 구조화 도구 4종 포함) → 로그아웃 → 다른 기기에서 같은 계정 로그인 → 히스토리 이어보기 전체 시나리오.
+4. **`prisma migrate` 실행 여부 확인** — 지금까지 `prisma generate`/`validate`만 했음. 실제 Neon DB에 스키마가 반영되어 있는지(`HistoryItem`, `ChatConversation` 등 신규 필드 포함) 확인 필요.
+5. **FAQ 2번째 항목("입력 내용이 밖으로 새어나가지 않나요?") 카피 교체** — 로컬 처리 문구가 클라우드 동기화와 안 맞음. 정확한 대체 카피를 사용자에게 받아서 `src/components/landing/Faq.tsx` 수정.
+6. **Electron 데스크톱 앱과 클라우드 연동** (범위 밖으로 계속 미뤄지고 있는 것):
+   - Electron 앱은 설치본마다 자기만의 로컬 서버 → 배포된 Vercel API를 바라보도록 변경 필요.
+   - Google OAuth가 Electron `BrowserWindow` 안에서 막힘(`disallowed_useragent`) → 시스템 브라우저로 열어 처리하는 방식 구현 필요.
+7. **(선택) AiChat/Account/AudioInput 모드별 테마 적용 확대** — 이번 세션에서 의도적으로 범위 제외함. 사용자가 전체 통일감을 원하면 추가 작업 가능.
 
-## 환경변수 (전부 사용자가 나중에 직접 설정 — 이 세션엔 실제 키 없음)
+## 환경변수 (전부 사용자가 직접 설정 — 이 세션엔 실제 키 없음)
 
 | 변수 | 용도 |
 |---|---|
@@ -102,34 +95,53 @@
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | 구글 OAuth (Google Cloud Console에서 발급) |
 | `DATABASE_URL` | Neon Postgres 연결 문자열 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 업로드 권한 |
-| `GEMINI_API_KEY` | Gemini 모델 호출용 (서버 전용, 유일한 AI 키 소스 중 하나) |
+| `GEMINI_API_KEY` | Gemini 모델 호출용 (서버 전용) |
 | `OPENROUTER_API_KEY` | OpenRouter 무료 모델 폴백용 |
+
+로컬에서 빌드/타입체크만 할 때는 아래처럼 placeholder 값으로 충분함(실제 DB/AI 호출은 안 되지만 `npm run build`/`tsc`는 통과):
+```
+DATABASE_URL="postgresql://x:x@localhost:5432/x" AUTH_SECRET="placeholder" AUTH_GOOGLE_ID="x" AUTH_GOOGLE_SECRET="x"
+```
 
 ## 주요 파일 위치 요약
 
 ```
-src/lib/tools.ts              도구 레지스트리
-src/lib/appMode.ts             학생/직장인 모드 상태
-src/lib/models.ts              AI 모델 자동 전환 순서 (사용자에게 비노출)
-src/lib/ai.ts                  generateWithFallback / chatReplyWithFallback
+src/lib/tools.ts                도구 레지스트리 (신규 4종 포함 총 10개 도구)
+src/lib/structured.ts           신규 구조화 도구 타입/파서
+src/lib/theme.ts                모드별 테마 토큰 (CSS 변수)
+src/lib/useAutosave.ts          디바운스 자동저장 훅
+src/lib/appMode.ts              학생/직장인 모드 상태
+src/lib/models.ts               AI 모델 자동 전환 순서 (사용자에게 비노출)
+src/lib/ai.ts                   generateWithFallback / chatReplyWithFallback
 src/lib/gemini.ts, openrouter.ts  프로바이더별 실제 호출 구현
-src/lib/prisma.ts              Prisma 클라이언트 싱글턴 (Neon 어댑터)
-src/lib/history.ts             히스토리 fetch 훅 (useHistory)
-src/lib/personas.ts            채팅 페르소나 5종
-src/auth.ts                    NextAuth 설정
-src/proxy.ts                   /app 라우트 로그인 게이트
-prisma/schema.prisma           DB 스키마
-prisma.config.ts               Prisma CLI 설정
-src/app/app/page.tsx           앱 메인 워크스페이스
-src/components/AiChat.tsx      AI 채팅 (대화 목록/영속화)
-src/components/Account.tsx     내 계정 화면
-src/components/GeneratorView.tsx / HistoryView.tsx / FileResultPanel.tsx  도구 생성/히스토리 UI
-src/app/api/generate/route.ts               도구 생성 API
-src/app/api/history/**                      히스토리 API
+src/lib/prisma.ts               Prisma 클라이언트 싱글턴 (Neon 어댑터)
+src/lib/history.ts              히스토리 fetch 훅 (useHistory)
+src/lib/personas.ts             채팅 페르소나 5종
+src/auth.ts                     NextAuth 설정
+src/proxy.ts                    /app 라우트 로그인 게이트
+prisma/schema.prisma            DB 스키마
+prisma.config.ts                Prisma CLI 설정
+src/app/app/page.tsx            앱 메인 워크스페이스 (듀얼 모드 테마 + 전환 애니메이션)
+src/components/structured/      신규 구조화 도구 4종 뷰 컴포넌트 + StructuredResultView 디스패처
+src/components/Sidebar.tsx, ModeSwitch.tsx, Dashboard.tsx  듀얼 모드 테마 적용된 워크스페이스 크롬
+src/components/AiChat.tsx       AI 채팅 (대화 목록/영속화, 테마 미적용)
+src/components/Account.tsx      내 계정 화면
+src/components/GeneratorView.tsx / HistoryView.tsx / FileResultPanel.tsx / ResultPanel.tsx  도구 생성/히스토리 UI
+src/app/api/generate/route.ts               도구 생성 API (structured 분기 포함)
+src/app/api/history/**                      히스토리 API (PATCH 자동저장 라우트 포함)
 src/app/api/chat/conversations/**           채팅 대화 API
 src/app/api/auth/[...nextauth]/route.ts     NextAuth 핸들러
+src/components/landing/                     랜딩페이지 컴포넌트 (DownloadCta/HowItWorks/Faq)
+src/app/login/page.tsx                      로그인 페이지 (구글 로그인 + 이메일 목업)
 ```
 
 ## 참고 — "이 Next.js는 학습 데이터와 다르다" (AGENTS.md 지침)
 
-이 프로젝트는 Next.js 16.2.10 정식 버전이며, 학습 데이터의 관행과 실제로 다른 부분이 있으니 새 기능을 짤 때는 `node_modules/next/dist/docs/`의 관련 가이드를 먼저 확인할 것. 이번 세션에서 확인된 대표 사례: `proxy.ts` 네이밍, `error.tsx`/`global-error.tsx`의 `unstable_retry` 콜백, ESLint `eslint-config-next` flat config 전환.
+이 프로젝트는 Next.js 16.2.10 정식 버전이며, 학습 데이터의 관행과 실제로 다른 부분이 있으니 새 기능을 짤 때는 `node_modules/next/dist/docs/`의 관련 가이드를 먼저 확인할 것.
+
+**이번 세션까지 확인된 함정들:**
+- `middleware.ts`가 아니라 **`src/proxy.ts`** + `export const proxy = auth(...)`. Node.js 런타임 고정.
+- Prisma 7: `generator client { provider = "prisma-client", output = "../src/generated/prisma" }` 필수. `datasource.url`을 스키마에 쓰면 P1012 에러 — `prisma.config.ts` + 런타임 어댑터(`PrismaNeon`)로 분리.
+- **Vercel 배포 시 `postinstall: "prisma generate"`가 없으면 빌드가 무조건 실패함** — 로컬은 수동 실행으로 가려짐. (이번 세션에 발견/수정)
+- `react-hooks` v7의 `set-state-in-effect` 규칙: `useEffect` 안에서 `useCallback` 함수(내부 setState)를 직접 호출하면 lint 에러 → 인라인 async IIFE로 우회(`src/lib/useAutosave.ts` 참고, 동일 패턴).
+- `eslint-config-next` flat config 전환, `error.tsx`/`global-error.tsx`의 `unstable_retry` 콜백.
