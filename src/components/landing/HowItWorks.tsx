@@ -3,18 +3,18 @@ import { Download, MousePointerClick, FileCheck } from "lucide-react";
 const STEPS = [
   {
     icon: Download,
-    title: "시작은 가볍게",
-    desc: "번거로운 가입 절차 없이, 쓰던 계정 그대로 지금 바로 시작하세요.",
+    title: "설치하고 구글로 로그인",
+    desc: "설치 파일을 내려받아 실행한 뒤, 쓰던 구글 계정으로 로그인하면 준비 끝입니다.",
   },
   {
     icon: MousePointerClick,
-    title: "원하는 기능 선택",
-    desc: "학생·직장인 모드를 선택하고, 필요한 도구를 골라 내용을 입력하세요.",
+    title: "모드와 도구 선택",
+    desc: "학생 또는 직장인 모드를 고르고, 지금 필요한 도구를 골라 내용을 입력하세요.",
   },
   {
     icon: FileCheck,
-    title: "결과 확인 및 저장",
-    desc: "AI가 만든 결과를 바로 확인하고, 복사하거나 파일로 저장해 활용하세요.",
+    title: "결과 확인, 어디서든 이어서",
+    desc: "완성된 결과를 바로 받아보고, 다른 기기에서 로그인해도 그대로 이어서 쓸 수 있어요.",
   },
 ];
 
