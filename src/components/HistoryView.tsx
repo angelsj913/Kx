@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, MessagesSquare, Trash2, History as HistoryIcon } from "lucide-react";
+import { Trash2, History as HistoryIcon, FileText } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
-import { MODE_META } from "@/lib/modes";
+import FileResultPanel from "@/components/FileResultPanel";
 import { clearHistory, removeHistoryItem, type HistoryItem } from "@/lib/history";
+import { getTool } from "@/lib/tools";
+import type { Deck, Workbook } from "@/lib/fileTypes";
 
 function formatDate(ts: number) {
   const d = new Date(ts);
@@ -14,6 +16,14 @@ function formatDate(ts: number) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function safeParse<T>(raw: string): T | undefined {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return undefined;
+  }
 }
 
 export default function HistoryView({ items }: { items: HistoryItem[] }) {
@@ -40,7 +50,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      {/* List */}
+      {/* 목록 */}
       <section className="flex flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 shadow-2xl shadow-black/40 backdrop-blur-md">
         <div className="flex items-center justify-between border-b border-slate-700/50 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-300">
@@ -62,7 +72,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto p-2">
           {items.map((item) => {
-            const Icon = item.mode === "business" ? Briefcase : MessagesSquare;
+            const Icon = getTool(item.toolId)?.icon ?? FileText;
             const active = selected?.id === item.id;
             return (
               <li key={item.id}>
@@ -81,7 +91,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-violet-300">
-                        {MODE_META[item.mode].short}
+                        {item.toolLabel}
                       </span>
                       <span className="shrink-0 text-[11px] text-slate-500">
                         {formatDate(item.createdAt)}
@@ -98,14 +108,14 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
         </ul>
       </section>
 
-      {/* Detail */}
+      {/* 상세 */}
       <div className="flex min-h-[400px] flex-col gap-3">
         {selected && (
           <>
             <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 backdrop-blur-md">
               <div className="min-w-0">
                 <p className="text-xs font-medium text-violet-300">
-                  {MODE_META[selected.mode].label} · {formatDate(selected.createdAt)}
+                  {selected.toolLabel} · {formatDate(selected.createdAt)}
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-slate-300">
                   <span className="text-slate-500">입력: </span>
@@ -126,14 +136,22 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
               </button>
             </div>
             <div className="min-h-0 flex-1">
-              <ResultPanel
-                content={selected.result}
-                fileBaseName={
-                  selected.mode === "business"
-                    ? "business-tone"
-                    : "interview-questions"
-                }
-              />
+              {selected.outputType === "pptx" ? (
+                <FileResultPanel
+                  outputType="pptx"
+                  deck={safeParse<Deck>(selected.result)}
+                />
+              ) : selected.outputType === "xlsx" ? (
+                <FileResultPanel
+                  outputType="xlsx"
+                  workbook={safeParse<Workbook>(selected.result)}
+                />
+              ) : (
+                <ResultPanel
+                  content={selected.result}
+                  fileBaseName={getTool(selected.toolId)?.fileBaseName ?? "ai-result"}
+                />
+              )}
             </div>
           </>
         )}

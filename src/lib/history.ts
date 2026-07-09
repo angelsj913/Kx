@@ -1,11 +1,15 @@
 import { useSyncExternalStore } from "react";
-
-export type ToolMode = "business" | "interview";
+import type { OutputType } from "./tools";
 
 export interface HistoryItem {
   id: string;
-  mode: ToolMode;
+  /** 도구 레지스트리의 tool id */
+  toolId: string;
+  /** 표시용으로 저장해 두는 도구 라벨 (도구가 바뀌어도 안전) */
+  toolLabel: string;
+  outputType: OutputType;
   prompt: string;
+  /** 마크다운 결과 또는 pptx/xlsx용 원본 JSON 문자열 */
   result: string;
   createdAt: number;
 }
@@ -23,7 +27,17 @@ function read(): HistoryItem[] {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as HistoryItem[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    // 예전 형식({mode})으로 저장된 항목도 깨지지 않게 보정
+    return parsed.map((item): HistoryItem => ({
+      id: String(item?.id ?? Date.now()),
+      toolId: item?.toolId ?? item?.mode ?? "unknown",
+      toolLabel: item?.toolLabel ?? item?.mode ?? "이전 기록",
+      outputType: item?.outputType ?? "markdown",
+      prompt: typeof item?.prompt === "string" ? item.prompt : "",
+      result: typeof item?.result === "string" ? item.result : "",
+      createdAt: typeof item?.createdAt === "number" ? item.createdAt : Date.now(),
+    }));
   } catch {
     return [];
   }
