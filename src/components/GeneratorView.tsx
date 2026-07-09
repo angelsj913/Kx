@@ -5,7 +5,10 @@ import { Wand2, Link as LinkIcon } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
 import FileResultPanel from "@/components/FileResultPanel";
 import AudioInput from "@/components/AudioInput";
+import ModelSelect from "@/components/ModelSelect";
 import { addHistoryItem } from "@/lib/history";
+import { DEFAULT_MODEL } from "@/lib/models";
+import { keyHeaders } from "@/lib/apiKeys";
 import type { ToolDef } from "@/lib/tools";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
 
@@ -26,6 +29,7 @@ function newId() {
 
 export default function GeneratorView({ tool }: { tool: ToolDef }) {
   const [text, setText] = useState("");
+  const [model, setModel] = useState(DEFAULT_MODEL);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [fileResult, setFileResult] = useState<FileResult | null>(null);
@@ -52,13 +56,18 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
       if (isAudio && audioFile) {
         const form = new FormData();
         form.append("toolId", tool.id);
+        form.append("model", model);
         form.append("audio", audioFile);
-        res = await fetch("/api/generate", { method: "POST", body: form });
+        res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { ...keyHeaders() },
+          body: form,
+        });
       } else {
         res = await fetch("/api/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ toolId: tool.id, text: text.trim() }),
+          headers: { "Content-Type": "application/json", ...keyHeaders() },
+          body: JSON.stringify({ toolId: tool.id, text: text.trim(), model }),
         });
       }
 
@@ -108,7 +117,14 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
     <div className="grid gap-5 lg:grid-cols-2">
       {/* 입력 영역 */}
       <section className="flex flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-5">
-        <h2 className="text-lg font-bold text-slate-100">{tool.title}</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-100">{tool.title}</h2>
+          {isText && (
+            <div className="shrink-0">
+              <ModelSelect model={model} onChange={setModel} disabled={loading} />
+            </div>
+          )}
+        </div>
         <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
 
         <form onSubmit={handleSubmit} className="mt-4 flex flex-1 flex-col">

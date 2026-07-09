@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, History, Sparkles } from "lucide-react";
+import { LayoutDashboard, History, Sparkles, Settings } from "lucide-react";
 import ModeSwitch from "@/components/ModeSwitch";
 import { toolsForMode, type AppMode } from "@/lib/tools";
 
@@ -59,12 +59,18 @@ export default function Sidebar({
           />
         ))}
 
-        <div className="mt-3 border-t border-slate-800/60 pt-2">
+        <div className="mt-3 space-y-1 border-t border-slate-800/60 pt-2">
           <NavButton
             active={view === "history"}
             label="마이 히스토리"
             icon={History}
             onClick={() => onNavigate("history")}
+          />
+          <NavButton
+            active={view === "settings"}
+            label="API 키 설정"
+            icon={Settings}
+            onClick={() => onNavigate("settings")}
           />
         </div>
       </nav>

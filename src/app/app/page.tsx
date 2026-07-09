@@ -4,7 +4,9 @@ import { useState } from "react";
 import Sidebar, { type View } from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import GeneratorView from "@/components/GeneratorView";
+import AiChat from "@/components/AiChat";
 import HistoryView from "@/components/HistoryView";
+import Settings from "@/components/Settings";
 import { useHistory } from "@/lib/history";
 import { useAppMode, setAppMode } from "@/lib/appMode";
 import { getTool, type AppMode } from "@/lib/tools";
@@ -18,9 +20,13 @@ export default function AppWorkspace() {
 
   function handleModeChange(mode: AppMode) {
     setAppMode(mode);
-    // 현재 보고 있던 도구가 새 모드에 없으면 대시보드로 돌아간다
+    // 현재 보고 있던 도구가 새 모드 전용이라 안 맞으면 대시보드로 (공통 도구는 유지)
     const currentTool = getTool(view);
-    if (currentTool && currentTool.appMode !== mode) {
+    if (
+      currentTool &&
+      currentTool.appMode !== "common" &&
+      currentTool.appMode !== mode
+    ) {
       setView("dashboard");
     }
   }
@@ -50,7 +56,13 @@ export default function AppWorkspace() {
           />
         )}
         {view === "history" && <HistoryView items={history} />}
-        {activeTool && <GeneratorView key={activeTool.id} tool={activeTool} />}
+        {view === "settings" && <Settings />}
+        {activeTool &&
+          (activeTool.inputType === "chat" ? (
+            <AiChat key={activeTool.id} />
+          ) : (
+            <GeneratorView key={activeTool.id} tool={activeTool} />
+          ))}
       </main>
     </div>
   );

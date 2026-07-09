@@ -3,28 +3,32 @@ import type { ToolDef } from "./tools";
 
 export class MissingApiKeyError extends Error {}
 
-export interface GenInput {
-  tool: ToolDef;
-  /** 텍스트 도구의 입력, 또는 url 도구의 영상 주소 */
-  text?: string;
-  /** 오디오 도구의 입력 (base64) */
-  audio?: { data: string; mimeType: string };
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
+function client(apiKey?: string): GoogleGenAI {
+  const key = apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new MissingApiKeyError(
+      "Gemini API 키가 없습니다. 앱 설정에서 키를 입력하거나 서버에 GEMINI_API_KEY를 설정하세요."
+    );
+  }
+  return new GoogleGenAI({ apiKey: key });
 }
 
-const MODEL = "gemini-2.5-flash";
+export interface GenInput {
+  tool: ToolDef;
+  text?: string;
+  audio?: { data: string; mimeType: string };
+  model?: string;
+  apiKey?: string;
+}
 
-export async function generateForTool(input: GenInput): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new MissingApiKeyError("서버에 GEMINI_API_KEY가 설정되지 않았습니다.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+export async function geminiGenerateForTool(input: GenInput): Promise<string> {
+  const ai = client(input.apiKey);
   const { tool } = input;
 
   let contents: string | Content;
   if (tool.inputType === "url") {
-    // YouTube 등 영상 URL을 fileData로 직접 전달
     contents = createUserContent([
       { fileData: { fileUri: input.text ?? "" } },
       "위 영상의 내용을 지침에 따라 정리해줘.",
@@ -41,12 +45,52 @@ export async function generateForTool(input: GenInput): Promise<string> {
   const needsJson = tool.outputType === "pptx" || tool.outputType === "xlsx";
 
   const response = await ai.models.generateContent({
-    model: MODEL,
+    model: input.model || DEFAULT_GEMINI_MODEL,
     contents,
     config: {
       systemInstruction: tool.systemInstruction,
       ...(needsJson ? { responseMimeType: "application/json" } : {}),
     },
+  });
+
+  return response.text ?? "";
+}
+
+// ── 채팅 ──
+
+export interface ChatFile {
+  data: string; // base64
+  mimeType: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "model";
+  text: string;
+  files?: ChatFile[];
+}
+
+export async function geminiChatReply(opts: {
+  model?: string;
+  apiKey?: string;
+  systemInstruction: string;
+  messages: ChatMessage[];
+}): Promise<string> {
+  const ai = client(opts.apiKey);
+
+  const contents: Content[] = opts.messages.map((m) => ({
+    role: m.role,
+    parts: [
+      ...(m.files ?? []).map((f) => ({
+        inlineData: { data: f.data, mimeType: f.mimeType },
+      })),
+      ...(m.text ? [{ text: m.text }] : []),
+    ],
+  }));
+
+  const response = await ai.models.generateContent({
+    model: opts.model || DEFAULT_GEMINI_MODEL,
+    contents,
+    config: { systemInstruction: opts.systemInstruction },
   });
 
   return response.text ?? "";

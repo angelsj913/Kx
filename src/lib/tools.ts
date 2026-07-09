@@ -6,16 +6,19 @@ import {
   Video,
   Mic,
   FileText,
+  MessagesSquare,
 } from "lucide-react";
 
 export type AppMode = "student" | "office";
-export type InputType = "text" | "url" | "audio";
+/** 도구가 속한 모드. "common"은 두 모드 모두에 노출된다. */
+export type ToolScope = AppMode | "common";
+export type InputType = "text" | "url" | "audio" | "chat";
 export type OutputType = "markdown" | "pptx" | "xlsx";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
   id: string;
-  appMode: AppMode;
+  appMode: ToolScope;
   /** 사이드바 메뉴 라벨 */
   label: string;
   /** 히스토리 칩 등 짧은 라벨 */
@@ -118,6 +121,23 @@ const AUDIO_INSTRUCTION = `너는 학생의 학습을 돕는 유능한 조교이
 - 모든 내용은 한국어로 작성한다.`;
 
 export const TOOLS: ToolDef[] = [
+  // ── 공통 ──
+  {
+    id: "chat",
+    appMode: "common",
+    label: "AI 채팅",
+    short: "AI 채팅",
+    title: "AI 채팅",
+    description:
+      "여러 AI와 자유롭게 대화하세요. 이미지나 문서를 첨부해 질문할 수 있고, 원하는 AI 모델과 성격(페르소나)을 골라 쓸 수 있습니다.",
+    icon: MessagesSquare,
+    inputType: "chat",
+    outputType: "markdown",
+    systemInstruction: "",
+    placeholder: "무엇이든 물어보세요...",
+    submitLabel: "보내기",
+    fileBaseName: "chat",
+  },
   // ── 직장인 모드 ──
   {
     id: "bizdoc",
@@ -223,7 +243,7 @@ export const TOOLS: ToolDef[] = [
 ];
 
 export function toolsForMode(mode: AppMode): ToolDef[] {
-  return TOOLS.filter((t) => t.appMode === mode);
+  return TOOLS.filter((t) => t.appMode === mode || t.appMode === "common");
 }
 
 export function getTool(id: string): ToolDef | undefined {

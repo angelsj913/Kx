@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { generateForTool, MissingApiKeyError } from "@/lib/gemini";
+import { geminiGenerateForTool, MissingApiKeyError } from "@/lib/gemini";
+import { openrouterGenerateForTool } from "@/lib/openrouter";
 import { getTool } from "@/lib/tools";
+import { getModel, DEFAULT_MODEL } from "@/lib/models";
+import { friendlyError } from "@/lib/errors";
 import { parseDeck, buildPptxBase64 } from "@/lib/pptx";
 import { parseWorkbook, buildXlsxBase64 } from "@/lib/xlsx";
 
@@ -14,14 +17,19 @@ const XLSX_MIME =
 
 export async function POST(request: Request) {
   try {
+    const geminiKey = request.headers.get("x-gemini-key") ?? undefined;
+    const openrouterKey = request.headers.get("x-openrouter-key") ?? undefined;
+
     const contentType = request.headers.get("content-type") ?? "";
     let toolId = "";
     let text = "";
+    let modelId = DEFAULT_MODEL;
     let audio: { data: string; mimeType: string } | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
       toolId = String(form.get("toolId") ?? "");
+      modelId = String(form.get("model") ?? DEFAULT_MODEL);
       const file = form.get("audio");
       if (file instanceof File) {
         const buf = Buffer.from(await file.arrayBuffer());
@@ -34,6 +42,7 @@ export async function POST(request: Request) {
       const body = await request.json();
       toolId = typeof body?.toolId === "string" ? body.toolId : "";
       text = typeof body?.text === "string" ? body.text.trim() : "";
+      if (typeof body?.model === "string") modelId = body.model;
     }
 
     const tool = getTool(toolId);
@@ -55,7 +64,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const raw = await generateForTool({ tool, text, audio });
+    const modelDef = getModel(modelId);
+    // 영상/오디오 도구는 Gemini 멀티모달만 지원하므로 Gemini로 고정
+    const forceGemini = tool.inputType === "url" || tool.inputType === "audio";
+    const useGemini = forceGemini || modelDef.provider === "gemini";
+
+    const raw = useGemini
+      ? await geminiGenerateForTool({
+          tool,
+          text,
+          audio,
+          model: forceGemini ? "gemini-2.5-flash" : modelDef.model,
+          apiKey: geminiKey,
+        })
+      : await openrouterGenerateForTool({
+          tool,
+          text,
+          model: modelDef.model,
+          apiKey: openrouterKey,
+        });
+
     if (!raw) {
       return NextResponse.json(
         { error: "AI가 빈 응답을 반환했습니다. 다시 시도해 주세요." },
@@ -96,7 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ outputType: "markdown", text: raw });
   } catch (err) {
     if (err instanceof MissingApiKeyError) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     if (err instanceof SyntaxError) {
       return NextResponse.json(
@@ -105,9 +133,6 @@ export async function POST(request: Request) {
       );
     }
     console.error("generate error:", err);
-    return NextResponse.json(
-      { error: "AI 요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }
 }
