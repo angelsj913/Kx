@@ -5,7 +5,7 @@
 ## 프로젝트 개요
 
 - **레포**: `angelsj913/Kx` (GitHub)
-- **현재 브랜치**: `claude/memory-sync-verify-0bfkhh` (원격에 푸시 완료, 최신 상태)
+- **현재 브랜치**: `claude/memory-sync-intent-ib4fj5` (원격에 푸시 완료, 최신 상태 — `claude/memory-sync-verify-0bfkhh`를 fast-forward로 흡수한 뒤 이어서 작업 중)
 - **스택**: Next.js 16.2.10(학습 데이터의 관행과 다른 부분 있음 — 문서 맨 아래 "Next.js 16 주의사항" 참고) + React 19 + Prisma 7.8.0 + NextAuth(Auth.js) v5 + Tailwind v4 + Framer Motion
 - **배포**: Vercel (프로젝트명 `kx`, 팀 `kxeung9`) + Electron 데스크톱 패키징 병행
 - **제품 정체성**: "AI 툴킷" — 학생/직장인 모드 전환이 되는 AI 데스크톱 앱. 문서 생성 도구(PPT/엑셀/회의록/주간보고/강의노트/레포트 초안)와 멀티모달 AI 채팅을 제공.
@@ -60,11 +60,29 @@
 - **중요**: 사용자가 "로컬에서만, 배포되는 곳(공유 브랜치/Vercel)에는 올리지 말라"고 명시적으로 선택함 → 이 3개 파일은 **repo에 커밋되어 있지 않음**. `SendUserFile`로 사용자에게 직접 전달했고, 로컬 작업 디렉터리에서도 삭제해서 `git status`가 깨끗한 상태.
 - 사용자가 로컬(Windows, `C:\Users\angel\Desktop\aitool`)에서 이 파일들을 써보려고 시도하다가 **레포 자체를 아직 clone하지 못한 상태**(`package.json`이 없다는 에러)임을 확인 — 아래 "진행 중인 이슈" 참고.
 
+### 7. 메인 랜딩페이지(`/`) 대대적 리뉴얼 (실서비스 코드베이스 직접 작업 — 이번 세션)
+사용자가 "로컬 프리뷰 테스트 끝, 이제 프로덕션 코드베이스를 직접 작업"이라고 명시한 이후 진행:
+
+- **모드별 시각 테마 신설**: `src/lib/landingTheme.ts` — 직장인(Navy/Cyan: sky→cyan 그라디언트) vs 학생(Indigo/Lavender: indigo→violet 그라디언트) 색상·문구 토큰을 한 곳에서 관리. `/app` 워크스페이스의 `src/lib/theme.ts`(CSS 변수 기반)와는 별도 — 랜딩페이지는 서버 컴포넌트가 대부분이라 Tailwind 리터럴 클래스 토큰 방식을 씀.
+- **호버 확장 애니메이션 버그 수정**: 기존엔 인트로 기능 카드 4개 중 `detail` 필드가 있는 카드(직장인 모드 1개)만 호버 시 펼쳐졌음. 모든 인트로 하이라이트 카드(4개) + 모드별 도구 쇼케이스 카드(전체 10개)에 동일한 `grid-rows-[0fr]→[1fr]` 패턴을 일괄 적용해 전부 정상 동작하도록 수정.
+- **신규 섹션 4개 추가**:
+  - `ModeShowcase.tsx` — 직장인 vs 학생 모드 대형 비교 패널(모드별 테마 색상 + 차별화된 가치 제안 문구)
+  - `PainPoints.tsx` — 직장인(보고서/회의록/주간보고 고충)·학생(강의복습/발표문/레포트 고충) 페인포인트 → 해결 화살표
+  - `ToolShowcase.tsx` — `src/lib/tools.ts`의 실제 도구 10종(직장인 5 + 학생 5)을 모드 색상으로 쇼케이스, 카드마다 호버 시 보조 설명 노출 + 하단에 공통 AI 채팅 안내 배너
+  - `CloudSyncDemo.tsx`(client) — 가짜 채팅 UI 위에 "대화 진행 중 → 저장 중... → 클라우드에 저장 완료" 상태를 Framer Motion으로 순환시켜 실시간 자동 저장을 시각적으로 시연
+- **문구 전면 재작성**: 히어로, 인트로 하이라이트, "사용 방법" 3단계, FAQ 전체를 자연스러운 톤으로 다시 씀. 직장인 관련 카피는 깔끔한 비즈니스 톤, 학생 관련 카피는 친근한 동기부여 톤으로 구분.
+- **오래된 카피/버그 정리(겸사겸사 발견)**:
+  - FAQ "제가 입력한 내용이 밖으로 새어나가지 않나요?" 항목이 클라우드 동기화 이전의 "로컬 처리" 문구 그대로 남아있던 것을 발견해 수정(위 "앞으로 할 일" 5번 항목 완료 처리).
+  - 푸터의 "Powered by Google Gemini" 문구가 "AI 모델명을 사용자에게 절대 노출하지 않는다"는 하드 제약(PROGRESS.md 섹션 5 참고)과 정면으로 어긋나는 것을 발견해 모델명 비노출 문구로 교체.
+- **검증**: `npx tsc --noEmit` / `npm run lint` / `npm run build` 전부 통과(`/`는 여전히 정적 프리렌더링됨, prerender 에러 재발 없음). `npm run dev` + headless Chromium으로 전체 페이지 스크린샷, 직장인/학생 도구 카드 각각 호버 확장 동작, 클라우드 저장 상태 3단계 순환(대화 진행 중→저장 중...→저장 완료)을 실제로 캡처해서 확인함.
+- **의도적으로 미루거나 그대로 둔 것**: 헤더의 "Support" 버튼은 이전 세션에서 이미 "UI만, 나중에 외부 링크 연결" 명시된 플레이스홀더라 그대로 둠. `/app` 워크스페이스 내부(로그인 후 화면)는 이번 작업 범위 밖 — 오직 `/`(마케팅 랜딩페이지)만 손댔음.
+
 ## 현재 git 상태 — 정상, 최신
 
-- 마지막 커밋: `adff027` "/app 워크스페이스 듀얼 모드 개편: 신규 구조화 도구 4종 + 모드별 테마 + 자동 저장"
-- `claude/memory-sync-verify-0bfkhh` 브랜치, 원격에 푸시 완료. `git status` 깨끗함(uncommitted 없음).
-- Vercel에 이 커밋 기준 배포가 `READY` 상태로 올라가 있음(위 "Vercel 배포 정보" 참고).
+- 마지막 커밋: `fc78e8a` "랜딩페이지 대대적 리뉴얼: 모드별 테마, 클라우드 저장 UX, 콘텐츠 확장"
+- `claude/memory-sync-intent-ib4fj5` 브랜치, 원격에 푸시 완료. `git status` 깨끗함(uncommitted 없음).
+- 이 브랜치는 `claude/memory-sync-verify-0bfkhh`(위 1~6번 작업 전부 포함)를 fast-forward로 흡수한 뒤 7번 작업을 이어서 커밋한 상태 — 두 브랜치 작업 내용이 전부 하나로 합쳐져 있음.
+- ⚠️ 이 커밋은 아직 Vercel에 새로 배포된 게 확인되지 않음 — 다음 세션에서 이 브랜치 기준 Preview 배포 상태(`READY` 여부)부터 확인할 것.
 
 ## ⚠️ 진행 중인 이슈 — 사용자 로컬(Windows) 개발 환경 설정
 
@@ -81,11 +99,13 @@
 2. **실제 크리덴셜 Vercel 등록 여부 확인** — `DATABASE_URL`(Neon), `AUTH_GOOGLE_ID`/`SECRET`(Google Cloud Console), `AUTH_SECRET`, `BLOB_READ_WRITE_TOKEN`(Vercel Blob), `GEMINI_API_KEY`/`OPENROUTER_API_KEY`. Vercel MCP에는 환경변수 조회 툴이 없어서 코드로는 확인 불가 — 사용자가 Vercel 프로젝트 설정 화면에서 직접 확인해야 함.
 3. **실제 로그인 플로우 검증** (크리덴셜 확인/등록 후) — 구글 로그인 → AI 생성(신규 구조화 도구 4종 포함) → 로그아웃 → 다른 기기에서 같은 계정 로그인 → 히스토리 이어보기 전체 시나리오.
 4. **`prisma migrate` 실행 여부 확인** — 지금까지 `prisma generate`/`validate`만 했음. 실제 Neon DB에 스키마가 반영되어 있는지(`HistoryItem`, `ChatConversation` 등 신규 필드 포함) 확인 필요.
-5. **FAQ 2번째 항목("입력 내용이 밖으로 새어나가지 않나요?") 카피 교체** — 로컬 처리 문구가 클라우드 동기화와 안 맞음. 정확한 대체 카피를 사용자에게 받아서 `src/components/landing/Faq.tsx` 수정.
-6. **Electron 데스크톱 앱과 클라우드 연동** (범위 밖으로 계속 미뤄지고 있는 것):
+5. ~~FAQ 2번째 항목 카피 교체~~ — **완료** (섹션 7 참고, 클라우드 동기화에 맞는 문구로 교체함).
+6. **이 브랜치(landing 리뉴얼 포함) Vercel 배포 확인** — 최신 커밋(`fc78e8a`)이 실제로 Preview에 `READY`로 올라갔는지, 스크린샷 없이 로컬 dev 서버로만 검증했으므로 배포 환경에서도 한 번 더 확인 권장.
+7. **Electron 데스크톱 앱과 클라우드 연동** (범위 밖으로 계속 미뤄지고 있는 것):
    - Electron 앱은 설치본마다 자기만의 로컬 서버 → 배포된 Vercel API를 바라보도록 변경 필요.
    - Google OAuth가 Electron `BrowserWindow` 안에서 막힘(`disallowed_useragent`) → 시스템 브라우저로 열어 처리하는 방식 구현 필요.
-7. **(선택) AiChat/Account/AudioInput 모드별 테마 적용 확대** — 이번 세션에서 의도적으로 범위 제외함. 사용자가 전체 통일감을 원하면 추가 작업 가능.
+8. **(선택) AiChat/Account/AudioInput 모드별 테마 적용 확대** — 이번 세션에서 의도적으로 범위 제외함. 사용자가 전체 통일감을 원하면 추가 작업 가능.
+9. **(선택) 헤더 "Support" 버튼 실제 링크 연결** — 여전히 클릭해도 아무 동작 없는 UI 전용 플레이스홀더. 외부 지원 페이지 URL이 정해지면 연결.
 
 ## 환경변수 (전부 사용자가 직접 설정 — 이 세션엔 실제 키 없음)
 
