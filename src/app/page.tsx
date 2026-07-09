@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Sparkles,
   Briefcase,
@@ -64,6 +65,12 @@ export default function Landing() {
           >
             모든 버전 보기
           </a>
+          <Link
+            href="/login"
+            className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-100"
+          >
+            로그인
+          </Link>
         </div>
       </header>
 
