@@ -11,11 +11,12 @@ export default function ModeShowcase() {
     <section className="py-16">
       <div className="text-center">
         <h2 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
-          하나의 앱, 두 가지 모드
+          하나의 앱, 완전히 다른 두 가지 경험
         </h2>
-        <p className="mt-3 text-sm text-slate-400 sm:text-base">
-          직장인과 학생, 필요한 도구도 원하는 결과물도 다릅니다. AI 툴킷은 접속하는
-          모드에 맞춰 완전히 다른 경험을 준비했습니다.
+        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-400 sm:text-base">
+          직장인에게 필요한 도구와 학생에게 필요한 도구는 애초에 다릅니다. 그래서
+          기능을 욱여넣는 대신, 모드를 나눴습니다. 로그인 후 상단에서 모드만
+          바꾸면 화면 구성과 도구 목록, 색감까지 그 자리에서 전환됩니다.
         </p>
       </div>
 
@@ -44,6 +45,9 @@ export default function ModeShowcase() {
 
                 <p className="mt-6 text-lg font-semibold leading-snug text-slate-100">
                   {s.headline}
+                </p>
+                <p className="mt-2.5 text-sm leading-relaxed text-slate-400">
+                  {s.subline}
                 </p>
 
                 <ul className="mt-5 space-y-3">

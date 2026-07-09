@@ -1,20 +1,31 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { MessagesSquare } from "lucide-react";
 import { TOOLS, type AppMode } from "@/lib/tools";
 import { LANDING_MODE_STYLE } from "@/lib/landingTheme";
+import ExpandOnHover from "./ExpandOnHover";
 
 /** 카드 앞면 설명(tool.description)은 항상 보이고, 아래 문구는 호버 시에만 펼쳐지는 보조 설명. */
 const TOOL_DETAIL: Record<string, string> = {
-  bizdoc: "정중한 버전과 유연한 실무 버전, 두 가지 톤으로 동시에 받아보고 상황에 맞게 고르세요.",
-  ppt: "표지부터 마무리까지 슬라이드 구성이 잡힌 상태로, 발표자 대본까지 함께 나와요.",
-  excel: "항목만 정하면 예시 데이터까지 채워진 표로 완성되어 바로 다듬어 쓸 수 있어요.",
-  meeting: "날짜·참석자·안건은 물론, 담당자와 기한이 붙은 액션 아이템까지 자동으로 뽑아줘요.",
-  "weekly-report": "이번 주 진행률은 슬라이더로, 다음 주 계획은 목록으로 깔끔하게 나눠 정리돼요.",
-  lecture: "영상 링크 하나면 핵심 요약과 예상 질문까지, 시험 전 훑어보기에 딱이에요.",
-  audio: "녹음 파일만 올리면 선생님 설명이 필기 형태로 정리되고, 안 들린 구간은 표시해줘요.",
-  presentation: "서론·본론·결론이 갖춰진 완성된 대본이라 그대로 읽어도 자연스러워요.",
-  "lecture-notes": "키워드만 보고 내용을 떠올리는 회상 노트라 진짜 복습에 도움이 돼요.",
-  "research-draft": "섹션별 초안과 함께 참고할 자료 메모까지 붙어 있어 자료 조사 시간을 줄여줘요.",
+  bizdoc:
+    "정중한 정식 버전과 조금 더 편한 실무 버전, 두 가지 톤으로 동시에 받아 상황에 맞게 골라 보내세요.",
+  ppt: "표지부터 마무리까지 슬라이드 구성이 잡힌 상태로, 발표자가 그대로 읽을 수 있는 대본까지 함께 나와요.",
+  excel: "항목만 정하면 예시 데이터까지 채워진 표로 완성되어, 숫자만 바꿔 넣으면 바로 제출할 수 있어요.",
+  meeting: "날짜·참석자·안건은 물론, 담당자와 기한이 붙은 액션 아이템까지 회의가 끝나자마자 정리돼요.",
+  "weekly-report": "이번 주 진행률은 슬라이더로 직접 조정하고, 다음 주 계획은 목록으로 깔끔하게 나눠 정리돼요.",
+  lecture: "영상 링크 하나면 핵심 요약과 예상 질문까지, 시험 전 훑어보기에 딱 맞는 분량으로 정리돼요.",
+  audio: "녹음 파일만 올리면 선생님 설명이 필기 형태로 정리되고, 잘 안 들린 구간은 따로 표시해줘요.",
+  presentation: "서론·본론·결론이 갖춰진 완성된 대본이라, 다듬지 않고 그대로 읽어도 자연스러워요.",
+  "lecture-notes": "키워드만 보고 내용을 떠올리는 능동 회상 노트라, 눈으로 훑는 게 아니라 진짜 복습이 돼요.",
+  "research-draft": "섹션별 초안과 함께 참고할 자료 메모까지 붙어 있어, 막막했던 자료 조사 시간이 크게 줄어요.",
 };
+
+const cardMotion = {
+  initial: "rest",
+  whileHover: "hover",
+  animate: "rest",
+} as const;
 
 function ToolGrid({ mode }: { mode: AppMode }) {
   const s = LANDING_MODE_STYLE[mode];
@@ -28,9 +39,10 @@ function ToolGrid({ mode }: { mode: AppMode }) {
       </div>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {tools.map(({ id, icon: Icon, label, description }) => (
-          <div
+          <motion.div
             key={id}
-            className={`group rounded-2xl border ${s.border} bg-slate-800/40 p-5 shadow-lg shadow-black/20 backdrop-blur-md transition-colors duration-300 ${s.borderHover}`}
+            {...cardMotion}
+            className={`rounded-2xl border ${s.border} bg-slate-800/40 p-5 shadow-lg shadow-black/20 backdrop-blur-md transition-colors duration-300 ${s.borderHover}`}
           >
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.iconBg} shadow-md`}>
               <Icon className="h-4.5 w-4.5 text-white" />
@@ -38,14 +50,10 @@ function ToolGrid({ mode }: { mode: AppMode }) {
             <h4 className="mt-3.5 text-sm font-semibold text-slate-100">{label}</h4>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{description}</p>
 
-            <div className="grid grid-rows-[0fr] transition-all duration-300 ease-out group-hover:grid-rows-[1fr]">
-              <div className="overflow-hidden">
-                <p className={`mt-3 text-sm leading-relaxed ${s.accentText}`}>
-                  {TOOL_DETAIL[id]}
-                </p>
-              </div>
-            </div>
-          </div>
+            <ExpandOnHover>
+              <p className={s.accentText}>{TOOL_DETAIL[id]}</p>
+            </ExpandOnHover>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -59,8 +67,9 @@ export default function ToolShowcase() {
         <h2 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
           모드별 핵심 도구
         </h2>
-        <p className="mt-3 text-sm text-slate-400 sm:text-base">
-          카드에 마우스를 올려보면 각 도구가 실제로 어떤 결과를 만들어내는지 확인할 수 있어요.
+        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-400 sm:text-base">
+          직장인 5종, 학생 5종. 카드에 마우스를 올려보면 각 도구가 실제로 어떤
+          결과물을 만들어내는지 미리 확인할 수 있어요.
         </p>
       </div>
 
