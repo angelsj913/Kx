@@ -62,6 +62,45 @@ function LoginCard() {
         >
           Apple로 로그인 (준비 중)
         </button>
+
+        <div className="mt-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-700/60" />
+          <span className="text-xs text-slate-500">또는 이메일로 계속하기</span>
+          <div className="h-px flex-1 bg-slate-700/60" />
+        </div>
+
+        <form className="mt-6 space-y-3 text-left" onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="email"
+            placeholder="이메일"
+            autoComplete="off"
+            className="w-full rounded-xl border border-slate-700/60 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-violet-500/60"
+          />
+          <input
+            type="password"
+            placeholder="비밀번호"
+            autoComplete="off"
+            className="w-full rounded-xl border border-slate-700/60 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-violet-500/60"
+          />
+          <button
+            type="submit"
+            disabled
+            title="이메일 로그인은 준비 중입니다"
+            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-700/60 bg-slate-800/50 px-6 py-3 text-sm font-medium text-slate-500"
+          >
+            로그인
+          </button>
+        </form>
+
+        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
+          <button type="button" className="hover:text-slate-300">
+            아이디 찾기
+          </button>
+          <span className="text-slate-700">·</span>
+          <button type="button" className="hover:text-slate-300">
+            비밀번호 찾기
+          </button>
+        </div>
       </div>
     </div>
   );

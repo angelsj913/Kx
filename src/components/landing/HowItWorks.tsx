@@ -3,8 +3,8 @@ import { Download, MousePointerClick, FileCheck } from "lucide-react";
 const STEPS = [
   {
     icon: Download,
-    title: "다운로드 및 설치",
-    desc: "Windows 또는 macOS용 설치 파일을 내려받아 실행하세요. 회원가입 기능은 추후 제공될 예정이며, 지금은 설치 후 바로 사용할 수 있습니다.",
+    title: "시작은 가볍게",
+    desc: "번거로운 가입 절차 없이, 쓰던 계정 그대로 지금 바로 시작하세요.",
   },
   {
     icon: MousePointerClick,

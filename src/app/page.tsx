@@ -2,8 +2,8 @@ import {
   Sparkles,
   Briefcase,
   GraduationCap,
-  History,
-  ShieldCheck,
+  RefreshCw,
+  Zap,
 } from "lucide-react";
 import { ALL_RELEASES_URL } from "@/lib/constants";
 import DownloadCta from "@/components/landing/DownloadCta";
@@ -15,6 +15,7 @@ const FEATURES = [
     icon: Briefcase,
     title: "직장인 모드",
     desc: "비즈니스 문서·이메일 작성부터 PPT 초안, 엑셀 보고서까지 업무에 필요한 도구를 한곳에 모았습니다.",
+    detail: "보고서 요약 · 이메일 초안 · PPT 슬라이드 · 엑셀 표까지, 결과물 형태로 바로 받아보세요.",
   },
   {
     icon: GraduationCap,
@@ -22,14 +23,14 @@ const FEATURES = [
     desc: "강의 영상 요약, 수업 음성 자동 정리, 발표문·과제 작성까지 공부에 필요한 도구를 담았습니다.",
   },
   {
-    icon: History,
-    title: "로컬 히스토리 보관함",
-    desc: "생성한 모든 결과가 앱에 자동 저장되어, 언제든 다시 열어보고 복사하거나 파일로 내보낼 수 있습니다.",
+    icon: RefreshCw,
+    title: "끊김 없는 작업 흐름",
+    desc: "맥북에서 데스크톱까지, 기기를 바꿔도 당신의 작업 환경과 기록은 실시간으로 동일하게 유지됩니다.",
   },
   {
-    icon: ShieldCheck,
-    title: "안전한 데스크톱 실행",
-    desc: "입력한 내용은 프로그램 안에서 처리되며 동의 없이 외부로 보내지 않습니다. 브라우저 주소창 없는 독립 실행형 앱입니다.",
+    icon: Zap,
+    title: "세팅 대신 몰입",
+    desc: "복잡한 초기 설정이나 도구 연결 과정은 필요 없습니다. 실행하는 순간 곧바로 작업에만 집중할 수 있습니다.",
   },
 ];
 
@@ -50,12 +51,20 @@ export default function Landing() {
             AI 툴킷
           </span>
         </div>
-        <a
-          href={ALL_RELEASES_URL}
-          className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-100"
-        >
-          모든 버전 보기
-        </a>
+        <div className="flex items-center gap-6">
+          <button
+            type="button"
+            className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-100"
+          >
+            Support
+          </button>
+          <a
+            href={ALL_RELEASES_URL}
+            className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-100"
+          >
+            모든 버전 보기
+          </a>
+        </div>
       </header>
 
       {/* hero */}
@@ -86,16 +95,25 @@ export default function Landing() {
 
         {/* feature grid */}
         <section className="grid gap-4 py-16 sm:grid-cols-2">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
+          {FEATURES.map(({ icon: Icon, title, desc, detail }) => (
             <div
               key={title}
-              className="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 shadow-xl shadow-black/30 backdrop-blur-md transition-all duration-300 hover:border-violet-500/40"
+              className="group rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 shadow-xl shadow-black/30 backdrop-blur-md transition-all duration-300 hover:border-violet-500/40"
             >
               <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
                 <Icon className="h-5 w-5 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-400">{desc}</p>
+              {detail && (
+                <div className="grid grid-rows-[0fr] transition-all duration-300 ease-out group-hover:grid-rows-[1fr]">
+                  <div className="overflow-hidden">
+                    <p className="mt-3 text-sm leading-relaxed text-violet-300/90">
+                      {detail}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </section>
