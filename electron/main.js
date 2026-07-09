@@ -1,48 +1,63 @@
 const { app, BrowserWindow, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const net = require("net");
-const { fork } = require("child_process");
 
 // Redirect console output to file for debugging
-const logFile = path.join(path.dirname(process.execPath), 'app.log');
-const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+const logFile = path.join(path.dirname(process.execPath), "app.log");
+const logStream = fs.createWriteStream(logFile, { flags: "a" });
 const originalConsole = { ...console };
 
 console.log = (...args) => {
   originalConsole.log(...args);
-  logStream.write(`[LOG] ${args.join(' ')}\n`);
+  logStream.write(`[LOG] ${args.join(" ")}\n`);
 };
 
 console.error = (...args) => {
   originalConsole.error(...args);
-  logStream.write(`[ERROR] ${args.join(' ')}\n`);
+  logStream.write(`[ERROR] ${args.join(" ")}\n`);
 };
 
 console.warn = (...args) => {
   originalConsole.warn(...args);
-  logStream.write(`[WARN] ${args.join(' ')}\n`);
+  logStream.write(`[WARN] ${args.join(" ")}\n`);
 };
 
-// Add global error handlers to catch uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err);
-  console.error('[uncaughtException] Stack:', err.stack);
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err);
+  console.error("[uncaughtException] Stack:", err.stack);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('[unhandledRejection]', reason);
-  console.error('[unhandledRejection] Promise:', promise);
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
 });
 
 const isDev = !app.isPackaged;
-// The desktop app renders the tool workspace at /app; the site root (/) is a
-// download-only landing page served on the web (Vercel).
+
+// The desktop app is a thin client: it never runs its own Next.js server or
+// holds backend secrets (DB, Google OAuth, AI keys all live server-side on
+// Vercel). It just renders the deployed cloud app's /app workspace, the same
+// way a browser would. This lets the same account/login/history follow the
+// user across every device, including this desktop install.
+//
+// Override with AI_TOOLKIT_APP_URL for pointing a packaged build at a
+// staging/preview deployment without rebuilding.
+const APP_ORIGIN =
+  process.env.AI_TOOLKIT_APP_URL || "https://kx-chi.vercel.app";
 const APP_ROUTE = "/app";
 const DEV_URL = `http://localhost:3000${APP_ROUTE}`;
+const PROD_URL = `${APP_ORIGIN.replace(/\/$/, "")}${APP_ROUTE}`;
+
+// Google blocks OAuth sign-in inside "embedded" browsers, which it detects
+// mainly by user-agent sniffing (Electron's default UA includes
+// "Electron/x.y.z"). Presenting a normal desktop Chrome UA lets the Google
+// login screen render instead of the "disallowed_useragent" error, while the
+// whole login flow still runs inside this same window/session so the
+// resulting session cookie is immediately usable by the app.
+const DESKTOP_CHROME_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
 let mainWindow = null;
-let serverProcess = null;
 
 const LOADING_HTML =
   "data:text/html;charset=utf-8," +
@@ -60,7 +75,7 @@ const LOADING_HTML =
       p{color:#94a3b8;font-size:14px}
     </style></head><body><div class="box">
       <div class="spinner"></div>
-      <p>AI \uD234\uD0B7\uC744 \uC900\uBE44\uD558\uACE0 \uC788\uC5B4\uC694\u2026</p>
+      <p>AI 툴킷을 준비하고 있어요…</p>
     </div></body></html>`
   );
 
@@ -79,125 +94,12 @@ function errorHtml(err) {
         p{color:#94a3b8;font-size:13px;line-height:1.6}
         code{color:#c4b5fd;font-size:12px;word-break:break-all}
       </style></head><body><div class="box">
-        <h2>\uC571\uC744 \uC2DC\uC791\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694</h2>
-        <p>\uB0B4\uBD80 \uC11C\uBC84\uB97C \uC2DC\uC791\uD558\uB294 \uC911 \uBB38\uC81C\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.</p>
+        <h2>서버에 연결하지 못했어요</h2>
+        <p>인터넷 연결을 확인하고 잠시 후 다시 시도해 주세요.</p>
         <p><code>${msg}</code></p>
       </div></body></html>`
     )
   );
-}
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const srv = net.createServer();
-    srv.unref();
-    srv.on("error", reject);
-    srv.listen(0, "127.0.0.1", () => {
-      const { port } = srv.address();
-      srv.close(() => resolve(port));
-    });
-  });
-}
-
-function waitForServer(url, timeoutMs = 20000) {
-  const start = Date.now();
-  return new Promise((resolve, reject) => {
-    const tryOnce = () => {
-      const req = require("http").get(url, (res) => {
-        res.destroy();
-        resolve();
-      });
-      req.on("error", () => {
-        if (Date.now() - start > timeoutMs) {
-          reject(new Error("Next.js 서버 시작 시간 초과"));
-        } else {
-          setTimeout(tryOnce, 300);
-        }
-      });
-    };
-    tryOnce();
-  });
-}
-
-// Best-effort load of a local .env / .env.local placed next to the app resources.
-function loadEnvFile() {
-  const candidates = isDev
-    ? [path.join(process.cwd(), ".env.local"), path.join(process.cwd(), ".env")]
-    : [
-        path.join(process.resourcesPath, ".env.local"),
-        path.join(process.resourcesPath, ".env"),
-        path.join(path.dirname(process.execPath), ".env.local"),
-        path.join(path.dirname(process.execPath), ".env"),
-      ];
-  const env = {};
-  for (const file of candidates) {
-    try {
-      if (!fs.existsSync(file)) continue;
-      for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-        const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)\s*$/);
-        if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return env;
-}
-
-async function startProductionServer() {
-  console.log('[startProductionServer] Starting production server');
-  console.log('[startProductionServer] process.resourcesPath:', process.resourcesPath);
-  console.log('[startProductionServer] process.execPath:', process.execPath);
-  
-  const port = await getFreePort();
-  const standaloneDir = path.join(process.resourcesPath, "standalone");
-  const serverJs = path.join(standaloneDir, "server.js");
-  
-  console.log('[startProductionServer] standaloneDir:', standaloneDir);
-  console.log('[startProductionServer] serverJs:', serverJs);
-  
-  if (!fs.existsSync(standaloneDir)) {
-    throw new Error(`Standalone directory not found: ${standaloneDir}`);
-  }
-  
-  if (!fs.existsSync(serverJs)) {
-    throw new Error(`Server.js not found: ${serverJs}`);
-  }
-
-  serverProcess = fork(serverJs, [], {
-    cwd: standaloneDir,
-    env: {
-      ...process.env,
-      ...loadEnvFile(),
-      PORT: String(port),
-      HOSTNAME: "127.0.0.1",
-      NODE_ENV: "production",
-      // Critical: without this, forking the Electron binary would launch a
-      // second GUI Electron process instead of running server.js as Node,
-      // so the Next.js server would never come up and no window would appear.
-      ELECTRON_RUN_AS_NODE: "1",
-    },
-    // Run server.js with Electron's bundled Node runtime.
-    execPath: process.execPath,
-    stdio: ["ignore", "pipe", "pipe", "ipc"],
-  });
-
-  console.log('[startProductionServer] Server process forked, PID:', serverProcess.pid);
-
-  serverProcess.stdout?.on("data", (d) => console.log(`[next] ${d}`));
-  serverProcess.stderr?.on("data", (d) => console.error(`[next] ${d}`));
-  serverProcess.on("exit", (code) =>
-    console.error(`[next] server process exited with code ${code}`)
-  );
-  serverProcess.on("error", (err) => {
-    console.error('[startProductionServer] Server process error:', err);
-  });
-
-  const base = `http://127.0.0.1:${port}`;
-  console.log('[startProductionServer] Waiting for server at:', base);
-  await waitForServer(base);
-  console.log('[startProductionServer] Server is ready at:', base);
-  return `${base}${APP_ROUTE}`;
 }
 
 async function createWindow() {
@@ -216,37 +118,56 @@ async function createWindow() {
     },
   });
 
-  // Open DevTools to debug renderer process errors
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.setUserAgent(DESKTOP_CHROME_UA);
 
-  // Detect page load failures
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.error('[did-fail-load]', errorCode, errorDescription, validatedURL);
-  });
+  mainWindow.webContents.on(
+    "did-fail-load",
+    (event, errorCode, errorDescription, validatedURL) => {
+      console.error("[did-fail-load]", errorCode, errorDescription, validatedURL);
+    }
+  );
 
-  // Show the window as soon as its first frame is ready so the user always
-  // sees a window even while the local server is still starting up.
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
-  // Open external links in the OS browser, not inside the app.
+  // Only the app's own origin (and Google's accounts domain, needed mid-OAuth
+  // redirect) should ever navigate inside this window. Anything else the
+  // page tries to open (release notes, external docs, etc.) goes to the OS
+  // browser instead of hijacking the desktop app.
+  const targetOrigin = isDev ? "http://localhost:3000" : APP_ORIGIN;
+  function isAllowedInApp(url) {
+    try {
+      const { origin, hostname } = new URL(url);
+      return origin === targetOrigin || hostname.endsWith("accounts.google.com");
+    } catch {
+      return false;
+    }
+  }
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedInApp(url)) return { action: "allow" };
     shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (!isAllowedInApp(url)) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
   });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
 
-  // Immediately render a lightweight loading screen, then swap to the real URL.
   await mainWindow.loadURL(LOADING_HTML);
   mainWindow.show();
 
   try {
-    const url = isDev ? DEV_URL : await startProductionServer();
+    const url = isDev ? DEV_URL : PROD_URL;
     await mainWindow.loadURL(url);
   } catch (err) {
-    console.error("[main] failed to start app:", err);
+    console.error("[main] failed to load app:", err);
     await mainWindow.loadURL(errorHtml(err));
     mainWindow.show();
   }
@@ -255,26 +176,9 @@ async function createWindow() {
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
-  if (serverProcess) {
-    try {
-      serverProcess.kill();
-    } catch {
-      /* ignore */
-    }
-  }
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
-
-app.on("before-quit", () => {
-  if (serverProcess) {
-    try {
-      serverProcess.kill();
-    } catch {
-      /* ignore */
-    }
-  }
 });

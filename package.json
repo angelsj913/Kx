@@ -11,10 +11,9 @@
     "lint": "eslint",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:prepare": "next build && node electron/prepare-standalone.js",
-    "electron:build:win": "npm run electron:prepare && electron-builder --win",
-    "electron:build:mac": "npm run electron:prepare && electron-builder --mac",
-    "electron:build:all": "npm run electron:prepare && electron-builder --win --mac"
+    "electron:build:win": "electron-builder --win",
+    "electron:build:mac": "electron-builder --mac",
+    "electron:build:all": "electron-builder --win --mac"
   },
   "build": {
     "appId": "com.aitoolkit.desktop",
@@ -26,12 +25,6 @@
     "files": [
       "electron/**/*",
       "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": ".next/standalone",
-        "to": "standalone"
-      }
     ],
     "win": {
       "target": "nsis",
