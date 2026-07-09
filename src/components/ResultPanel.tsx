@@ -76,7 +76,7 @@ export default function ResultPanel({
     <div className="flex h-full flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 shadow-2xl shadow-black/40 backdrop-blur-md">
       <div className="flex items-center justify-between border-b border-slate-700/50 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-300">
-          <Sparkles className="h-4 w-4 text-violet-400" />
+          <Sparkles className="h-4 w-4 text-[var(--mode-accent)]" />
           결과
         </h2>
         {hasResult && (
@@ -109,7 +109,7 @@ export default function ResultPanel({
             <button
               type="button"
               onClick={handleCopy}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-violet-500/50 hover:text-violet-300"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-[var(--mode-accent)]/50 hover:text-[var(--mode-accent)]"
             >
               {copied ? (
                 <>
@@ -126,7 +126,7 @@ export default function ResultPanel({
             <button
               type="button"
               onClick={handleExport}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-violet-500/50 hover:text-violet-300"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-300 hover:border-[var(--mode-accent)]/50 hover:text-[var(--mode-accent)]"
             >
               <Download className="h-3.5 w-3.5" />
               TXT 저장

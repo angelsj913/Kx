@@ -7,6 +7,7 @@ import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import { parseDeck, buildPptxBase64 } from "@/lib/pptx";
 import { parseWorkbook, buildXlsxBase64 } from "@/lib/xlsx";
+import { parseStructured } from "@/lib/structured";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,6 +72,27 @@ export async function POST(request: Request) {
         { error: "AI가 빈 응답을 반환했습니다. 다시 시도해 주세요." },
         { status: 502 }
       );
+    }
+
+    if (tool.outputType === "structured" && tool.structuredKind) {
+      const structured = parseStructured(tool.structuredKind, raw);
+      const item = await prisma.historyItem.create({
+        data: {
+          userId,
+          toolId: tool.id,
+          toolLabel: tool.short,
+          outputType: "structured",
+          prompt: text,
+          result: JSON.stringify(structured.data),
+        },
+      });
+
+      return NextResponse.json({
+        id: item.id,
+        outputType: "structured",
+        structuredKind: tool.structuredKind,
+        data: structured.data,
+      });
     }
 
     if (tool.outputType === "pptx") {

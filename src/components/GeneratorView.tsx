@@ -5,6 +5,7 @@ import { Wand2, Link as LinkIcon } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
 import FileResultPanel from "@/components/FileResultPanel";
 import AudioInput from "@/components/AudioInput";
+import StructuredResultView from "@/components/structured/StructuredResultView";
 import type { ToolDef } from "@/lib/tools";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
 
@@ -17,11 +18,14 @@ interface FileResult {
   file: GeneratedFile;
 }
 
+type StructuredResult = React.ComponentProps<typeof StructuredResultView>;
+
 export default function GeneratorView({ tool }: { tool: ToolDef }) {
   const [text, setText] = useState("");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [fileResult, setFileResult] = useState<FileResult | null>(null);
+  const [structuredResult, setStructuredResult] = useState<StructuredResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,6 +43,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
     setError("");
     setMarkdown("");
     setFileResult(null);
+    setStructuredResult(null);
 
     try {
       let res: Response;
@@ -65,6 +70,8 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
           workbook: data.outputType === "xlsx" ? data.preview : undefined,
           file: data.file,
         });
+      } else if (data.outputType === "structured") {
+        setStructuredResult({ id: data.id, kind: data.structuredKind, data: data.data });
       } else {
         setMarkdown(data.text);
       }
@@ -95,7 +102,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") handleSubmit();
                 }}
                 placeholder={tool.placeholder}
-                className="h-full min-h-[220px] w-full resize-y rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 pb-9 text-base text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/20"
+                className="h-full min-h-[220px] w-full resize-y rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 pb-9 text-base text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-[var(--mode-accent)]/70 focus:ring-2 focus:ring-[var(--mode-accent)]/20"
               />
               <span
                 className={`pointer-events-none absolute bottom-3 right-4 text-xs tabular-nums ${
@@ -116,7 +123,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={tool.placeholder}
-                  className="w-full rounded-xl border border-slate-700/60 bg-slate-900/60 py-3.5 pl-11 pr-4 text-base text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/20"
+                  className="w-full rounded-xl border border-slate-700/60 bg-slate-900/60 py-3.5 pl-11 pr-4 text-base text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-[var(--mode-accent)]/70 focus:ring-2 focus:ring-[var(--mode-accent)]/20"
                 />
               </div>
               <p className="mt-2 text-xs text-slate-500">
@@ -132,7 +139,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
           <button
             type="submit"
             disabled={loading || !canSubmit}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-900/40 transition-all duration-300 hover:scale-[1.02] hover:from-violet-500 hover:to-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-black/40 transition-all duration-300 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
           >
             {loading ? (
               <>
@@ -177,6 +184,8 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
             workbook={fileResult.workbook}
             file={fileResult.file}
           />
+        ) : structuredResult ? (
+          <StructuredResultView key={structuredResult.id} {...structuredResult} />
         ) : (
           <ResultPanel
             content={markdown}

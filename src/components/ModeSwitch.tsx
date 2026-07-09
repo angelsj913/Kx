@@ -22,7 +22,7 @@ export default function ModeSwitch({
       {/* sliding highlight */}
       <span
         aria-hidden
-        className="absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-900/40 transition-transform duration-300 ease-out"
+        className="absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-lg bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] shadow-lg shadow-black/40 transition-all duration-300 ease-out"
         style={{
           transform: `translateX(${activeIndex * 100}%)`,
         }}

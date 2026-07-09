@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Sidebar, { type View } from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import GeneratorView from "@/components/GeneratorView";
@@ -10,6 +11,7 @@ import Account from "@/components/Account";
 import { useHistory } from "@/lib/history";
 import { useAppMode, setAppMode } from "@/lib/appMode";
 import { getTool, type AppMode } from "@/lib/tools";
+import { themeCssVars } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +41,13 @@ export default function AppWorkspace() {
   const activeTool = getTool(view);
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+    <div
+      style={themeCssVars(appMode)}
+      className="relative flex h-screen overflow-hidden bg-[var(--mode-bg)] text-slate-100 transition-colors duration-500 ease-in-out"
+    >
       {/* ambient background glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-indigo-600/10 blur-[120px]" />
+      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[var(--mode-accent)]/20 blur-[120px] transition-colors duration-500 ease-in-out" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-[var(--mode-accent-deep)]/10 blur-[120px] transition-colors duration-500 ease-in-out" />
 
       <Sidebar
         view={view}
@@ -52,29 +57,39 @@ export default function AppWorkspace() {
       />
 
       <main className="relative z-10 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {view === "dashboard" && (
-          <Dashboard
-            onNavigate={handleNavigate}
-            historyCount={history.length}
-            appMode={appMode}
-            onModeChange={handleModeChange}
-          />
-        )}
-        {view === "history" && (
-          <HistoryView
-            items={history}
-            loading={loading}
-            removeItem={removeItem}
-            clearAll={clearAll}
-          />
-        )}
-        {view === "account" && <Account />}
-        {activeTool &&
-          (activeTool.inputType === "chat" ? (
-            <AiChat key={activeTool.id} />
-          ) : (
-            <GeneratorView key={activeTool.id} tool={activeTool} />
-          ))}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${appMode}-${view}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {view === "dashboard" && (
+              <Dashboard
+                onNavigate={handleNavigate}
+                historyCount={history.length}
+                appMode={appMode}
+                onModeChange={handleModeChange}
+              />
+            )}
+            {view === "history" && (
+              <HistoryView
+                items={history}
+                loading={loading}
+                removeItem={removeItem}
+                clearAll={clearAll}
+              />
+            )}
+            {view === "account" && <Account />}
+            {activeTool &&
+              (activeTool.inputType === "chat" ? (
+                <AiChat />
+              ) : (
+                <GeneratorView tool={activeTool} />
+              ))}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

@@ -21,7 +21,7 @@ export default function Sidebar({
   const tools = toolsForMode(appMode);
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col border-r border-slate-800/60 bg-slate-900/40 backdrop-blur-md sm:w-60">
+    <aside className="flex w-16 shrink-0 flex-col border-r border-slate-800/60 bg-slate-900/40 backdrop-blur-md transition-colors duration-500 ease-in-out sm:w-60">
       <div className="flex items-center gap-2.5 border-b border-slate-800/60 px-3 py-4 sm:px-5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
           <Sparkles className="h-5 w-5 text-white" />
@@ -104,7 +104,7 @@ function NavButton({
       title={label}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 ${
         active
-          ? "bg-gradient-to-r from-violet-600/90 to-indigo-600/90 text-white shadow-lg shadow-violet-900/30"
+          ? "bg-gradient-to-r from-[var(--mode-accent)]/90 to-[var(--mode-accent-deep)]/90 text-white shadow-lg shadow-black/30"
           : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
       }`}
     >

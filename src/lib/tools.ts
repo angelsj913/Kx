@@ -7,13 +7,18 @@ import {
   Mic,
   FileText,
   MessagesSquare,
+  ClipboardList,
+  BarChart3,
+  NotebookText,
+  BookMarked,
 } from "lucide-react";
+import type { StructuredKind } from "./structured";
 
 export type AppMode = "student" | "office";
 /** 도구가 속한 모드. "common"은 두 모드 모두에 노출된다. */
 export type ToolScope = AppMode | "common";
 export type InputType = "text" | "url" | "audio" | "chat";
-export type OutputType = "markdown" | "pptx" | "xlsx";
+export type OutputType = "markdown" | "pptx" | "xlsx" | "structured";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
@@ -29,6 +34,8 @@ export interface ToolDef {
   icon: LucideIcon;
   inputType: InputType;
   outputType: OutputType;
+  /** outputType이 "structured"일 때 어떤 구조화 뷰로 렌더링할지 */
+  structuredKind?: StructuredKind;
   /** Gemini system instruction */
   systemInstruction: string;
   placeholder: string;
@@ -120,6 +127,68 @@ const AUDIO_INSTRUCTION = `너는 학생의 학습을 돕는 유능한 조교이
 - 들리지 않는 부분은 추측하지 말고 '불명확'으로 표시하라.
 - 모든 내용은 한국어로 작성한다.`;
 
+const MEETING_INSTRUCTION = `너는 유능한 회의 서기이다. 사용자가 회의 중 메모하거나 회의 후 기억나는 대로 적은 두서없는 내용을 입력하면, 정식 회의록으로 구조화해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "date": "회의 날짜(입력에 없으면 빈 문자열)",
+  "attendees": ["참석자1", "참석자2"],
+  "agenda": "이번 회의의 주제/목적 한두 문장",
+  "actionItems": [
+    { "task": "해야 할 일", "assignee": "담당자(입력에 없으면 빈 문자열)", "dueDate": "기한(입력에 없으면 빈 문자열, YYYY-MM-DD 형식 권장)" }
+  ]
+}
+
+지침:
+- 입력에서 참석자/날짜/기한을 명시적으로 알 수 없으면 추측하지 말고 빈 값으로 둔다.
+- actionItems는 회의에서 논의된 실제 후속 조치만 포함하고, 없으면 빈 배열로 둔다.
+- 모든 텍스트는 한국어로 작성한다.`;
+
+const WEEKLY_REPORT_INSTRUCTION = `너는 대기업 팀의 업무 보고 정리 전문가이다. 사용자가 이번 주에 한 일과 다음 주 계획을 두서없이 입력하면, 주간 업무 보고 형식으로 구조화해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "thisWeek": [ { "item": "이번 주 진행한 업무", "progress": 0-100 사이 숫자(완료율 추정) } ],
+  "nextWeek": [ { "item": "다음 주 진행할 업무", "progress": 0 } ]
+}
+
+지침:
+- thisWeek 항목의 progress는 입력 내용을 근거로 합리적으로 추정하되(완료라고 명시되면 100, 진행 중이면 40~70 사이 등), 사용자가 나중에 직접 조정할 수 있는 초기값일 뿐이다.
+- nextWeek 항목은 아직 시작 전이므로 progress는 항상 0으로 둔다.
+- 항목은 각각 한 문장으로 간결하게 작성한다.
+- 모든 텍스트는 한국어로 작성한다.`;
+
+const LECTURE_NOTES_INSTRUCTION = `너는 학생의 능동 회상(active recall) 학습을 돕는 유능한 조교이다. 사용자가 강의 필기나 수업 내용을 입력하면, 복습하기 좋은 노트 형태로 재구성해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "concepts": [ { "cue": "핵심 키워드/질문(짧게)", "detail": "해당 개념에 대한 상세 설명" } ],
+  "transcript": "정리된 강의 내용 전체(문단 형태)",
+  "summaryLines": ["요약 문장 1", "요약 문장 2", "요약 문장 3"]
+}
+
+지침:
+- concepts는 나중에 키워드만 보고 내용을 떠올리는 능동 회상 연습용이므로, cue는 짧고 detail은 충분히 설명적으로 작성한다.
+- summaryLines는 정확히 3개의 문장으로, 강의 전체를 압축한 핵심 요약이어야 한다.
+- 모든 내용은 한국어로 작성한다.`;
+
+const RESEARCH_DRAFT_INSTRUCTION = `너는 학생의 레포트·논문 작성을 돕는 유능한 지도교수이다. 사용자가 주제나 개요를 입력하면, 초안 구조를 섹션별로 설계해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "sections": [ { "heading": "섹션 제목(예: 서론, 이론적 배경, 본론1, 결론)", "body": "해당 섹션의 초안 내용(문단 형태)" } ],
+  "citations": [ { "source": "출처/자료명", "author": "저자(모르면 빈 문자열)", "note": "이 자료를 어디에 참고했는지 한 줄 메모" } ]
+}
+
+지침:
+- sections는 서론부터 결론까지 4~6개 섹션으로 구성한다.
+- citations는 본문 내용과 관련해 사용자가 실제로 찾아 보강해야 할 자료를 제안하는 용도이며, 확실하지 않은 저자명은 빈 문자열로 둔다.
+- 모든 텍스트는 한국어로 작성한다.`;
+
 export const TOOLS: ToolDef[] = [
   // ── 공통 ──
   {
@@ -190,6 +259,42 @@ export const TOOLS: ToolDef[] = [
     submitLabel: "엑셀 보고서 만들기",
     fileBaseName: "report",
   },
+  {
+    id: "meeting",
+    appMode: "office",
+    label: "회의록",
+    short: "회의록",
+    title: "회의록 작성",
+    description:
+      "회의 중 메모하거나 기억나는 대로 적은 내용을 입력하면, 날짜·참석자·안건과 담당자·기한이 달린 액션 아이템까지 정리된 회의록으로 완성합니다.",
+    icon: ClipboardList,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "meeting",
+    systemInstruction: MEETING_INSTRUCTION,
+    placeholder:
+      "예) 오늘 마케팅팀 회의. 김민준, 이서연, 박지훈 참석. 다음 캠페인 예산이랑 일정 논의함. 민준이 예산안 금요일까지, 서연이 시안 다음주 수요일까지 준비하기로 함.",
+    submitLabel: "회의록 만들기",
+    fileBaseName: "meeting-minutes",
+  },
+  {
+    id: "weekly-report",
+    appMode: "office",
+    label: "주간 업무 보고",
+    short: "주간 보고",
+    title: "주간 업무 보고",
+    description:
+      "이번 주에 한 일과 다음 주 계획을 두서없이 입력하면, 진행률 슬라이더로 직접 조정할 수 있는 주간 업무 보고 형식으로 정리합니다.",
+    icon: BarChart3,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "weeklyReport",
+    systemInstruction: WEEKLY_REPORT_INSTRUCTION,
+    placeholder:
+      "예) 이번 주엔 신규 랜딩페이지 디자인 시안 작업 거의 다 끝냈고, 고객사 미팅 준비도 했음. 다음 주엔 개발팀 전달하고 QA 진행 예정.",
+    submitLabel: "주간 보고 만들기",
+    fileBaseName: "weekly-report",
+  },
   // ── 학생 모드 ──
   {
     id: "lecture",
@@ -239,6 +344,42 @@ export const TOOLS: ToolDef[] = [
       "예) '환경 보호를 위한 우리의 실천'이라는 주제로 5분 발표문을 써줘.",
     submitLabel: "발표문 작성하기",
     fileBaseName: "presentation-script",
+  },
+  {
+    id: "lecture-notes",
+    appMode: "student",
+    label: "강의 요약 노트",
+    short: "강의 노트",
+    title: "강의 요약 노트",
+    description:
+      "강의 필기나 수업 내용을 입력하면, 키워드로 떠올리는 능동 회상 노트와 3줄 요약이 갖춰진 복습용 노트로 정리합니다.",
+    icon: NotebookText,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "lectureNotes",
+    systemInstruction: LECTURE_NOTES_INSTRUCTION,
+    placeholder:
+      "예) 오늘 배운 미시경제 수요공급 이론 필기 붙여넣기...",
+    submitLabel: "노트 만들기",
+    fileBaseName: "lecture-notes",
+  },
+  {
+    id: "research-draft",
+    appMode: "student",
+    label: "레포트·논문 초안",
+    short: "레포트 초안",
+    title: "레포트 · 논문 초안",
+    description:
+      "주제나 개요만 입력하면 서론부터 결론까지 섹션별 초안과 참고자료 목록이 갖춰진 레포트 초안을 완성합니다.",
+    icon: BookMarked,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "researchDraft",
+    systemInstruction: RESEARCH_DRAFT_INSTRUCTION,
+    placeholder:
+      "예) '기후변화가 국내 농업에 미치는 영향'을 주제로 한 레포트 초안을 써줘.",
+    submitLabel: "초안 만들기",
+    fileBaseName: "research-draft",
   },
 ];
 

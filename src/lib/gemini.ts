@@ -42,7 +42,10 @@ export async function geminiGenerateForTool(input: GenInput): Promise<string> {
     contents = input.text ?? "";
   }
 
-  const needsJson = tool.outputType === "pptx" || tool.outputType === "xlsx";
+  const needsJson =
+    tool.outputType === "pptx" ||
+    tool.outputType === "xlsx" ||
+    tool.outputType === "structured";
 
   const response = await ai.models.generateContent({
     model: input.model || DEFAULT_GEMINI_MODEL,

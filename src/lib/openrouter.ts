@@ -63,7 +63,9 @@ export async function openrouterGenerateForTool(input: {
 }): Promise<string> {
   const key = requireKey(input.apiKey);
   const jsonMode =
-    input.tool.outputType === "pptx" || input.tool.outputType === "xlsx";
+    input.tool.outputType === "pptx" ||
+    input.tool.outputType === "xlsx" ||
+    input.tool.outputType === "structured";
 
   return callOpenRouter(
     key,

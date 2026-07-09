@@ -22,14 +22,14 @@ export default function FileResultPanel({
     <div className="flex h-full flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 shadow-2xl shadow-black/40 backdrop-blur-md">
       <div className="flex items-center justify-between gap-2 border-b border-slate-700/50 px-4 py-3 sm:px-5">
         <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-300">
-          <Sparkles className="h-4 w-4 shrink-0 text-violet-400" />
+          <Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />
           <span className="truncate">{title || "결과"}</span>
         </h2>
         {file && (
           <a
             href={file.url}
             download={file.filename}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-black/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Download className="h-3.5 w-3.5" />
             {isPptx ? "PPT 다운로드" : "엑셀 다운로드"}
@@ -46,7 +46,7 @@ export default function FileResultPanel({
                 className="rounded-xl border border-slate-700/50 bg-slate-900/50 p-4"
               >
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-600/20 text-[11px] font-bold text-violet-300">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--mode-accent)]/20 text-[11px] font-bold text-[var(--mode-accent)]">
                     {i + 1}
                   </span>
                   <h3 className="text-sm font-semibold text-slate-100">
@@ -73,7 +73,7 @@ export default function FileResultPanel({
           <div className="space-y-6">
             {workbook.sheets.map((sheet, si) => (
               <div key={si}>
-                <p className="mb-2 text-xs font-semibold text-violet-300">
+                <p className="mb-2 text-xs font-semibold text-[var(--mode-accent)]">
                   {sheet.name}
                 </p>
                 <div className="overflow-x-auto rounded-xl border border-slate-700/50">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash2, History as HistoryIcon, FileText } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
 import FileResultPanel from "@/components/FileResultPanel";
+import StructuredResultView from "@/components/structured/StructuredResultView";
 import type { HistoryItem } from "@/lib/history";
 import { getTool } from "@/lib/tools";
 import type { Deck, Workbook } from "@/lib/fileTypes";
@@ -97,16 +98,16 @@ export default function HistoryView({
                   onClick={() => setSelectedId(item.id)}
                   className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                     active
-                      ? "bg-violet-600/20 ring-1 ring-violet-500/40"
+                      ? "bg-[var(--mode-accent)]/20 ring-1 ring-[var(--mode-accent)]/40"
                       : "hover:bg-slate-800/60"
                   }`}
                 >
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-900/60">
-                    <Icon className="h-4 w-4 text-violet-400" />
+                    <Icon className="h-4 w-4 text-[var(--mode-accent)]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-violet-300">
+                      <span className="text-xs font-medium text-[var(--mode-accent)]">
                         {item.toolLabel}
                       </span>
                       <span className="shrink-0 text-[11px] text-slate-500">
@@ -130,7 +131,7 @@ export default function HistoryView({
           <>
             <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 backdrop-blur-md">
               <div className="min-w-0">
-                <p className="text-xs font-medium text-violet-300">
+                <p className="text-xs font-medium text-[var(--mode-accent)]">
                   {selected.toolLabel} · {formatDate(selected.createdAt)}
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-slate-300">
@@ -181,6 +182,16 @@ export default function HistoryView({
                         }
                       : undefined
                   }
+                />
+              ) : selected.outputType === "structured" &&
+                getTool(selected.toolId)?.structuredKind ? (
+                <StructuredResultView
+                  key={selected.id}
+                  {...({
+                    id: selected.id,
+                    kind: getTool(selected.toolId)!.structuredKind,
+                    data: safeParse(selected.result) ?? {},
+                  } as React.ComponentProps<typeof StructuredResultView>)}
                 />
               ) : (
                 <ResultPanel
