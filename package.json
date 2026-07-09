@@ -11,9 +11,9 @@
     "lint": "eslint",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:build:win": "electron-builder --win",
-    "electron:build:mac": "electron-builder --mac",
-    "electron:build:all": "electron-builder --win --mac"
+    "electron:build:win": "electron-builder --win --publish never",
+    "electron:build:mac": "electron-builder --mac --publish never",
+    "electron:build:all": "electron-builder --win --mac --publish never"
   },
   "build": {
     "appId": "com.aitoolkit.desktop",
