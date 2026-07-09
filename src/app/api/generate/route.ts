@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { geminiGenerateForTool, MissingApiKeyError } from "@/lib/gemini";
-import { openrouterGenerateForTool } from "@/lib/openrouter";
+import { put } from "@vercel/blob";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { generateWithFallback } from "@/lib/ai";
 import { getTool } from "@/lib/tools";
-import { getModel, DEFAULT_MODEL } from "@/lib/models";
 import { friendlyError } from "@/lib/errors";
 import { parseDeck, buildPptxBase64 } from "@/lib/pptx";
 import { parseWorkbook, buildXlsxBase64 } from "@/lib/xlsx";
@@ -16,20 +17,21 @@ const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export async function POST(request: Request) {
-  try {
-    const geminiKey = request.headers.get("x-gemini-key") ?? undefined;
-    const openrouterKey = request.headers.get("x-openrouter-key") ?? undefined;
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  const userId = session.user.id;
 
+  try {
     const contentType = request.headers.get("content-type") ?? "";
     let toolId = "";
     let text = "";
-    let modelId = DEFAULT_MODEL;
     let audio: { data: string; mimeType: string } | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
       toolId = String(form.get("toolId") ?? "");
-      modelId = String(form.get("model") ?? DEFAULT_MODEL);
       const file = form.get("audio");
       if (file instanceof File) {
         const buf = Buffer.from(await file.arrayBuffer());
@@ -42,7 +44,6 @@ export async function POST(request: Request) {
       const body = await request.json();
       toolId = typeof body?.toolId === "string" ? body.toolId : "";
       text = typeof body?.text === "string" ? body.text.trim() : "";
-      if (typeof body?.model === "string") modelId = body.model;
     }
 
     const tool = getTool(toolId);
@@ -64,26 +65,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const modelDef = getModel(modelId);
-    // 영상/오디오 도구는 Gemini 멀티모달만 지원하므로 Gemini로 고정
-    const forceGemini = tool.inputType === "url" || tool.inputType === "audio";
-    const useGemini = forceGemini || modelDef.provider === "gemini";
-
-    const raw = useGemini
-      ? await geminiGenerateForTool({
-          tool,
-          text,
-          audio,
-          model: forceGemini ? "gemini-2.5-flash" : modelDef.model,
-          apiKey: geminiKey,
-        })
-      : await openrouterGenerateForTool({
-          tool,
-          text,
-          model: modelDef.model,
-          apiKey: openrouterKey,
-        });
-
+    const raw = await generateWithFallback({ tool, text, audio });
     if (!raw) {
       return NextResponse.json(
         { error: "AI가 빈 응답을 반환했습니다. 다시 시도해 주세요." },
@@ -94,44 +76,76 @@ export async function POST(request: Request) {
     if (tool.outputType === "pptx") {
       const deck = parseDeck(raw);
       const base64 = await buildPptxBase64(deck);
+      const blob = await put(
+        `history/${userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
+        Buffer.from(base64, "base64"),
+        { access: "public", contentType: PPTX_MIME }
+      );
+
+      const item = await prisma.historyItem.create({
+        data: {
+          userId,
+          toolId: tool.id,
+          toolLabel: tool.short,
+          outputType: "pptx",
+          prompt: text,
+          result: JSON.stringify(deck),
+          fileUrl: blob.url,
+          fileName: `${tool.fileBaseName}.pptx`,
+        },
+      });
+
       return NextResponse.json({
+        id: item.id,
         outputType: "pptx",
         preview: deck,
-        raw: JSON.stringify(deck),
-        file: {
-          base64,
-          filename: `${tool.fileBaseName}.pptx`,
-          mimeType: PPTX_MIME,
-        },
+        file: { url: blob.url, filename: item.fileName, mimeType: PPTX_MIME },
       });
     }
 
     if (tool.outputType === "xlsx") {
       const wb = parseWorkbook(raw);
       const base64 = await buildXlsxBase64(wb);
+      const blob = await put(
+        `history/${userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
+        Buffer.from(base64, "base64"),
+        { access: "public", contentType: XLSX_MIME }
+      );
+
+      const item = await prisma.historyItem.create({
+        data: {
+          userId,
+          toolId: tool.id,
+          toolLabel: tool.short,
+          outputType: "xlsx",
+          prompt: text,
+          result: JSON.stringify(wb),
+          fileUrl: blob.url,
+          fileName: `${tool.fileBaseName}.xlsx`,
+        },
+      });
+
       return NextResponse.json({
+        id: item.id,
         outputType: "xlsx",
         preview: wb,
-        raw: JSON.stringify(wb),
-        file: {
-          base64,
-          filename: `${tool.fileBaseName}.xlsx`,
-          mimeType: XLSX_MIME,
-        },
+        file: { url: blob.url, filename: item.fileName, mimeType: XLSX_MIME },
       });
     }
 
-    return NextResponse.json({ outputType: "markdown", text: raw });
+    const item = await prisma.historyItem.create({
+      data: {
+        userId,
+        toolId: tool.id,
+        toolLabel: tool.short,
+        outputType: "markdown",
+        prompt: text,
+        result: raw,
+      },
+    });
+
+    return NextResponse.json({ id: item.id, outputType: "markdown", text: raw });
   } catch (err) {
-    if (err instanceof MissingApiKeyError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    }
-    if (err instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "AI 응답을 해석하지 못했습니다. 다시 시도해 주세요." },
-        { status: 502 }
-      );
-    }
     console.error("generate error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

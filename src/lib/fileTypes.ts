@@ -23,7 +23,7 @@ export interface Workbook {
 }
 
 export interface GeneratedFile {
-  base64: string;
+  url: string;
   filename: string;
   mimeType: string;
 }

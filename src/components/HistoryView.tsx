@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Trash2, History as HistoryIcon, FileText } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
 import FileResultPanel from "@/components/FileResultPanel";
-import { clearHistory, removeHistoryItem, type HistoryItem } from "@/lib/history";
+import type { HistoryItem } from "@/lib/history";
 import { getTool } from "@/lib/tools";
 import type { Deck, Workbook } from "@/lib/fileTypes";
 
-function formatDate(ts: number) {
-  const d = new Date(ts);
+function formatDate(iso: string) {
+  const d = new Date(iso);
   return d.toLocaleString("ko-KR", {
     month: "2-digit",
     day: "2-digit",
@@ -26,12 +26,28 @@ function safeParse<T>(raw: string): T | undefined {
   }
 }
 
-export default function HistoryView({ items }: { items: HistoryItem[] }) {
-  const [selectedId, setSelectedId] = useState<string | null>(
-    items[0]?.id ?? null
-  );
+export default function HistoryView({
+  items,
+  loading,
+  removeItem,
+  clearAll,
+}: {
+  items: HistoryItem[];
+  loading: boolean;
+  removeItem: (id: string) => void;
+  clearAll: () => void;
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = items.find((i) => i.id === selectedId) ?? items[0] ?? null;
+
+  if (loading && items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/40 py-20 text-center shadow-2xl shadow-black/40 backdrop-blur-md">
+        <p className="text-sm text-slate-500">히스토리를 불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -60,7 +76,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
             type="button"
             onClick={() => {
               if (confirm("모든 히스토리를 삭제할까요?")) {
-                clearHistory();
+                clearAll();
                 setSelectedId(null);
               }
             }}
@@ -125,7 +141,7 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
               <button
                 type="button"
                 onClick={() => {
-                  removeHistoryItem(selected.id);
+                  removeItem(selected.id);
                   const next = items.filter((i) => i.id !== selected.id);
                   setSelectedId(next[0]?.id ?? null);
                 }}
@@ -140,11 +156,31 @@ export default function HistoryView({ items }: { items: HistoryItem[] }) {
                 <FileResultPanel
                   outputType="pptx"
                   deck={safeParse<Deck>(selected.result)}
+                  file={
+                    selected.fileUrl
+                      ? {
+                          url: selected.fileUrl,
+                          filename: selected.fileName ?? "presentation.pptx",
+                          mimeType:
+                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        }
+                      : undefined
+                  }
                 />
               ) : selected.outputType === "xlsx" ? (
                 <FileResultPanel
                   outputType="xlsx"
                   workbook={safeParse<Workbook>(selected.result)}
+                  file={
+                    selected.fileUrl
+                      ? {
+                          url: selected.fileUrl,
+                          filename: selected.fileName ?? "workbook.xlsx",
+                          mimeType:
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        }
+                      : undefined
+                  }
                 />
               ) : (
                 <ResultPanel

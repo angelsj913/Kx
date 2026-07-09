@@ -1,86 +1,71 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { OutputType } from "./tools";
 
 export interface HistoryItem {
   id: string;
-  /** 도구 레지스트리의 tool id */
   toolId: string;
-  /** 표시용으로 저장해 두는 도구 라벨 (도구가 바뀌어도 안전) */
   toolLabel: string;
   outputType: OutputType;
   prompt: string;
   /** 마크다운 결과 또는 pptx/xlsx용 원본 JSON 문자열 */
   result: string;
-  createdAt: number;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  createdAt: string;
 }
 
-const KEY = "ai-toolkit-history";
-const MAX_ITEMS = 100;
-
-const EMPTY: HistoryItem[] = [];
-let cache: HistoryItem[] | null = null;
-const listeners = new Set<() => void>();
-
-function read(): HistoryItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // 예전 형식({mode})으로 저장된 항목도 깨지지 않게 보정
-    return parsed.map((item): HistoryItem => ({
-      id: String(item?.id ?? Date.now()),
-      toolId: item?.toolId ?? item?.mode ?? "unknown",
-      toolLabel: item?.toolLabel ?? item?.mode ?? "이전 기록",
-      outputType: item?.outputType ?? "markdown",
-      prompt: typeof item?.prompt === "string" ? item.prompt : "",
-      result: typeof item?.result === "string" ? item.result : "",
-      createdAt: typeof item?.createdAt === "number" ? item.createdAt : Date.now(),
-    }));
-  } catch {
-    return [];
-  }
+async function fetchHistoryItems(): Promise<HistoryItem[]> {
+  const res = await fetch("/api/history");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error ?? "히스토리를 불러오지 못했습니다.");
+  return data.items ?? [];
 }
 
-function write(items: HistoryItem[]) {
-  cache = items.slice(0, MAX_ITEMS);
-  if (typeof window !== "undefined") {
+export function useHistory() {
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const result = await fetchHistoryItems();
+        if (!ignore) setItems(result);
+      } catch (err) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      window.localStorage.setItem(KEY, JSON.stringify(cache));
-    } catch {
-      /* ignore quota errors */
+      setItems(await fetchHistoryItems());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
-  }
-  listeners.forEach((l) => l());
-}
+  }, []);
 
-function getSnapshot(): HistoryItem[] {
-  if (cache === null) cache = read();
-  return cache;
-}
+  const removeItem = useCallback(async (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await fetch(`/api/history/${id}`, { method: "DELETE" });
+  }, []);
 
-function getServerSnapshot(): HistoryItem[] {
-  return EMPTY;
-}
+  const clearAll = useCallback(async () => {
+    setItems([]);
+    await fetch("/api/history", { method: "DELETE" });
+  }, []);
 
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-export function useHistory(): HistoryItem[] {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-}
-
-export function addHistoryItem(item: HistoryItem) {
-  write([item, ...getSnapshot()]);
-}
-
-export function removeHistoryItem(id: string) {
-  write(getSnapshot().filter((i) => i.id !== id));
-}
-
-export function clearHistory() {
-  write([]);
+  return { items, loading, error, refetch, removeItem, clearAll };
 }

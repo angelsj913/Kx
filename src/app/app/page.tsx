@@ -6,7 +6,7 @@ import Dashboard from "@/components/Dashboard";
 import GeneratorView from "@/components/GeneratorView";
 import AiChat from "@/components/AiChat";
 import HistoryView from "@/components/HistoryView";
-import Settings from "@/components/Settings";
+import Account from "@/components/Account";
 import { useHistory } from "@/lib/history";
 import { useAppMode, setAppMode } from "@/lib/appMode";
 import { getTool, type AppMode } from "@/lib/tools";
@@ -15,8 +15,13 @@ export const dynamic = "force-dynamic";
 
 export default function AppWorkspace() {
   const [view, setView] = useState<View>("dashboard");
-  const history = useHistory();
+  const { items: history, loading, removeItem, clearAll, refetch } = useHistory();
   const appMode = useAppMode();
+
+  function handleNavigate(v: View) {
+    setView(v);
+    if (v === "history") refetch();
+  }
 
   function handleModeChange(mode: AppMode) {
     setAppMode(mode);
@@ -41,7 +46,7 @@ export default function AppWorkspace() {
 
       <Sidebar
         view={view}
-        onNavigate={setView}
+        onNavigate={handleNavigate}
         appMode={appMode}
         onModeChange={handleModeChange}
       />
@@ -49,14 +54,21 @@ export default function AppWorkspace() {
       <main className="relative z-10 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {view === "dashboard" && (
           <Dashboard
-            onNavigate={setView}
+            onNavigate={handleNavigate}
             historyCount={history.length}
             appMode={appMode}
             onModeChange={handleModeChange}
           />
         )}
-        {view === "history" && <HistoryView items={history} />}
-        {view === "settings" && <Settings />}
+        {view === "history" && (
+          <HistoryView
+            items={history}
+            loading={loading}
+            removeItem={removeItem}
+            clearAll={clearAll}
+          />
+        )}
+        {view === "account" && <Account />}
         {activeTool &&
           (activeTool.inputType === "chat" ? (
             <AiChat key={activeTool.id} />

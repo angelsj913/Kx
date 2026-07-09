@@ -3,19 +3,6 @@
 import { Sparkles, Download, FileText, Presentation, Table2 } from "lucide-react";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
 
-function downloadFile(f: GeneratedFile) {
-  const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: f.mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = f.filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export default function FileResultPanel({
   outputType,
   deck,
@@ -39,14 +26,14 @@ export default function FileResultPanel({
           <span className="truncate">{title || "결과"}</span>
         </h2>
         {file && (
-          <button
-            type="button"
-            onClick={() => downloadFile(file)}
+          <a
+            href={file.url}
+            download={file.filename}
             className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Download className="h-3.5 w-3.5" />
             {isPptx ? "PPT 다운로드" : "엑셀 다운로드"}
-          </button>
+          </a>
         )}
       </div>
 

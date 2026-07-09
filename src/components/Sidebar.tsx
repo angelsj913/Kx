@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, History, Sparkles, Settings } from "lucide-react";
+import { LayoutDashboard, History, Sparkles, UserRound } from "lucide-react";
 import ModeSwitch from "@/components/ModeSwitch";
 import { toolsForMode, type AppMode } from "@/lib/tools";
 
@@ -67,10 +67,10 @@ export default function Sidebar({
             onClick={() => onNavigate("history")}
           />
           <NavButton
-            active={view === "settings"}
-            label="API 키 설정"
-            icon={Settings}
-            onClick={() => onNavigate("settings")}
+            active={view === "account"}
+            label="내 계정"
+            icon={UserRound}
+            onClick={() => onNavigate("account")}
           />
         </div>
       </nav>
