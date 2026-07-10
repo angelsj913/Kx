@@ -16,12 +16,11 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  accounts      Account[]
-  sessions      Session[]
-  historyItems  HistoryItem[]
-  conversations ChatConversation[]
-  chatHistory   ChatHistory[]
-  settings      UserSettings?
+  accounts     Account[]
+  sessions     Session[]
+  chatSessions ChatSession[]
+  chatHistory  ChatHistory[]
+  settings     UserSettings?
 }
 
 model Account {
@@ -62,75 +61,51 @@ model VerificationToken {
 
 // ── 앱 전용 모델 ──
 
-model HistoryItem {
-  id         String   @id @default(cuid())
-  userId     String
-  toolId     String
-  toolLabel  String
-  outputType String
-  prompt     String   @db.Text
-  result     String   @db.Text
-  fileUrl    String?
-  fileName   String?
-  createdAt  DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-model ChatConversation {
+// ── 채팅 세션(ChatGPT/Claude 스타일 "새 채팅" 단위) ──
+model ChatSession {
   id        String   @id @default(cuid())
   userId    String
-  personaId String
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history ChatHistory[]
 
   @@index([userId, updatedAt])
 }
 
-model ChatMessage {
-  id             String   @id @default(cuid())
-  conversationId String
-  role           String
-  text           String   @db.Text
-  attachments    Json?
-  createdAt      DateTime @default(now())
-
-  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId, createdAt])
-}
-
-// ── /api/chat 테스트 라우트(OpenRouter/Groq/Gemini 전환 테스트) 전용 모델 ──
-// 기존 ChatConversation/ChatMessage(페르소나 채팅, 로그인 필수)와는 별개의
-// 가벼운 1턴 질문-답변 로그다. userId를 nullable로 둬서, 아직 이 테스트
-// 라우트에 로그인 연동을 하지 않은 상태에서도 바로 쓸 수 있게 했다.
+// 세션 안의 한 턴(질문-답변 쌍). agent/model은 사용자에게 노출되지 않는
+// 내부 전용 기록이다(백스테이지 멀티 에이전트가 실제로 어떤 에이전트를
+// 썼는지 추적/디버깅하기 위한 용도).
 model ChatHistory {
-  id        String   @id @default(cuid())
-  userId    String?
-  provider  String // "gemini" | "groq" | "openrouter"
-  model     String
-  message   String   @db.Text
-  reply     String   @db.Text
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  sessionId  String
+  message    String   @db.Text
+  reply      String   @db.Text
+  agent      String // 내부 전용: 어떤 에이전트가 최종 응답했는지 (예: "reasoning", "writing")
+  provider   String // 내부 전용: "gemini" | "groq"
+  model      String // 내부 전용: 실제 호출한 모델명
+  attempts   Json? // 내부 전용: failover가 발생했다면 시도한 에이전트 순서 기록
+  createdAt  DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@index([sessionId, createdAt])
   @@index([userId, createdAt])
 }
 
-// 사용자별 AI 모델 선호 설정. 지금은 스키마만 준비해두고, 실제 화면(예:
-// 설정 페이지에서 기본 프로바이더 선택)이 생기면 그때 API 라우트를 붙이면 된다.
+// 사용자별 설정: AI 모델 선호, 요금제 상태, 활성화된 퀵툴 카테고리 등.
 model UserSettings {
   id                String   @id @default(cuid())
   userId            String   @unique
-  preferredProvider String   @default("gemini") // "gemini" | "groq" | "openrouter"
+  preferredProvider String   @default("gemini") // "gemini" | "groq"
   preferredModel    String?
+  plan              String   @default("free") // "free" | "pro" | "professional"
+  language          String   @default("ko") // "ko" | "en"
+  enabledQuickTools Json? // 예: { "bizdoc": true, "ppt": false, ... }
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

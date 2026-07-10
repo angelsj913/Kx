@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { geminiChatReply } from "@/lib/gemini";
+import { geminiChatReply, type ChatFile } from "@/lib/gemini";
 import { groqChatReply } from "@/lib/groq";
 import { friendlyError } from "@/lib/errors";
 
@@ -14,193 +13,224 @@ export const dynamic = "force-dynamic";
 const GOOGLE_GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// ── 모델 선택 ──
-// 초안(draft): Groq — 빠르고 저렴하게 1차 풀이/구조를 만든다.
-// 최종(final): Gemini — 초안을 검수·보정하거나(릴레이), 간단한 질문에 바로 답한다(단일 패스).
-const DRAFT_MODEL = "openai/gpt-oss-120b";
-const FINAL_MODEL_RELAY = "gemini-2.5-pro"; // 검수는 품질을 우선한다
-const FINAL_MODEL_SIMPLE = "gemini-2.5-flash"; // 일상 대화는 속도를 우선한다
-
-/**
- * 릴레이(2단계) 파이프라인을 태울지 판단하는 휴리스틱.
- * 수식 기호, 수학/논리/코드 관련 키워드가 보이면 "어려운 질문"으로 간주한다.
- * 정교한 분류가 필요해지면 이 함수만 교체하면 된다(호출부는 그대로 둬도 됨).
- */
-function needsRelay(message: string): boolean {
-  const MATH_SYMBOLS = /[0-9]\s*[+\-*/^=]\s*[0-9]|√|∫|∑|≤|≥|÷|×/;
-  const HARD_KEYWORDS =
-    /미분|적분|방정식|부등식|행렬|벡터|극한|확률|통계|증명|인수분해|로그|삼각함수|미적분|기하|함수의|알고리즘|코드|디버그|리팩터|최적화|시간복잡도|아키텍처|설계해|증명해|풀어줘|계산해/;
-  return MATH_SYMBOLS.test(message) || HARD_KEYWORDS.test(message);
-}
-
-const DRAFT_SYSTEM_INSTRUCTION =
-  "너는 내부 리서치 어시스턴트다. 사용자의 질문(특히 수학·논리·코드처럼 정확한 사고가 필요한 문제)에 대해 " +
-  "풀이 과정을 단계별로 명확하게 전개한 초안을 작성하라. 이 초안은 최종 사용자에게 그대로 노출되지 않고 " +
-  "다른 검수 담당자가 다시 다듬을 예정이므로, 문장을 다듬는 것보다 논리적 정확성과 완결성에 집중하라.";
-
-const FINAL_SYSTEM_INSTRUCTION_RELAY =
-  "너는 zeff의 답변을 최종 작성하는 검수 담당자다. 아래에 동료가 작성한 초안이 주어진다. " +
-  "초안의 풀이 과정과 결론이 정확한지 검증하고, 오류가 있으면 바로잡아 완성도 높은 하나의 답변으로 다시 써라. " +
-  "'초안에 따르면', '동료가 작성한' 같은 표현은 절대 쓰지 말고, 마치 너 혼자 처음부터 답한 것처럼 " +
-  "자연스러운 한국어로 작성하라.";
-
-const FINAL_SYSTEM_INSTRUCTION_SIMPLE =
-  "너는 zeff라는 친절하고 유능한 AI 어시스턴트다. 사용자의 메시지에 자연스럽고 명확한 한국어로 답하라.";
-
-interface PipelineResult {
-  reply: string;
-  pipeline: "relay" | "simple";
+// ── 백스테이지 멀티 에이전트 레지스트리 ──
+// 사용자에게는 절대 노출되지 않는 내부 전용 구성이다. 질문 키워드를 보고
+// 가장 적합한 에이전트를 고른 뒤, 실패하면 다음 순번 에이전트로 자동 failover한다.
+interface Agent {
+  id: string;
+  label: string;
+  provider: "gemini" | "groq";
   model: string;
+  match: RegExp | null; // null = catch-all(기본) 에이전트
+  systemInstruction: string;
 }
 
-/** Groq가 초안을 만들고 Gemini가 검수·완성하는 2단계 릴레이. Groq가 실패하면 단일 패스로 안전하게 폴백한다. */
-async function runRelayPipeline(message: string): Promise<PipelineResult> {
-  let draft: string | null = null;
-  try {
-    draft = await groqChatReply({
-      apiKey: GROQ_API_KEY,
-      model: DRAFT_MODEL,
-      systemInstruction: DRAFT_SYSTEM_INSTRUCTION,
-      messages: [{ role: "user", text: message }],
-    });
-  } catch {
-    // Groq가 막히거나 키가 없어도 사용자 경험이 끊기지 않도록 단일 패스로 넘어간다.
-    draft = null;
+const REASONING_MODEL = "openai/gpt-oss-120b";
+const RESEARCH_MODEL = "gemini-2.5-pro";
+const WRITING_MODEL = "gemini-2.5-flash";
+
+const AGENTS: Agent[] = [
+  {
+    id: "reasoning",
+    label: "추론 에이전트",
+    provider: "groq",
+    model: REASONING_MODEL,
+    match:
+      /수학|미분|적분|방정식|부등식|행렬|벡터|극한|확률|통계|증명|인수분해|로그|삼각함수|미적분|기하|알고리즘|코드|디버그|리팩터|최적화|시간복잡도|풀어줘|계산해|[0-9]\s*[+\-*/^=]\s*[0-9]/,
+    systemInstruction:
+      "너는 zeff의 추론 전담 에이전트다. 수학·논리·코드처럼 정확한 단계적 사고가 필요한 문제를 근거와 함께 명확하게 풀어라.",
+  },
+  {
+    id: "research",
+    label: "리서치 에이전트",
+    provider: "gemini",
+    model: RESEARCH_MODEL,
+    match: /논문|레포트|리서치|보고서|비교|분석해|조사해|초안|요약해/,
+    systemInstruction:
+      "너는 zeff의 리서치 전담 에이전트다. 레포트·논문·보고서처럼 구조화된 정리가 필요한 요청에 근거를 갖춘 체계적인 답변을 작성하라.",
+  },
+  {
+    id: "writing",
+    label: "라이팅 에이전트",
+    provider: "gemini",
+    model: WRITING_MODEL,
+    match: null,
+    systemInstruction: "너는 zeff라는 친절하고 유능한 AI 어시스턴트다. 사용자의 메시지에 자연스럽고 명확하게 답하라.",
+  },
+];
+
+const LANGUAGE_DIRECTIVE: Record<string, string> = {
+  ko: "모든 답변은 한국어로 작성한다.",
+  en: "Respond only in English, regardless of the language of the question.",
+};
+
+/** 질문 내용과 첨부파일 유무를 보고 시도할 에이전트 순서(=failover 체인)를 정한다.
+ * 멀티모달(이미지·문서 첨부)은 이 코드베이스에서 Gemini 계열만 지원하므로,
+ * 파일이 있으면 Groq 기반 추론 에이전트는 체인에서 제외한다. */
+function buildAgentChain(message: string, hasFiles: boolean): Agent[] {
+  const pool = hasFiles ? AGENTS.filter((a) => a.provider === "gemini") : AGENTS;
+  const primary = pool.find((a) => a.match && a.match.test(message)) ?? pool.find((a) => a.match === null) ?? pool[0];
+  const rest = pool.filter((a) => a.id !== primary.id);
+  return [primary, ...rest];
+}
+
+async function callAgent(agent: Agent, message: string, files: ChatFile[], language: string): Promise<string> {
+  const systemInstruction = `${agent.systemInstruction} ${LANGUAGE_DIRECTIVE[language] ?? LANGUAGE_DIRECTIVE.ko}`;
+  const messages = [{ role: "user" as const, text: message, files: files.length ? files : undefined }];
+  if (agent.provider === "gemini") {
+    return geminiChatReply({ apiKey: GOOGLE_GEMINI_API_KEY, model: agent.model, systemInstruction, messages });
   }
+  return groqChatReply({ apiKey: GROQ_API_KEY, model: agent.model, systemInstruction, messages });
+}
 
-  if (!draft) {
-    return runSimplePipeline(message);
+interface IncomingFile {
+  data: string;
+  mimeType: string;
+  name: string;
+}
+
+async function parseRequest(req: Request): Promise<{ message: string; sessionId: string | null; files: IncomingFile[] }> {
+  const contentType = req.headers.get("content-type") ?? "";
+  if (contentType.includes("multipart/form-data")) {
+    const form = await req.formData();
+    const message = String(form.get("message") ?? "").trim();
+    const sessionId = (form.get("sessionId") as string | null) || null;
+    const files: IncomingFile[] = [];
+    for (const entry of form.getAll("files")) {
+      if (entry instanceof File) {
+        const buf = Buffer.from(await entry.arrayBuffer());
+        files.push({ data: buf.toString("base64"), mimeType: entry.type || "application/octet-stream", name: entry.name });
+      }
+    }
+    return { message, sessionId, files };
   }
-
-  const reply = await geminiChatReply({
-    apiKey: GOOGLE_GEMINI_API_KEY,
-    model: FINAL_MODEL_RELAY,
-    systemInstruction: FINAL_SYSTEM_INSTRUCTION_RELAY,
-    messages: [
-      {
-        role: "user",
-        text: `[사용자 질문]\n${message}\n\n[동료가 작성한 초안]\n${draft}`,
-      },
-    ],
-  });
-
-  return { reply, pipeline: "relay", model: `${DRAFT_MODEL} → ${FINAL_MODEL_RELAY}` };
+  const body = await req.json().catch(() => ({}));
+  return {
+    message: typeof body?.message === "string" ? body.message.trim() : "",
+    sessionId: typeof body?.sessionId === "string" ? body.sessionId : null,
+    files: [],
+  };
 }
 
-/** Gemini 단독 1단계 응답. 캐주얼한 대화용. */
-async function runSimplePipeline(message: string): Promise<PipelineResult> {
-  const reply = await geminiChatReply({
-    apiKey: GOOGLE_GEMINI_API_KEY,
-    model: FINAL_MODEL_SIMPLE,
-    systemInstruction: FINAL_SYSTEM_INSTRUCTION_SIMPLE,
-    messages: [{ role: "user", text: message }],
-  });
-  return { reply, pipeline: "simple", model: FINAL_MODEL_SIMPLE };
-}
-
+/** 개행으로 구분된 JSON 이벤트를 순서대로 흘려보내는 스트림 응답.
+ * 클라이언트는 fetch().body 리더로 한 줄씩 읽어 실시간 상태 메시지를 표시한다. */
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
   const userId = session.user.id;
 
-  let body: { message?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "요청 본문이 올바른 JSON이 아닙니다." }, { status: 400 });
-  }
-
-  const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: "message는 필수입니다." }, { status: 400 });
-  }
-
-  try {
-    // 사용자에게는 절대 노출하지 않는, 내부 전용 백스테이지 판단.
-    const result = needsRelay(message)
-      ? await runRelayPipeline(message)
-      : await runSimplePipeline(message);
-
-    if (!result.reply) {
-      return NextResponse.json(
-        { error: "AI가 빈 응답을 반환했습니다. 다시 시도해 주세요." },
-        { status: 502 }
-      );
-    }
-
-    const saved = await prisma.chatHistory.create({
-      data: {
-        userId,
-        provider: result.pipeline,
-        model: result.model,
-        message,
-        reply: result.reply,
-      },
+  const { message, sessionId, files } = await parseRequest(req);
+  if (!message && files.length === 0) {
+    return new Response(JSON.stringify({ error: "메시지를 입력해 주세요." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
     });
-
-    return NextResponse.json({
-      id: saved.id,
-      message: saved.message,
-      reply: saved.reply,
-      provider: saved.provider,
-      model: saved.model,
-      createdAt: saved.createdAt,
-    });
-  } catch (err) {
-    console.error("chat pipeline error:", err);
-    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
-  }
-}
-
-// 최근 대화 내역 불러오기: GET /api/chat?limit=50
-export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const limitParam = Number(searchParams.get("limit"));
-  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 50;
+  const encoder = new TextEncoder();
 
-  try {
-    const items = await prisma.chatHistory.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-    });
-    return NextResponse.json({ items });
-  } catch (err) {
-    console.error("chat history fetch error:", err);
-    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
-  }
-}
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(event: Record<string, unknown>) {
+        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      }
 
-// 히스토리 삭제: DELETE /api/chat?id=xxx (개별) 또는 DELETE /api/chat (전체 삭제)
-export async function DELETE(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+      try {
+        const settings = await prisma.userSettings.findUnique({ where: { userId } });
+        const language = settings?.language ?? "ko";
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+        if (files.length > 0) send({ type: "status", key: "filesChecking" });
+        send({ type: "status", key: "analyzing" });
 
-  try {
-    const { count } = await prisma.chatHistory.deleteMany({
-      where: id ? { id, userId } : { userId },
-    });
+        const chatFiles: ChatFile[] = files.map((f) => ({ data: f.data, mimeType: f.mimeType }));
+        const chain = buildAgentChain(message, files.length > 0);
 
-    if (id && count === 0) {
-      return NextResponse.json({ error: "해당 기록을 찾을 수 없습니다." }, { status: 404 });
-    }
+        let reply = "";
+        let usedAgent: Agent = chain[0];
+        const attempts: { agent: string; ok: boolean; error?: string }[] = [];
 
-    return NextResponse.json({ deleted: count });
-  } catch (err) {
-    console.error("chat history delete error:", err);
-    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
-  }
+        for (let i = 0; i < chain.length; i++) {
+          const agent = chain[i];
+          send({ type: "status", key: "agentWorking", agentId: agent.id });
+          try {
+            const result = await callAgent(agent, message, chatFiles, language);
+            if (result && result.trim()) {
+              reply = result;
+              usedAgent = agent;
+              attempts.push({ agent: agent.id, ok: true });
+              break;
+            }
+            attempts.push({ agent: agent.id, ok: false, error: "빈 응답" });
+          } catch (err) {
+            attempts.push({ agent: agent.id, ok: false, error: err instanceof Error ? err.message : String(err) });
+          }
+          if (i < chain.length - 1) {
+            send({ type: "status", key: "failover" });
+          }
+        }
+
+        if (!reply) {
+          send({ type: "error", key: "noReply" });
+          controller.close();
+          return;
+        }
+
+        send({ type: "status", key: "saving" });
+
+        let sid = sessionId;
+        if (sid) {
+          const owned = await prisma.chatSession.findFirst({ where: { id: sid, userId } });
+          if (!owned) sid = null;
+        }
+        if (!sid) {
+          const created = await prisma.chatSession.create({
+            data: { userId, title: message.slice(0, 40) || "새 대화" },
+          });
+          sid = created.id;
+        } else {
+          await prisma.chatSession.update({ where: { id: sid }, data: { updatedAt: new Date() } });
+        }
+
+        const saved = await prisma.chatHistory.create({
+          data: {
+            userId,
+            sessionId: sid,
+            message: message || "(첨부 파일)",
+            reply,
+            agent: usedAgent.id,
+            provider: usedAgent.provider,
+            model: usedAgent.model,
+            attempts,
+          },
+        });
+
+        send({
+          type: "done",
+          id: saved.id,
+          sessionId: sid,
+          message: saved.message,
+          reply: saved.reply,
+          createdAt: saved.createdAt,
+        });
+      } catch (err) {
+        console.error("chat pipeline error:", err);
+        send({ type: "error", message: friendlyError(err) });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }

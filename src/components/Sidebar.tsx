@@ -1,104 +1,101 @@
 "use client";
 
-import { LayoutDashboard, History, Sparkles } from "lucide-react";
-import ModeSwitch from "@/components/ModeSwitch";
+import { AnimatePresence, motion } from "framer-motion";
+import { Sparkles, Plus, MessageSquare, Trash2 } from "lucide-react";
 import ProfileMenu from "@/components/ProfileMenu";
-import { toolsForMode, type AppMode } from "@/lib/tools";
-
-/** "dashboard" · "history" 또는 도구 id */
-export type View = string;
+import { useT } from "@/lib/i18n";
+import type { SessionSummary } from "@/lib/sessions";
 
 export default function Sidebar({
-  view,
-  onNavigate,
-  appMode,
-  onModeChange,
+  sessions,
+  sessionsLoading,
+  activeSessionId,
+  onNewChat,
+  onSelectSession,
+  onDeleteSession,
+  plan,
 }: {
-  view: View;
-  onNavigate: (v: View) => void;
-  appMode: AppMode;
-  onModeChange: (m: AppMode) => void;
+  sessions: SessionSummary[];
+  sessionsLoading: boolean;
+  activeSessionId: string | null;
+  onNewChat: () => void;
+  onSelectSession: (id: string) => void;
+  onDeleteSession: (id: string) => void;
+  plan: "free" | "pro" | "professional";
 }) {
-  const tools = toolsForMode(appMode);
+  const t = useT();
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col border-r border-slate-800/60 bg-slate-900/40 backdrop-blur-md transition-colors duration-500 ease-in-out sm:w-60">
-      <div className="flex items-center gap-2.5 border-b border-slate-800/60 px-3 py-4 sm:px-5">
+    <aside className="flex w-16 shrink-0 flex-col border-r border-slate-800/60 bg-slate-900/40 backdrop-blur-md sm:w-64">
+      <div className="flex items-center gap-2.5 px-3 py-4 sm:px-4">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
           <Sparkles className="h-5 w-5 text-white" />
         </div>
-        <div className="hidden sm:block">
-          <p className="text-sm font-bold tracking-tight text-slate-50">zeff</p>
-          <p className="text-[11px] text-slate-500">premium AI Desktop</p>
-        </div>
+        <span className="hidden text-sm font-bold tracking-tight text-slate-50 sm:block">zeff</span>
       </div>
 
-      {/* 학생 / 직장인 전환 */}
-      <div className="hidden border-b border-slate-800/60 p-3 sm:block">
-        <ModeSwitch mode={appMode} onChange={onModeChange} />
+      <div className="px-2 sm:px-3">
+        <button
+          type="button"
+          onClick={onNewChat}
+          className="flex w-full items-center gap-2.5 rounded-xl border border-slate-700/60 bg-slate-800/40 px-3 py-2.5 text-sm font-medium text-slate-100 transition-all duration-200 hover:border-violet-500/50 hover:bg-slate-800/70"
+        >
+          <Plus className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">{t("sidebar.newChat")}</span>
+        </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2 sm:p-3">
-        <NavButton
-          active={view === "dashboard"}
-          label="대시보드 홈"
-          icon={LayoutDashboard}
-          onClick={() => onNavigate("dashboard")}
-        />
-
-        <p className="mt-3 mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:block">
-          {appMode === "student" ? "학생 도구" : "직장인 도구"}
+      <div className="mt-4 flex min-h-0 flex-1 flex-col px-2 sm:px-3">
+        <p className="mb-1 hidden px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:block">
+          {t("sidebar.library")}
         </p>
-
-        {tools.map((tool) => (
-          <NavButton
-            key={tool.id}
-            active={view === tool.id}
-            label={tool.label}
-            icon={tool.icon}
-            onClick={() => onNavigate(tool.id)}
-          />
-        ))}
-
-        <div className="mt-3 space-y-1 border-t border-slate-800/60 pt-2">
-          <NavButton
-            active={view === "history"}
-            label="마이 히스토리"
-            icon={History}
-            onClick={() => onNavigate("history")}
-          />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {!sessionsLoading && sessions.length === 0 && (
+            <p className="hidden px-2 py-3 text-xs text-slate-600 sm:block">{t("sidebar.libraryEmpty")}</p>
+          )}
+          <AnimatePresence initial={false}>
+            {sessions.map((s) => {
+              const active = s.id === activeSessionId;
+              return (
+                <motion.div
+                  key={s.id}
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectSession(s.id)}
+                    title={s.title ?? t("sidebar.newChat")}
+                    className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors duration-150 sm:px-3 ${
+                      active ? "bg-slate-800/80 text-slate-50" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                    }`}
+                  >
+                    <MessageSquare className="h-4 w-4 shrink-0" />
+                    <span className="hidden min-w-0 flex-1 truncate sm:block">{s.title || t("sidebar.newChat")}</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t("sidebar.deleteSession")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteSession(s.id);
+                      }}
+                      className="hidden shrink-0 rounded-md p-1 text-slate-600 opacity-0 transition-opacity duration-150 hover:text-red-400 group-hover:opacity-100 sm:block"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </span>
+                  </button>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
-      </nav>
+      </div>
 
-      <ProfileMenu />
+      <ProfileMenu plan={plan} />
     </aside>
-  );
-}
-
-function NavButton({
-  active,
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 ${
-        active
-          ? "bg-gradient-to-r from-[var(--mode-accent)]/90 to-[var(--mode-accent-deep)]/90 text-white shadow-lg shadow-black/30"
-          : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100"
-      }`}
-    >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className="hidden sm:inline">{label}</span>
-    </button>
   );
 }
