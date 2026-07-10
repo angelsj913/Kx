@@ -10,14 +10,14 @@ export default function Footer() {
   const t = useLandingT();
 
   return (
-    <footer className="relative overflow-hidden border-t border-slate-200 py-14">
+    <footer className="relative overflow-hidden bg-slate-100 py-14">
       <Image
         src="/logo-zeff.jpg"
         alt=""
         aria-hidden
         width={320}
         height={320}
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.04] mix-blend-multiply grayscale"
       />
 
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-xs text-slate-500">
