@@ -16,10 +16,11 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  accounts      Account[]
-  sessions      Session[]
-  historyItems  HistoryItem[]
-  conversations ChatConversation[]
+  accounts     Account[]
+  sessions     Session[]
+  historyItems HistoryItem[]
+  chatSessions ChatSession[]
+  settings     UserSettings?
 }
 
 model Account {
@@ -77,29 +78,54 @@ model HistoryItem {
   @@index([userId, createdAt])
 }
 
-model ChatConversation {
+model ChatSession {
   id        String   @id @default(cuid())
   userId    String
-  personaId String
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history ChatHistory[]
 
   @@index([userId, updatedAt])
 }
 
-model ChatMessage {
-  id             String   @id @default(cuid())
-  conversationId String
-  role           String
-  text           String   @db.Text
-  attachments    Json?
-  createdAt      DateTime @default(now())
+model ChatHistory {
+  id          String   @id @default(cuid())
+  sessionId   String
+  role        String
+  text        String   @db.Text
+  attachments Json?
 
-  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  // 내부 전용(프론트에 노출 금지) — 어떤 에이전트/프로바이더/모델이 응답했는지, 시도 횟수
+  agentId   String?
+  provider  String?
+  modelName String?
+  attempts  Int?
 
-  @@index([conversationId, createdAt])
+  // 퀵툴 실행 결과(실제 파일 생성)일 때만 채워짐
+  outputType     String  @default("chat")
+  structuredKind String?
+  resultData     String? @db.Text
+  fileUrl        String?
+  fileName       String?
+
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  plan              String   @default("free")
+  language          String   @default("ko")
+  enabledQuickTools String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

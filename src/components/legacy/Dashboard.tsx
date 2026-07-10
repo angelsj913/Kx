@@ -1,9 +1,11 @@
 "use client";
 
 import { History, ArrowRight } from "lucide-react";
-import type { View } from "@/components/Sidebar";
-import ModeSwitch from "@/components/ModeSwitch";
+import ModeSwitch from "@/components/legacy/ModeSwitch";
 import { toolsForMode, type AppMode } from "@/lib/tools";
+
+/** 옛 사이드바의 "dashboard" · "history" 또는 도구 id. Sidebar 재작성으로 원본 export는 사라져 legacy 전용으로 남겨둠. */
+export type View = string;
 
 export default function Dashboard({
   onNavigate,

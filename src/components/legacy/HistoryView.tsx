@@ -5,7 +5,7 @@ import { Trash2, History as HistoryIcon, FileText } from "lucide-react";
 import ResultPanel from "@/components/ResultPanel";
 import FileResultPanel from "@/components/FileResultPanel";
 import StructuredResultView from "@/components/structured/StructuredResultView";
-import type { HistoryItem } from "@/lib/history";
+import type { HistoryItem } from "@/lib/legacy/history";
 import { getTool } from "@/lib/tools";
 import type { Deck, Workbook } from "@/lib/fileTypes";
 
