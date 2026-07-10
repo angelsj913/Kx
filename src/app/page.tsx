@@ -1,6 +1,9 @@
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
-import TechDemo from "@/components/landing/TechDemo";
+import WorkspaceIntro from "@/components/landing/WorkspaceIntro";
+import OfficeFeatures from "@/components/landing/OfficeFeatures";
+import LectureAnalysis from "@/components/landing/LectureAnalysis";
+import FeatureGrid from "@/components/landing/FeatureGrid";
 import Pricing from "@/components/landing/Pricing";
 import Footer from "@/components/landing/Footer";
 
@@ -10,7 +13,10 @@ export default function Landing() {
       <Header />
       <main>
         <Hero />
-        <TechDemo />
+        <WorkspaceIntro />
+        <OfficeFeatures />
+        <LectureAnalysis />
+        <FeatureGrid />
         <Pricing />
       </main>
       <Footer />

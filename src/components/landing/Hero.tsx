@@ -98,7 +98,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("mac")}
-            className="group flex flex-1 items-center justify-center gap-3 rounded-2xl border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-900 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-blue-500/60 active:scale-[0.98]"
+            className="group flex flex-1 items-center justify-center gap-3 rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98]"
           >
             <Apple className="h-6 w-6" />
             {t("hero.download.mac")}
