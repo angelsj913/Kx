@@ -14,6 +14,7 @@ export interface ToolGenerationInput {
   toolId: string;
   text?: string;
   audio?: { data: string; mimeType: string };
+  images?: { data: string; mimeType: string }[];
   userId: string;
   onAttempt?: (info: AttemptInfo) => void;
   onUploadStart?: () => void;
@@ -53,6 +54,10 @@ export async function runToolGeneration(
 
   if (tool.inputType === "audio") {
     if (!input.audio) throw new Error("오디오 파일을 첨부해 주세요.");
+  } else if (tool.inputType === "image") {
+    if (!input.images || input.images.length === 0) {
+      throw new Error("이미지 파일을 첨부해 주세요.");
+    }
   } else if (!input.text) {
     throw new Error("요청할 내용을 입력해 주세요.");
   }
@@ -61,6 +66,7 @@ export async function runToolGeneration(
     tool,
     text: input.text,
     audio: input.audio,
+    images: input.images,
     onAttempt: input.onAttempt,
   });
   if (!raw) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");

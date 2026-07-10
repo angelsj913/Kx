@@ -46,10 +46,11 @@ async function callModel(
   m: ModelDef,
   tool: ToolDef,
   text?: string,
-  audio?: { data: string; mimeType: string }
+  audio?: { data: string; mimeType: string },
+  images?: { data: string; mimeType: string }[]
 ): Promise<string> {
   return m.provider === "gemini"
-    ? geminiGenerateForTool({ tool, text, audio, model: m.model })
+    ? geminiGenerateForTool({ tool, text, audio, images, model: m.model })
     : openrouterGenerateForTool({ tool, text: text ?? "", model: m.model });
 }
 
@@ -58,11 +59,12 @@ export async function generateWithFallback(args: {
   tool: ToolDef;
   text?: string;
   audio?: { data: string; mimeType: string };
+  images?: { data: string; mimeType: string }[];
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const { tool } = args;
   const candidates =
-    tool.inputType === "url" || tool.inputType === "audio"
+    tool.inputType === "url" || tool.inputType === "audio" || tool.inputType === "image"
       ? MULTIMODAL_MODELS
       : FALLBACK_MODELS;
 
@@ -72,7 +74,7 @@ export async function generateWithFallback(args: {
     attemptNumber += 1;
     args.onAttempt?.({ provider: m.provider, model: m.model, attemptNumber });
     try {
-      const text = await callModel(m, tool, args.text, args.audio);
+      const text = await callModel(m, tool, args.text, args.audio, args.images);
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
       lastErr = err;

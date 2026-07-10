@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
 import ChatWorkspace from "@/components/ChatWorkspace";
+import LibraryView from "@/components/LibraryView";
 import { useSessions } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,17 @@ const ACCENT_VARS = {
 
 export default function AppWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [view, setView] = useState<"chat" | "library">("chat");
   const { sessions, refetch, removeSession } = useSessions();
 
   function handleNewChat() {
     setActiveSessionId(null);
+    setView("chat");
+  }
+
+  function handleSelectSession(id: string) {
+    setActiveSessionId(id);
+    setView("chat");
   }
 
   function handleSessionCreated(id: string) {
@@ -31,6 +39,12 @@ export default function AppWorkspace() {
   async function handleDeleteSession(id: string) {
     await removeSession(id);
     if (id === activeSessionId) setActiveSessionId(null);
+  }
+
+  function handleOpenBookChat(sessionId: string) {
+    setActiveSessionId(sessionId);
+    refetch();
+    setView("chat");
   }
 
   return (
@@ -44,26 +58,32 @@ export default function AppWorkspace() {
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
-        onSelectSession={setActiveSessionId}
+        activeView={view}
+        onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
+        onOpenLibrary={() => setView("library")}
       />
 
       <main className="relative z-10 min-w-0 flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeSessionId ?? "new"}
+            key={view === "library" ? "library" : activeSessionId ?? "new"}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="h-full"
           >
-            <ChatWorkspace
-              sessionId={activeSessionId}
-              onSessionCreated={handleSessionCreated}
-              onTurnSaved={refetch}
-            />
+            {view === "library" ? (
+              <LibraryView onOpenBookChat={handleOpenBookChat} />
+            ) : (
+              <ChatWorkspace
+                sessionId={activeSessionId}
+                onSessionCreated={handleSessionCreated}
+                onTurnSaved={refetch}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>

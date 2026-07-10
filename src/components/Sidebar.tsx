@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, MessageSquare, Trash2 } from "lucide-react";
+import { Plus, MessageSquare, Trash2, BookOpen } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import type { SessionSummary } from "@/lib/sessions";
@@ -10,15 +10,19 @@ import type { SessionSummary } from "@/lib/sessions";
 export default function Sidebar({
   sessions,
   activeSessionId,
+  activeView,
   onSelectSession,
   onNewChat,
   onDeleteSession,
+  onOpenLibrary,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
+  activeView: "chat" | "library";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
+  onOpenLibrary: () => void;
 }) {
   const t = useT();
 
@@ -48,6 +52,19 @@ export default function Sidebar({
           <Plus className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">{t("sidebar.newChat")}</span>
         </motion.button>
+
+        <button
+          type="button"
+          onClick={onOpenLibrary}
+          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            activeView === "library"
+              ? "bg-violet-600/20 text-violet-200 ring-1 ring-violet-500/40"
+              : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+          }`}
+        >
+          <BookOpen className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">{t("sidebar.myLibrary")}</span>
+        </button>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 sm:px-3">

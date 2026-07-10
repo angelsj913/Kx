@@ -121,7 +121,10 @@ export default function ChatWorkspace({
   async function send(e?: React.FormEvent) {
     e?.preventDefault();
     const text = draft.trim();
+    const requiresAttachment =
+      activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio";
     if ((!text && pending.length === 0) || loading) return;
+    if (requiresAttachment && pending.length === 0) return;
 
     setError("");
     setLoading(true);
@@ -196,6 +199,13 @@ export default function ChatWorkspace({
       setStatusKey(null);
     }
   }
+
+  const requiresAttachment =
+    activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio";
+  const canSend =
+    !loading && pending.length > 0
+      ? true
+      : !loading && !requiresAttachment && draft.trim().length > 0;
 
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
   const officeTools = QUICK_TOOLS.filter(
@@ -450,7 +460,7 @@ export default function ChatWorkspace({
           <motion.button
             type="submit"
             whileTap={{ scale: 0.95 }}
-            disabled={loading || (!draft.trim() && pending.length === 0)}
+            disabled={!canSend}
             title={t("chat.send")}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-900/40 transition-all disabled:cursor-not-allowed disabled:opacity-50"
           >

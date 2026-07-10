@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runAgentPipeline } from "@/lib/agents";
 import { runToolGeneration } from "@/lib/toolGeneration";
+import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/gemini";
 
@@ -108,10 +109,13 @@ export async function POST(request: Request) {
         if (quickToolId) {
           send({ type: "status", key: "status.quicktool.generating", sessionId: resolvedSessionId });
 
+          const quickTool = getTool(quickToolId);
           const result = await runToolGeneration({
             toolId: quickToolId,
             text,
             userId,
+            audio: quickTool?.inputType === "audio" ? inlineFiles[0] : undefined,
+            images: quickTool?.inputType === "image" ? inlineFiles : undefined,
             onAttempt: () =>
               send({ type: "status", key: "status.ai.trying", sessionId: resolvedSessionId }),
             onUploadStart: () =>

@@ -19,6 +19,7 @@ export interface GenInput {
   tool: ToolDef;
   text?: string;
   audio?: { data: string; mimeType: string };
+  images?: { data: string; mimeType: string }[];
   model?: string;
   apiKey?: string;
 }
@@ -37,6 +38,11 @@ export async function geminiGenerateForTool(input: GenInput): Promise<string> {
     contents = createUserContent([
       { inlineData: { data: input.audio.data, mimeType: input.audio.mimeType } },
       "위 오디오의 내용을 지침에 따라 정리해줘.",
+    ]);
+  } else if (tool.inputType === "image" && input.images && input.images.length > 0) {
+    contents = createUserContent([
+      ...input.images.map((img) => ({ inlineData: { data: img.data, mimeType: img.mimeType } })),
+      input.text || "위 이미지의 내용을 지침에 따라 분석해줘.",
     ]);
   } else {
     contents = input.text ?? "";
