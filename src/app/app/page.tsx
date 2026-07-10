@@ -7,8 +7,7 @@ import Dashboard from "@/components/Dashboard";
 import GeneratorView from "@/components/GeneratorView";
 import AiChat from "@/components/AiChat";
 import HistoryView from "@/components/HistoryView";
-import Account from "@/components/Account";
-import { useHistory } from "@/lib/history";
+import { useChatHistory } from "@/lib/chatHistory";
 import { useAppMode, setAppMode } from "@/lib/appMode";
 import { getTool, type AppMode } from "@/lib/tools";
 import { themeCssVars } from "@/lib/theme";
@@ -17,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export default function AppWorkspace() {
   const [view, setView] = useState<View>("dashboard");
-  const { items: history, loading, removeItem, clearAll, refetch } = useHistory();
+  const { items: history, loading, prepend, removeItem, clearAll, refetch } = useChatHistory();
   const appMode = useAppMode();
 
   function handleNavigate(v: View) {
@@ -66,12 +65,7 @@ export default function AppWorkspace() {
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             {view === "dashboard" && (
-              <Dashboard
-                onNavigate={handleNavigate}
-                historyCount={history.length}
-                appMode={appMode}
-                onModeChange={handleModeChange}
-              />
+              <Dashboard onNavigate={handleNavigate} appMode={appMode} onModeChange={handleModeChange} />
             )}
             {view === "history" && (
               <HistoryView
@@ -81,10 +75,9 @@ export default function AppWorkspace() {
                 clearAll={clearAll}
               />
             )}
-            {view === "account" && <Account />}
             {activeTool &&
               (activeTool.inputType === "chat" ? (
-                <AiChat />
+                <AiChat items={history} prepend={prepend} />
               ) : (
                 <GeneratorView tool={activeTool} />
               ))}

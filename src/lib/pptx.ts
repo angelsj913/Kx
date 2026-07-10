@@ -37,7 +37,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     color: "FFFFFF",
     align: "center",
   });
-  cover.addText("AI 툴킷으로 생성한 발표 초안", {
+  cover.addText("zeff로 생성한 발표 초안", {
     x: 0.5,
     y: 4.1,
     w: 12.3,

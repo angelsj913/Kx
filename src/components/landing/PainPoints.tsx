@@ -95,7 +95,7 @@ export default function PainPoints() {
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-400 sm:text-base">
           거창한 문제가 아니라 매일 반복되는 작은 고민들입니다. 하지만 매일
-          반복되기 때문에, 쌓이면 하루의 상당 부분을 갉아먹습니다. AI 툴킷은
+          반복되기 때문에, 쌓이면 하루의 상당 부분을 갉아먹습니다. zeff는
           바로 그 지점을 대신 처리합니다.
         </p>
       </div>

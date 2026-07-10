@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI 어시스턴트",
-  description: "텍스트를 입력하면 Gemini AI가 답해주는 웹 서비스",
+  title: "zeff",
+  description: "학생과 직장인을 위한 AI 데스크톱 앱, zeff",
 };
 
 export default function RootLayout({

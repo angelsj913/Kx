@@ -30,7 +30,7 @@ async function callOpenRouter(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "X-Title": "AI Toolkit",
+      "X-Title": "zeff",
     },
     body: JSON.stringify({
       model,

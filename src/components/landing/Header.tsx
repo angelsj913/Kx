@@ -22,7 +22,7 @@ export default function Header() {
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <span className="text-base font-bold tracking-tight text-slate-50">
-            AI 툴킷
+            zeff
           </span>
         </div>
 

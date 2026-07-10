@@ -1,7 +1,8 @@
 "use client";
 
-import { LayoutDashboard, History, Sparkles, UserRound } from "lucide-react";
+import { LayoutDashboard, History, Sparkles } from "lucide-react";
 import ModeSwitch from "@/components/ModeSwitch";
+import ProfileMenu from "@/components/ProfileMenu";
 import { toolsForMode, type AppMode } from "@/lib/tools";
 
 /** "dashboard" · "history" 또는 도구 id */
@@ -27,8 +28,8 @@ export default function Sidebar({
           <Sparkles className="h-5 w-5 text-white" />
         </div>
         <div className="hidden sm:block">
-          <p className="text-sm font-bold tracking-tight text-slate-50">AI 툴킷</p>
-          <p className="text-[11px] text-slate-500">Premium AI Desktop</p>
+          <p className="text-sm font-bold tracking-tight text-slate-50">zeff</p>
+          <p className="text-[11px] text-slate-500">premium AI Desktop</p>
         </div>
       </div>
 
@@ -66,22 +67,10 @@ export default function Sidebar({
             icon={History}
             onClick={() => onNavigate("history")}
           />
-          <NavButton
-            active={view === "account"}
-            label="내 계정"
-            icon={UserRound}
-            onClick={() => onNavigate("account")}
-          />
         </div>
       </nav>
 
-      <div className="hidden border-t border-slate-800/60 p-4 sm:block">
-        <p className="text-[11px] leading-relaxed text-slate-600">
-          Powered by Google Gemini
-          <br />
-          입력 내용은 안전하게 처리됩니다
-        </p>
-      </div>
+      <ProfileMenu />
     </aside>
   );
 }

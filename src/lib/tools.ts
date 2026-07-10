@@ -197,8 +197,7 @@ export const TOOLS: ToolDef[] = [
     label: "AI 채팅",
     short: "AI 채팅",
     title: "AI 채팅",
-    description:
-      "여러 AI와 자유롭게 대화하세요. 이미지나 문서를 첨부해 질문할 수 있고, 원하는 AI 모델과 성격(페르소나)을 골라 쓸 수 있습니다.",
+    description: "무엇이든 편하게 물어보세요. 대화는 자동으로 저장되어 히스토리에서 다시 볼 수 있어요.",
     icon: MessagesSquare,
     inputType: "chat",
     outputType: "markdown",

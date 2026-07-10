@@ -40,7 +40,7 @@ function LoginCard() {
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
           <Sparkles className="h-6 w-6 text-white" />
         </div>
-        <h1 className="mt-4 text-xl font-bold text-slate-50">AI 툴킷 로그인</h1>
+        <h1 className="mt-4 text-xl font-bold text-slate-50">zeff 로그인</h1>
         <p className="mt-2 text-sm text-slate-400">
           로그인하면 어느 기기에서든 대화와 결과물을 이어서 사용할 수 있어요.
         </p>

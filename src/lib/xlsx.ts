@@ -33,7 +33,7 @@ export function parseWorkbook(raw: string): Workbook {
 /** Workbook을 실제 .xlsx로 만들어 base64 문자열로 반환 (서버 전용) */
 export async function buildXlsxBase64(wb: Workbook): Promise<string> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "AI 툴킷";
+  workbook.creator = "zeff";
 
   const sheets = wb.sheets.length > 0 ? wb.sheets : [{ name: "시트1", columns: [], rows: [] }];
 

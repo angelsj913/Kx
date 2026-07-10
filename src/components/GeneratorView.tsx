@@ -91,9 +91,9 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
         <h2 className="text-lg font-bold text-slate-100">{tool.title}</h2>
         <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-1 flex-col">
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col">
           {isText && (
-            <div className="relative flex-1">
+            <div className="relative">
               <textarea
                 value={text}
                 maxLength={MAX_CHARS}
@@ -102,7 +102,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") handleSubmit();
                 }}
                 placeholder={tool.placeholder}
-                className="h-full min-h-[220px] w-full resize-y rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 pb-9 text-base text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-[var(--mode-accent)]/70 focus:ring-2 focus:ring-[var(--mode-accent)]/20"
+                className="h-[120px] min-h-[80px] w-full resize-y rounded-xl border border-slate-700/60 bg-slate-900/60 p-3.5 pb-8 text-sm text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-500 focus:border-[var(--mode-accent)]/70 focus:ring-2 focus:ring-[var(--mode-accent)]/20"
               />
               <span
                 className={`pointer-events-none absolute bottom-3 right-4 text-xs tabular-nums ${
@@ -115,7 +115,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
           )}
 
           {isUrl && (
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-col">
               <div className="relative">
                 <LinkIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                 <input
@@ -139,7 +139,7 @@ export default function GeneratorView({ tool }: { tool: ToolDef }) {
           <button
             type="submit"
             disabled={loading || !canSubmit}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-black/40 transition-all duration-300 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-black/40 transition-all duration-300 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
           >
             {loading ? (
               <>

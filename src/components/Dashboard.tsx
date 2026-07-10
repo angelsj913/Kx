@@ -1,43 +1,59 @@
 "use client";
 
-import { History, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { View } from "@/components/Sidebar";
 import ModeSwitch from "@/components/ModeSwitch";
 import { toolsForMode, type AppMode } from "@/lib/tools";
 
+const GREETING: Record<AppMode, { eyebrow: string; title: string; subtitle: string }> = {
+  office: {
+    eyebrow: "직장인을 위한 zeff",
+    title: "오늘은 뭐부터 처리해볼까요?",
+    subtitle: "필요한 것만 골라서, 빠르게 끝내요.",
+  },
+  student: {
+    eyebrow: "학생을 위한 zeff",
+    title: "오늘은 뭐부터 시작해볼까요?",
+    subtitle: "복습도 과제도, 부담 없이 시작해요.",
+  },
+};
+
 export default function Dashboard({
   onNavigate,
-  historyCount,
   appMode,
   onModeChange,
 }: {
   onNavigate: (v: View) => void;
-  historyCount: number;
   appMode: AppMode;
   onModeChange: (m: AppMode) => void;
 }) {
-  const tools = toolsForMode(appMode);
-  const isStudent = appMode === "student";
+  const tools = toolsForMode(appMode).filter((t) => t.appMode !== "common");
+  const g = GREETING[appMode];
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="rounded-2xl border border-slate-700/50 bg-gradient-to-br from-[var(--mode-accent)]/20 to-[var(--mode-accent-deep)]/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-md transition-colors duration-500 ease-in-out sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
-          {isStudent ? "학생을 위한 AI 툴킷" : "직장인을 위한 AI 툴킷"}
-        </h1>
-        <p className="mt-2 max-w-xl text-sm text-slate-300 sm:text-base">
-          {isStudent
-            ? "강의 요약, 수업 정리, 발표문 작성까지. 공부에 필요한 도구를 한곳에 모았습니다."
-            : "문서 작성, PPT·엑셀 초안까지. 업무에 필요한 도구를 한곳에 모았습니다."}
-        </p>
-
-        {/* 모바일용 모드 전환 (사이드바에서는 넓은 화면에만 보임) */}
-        <div className="mt-5 max-w-xs sm:hidden">
+    <div className="mx-auto max-w-2xl">
+      <div className="flex items-center justify-between">
+        <div className="max-w-xs sm:hidden">
           <ModeSwitch mode={appMode} onChange={onModeChange} />
         </div>
+        <span className="ml-auto text-xs font-medium text-slate-500">{g.eyebrow}</span>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="mt-8 text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">{g.title}</h1>
+        <p className="mt-2 text-sm text-slate-400">{g.subtitle}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onNavigate("chat")}
+        className="mt-8 flex w-full items-center justify-between rounded-2xl border border-slate-700/50 bg-slate-800/40 px-5 py-4 text-left text-sm text-slate-400 shadow-xl shadow-black/30 backdrop-blur-md transition-colors hover:border-[var(--mode-accent)]/50"
+      >
+        무엇이든 물어보세요
+        <ArrowRight className="h-4 w-4 shrink-0 text-slate-500" />
+      </button>
+
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           return (
@@ -45,43 +61,14 @@ export default function Dashboard({
               key={tool.id}
               type="button"
               onClick={() => onNavigate(tool.id)}
-              className="group flex flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 text-left shadow-xl shadow-black/30 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:border-[var(--mode-accent)]/50"
+              className="flex items-center gap-2 rounded-full border border-slate-700/50 bg-slate-800/40 px-4 py-2 text-sm text-slate-300 backdrop-blur-md transition-colors hover:border-[var(--mode-accent)]/50 hover:text-slate-100"
             >
-              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--mode-accent)] to-[var(--mode-accent-deep)] shadow-lg shadow-black/40 transition-colors duration-500 ease-in-out">
-                <Icon className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="text-base font-semibold text-slate-100">
-                {tool.title}
-              </h3>
-              <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-400">
-                {tool.description}
-              </p>
-              <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--mode-accent)] transition-transform duration-300 group-hover:translate-x-1">
-                시작하기 <ArrowRight className="h-4 w-4" />
-              </span>
+              <Icon className="h-4 w-4 text-[var(--mode-accent)]" />
+              {tool.label}
             </button>
           );
         })}
       </div>
-
-      <button
-        type="button"
-        onClick={() => onNavigate("history")}
-        className="mt-4 flex w-full items-center justify-between rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 text-left shadow-xl shadow-black/30 backdrop-blur-md transition-all duration-300 hover:border-[var(--mode-accent)]/50"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-900/60">
-            <History className="h-5 w-5 text-[var(--mode-accent)]" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-slate-100">마이 히스토리</h3>
-            <p className="text-sm text-slate-400">
-              저장된 작업 {historyCount.toLocaleString()}건 · 언제든 다시 열어보세요
-            </p>
-          </div>
-        </div>
-        <ArrowRight className="h-5 w-5 text-slate-500" />
-      </button>
     </div>
   );
 }

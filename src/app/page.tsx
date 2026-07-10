@@ -62,7 +62,7 @@ export default function Landing() {
       </main>
 
       <footer className="relative z-10 border-t border-slate-800/60 py-10 text-center text-xs text-slate-600">
-        <p>AI 툴킷 데스크톱 애플리케이션 · 클라우드 동기화 지원</p>
+        <p>zeff 데스크톱 애플리케이션 · 클라우드 동기화 지원</p>
         <p className="mt-1.5 text-slate-700">
           궁금한 점은 헤더의 Support 버튼을 눌러 언제든 문의해 주세요.
         </p>
