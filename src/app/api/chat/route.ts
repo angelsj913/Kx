@@ -7,6 +7,16 @@ import { openrouterChatReply } from "@/lib/openrouter";
 // 실제 서비스 채팅(/api/chat/conversations/...)과는 별개이며 대화 이력을 저장하지 않는다.
 // 배포 환경에 그대로 열어두면 인증 없이 유료 API를 호출할 수 있으므로 프로덕션에서는 막아둔다.
 
+// ── API 키: 실제 값은 여기에 직접 적지 말고 .env.local에 넣으세요 (git에 커밋되지 않음) ──
+//   GEMINI_API_KEY      → https://aistudio.google.com/apikey 에서 발급
+//   GROQ_API_KEY        → https://console.groq.com/keys 에서 발급
+//   OPENROUTER_API_KEY  → https://openrouter.ai/keys 에서 발급
+// 아래 세 상수는 어떤 키가 어느 프로바이더로 들어가는지 코드만 보고 바로 알 수 있도록
+// 이름을 맞춰둔 것뿐이고, 실제 값은 process.env에서 그대로 가져온다.
+const GOOGLE_GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+
 type Provider = "gemini" | "groq" | "openrouter";
 
 const DEFAULT_MODELS: Record<Provider, string> = {
@@ -47,11 +57,26 @@ export async function POST(req: Request) {
   try {
     let reply: string;
     if (provider === "gemini") {
-      reply = await geminiChatReply({ model: selectedModel, systemInstruction: SYSTEM_INSTRUCTION, messages });
+      reply = await geminiChatReply({
+        apiKey: GOOGLE_GEMINI_API_KEY,
+        model: selectedModel,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        messages,
+      });
     } else if (provider === "groq") {
-      reply = await groqChatReply({ model: selectedModel, systemInstruction: SYSTEM_INSTRUCTION, messages });
+      reply = await groqChatReply({
+        apiKey: GROQ_API_KEY,
+        model: selectedModel,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        messages,
+      });
     } else {
-      reply = await openrouterChatReply({ model: selectedModel, systemInstruction: SYSTEM_INSTRUCTION, messages });
+      reply = await openrouterChatReply({
+        apiKey: OPENROUTER_API_KEY,
+        model: selectedModel,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        messages,
+      });
     }
     return NextResponse.json({ provider, model: selectedModel, reply });
   } catch (err) {
