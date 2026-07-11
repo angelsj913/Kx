@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const password = String(body?.password ?? "");
     const dialCode = String(body?.dialCode ?? "").trim();
     const phoneNumber = String(body?.phone ?? "").trim();
+    const phoneId = String(body?.phoneId ?? "").trim();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "올바른 이메일 주소를 입력해 주세요." }, { status: 400 });
@@ -36,12 +37,16 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
     const phone = dialCode && phoneNumber ? `${dialCode} ${phoneNumber}` : phoneNumber || null;
 
+    // 전화번호 SMS 인증을 최근에 완료했으면 phoneVerified 기록(서버에서 재확인)
+    const phoneVerified = phoneId ? await hasRecentVerifiedOtp(phoneId, "signup") : false;
+
     await prisma.user.create({
       data: {
         email,
         passwordHash,
         phone,
         emailVerified: new Date(),
+        phoneVerified: phoneVerified ? new Date() : null,
       },
     });
 
