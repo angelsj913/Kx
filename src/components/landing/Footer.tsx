@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLandingT } from "@/lib/landingI18n";
 
-const CONTACT_EMAIL = "kxeung9@gmail.com";
+const CONTACT_EMAIL = "zeff@zeffai.com";
 const CEO_NAME = "KWON SEUNGJUN";
 
 export default function Footer() {
