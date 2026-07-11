@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
 export type OtpChannel = "email" | "sms";
@@ -77,23 +78,47 @@ export async function hasRecentVerifiedOtp(
 }
 
 async function sendEmailOtp(email: string, code: string): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("이메일 인증이 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.");
-    }
-    console.log(`[OTP:email:dev] ${email} -> ${code}`);
+  const subject = "[ZEFF AI] 인증번호";
+  const text = `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
+  const html = `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`;
+
+  // 1) 구글 워크스페이스(Gmail) SMTP — SMTP_USER/SMTP_PASS(앱 비밀번호)가 있으면 우선 사용
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: Number(process.env.SMTP_PORT || 465),
+      secure: true,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || `ZEFF AI <${process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html,
+    });
     return;
   }
-  const resend = new Resend(apiKey);
-  const from = process.env.RESEND_FROM || "ZEFF AI <onboarding@resend.dev>";
-  await resend.emails.send({
-    from,
-    to: email,
-    subject: "[ZEFF AI] 인증번호",
-    text: `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`,
-    html: `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`,
-  });
+
+  // 2) Resend(대체) — RESEND_API_KEY가 있으면 사용
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey) {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: process.env.RESEND_FROM || "ZEFF AI <onboarding@resend.dev>",
+      to: email,
+      subject,
+      text,
+      html,
+    });
+    return;
+  }
+
+  // 3) 발송 수단 없음
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("이메일 발송이 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  console.log(`[OTP:email:dev] ${email} -> ${code}`);
 }
 
 /** 국내 SMS 발송 핸들러 스터브 — 실제 연동(예: 솔라피/NHN Cloud) 시 이 함수만 구현하면 된다. */
