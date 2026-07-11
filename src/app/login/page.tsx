@@ -3,7 +3,8 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
+import { useLandingT } from "@/lib/landingI18n";
 
 function GoogleIcon() {
   return (
@@ -29,76 +30,78 @@ function GoogleIcon() {
 }
 
 function LoginCard() {
+  const t = useLandingT();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/app";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-6 text-slate-100">
-      <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900">
+      <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700/60 bg-slate-900/70 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-md">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
-        <h1 className="mt-4 text-xl font-bold text-slate-50">AI 툴킷 로그인</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          로그인하면 어느 기기에서든 대화와 결과물을 이어서 사용할 수 있어요.
-        </p>
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10">
+        <Image
+          src="/logo-zeff.png"
+          alt="ZEFF AI"
+          width={48}
+          height={48}
+          className="mx-auto rounded-xl"
+        />
+        <h1 className="mt-4 text-xl font-bold text-slate-900">{t("login.title")}</h1>
+        <p className="mt-2 text-sm text-slate-600">{t("login.subtitle")}</p>
 
         <button
           type="button"
           onClick={() => signIn("google", { callbackUrl })}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700/60 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:border-blue-500/50 active:scale-[0.98]"
         >
           <GoogleIcon />
-          구글로 로그인
+          {t("login.google")}
         </button>
 
         <button
           type="button"
           disabled
-          title="애플 로그인은 준비 중입니다"
-          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/50 px-6 py-3 text-sm font-medium text-slate-500"
+          title={t("login.apple")}
+          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400"
         >
-          Apple로 로그인 (준비 중)
+          {t("login.apple")}
         </button>
 
         <div className="mt-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-700/60" />
-          <span className="text-xs text-slate-500">또는 이메일로 계속하기</span>
-          <div className="h-px flex-1 bg-slate-700/60" />
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs text-slate-500">{t("login.or")}</span>
+          <div className="h-px flex-1 bg-slate-200" />
         </div>
 
         <form className="mt-6 space-y-3 text-left" onSubmit={(e) => e.preventDefault()}>
           <input
             type="email"
-            placeholder="이메일"
+            placeholder={t("login.email")}
             autoComplete="off"
-            className="w-full rounded-xl border border-slate-700/60 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-violet-500/60"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60"
           />
           <input
             type="password"
-            placeholder="비밀번호"
+            placeholder={t("login.password")}
             autoComplete="off"
-            className="w-full rounded-xl border border-slate-700/60 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-violet-500/60"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60"
           />
           <button
             type="submit"
             disabled
-            title="이메일 로그인은 준비 중입니다"
-            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-700/60 bg-slate-800/50 px-6 py-3 text-sm font-medium text-slate-500"
+            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400"
           >
-            로그인
+            {t("login.submit")}
           </button>
         </form>
 
         <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
-          <button type="button" className="hover:text-slate-300">
-            아이디 찾기
+          <button type="button" className="hover:text-blue-600">
+            {t("login.findId")}
           </button>
-          <span className="text-slate-700">·</span>
-          <button type="button" className="hover:text-slate-300">
-            비밀번호 찾기
+          <span className="text-slate-300">·</span>
+          <button type="button" className="hover:text-blue-600">
+            {t("login.findPassword")}
           </button>
         </div>
       </div>

@@ -7,7 +7,9 @@ export type StructuredKind =
   | "meeting"
   | "weeklyReport"
   | "lectureNotes"
-  | "researchDraft";
+  | "researchDraft"
+  | "examAnalysis"
+  | "practiceSet";
 
 // ── 회의록 ──
 
@@ -152,11 +154,85 @@ export function parseResearchDraft(raw: string): ResearchDraft {
   };
 }
 
+// ── 시험지 분석 ──
+
+export interface ExamQuestionAnalysis {
+  number: string;
+  topic: string;
+  difficulty: string;
+  keyPoint: string;
+}
+
+export interface ExamAnalysis {
+  examTitle: string;
+  subject: string;
+  overallDifficulty: string;
+  summary: string;
+  questions: ExamQuestionAnalysis[];
+}
+
+export function parseExamAnalysis(raw: string): ExamAnalysis {
+  const obj = JSON.parse(extractJson(raw));
+  return {
+    examTitle: typeof obj?.examTitle === "string" ? obj.examTitle : "",
+    subject: typeof obj?.subject === "string" ? obj.subject : "",
+    overallDifficulty: typeof obj?.overallDifficulty === "string" ? obj.overallDifficulty : "",
+    summary: typeof obj?.summary === "string" ? obj.summary : "",
+    questions: Array.isArray(obj?.questions)
+      ? (obj.questions as unknown[]).map((q) => {
+          const o = q as Record<string, unknown>;
+          return {
+            number: typeof o?.number === "string" ? o.number : String(o?.number ?? ""),
+            topic: typeof o?.topic === "string" ? o.topic : "",
+            difficulty: typeof o?.difficulty === "string" ? o.difficulty : "",
+            keyPoint: typeof o?.keyPoint === "string" ? o.keyPoint : "",
+          };
+        })
+      : [],
+  };
+}
+
+// ── 전과목 유사문제 생성 ──
+
+export interface PracticeProblem {
+  question: string;
+  choices: string[];
+  answer: string;
+  explanation: string;
+}
+
+export interface PracticeSet {
+  subject: string;
+  problems: PracticeProblem[];
+}
+
+export function parsePracticeSet(raw: string): PracticeSet {
+  const obj = JSON.parse(extractJson(raw));
+  return {
+    subject: typeof obj?.subject === "string" ? obj.subject : "",
+    problems: Array.isArray(obj?.problems)
+      ? (obj.problems as unknown[]).map((p) => {
+          const o = p as Record<string, unknown>;
+          return {
+            question: typeof o?.question === "string" ? o.question : "",
+            choices: Array.isArray(o?.choices)
+              ? (o.choices as unknown[]).map((c) => String(c))
+              : [],
+            answer: typeof o?.answer === "string" ? o.answer : "",
+            explanation: typeof o?.explanation === "string" ? o.explanation : "",
+          };
+        })
+      : [],
+  };
+}
+
 export type StructuredData =
   | { kind: "meeting"; data: MeetingMinutes }
   | { kind: "weeklyReport"; data: WeeklyReport }
   | { kind: "lectureNotes"; data: LectureNotes }
-  | { kind: "researchDraft"; data: ResearchDraft };
+  | { kind: "researchDraft"; data: ResearchDraft }
+  | { kind: "examAnalysis"; data: ExamAnalysis }
+  | { kind: "practiceSet"; data: PracticeSet };
 
 export function parseStructured(kind: StructuredKind, raw: string): StructuredData {
   switch (kind) {
@@ -168,5 +244,9 @@ export function parseStructured(kind: StructuredKind, raw: string): StructuredDa
       return { kind, data: parseLectureNotes(raw) };
     case "researchDraft":
       return { kind, data: parseResearchDraft(raw) };
+    case "examAnalysis":
+      return { kind, data: parseExamAnalysis(raw) };
+    case "practiceSet":
+      return { kind, data: parsePracticeSet(raw) };
   }
 }

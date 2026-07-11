@@ -5,7 +5,13 @@ import { useEffect, useRef, useState } from "react";
 export type SaveStatus = "idle" | "saving" | "error";
 
 /** 데이터가 바뀔 때마다 debounce 후 히스토리 항목을 PATCH로 저장한다. 첫 마운트(생성 직후 초기값)는 저장하지 않는다. */
-export function useAutosave<T>(id: string, data: T, delay = 800): SaveStatus {
+export function useAutosave<T>(
+  id: string,
+  data: T,
+  options?: { endpoint?: (id: string) => string; delay?: number }
+): SaveStatus {
+  const endpoint = options?.endpoint ?? ((itemId: string) => `/api/chat/history/${itemId}`);
+  const delay = options?.delay ?? 800;
   const [status, setStatus] = useState<SaveStatus>("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skippedFirst = useRef(false);
@@ -22,7 +28,7 @@ export function useAutosave<T>(id: string, data: T, delay = 800): SaveStatus {
       (async () => {
         setStatus("saving");
         try {
-          const res = await fetch(`/api/history/${id}`, {
+          const res = await fetch(endpoint(id), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ result: serialized }),
@@ -37,6 +43,7 @@ export function useAutosave<T>(id: string, data: T, delay = 800): SaveStatus {
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serialized, id, delay]);
 
   return status;

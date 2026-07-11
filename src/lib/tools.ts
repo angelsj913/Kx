@@ -11,13 +11,19 @@ import {
   BarChart3,
   NotebookText,
   BookMarked,
+  ScanSearch,
+  Copy,
+  FileType2,
+  Shuffle,
+  MessageCircle,
+  LibraryBig,
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
 export type AppMode = "student" | "office";
 /** 도구가 속한 모드. "common"은 두 모드 모두에 노출된다. */
 export type ToolScope = AppMode | "common";
-export type InputType = "text" | "url" | "audio" | "chat";
+export type InputType = "text" | "url" | "audio" | "image" | "chat";
 export type OutputType = "markdown" | "pptx" | "xlsx" | "structured";
 
 export interface ToolDef {
@@ -188,6 +194,83 @@ const RESEARCH_DRAFT_INSTRUCTION = `너는 학생의 레포트·논문 작성을
 - sections는 서론부터 결론까지 4~6개 섹션으로 구성한다.
 - citations는 본문 내용과 관련해 사용자가 실제로 찾아 보강해야 할 자료를 제안하는 용도이며, 확실하지 않은 저자명은 빈 문자열로 둔다.
 - 모든 텍스트는 한국어로 작성한다.`;
+
+const EXAM_ANALYSIS_INSTRUCTION = `너는 입시 전문 강사이다. 사용자가 촬영해서 올린 시험지 이미지를 분석해, 문항별로 출제 의도와 난이도를 정리해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "examTitle": "시험지에서 확인되는 제목(없으면 빈 문자열)",
+  "subject": "과목명",
+  "overallDifficulty": "전체 난이도(예: 상/중상/중/중하/하)",
+  "summary": "시험 전체에 대한 총평 두세 문장",
+  "questions": [
+    { "number": "문항 번호", "topic": "출제된 단원/개념", "difficulty": "해당 문항 난이도", "keyPoint": "이 문항을 풀기 위한 핵심 포인트" }
+  ]
+}
+
+지침:
+- 이미지에서 보이는 문항 순서대로 questions를 채워라.
+- 글씨나 그림이 불명확해 판단이 어려운 문항은 topic/keyPoint에 "이미지 판독 불가"로 표시하라.
+- 모든 텍스트는 한국어로 작성한다.`;
+
+const EXAM_SIMILARITY_INSTRUCTION = `너는 기출문제 분석 전문가이다. 사용자가 올린 2장 이상의 시험지 이미지를 서로 비교해, 얼마나 유사한지 분석 리포트를 작성해야 한다.
+
+[출력 포맷 지침]
+- 마크다운 문법(제목, 굵게, 목록)을 활용해 구조화하라.
+- 다음 순서로 정리하라.
+  1. **전체 유사도 총평**: 두 시험지가 전반적으로 얼마나 비슷한지 한 문단으로.
+  2. **문항별 대응 비교**: 유사하거나 동일한 출제 포인트를 가진 문항끼리 짝지어 표로 비교.
+  3. **차이점**: 문제 유형/난이도/서술 방식에서 달라진 부분.
+  4. **결론**: 재출제·변형 문제로 볼 수 있는지에 대한 판단.
+- 모든 내용은 한국어로 작성한다.`;
+
+const DOC_CONVERT_INSTRUCTION = `너는 문서 디지털화 전문가이다. 사용자가 사진이나 스캔본으로 올린 문서 이미지를, 원본 구조를 최대한 살려 깔끔한 텍스트로 변환해야 한다.
+
+[출력 포맷 지침]
+- 마크다운 문법(제목, 표, 목록)을 활용해 원본의 단락/표/목록 구조를 최대한 그대로 재현하라.
+- 손글씨나 인쇄 상태가 불명확해 읽기 어려운 부분은 추측하지 말고 "[판독 불가]"로 표시하라.
+- 문서에 없는 내용을 임의로 추가하지 마라.
+- 모든 텍스트는 원문 언어를 그대로 유지한다(한국어 문서는 한국어로).`;
+
+const SIMILAR_PROBLEMS_INSTRUCTION = `너는 전과목을 아우르는 학원 문제 출제위원이다. 사용자가 입력한 과목·단원·문제 유형을 바탕으로, 실제 시험에 낼 수 있는 수준의 유사 문제 세트를 설계해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "subject": "과목명",
+  "problems": [
+    {
+      "question": "문제 지문",
+      "choices": ["보기1", "보기2", "보기3", "보기4"],
+      "answer": "정답(보기 중 하나 그대로)",
+      "explanation": "정답인 이유와 오답 보기가 틀린 이유를 포함한 해설"
+    }
+  ]
+}
+
+지침:
+- 사용자가 요청한 과목/단원에 맞는 문제를 4~6문항 생성하라.
+- 객관식이 아닌 서술형/단답형이 더 적합하면 choices는 빈 배열로 두고 question에 문제 유형을 명시하라.
+- 모든 텍스트는 한국어로 작성한다.`;
+
+const LECTURE_CHAT_INSTRUCTION = `너는 강의 영상을 함께 보고 이야기 나누는 친절한 학습 파트너이다. 제공된 강의 영상을 확인한 뒤, 아래 순서로 답하라.
+
+[출력 포맷 지침]
+- 마크다운 문법(제목, 굵게, 목록)을 활용해 구조화하라.
+1. **핵심 요약**: 강의의 핵심 내용을 3~5줄로 간단히.
+2. **함께 이야기해볼 만한 포인트**: 학생이 궁금해할 만한 지점 2~3개를 질문 형태로 제시.
+- 마지막 줄에 "궁금한 부분을 편하게 이어서 물어보세요."라는 안내를 덧붙여라.
+- 이후 사용자가 이어서 질문하면, 이 강의 내용을 바탕으로 자연스럽게 대화를 이어간다.
+- 모든 내용은 한국어로 작성한다.`;
+
+const LIBRARY_EXTRACT_INSTRUCTION = `너는 도서관 사서이다. 업로드된 문서/책 이미지의 내용을 나중에 대화로 다시 활용할 수 있도록 최대한 충실하게 정리해야 한다.
+
+[출력 포맷 지침]
+- 마크다운 문법(제목, 목록)을 활용해 목차/핵심 개념/주요 내용 순서로 구조화하라.
+- 이 정리본은 이후 사용자가 이 문서에 대해 질문할 때 유일한 참고 자료로 쓰이므로, 세부 정보(고유명사, 숫자, 정의)를 최대한 보존하라.
+- 읽기 어려운 부분은 "[판독 불가]"로 표시하라.
+- 모든 텍스트는 원문 언어를 유지한다(한국어 문서는 한국어로).`;
 
 export const TOOLS: ToolDef[] = [
   // ── 공통 ──
@@ -380,6 +463,103 @@ export const TOOLS: ToolDef[] = [
       "예) '기후변화가 국내 농업에 미치는 영향'을 주제로 한 레포트 초안을 써줘.",
     submitLabel: "초안 만들기",
     fileBaseName: "research-draft",
+  },
+  {
+    id: "exam-analysis",
+    appMode: "student",
+    label: "시험지 분석",
+    short: "시험지 분석",
+    title: "시험지 분석",
+    description:
+      "시험지를 촬영해 올리면 과목과 문항별 출제 포인트, 난이도까지 분석해 정리합니다.",
+    icon: ScanSearch,
+    inputType: "image",
+    outputType: "structured",
+    structuredKind: "examAnalysis",
+    systemInstruction: EXAM_ANALYSIS_INSTRUCTION,
+    placeholder: "분석 시 참고할 내용이 있다면 입력하세요 (선택)",
+    submitLabel: "시험지 분석하기",
+    fileBaseName: "exam-analysis",
+  },
+  {
+    id: "exam-similarity",
+    appMode: "student",
+    label: "시험지 유사도 분석",
+    short: "유사도 분석",
+    title: "시험지 유사도 분석",
+    description:
+      "두 장 이상의 시험지 사진을 올리면 문항별로 대응시켜 얼마나 비슷한지 비교 리포트를 만들어줍니다.",
+    icon: Copy,
+    inputType: "image",
+    outputType: "markdown",
+    systemInstruction: EXAM_SIMILARITY_INSTRUCTION,
+    placeholder: "비교 시 참고할 내용이 있다면 입력하세요 (선택)",
+    submitLabel: "유사도 분석하기",
+    fileBaseName: "exam-similarity",
+  },
+  {
+    id: "doc-convert",
+    appMode: "office",
+    label: "문서 변환",
+    short: "문서 변환",
+    title: "문서 변환",
+    description:
+      "사진이나 스캔본으로 찍은 문서를 원본 구조를 살린 깔끔한 텍스트로 변환합니다.",
+    icon: FileType2,
+    inputType: "image",
+    outputType: "markdown",
+    systemInstruction: DOC_CONVERT_INSTRUCTION,
+    placeholder: "변환 시 참고할 내용이 있다면 입력하세요 (선택)",
+    submitLabel: "문서 변환하기",
+    fileBaseName: "document",
+  },
+  {
+    id: "similar-problems",
+    appMode: "student",
+    label: "전과목 유사문제 생성",
+    short: "유사문제 생성",
+    title: "전과목 유사문제 생성",
+    description:
+      "과목과 단원, 원하는 문제 유형을 입력하면 보기와 정답, 해설까지 갖춘 유사 문제 세트를 만들어줍니다.",
+    icon: Shuffle,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "practiceSet",
+    systemInstruction: SIMILAR_PROBLEMS_INSTRUCTION,
+    placeholder: "예) 중학교 2학년 과학, 화학 반응식 단원 객관식 문제 5개 만들어줘.",
+    submitLabel: "유사문제 만들기",
+    fileBaseName: "practice-set",
+  },
+  {
+    id: "lecture-chat",
+    appMode: "student",
+    label: "강의 채팅",
+    short: "강의 채팅",
+    title: "강의 채팅",
+    description:
+      "강의 영상 주소를 붙여넣으면 핵심 내용을 먼저 요약해주고, 이어서 그 강의에 대해 자유롭게 대화할 수 있습니다.",
+    icon: MessageCircle,
+    inputType: "url",
+    outputType: "markdown",
+    systemInstruction: LECTURE_CHAT_INSTRUCTION,
+    placeholder: "예) https://www.youtube.com/watch?v=...",
+    submitLabel: "강의 불러오기",
+    fileBaseName: "lecture-chat",
+  },
+  {
+    id: "library-extract",
+    appMode: "student",
+    label: "서재 문서 추출",
+    short: "서재 추출",
+    title: "서재 문서 추출",
+    description: "내 서재에 올린 문서를 Book Chat에서 활용할 수 있도록 내용을 정리합니다.",
+    icon: LibraryBig,
+    inputType: "image",
+    outputType: "markdown",
+    systemInstruction: LIBRARY_EXTRACT_INSTRUCTION,
+    placeholder: "",
+    submitLabel: "정리하기",
+    fileBaseName: "library-extract",
   },
 ];
 

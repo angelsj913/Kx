@@ -1,93 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Sidebar, { type View } from "@/components/Sidebar";
-import Dashboard from "@/components/Dashboard";
-import GeneratorView from "@/components/GeneratorView";
-import AiChat from "@/components/AiChat";
-import HistoryView from "@/components/HistoryView";
-import Account from "@/components/Account";
-import { useHistory } from "@/lib/history";
-import { useAppMode, setAppMode } from "@/lib/appMode";
-import { getTool, type AppMode } from "@/lib/tools";
-import { themeCssVars } from "@/lib/theme";
+import Sidebar from "@/components/Sidebar";
+import ChatWorkspace from "@/components/ChatWorkspace";
+import LibraryView from "@/components/LibraryView";
+import { useSessions } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
 
+// 모드 개념이 사라져 고정 포인트 컬러로 통일 (기존 학생 모드 팔레트와 동일한 톤).
+const ACCENT_VARS = {
+  "--mode-bg": "#0F172A",
+  "--mode-accent": "#8B5CF6",
+  "--mode-accent-deep": "#6D28D9",
+} as CSSProperties;
+
 export default function AppWorkspace() {
-  const [view, setView] = useState<View>("dashboard");
-  const { items: history, loading, removeItem, clearAll, refetch } = useHistory();
-  const appMode = useAppMode();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [view, setView] = useState<"chat" | "library">("chat");
+  const { sessions, refetch, removeSession } = useSessions();
 
-  function handleNavigate(v: View) {
-    setView(v);
-    if (v === "history") refetch();
+  function handleNewChat() {
+    setActiveSessionId(null);
+    setView("chat");
   }
 
-  function handleModeChange(mode: AppMode) {
-    setAppMode(mode);
-    // 현재 보고 있던 도구가 새 모드 전용이라 안 맞으면 대시보드로 (공통 도구는 유지)
-    const currentTool = getTool(view);
-    if (
-      currentTool &&
-      currentTool.appMode !== "common" &&
-      currentTool.appMode !== mode
-    ) {
-      setView("dashboard");
-    }
+  function handleSelectSession(id: string) {
+    setActiveSessionId(id);
+    setView("chat");
   }
 
-  const activeTool = getTool(view);
+  function handleSessionCreated(id: string) {
+    setActiveSessionId(id);
+    refetch();
+  }
+
+  async function handleDeleteSession(id: string) {
+    await removeSession(id);
+    if (id === activeSessionId) setActiveSessionId(null);
+  }
+
+  function handleOpenBookChat(sessionId: string) {
+    setActiveSessionId(sessionId);
+    refetch();
+    setView("chat");
+  }
 
   return (
     <div
-      style={themeCssVars(appMode)}
-      className="relative flex h-screen overflow-hidden bg-[var(--mode-bg)] text-slate-100 transition-colors duration-500 ease-in-out"
+      style={ACCENT_VARS}
+      className="relative flex h-screen overflow-hidden bg-[var(--mode-bg)] text-slate-100"
     >
-      {/* ambient background glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[var(--mode-accent)]/20 blur-[120px] transition-colors duration-500 ease-in-out" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-[var(--mode-accent-deep)]/10 blur-[120px] transition-colors duration-500 ease-in-out" />
+      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[var(--mode-accent)]/20 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-[var(--mode-accent-deep)]/10 blur-[120px]" />
 
       <Sidebar
-        view={view}
-        onNavigate={handleNavigate}
-        appMode={appMode}
-        onModeChange={handleModeChange}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        activeView={view}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
+        onOpenLibrary={() => setView("library")}
       />
 
-      <main className="relative z-10 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <main className="relative z-10 min-w-0 flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${appMode}-${view}`}
+            key={view === "library" ? "library" : activeSessionId ?? "new"}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="h-full"
           >
-            {view === "dashboard" && (
-              <Dashboard
-                onNavigate={handleNavigate}
-                historyCount={history.length}
-                appMode={appMode}
-                onModeChange={handleModeChange}
+            {view === "library" ? (
+              <LibraryView onOpenBookChat={handleOpenBookChat} />
+            ) : (
+              <ChatWorkspace
+                sessionId={activeSessionId}
+                onSessionCreated={handleSessionCreated}
+                onTurnSaved={refetch}
               />
             )}
-            {view === "history" && (
-              <HistoryView
-                items={history}
-                loading={loading}
-                removeItem={removeItem}
-                clearAll={clearAll}
-              />
-            )}
-            {view === "account" && <Account />}
-            {activeTool &&
-              (activeTool.inputType === "chat" ? (
-                <AiChat />
-              ) : (
-                <GeneratorView tool={activeTool} />
-              ))}
           </motion.div>
         </AnimatePresence>
       </main>
