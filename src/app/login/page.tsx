@@ -1,10 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useLandingT } from "@/lib/landingI18n";
+import BackButton from "@/components/ui/BackButton";
+import ThemeToggle from "@/components/ThemeToggle";
 
 function GoogleIcon() {
   return (
@@ -33,10 +36,37 @@ function LoginCard() {
   const t = useLandingT();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/app";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onCredentials(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await signIn("credentials", { email, password, redirect: false, callbackUrl });
+      if (res?.error) {
+        setError(t("login.error"));
+        setLoading(false);
+        return;
+      }
+      window.location.href = res?.url || callbackUrl;
+    } catch {
+      setError(t("login.error"));
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
+
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4">
+        <BackButton fallbackHref="/" />
+        <ThemeToggle />
+      </div>
 
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900">
         <Image
@@ -73,37 +103,60 @@ function LoginCard() {
           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
-        <form className="mt-6 space-y-3 text-left" onSubmit={(e) => e.preventDefault()}>
+        <form className="mt-6 space-y-3 text-left" onSubmit={onCredentials}>
           <input
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
             placeholder={t("login.email")}
-            autoComplete="off"
+            autoComplete="email"
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           <input
             type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
             placeholder={t("login.password")}
-            autoComplete="off"
+            autoComplete="current-password"
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
+          {error && (
+            <p className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+              {error}
+            </p>
+          )}
           <button
             type="submit"
-            disabled
-            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-500"
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 disabled:opacity-60"
           >
             {t("login.submit")}
           </button>
         </form>
 
         <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-          <button type="button" className="hover:text-blue-600 dark:hover:text-blue-400">
+          <Link href="/find-id" className="hover:text-blue-600 dark:hover:text-blue-400">
             {t("login.findId")}
-          </button>
+          </Link>
           <span className="text-slate-300 dark:text-slate-600">·</span>
-          <button type="button" className="hover:text-blue-600 dark:hover:text-blue-400">
+          <Link href="/find-password" className="hover:text-blue-600 dark:hover:text-blue-400">
             {t("login.findPassword")}
-          </button>
+          </Link>
         </div>
+
+        <p className="mt-5 border-t border-slate-100 pt-5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          {t("login.signupPrompt")}{" "}
+          <Link
+            href="/signup"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+          >
+            {t("login.signup")}
+          </Link>
+        </p>
       </div>
     </div>
   );
