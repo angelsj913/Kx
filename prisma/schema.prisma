@@ -15,12 +15,16 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String?
+  phone         String?
+  phoneVerified DateTime?
 
   accounts     Account[]
   sessions     Session[]
   historyItems HistoryItem[]
   chatSessions ChatSession[]
   libraryItems LibraryItem[]
+  inquiries    Inquiry[]
   settings     UserSettings?
 }
 
@@ -133,6 +137,39 @@ model LibraryItem {
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   chatSessions ChatSession[]
+
+  @@index([userId, createdAt])
+}
+
+// 이메일/전화 6자리 OTP 임시 저장. 검증 성공 또는 만료 시 정리된다.
+model VerificationCode {
+  id         String   @id @default(cuid())
+  identifier String   // 이메일 주소 또는 전화번호
+  channel    String   // "email" | "sms"
+  purpose    String   @default("signup") // "signup" | "find-id" | "find-password"
+  code       String   // 6자리
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, purpose])
+}
+
+model Inquiry {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String
+  subject   String
+  body      String   @db.Text
+  email     String
+  fileUrl   String?
+  fileName  String?
+  // 상태 머신: "등록" | "처리중" | "답변완료"
+  status    String   @default("등록")
+  reply     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
 }
