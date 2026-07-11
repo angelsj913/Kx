@@ -40,12 +40,6 @@ export default function SignupPage() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
-  // 전화번호 SMS 인증 (선택)
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [phoneSeconds, setPhoneSeconds] = useState(0);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -55,15 +49,6 @@ export default function SignupPage() {
     const id = setInterval(() => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [secondsLeft]);
-
-  useEffect(() => {
-    if (phoneSeconds <= 0) return;
-    const id = setInterval(() => setPhoneSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(id);
-  }, [phoneSeconds]);
-
-  const phoneId = `${dialCode}${phone}`;
-  const phoneExpired = phoneOtpSent && phoneSeconds <= 0 && !phoneVerified;
 
   const expired = otpSent && secondsLeft <= 0 && !otpVerified;
 
@@ -119,54 +104,6 @@ export default function SignupPage() {
     }
   }
 
-  async function sendPhoneOtp() {
-    setError("");
-    setInfo("");
-    if (phone.replace(/\D/g, "").length < 8) {
-      setError("전화번호를 정확히 입력해 주세요.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", identifier: phoneId, channel: "sms", purpose: "signup" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "발송에 실패했습니다.");
-      setPhoneOtpSent(true);
-      setPhoneOtp("");
-      setPhoneVerified(false);
-      setPhoneSeconds(180);
-      if (data.devCode) setInfo(`(개발용) 문자 인증번호: ${data.devCode}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function checkPhoneOtp() {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "check", identifier: phoneId, purpose: "signup", code: phoneOtp }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "인증에 실패했습니다.");
-      setPhoneVerified(true);
-      setPhoneSeconds(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -179,7 +116,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, dialCode, phone, phoneId, phoneVerified }),
+        body: JSON.stringify({ email, password, dialCode, phone }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "가입에 실패했습니다.");
@@ -258,60 +195,10 @@ export default function SignupPage() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
-                disabled={phoneVerified}
                 placeholder={t("auth.field.phoneHint")}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
-              {!phoneOtpSent && !phoneVerified && (
-                <button
-                  type="button"
-                  onClick={sendPhoneOtp}
-                  disabled={loading || phone.length < 8}
-                  className="shrink-0 rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400/60 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
-                >
-                  번호 인증
-                </button>
-              )}
             </div>
-
-            {/* 전화번호 SMS 인증 (선택) */}
-            {phoneVerified ? (
-              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-blue-700 dark:text-blue-300">
-                <CheckCircle2 className="h-4 w-4" /> 전화번호 인증 완료
-              </p>
-            ) : phoneOtpSent ? (
-              <div className="mt-2 space-y-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">문자로 받은 6자리 입력</span>
-                  <span className={phoneExpired ? "font-semibold text-red-500" : "font-semibold text-blue-600 dark:text-blue-400"}>
-                    {phoneExpired ? "만료됨" : fmtTimer(phoneSeconds)}
-                  </span>
-                </div>
-                <OtpInput value={phoneOtp} onChange={setPhoneOtp} disabled={phoneExpired} />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={checkPhoneOtp}
-                    disabled={loading || phoneOtp.length !== 6 || phoneExpired}
-                    className="flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-                  >
-                    확인
-                  </button>
-                  <button
-                    type="button"
-                    onClick={sendPhoneOtp}
-                    disabled={loading}
-                    className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400/60 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
-                  >
-                    재발송
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-                전화번호 인증은 선택입니다. (문자 인증을 원하면 &apos;번호 인증&apos;을 누르세요)
-              </p>
-            )}
           </div>
 
           {/* 이메일 OTP */}
