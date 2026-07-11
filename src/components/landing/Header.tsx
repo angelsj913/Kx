@@ -13,7 +13,6 @@ import {
   type LandingLanguage,
 } from "@/lib/landingI18n";
 import ThemeToggle from "@/components/ThemeToggle";
-import SupportCenter from "./SupportCenter";
 
 const MENU_LINKS = [
   { href: "/about", icon: Building2, labelKey: "nav.about" as const },
@@ -27,7 +26,6 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
   const langRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -123,13 +121,12 @@ export default function Header() {
                 )}
               </AnimatePresence>
             </div>
-            <button
-              type="button"
-              onClick={() => setSupportOpen(true)}
+            <Link
+              href="/support"
               className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
               {t("header.support")}
-            </button>
+            </Link>
             <Link
               href="/login"
               className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
@@ -173,8 +170,6 @@ export default function Header() {
           )}
         </AnimatePresence>
       </header>
-
-      <SupportCenter open={supportOpen} onClose={() => setSupportOpen(false)} />
     </>
   );
 }
