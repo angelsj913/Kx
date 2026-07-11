@@ -74,7 +74,8 @@ function LoginCard() {
           alt="ZEFF AI"
           width={48}
           height={48}
-          className="mx-auto rounded-xl"
+          priority
+          className="mx-auto rounded-xl dark:invert"
         />
         <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-slate-50">{t("login.title")}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("login.subtitle")}</p>

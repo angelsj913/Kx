@@ -310,6 +310,11 @@ const ja: Record<keyof typeof ko, string> = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "お問い合わせ",
   "footer.ceo": "代表",
+  "auth.field.username": "ユーザーID",
+  "auth.field.usernameHint": "英数字4文字以上 · ログインとID確認に使用します",
+  "auth.field.phoneNote": "アカウント復旧と決済・セキュリティ通知にのみ使う任意項目です。",
+  "auth.findId.idLabel": "お客様のID",
+  "auth.findId.noId": "このアカウントにはIDが登録されていません。メールでログインしてください。",
 };
 
 export default ja;

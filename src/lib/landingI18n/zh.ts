@@ -304,6 +304,11 @@ const zh: Record<keyof typeof ko, string> = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "联系我们",
   "footer.ceo": "代表",
+  "auth.field.username": "账号",
+  "auth.field.usernameHint": "字母或数字4位以上 · 用于登录和找回账号",
+  "auth.field.phoneNote": "仅用于账号找回及支付、安全通知的选填项。",
+  "auth.findId.idLabel": "您的账号",
+  "auth.findId.noId": "该账户未设置账号，请使用邮箱登录。",
 };
 
 export default zh;

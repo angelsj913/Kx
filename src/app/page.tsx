@@ -5,6 +5,8 @@ import OfficeFeatures from "@/components/landing/OfficeFeatures";
 import LectureAnalysis from "@/components/landing/LectureAnalysis";
 import FeatureGrid from "@/components/landing/FeatureGrid";
 import Pricing from "@/components/landing/Pricing";
+import FeatureShowcase from "@/components/landing/FeatureShowcase";
+import Team from "@/components/landing/Team";
 import Footer from "@/components/landing/Footer";
 
 export default function Landing() {
@@ -18,6 +20,8 @@ export default function Landing() {
         <LectureAnalysis />
         <FeatureGrid />
         <Pricing />
+        <FeatureShowcase />
+        <Team />
       </main>
       <Footer />
     </div>

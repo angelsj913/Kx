@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ChevronDown, Building2, TrendingUp, FlaskConical, Download } from "lucide-react";
+import { Menu, X, ChevronDown, Building2, TrendingUp, FlaskConical, Download, Wrench } from "lucide-react";
 import {
   useLandingLanguage,
   useLandingT,
@@ -13,11 +12,13 @@ import {
   type LandingLanguage,
 } from "@/lib/landingI18n";
 import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/ui/Logo";
 
 const MENU_LINKS = [
   { href: "/about", icon: Building2, labelKey: "nav.about" as const },
   { href: "/vision", icon: TrendingUp, labelKey: "nav.potential" as const },
   { href: "/prototype", icon: FlaskConical, labelKey: "nav.prototype" as const },
+  { href: "/download", icon: Download, labelKey: "nav.download" as const },
 ];
 
 export default function Header() {
@@ -26,7 +27,22 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const langRef = useRef<HTMLDivElement | null>(null);
+
+  // 개발자(관리자) 계정으로 로그인한 경우에만 개발자 버튼을 노출한다.
+  useEffect(() => {
+    let ignore = false;
+    fetch("/api/auth/session")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!ignore) setIsAdmin(!!d?.user?.isAdmin);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     function onScroll() {
@@ -45,11 +61,6 @@ export default function Header() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [langOpen]);
-
-  function goToDownload() {
-    setMenuOpen(false);
-    document.querySelector("#download")?.scrollIntoView({ behavior: "smooth" });
-  }
 
   return (
     <>
@@ -71,15 +82,24 @@ export default function Header() {
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link href="/" className="flex items-center gap-3" aria-label="ZEFF AI 홈">
-              <Image src="/logo-zeff.png" alt="ZEFF AI" width={28} height={28} className="rounded-md" />
-              <span className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                ZEFF AI
-              </span>
+            <Link href="/" className="flex items-center" aria-label="ZEFF AI 홈">
+              <Logo size="lg" />
             </Link>
           </div>
 
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <a
+                href="/admin"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="개발자 관리"
+                aria-label="개발자 관리"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-500/50 bg-blue-600/10 text-blue-600 transition-colors duration-400 hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
+              >
+                <Wrench className="h-4 w-4" />
+              </a>
+            )}
             <ThemeToggle />
             <div ref={langRef} className="relative">
               <button
@@ -157,14 +177,6 @@ export default function Header() {
                     {t(labelKey)}
                   </Link>
                 ))}
-                <button
-                  type="button"
-                  onClick={goToDownload}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300"
-                >
-                  <Download className="h-4 w-4" />
-                  {t("nav.download")}
-                </button>
               </nav>
             </motion.div>
           )}

@@ -94,7 +94,7 @@ const en: Record<keyof typeof ko, string> = {
     "A relaxed starting point for casual exploration and everyday basics — enough to get a genuine feel for what ZEFF AI's core assistant can do.",
   "pricing.free.price": "$0",
   "pricing.free.period": "/ mo",
-  "pricing.free.cta": "Subscribe",
+  "pricing.free.cta": "Start for free",
   "pricing.free.bullet1": "Core AI chat",
   "pricing.free.bullet2": "20 document generations / month",
   "pricing.free.bullet3": "Try PPT · Excel conversion",
@@ -152,10 +152,13 @@ const en: Record<keyof typeof ko, string> = {
   "auth.signup.subtitle": "Create your ZEFF AI account with email.",
   "auth.signup.submit": "Complete sign up",
   "auth.field.email": "Email",
+  "auth.field.username": "Username",
+  "auth.field.usernameHint": "4+ letters/numbers · used for login and ID recovery",
   "auth.field.password": "Password",
   "auth.field.passwordHint": "At least 8 characters",
   "auth.field.phone": "Phone number",
   "auth.field.phoneHint": "Digits only",
+  "auth.field.phoneNote": "An optional field, used only for account recovery and billing/security alerts.",
   "auth.otp.send": "Send verification code",
   "auth.otp.enter": "Enter the 6-digit code",
   "auth.otp.verify": "Verify",
@@ -165,8 +168,10 @@ const en: Record<keyof typeof ko, string> = {
   "auth.agree.prefix": "By signing up, you agree to the ",
   "auth.agree.suffix": ".",
   "auth.findId.title": "Find your ID",
-  "auth.findId.subtitle": "Verify your email to check your account.",
+  "auth.findId.subtitle": "Verify your email and we'll show you the username on your account.",
   "auth.findId.found": "An account exists with this email.",
+  "auth.findId.idLabel": "Your username",
+  "auth.findId.noId": "This account has no username set. Please sign in with your email.",
   "auth.findPw.title": "Reset password",
   "auth.findPw.subtitle": "Verify your email, then set a new password.",
   "auth.findPw.newPassword": "New password",
@@ -290,20 +295,20 @@ const en: Record<keyof typeof ko, string> = {
   "support.legal.privacy.s5.body":
     "Users may request access to, correction of, or deletion of their personal information at any time, and account deletion removes stored conversation history and files together. Reach out via Contact Us or the email below.",
 
-  "company.about.title": "About Company",
+  "company.about.title": "About",
   "company.about.body1":
-    "ZEFF AI started from a simple goal: to work at the speed of thought. Our product direction is to cut down the time spent on repetitive documents and information hunting, and hand that time back to the judgment and creative work people actually need to focus on.",
+    "In chemistry and physics, \"Zeff\" stands for the effective nuclear charge. An electron inside an atom is shielded by the other electrons around it, so it never feels the full pull of the nucleus. Strip away those layers of shielding, and what remains is the pure attraction the electron actually experiences — that is Zeff.",
   "company.about.body2":
-    "On top of a backstage engine that automatically combines multiple AI models to fit the situation, we've built an interface simple enough for both office workers and students to feel at home with in a day. Hiding the technology and proving it through results — that's how our team works.",
+    "That is exactly why we chose the name. Among the dozens of files and documents that pile up each day, the part that truly matters is always buried under noise. So what Zeff does is simple: peel back that shielding, layer by layer, and leave only the core you actually need clearly in view.",
   "company.about.body3":
-    "We're a small team, but we hold to the principle that the people who build the product also use it. We review real user feedback every week and fold it back into the product as fast as we can.",
+    "Rather than making grand promises, we aim to build a tool that quietly does its job — the kind you keep close and use every day. Our own team works with it every week, runs into the rough edges first, and smooths them out the week after. Prove it through results instead of leading with the technology — that is the one principle we won't change.",
   "company.vision.title": "Vision & Scalability",
   "company.vision.body1":
-    "ZEFF AI starts today on two pillars — office productivity and learning support — but the picture we're drawing is a workspace that ties together a person's entire intellectual work. We're aiming for an experience where conversations, documents, materials, and study records connect naturally within a single context.",
+    "Zeff begins today along two paths — documents and learning. But what we're looking toward sits a little further out: a space where scattered conversations, materials, and the day's records connect into a single context, so a person's entire intellectual workflow can move without a break. That is the next scene we're sketching.",
   "company.vision.body2":
-    "The AI model ecosystem is moving fast, and we treat a multi-agent architecture that isn't locked to any one model as a core asset. When a better model arrives, its performance quietly flows into the service without users having to change anything.",
+    "A good tool doesn't tie you to any one technology. Instead of leaning on a single model, we designed things so the engine best suited to the moment quietly does the work. When a better model arrives, its performance will already have settled into the service — without you changing a thing.",
   "company.vision.body3":
-    "Next, we're preparing team-level collaboration features and tailored deployment options for schools and companies. Our next goal is to grow from a personal productivity tool into knowledge infrastructure an entire organization can share.",
+    "The next step is a shared experience. We're preparing for a team to pass the same material back and forth, and for schools and companies to put the tool to work in their own way. Starting on a personal desk and growing into the ground that connects knowledge between people — we'll walk that way steadily, without rushing and without stopping.",
   "company.prototype.title": "Prototypes in Development",
   "company.prototype.body1":
     "Here's an early look at what we're experimenting with internally. These items are pre-stabilization and their final timing and shape may change before release.",

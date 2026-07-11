@@ -12,6 +12,7 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  username      String?   @unique
   email         String?   @unique
   emailVerified DateTime?
   image         String?
@@ -195,7 +196,7 @@ model Order {
   userId        String?
   plan          String
   amount        Int      @default(0)
-  currency      String   @default("usd")
+  currency      String   @default("krw")
   status        String   @default("pending") // "pending" | "paid" | "failed" | "canceled"
   stripeSession String?
   createdAt     DateTime @default(now())

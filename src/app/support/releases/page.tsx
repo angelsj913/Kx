@@ -19,12 +19,14 @@ export default function SupportReleasesPage() {
         </p>
         <a
           href={WINDOWS_DOWNLOAD_URL}
+          download
           className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 transition-colors duration-300 hover:border-blue-400/60 hover:text-blue-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-blue-500/60 dark:hover:text-blue-300"
         >
           Windows <Download className="h-4 w-4" />
         </a>
         <a
           href={MAC_DOWNLOAD_URL}
+          download
           className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 transition-colors duration-300 hover:border-blue-400/60 hover:text-blue-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-blue-500/60 dark:hover:text-blue-300"
         >
           macOS <Download className="h-4 w-4" />

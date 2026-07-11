@@ -11,12 +11,19 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const email = String(body?.email ?? "").trim().toLowerCase();
+    const username = String(body?.username ?? "").trim();
     const password = String(body?.password ?? "");
     const dialCode = String(body?.dialCode ?? "").trim();
     const phoneNumber = String(body?.phone ?? "").trim();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "올바른 이메일 주소를 입력해 주세요." }, { status: 400 });
+    }
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
+      return NextResponse.json(
+        { error: "아이디는 영문·숫자·밑줄(_) 4~20자로 입력해 주세요." },
+        { status: 400 }
+      );
     }
     if (password.length < 8) {
       return NextResponse.json({ error: "비밀번호는 8자 이상이어야 합니다." }, { status: 400 });
@@ -33,12 +40,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "이미 가입된 이메일입니다." }, { status: 409 });
     }
 
+    const dupUsername = await prisma.user.findUnique({ where: { username } });
+    if (dupUsername) {
+      return NextResponse.json({ error: "이미 사용 중인 아이디입니다." }, { status: 409 });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const phone = dialCode && phoneNumber ? `${dialCode} ${phoneNumber}` : phoneNumber || null;
 
     await prisma.user.create({
       data: {
         email,
+        username,
         passwordHash,
         phone,
         emailVerified: new Date(),

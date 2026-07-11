@@ -315,6 +315,11 @@ const fr: Record<keyof typeof ko, string> = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "Contact",
   "footer.ceo": "Directeur général",
+  "auth.field.username": "Identifiant",
+  "auth.field.usernameHint": "4 lettres/chiffres minimum · utilisé pour la connexion et la récupération d'identifiant",
+  "auth.field.phoneNote": "Champ facultatif, utilisé uniquement pour la récupération du compte et les alertes de paiement et de sécurité.",
+  "auth.findId.idLabel": "Votre identifiant",
+  "auth.findId.noId": "Aucun identifiant n'est défini pour ce compte. Connectez-vous avec votre e-mail.",
 };
 
 export default fr;

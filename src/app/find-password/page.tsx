@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { CheckCircle2 } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import EmailOtpVerifier from "@/components/auth/EmailOtpVerifier";
+import Logo from "@/components/ui/Logo";
 
 export default function FindPasswordPage() {
   const t = useLandingT();
@@ -51,9 +51,8 @@ export default function FindPasswordPage() {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-md items-center justify-between px-6 py-3.5">
           <BackButton fallbackHref="/login" />
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
-            <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" />
           </Link>
           <ThemeToggle />
         </div>

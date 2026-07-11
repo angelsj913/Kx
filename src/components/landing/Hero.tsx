@@ -140,6 +140,7 @@ export default function Hero() {
 
             <a
               href={info.url}
+              download
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
             >
               <Download className="h-4 w-4" />

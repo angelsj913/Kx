@@ -50,14 +50,14 @@ function CheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
-  const amount = plan ? `$${(plan.amount / 100).toFixed(2)}` : "";
+  const amount = plan ? `₩${plan.amount.toLocaleString("ko-KR")}` : "";
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <header className="flex items-center justify-between border-b border-slate-200/80 px-6 py-3.5 dark:border-slate-800/80">
         <BackButton fallbackHref="/" />
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
+          <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:invert" />
           <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
         </Link>
         <ThemeToggle />

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { CheckCircle2 } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import OtpInput from "@/components/auth/OtpInput";
+import Logo from "@/components/ui/Logo";
 
 const DIAL_CODES = [
   { code: "+82", label: "🇰🇷 +82" },
@@ -31,6 +31,7 @@ function fmtTimer(s: number): string {
 export default function SignupPage() {
   const t = useLandingT();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [dialCode, setDialCode] = useState("+82");
   const [phone, setPhone] = useState("");
@@ -111,12 +112,16 @@ export default function SignupPage() {
       setError("이메일 인증을 먼저 완료해 주세요.");
       return;
     }
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
+      setError("아이디는 영문·숫자·밑줄(_) 4~20자로 입력해 주세요.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, dialCode, phone }),
+        body: JSON.stringify({ email, username, password, dialCode, phone }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "가입에 실패했습니다.");
@@ -132,9 +137,8 @@ export default function SignupPage() {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-lg items-center justify-between px-6 py-3.5">
           <BackButton fallbackHref="/login" />
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
-            <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" />
           </Link>
           <ThemeToggle />
         </div>
@@ -158,6 +162,27 @@ export default function SignupPage() {
               placeholder="you@example.com"
               className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+              {t("auth.field.username")}
+            </span>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+              disabled={otpVerified}
+              required
+              minLength={4}
+              maxLength={20}
+              autoComplete="username"
+              placeholder="zeff_user"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+            <span className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">
+              {t("auth.field.usernameHint")}
+            </span>
           </label>
 
           <label className="block">
@@ -199,6 +224,9 @@ export default function SignupPage() {
                 className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
+            <span className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">
+              {t("auth.field.phoneNote")}
+            </span>
           </div>
 
           {/* 이메일 OTP */}
@@ -209,7 +237,7 @@ export default function SignupPage() {
                   type="button"
                   onClick={sendOtp}
                   disabled={loading}
-                  className="w-full rounded-xl border border-blue-500/50 bg-blue-600/10 px-4 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-600/20 disabled:opacity-60 dark:text-blue-300"
+                  className="w-full rounded-xl border border-blue-500/50 bg-blue-600/10 px-4 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-600/20 disabled:opacity-60 dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
                 >
                   {t("auth.otp.send")}
                 </button>

@@ -14,7 +14,7 @@ export default function EmailOtpVerifier({
   onVerified,
 }: {
   purpose: "find-id" | "find-password";
-  onVerified: (email: string) => void;
+  onVerified: (email: string, extra?: { username?: string | null }) => void;
 }) {
   const t = useLandingT();
   const [email, setEmail] = useState("");
@@ -71,7 +71,7 @@ export default function EmailOtpVerifier({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "인증에 실패했습니다.");
-      onVerified(email.trim().toLowerCase());
+      onVerified(email.trim().toLowerCase(), { username: data?.username ?? null });
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     } finally {

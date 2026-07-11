@@ -54,12 +54,12 @@ export default function Pricing() {
               <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">{t("pricing.free.price")}</span>
               <span className="text-sm text-slate-500 dark:text-slate-400">{t("pricing.free.period")}</span>
             </div>
-            <button
-              type="button"
-              className="mt-6 w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition-colors duration-400 hover:bg-blue-600 hover:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            <a
+              href="/login?callbackUrl=/app"
+              className="mt-6 block w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-900 transition-colors duration-400 hover:bg-blue-600 hover:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
               {t("pricing.free.cta")}
-            </button>
+            </a>
             <ul className="mt-6 space-y-2.5 border-t border-slate-100 pt-6 dark:border-slate-800">
               {FREE_BULLETS.map((key) => (
                 <li key={key} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">

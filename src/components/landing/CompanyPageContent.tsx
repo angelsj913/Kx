@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Building2, TrendingUp, FlaskConical, Check } from "lucide-react";
 import { useLandingT, type LandingDictKey } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/ui/Logo";
 
 export type CompanyTab = "about" | "vision" | "prototype";
 
@@ -31,9 +31,8 @@ export default function CompanyPageContent({ tab }: { tab: CompanyTab }) {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3.5">
           <BackButton fallbackHref="/" />
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
-            <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" />
           </Link>
           <ThemeToggle />
         </div>

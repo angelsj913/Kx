@@ -2,13 +2,14 @@
 export interface PlanDef {
   id: string;
   label: string;
-  amount: number; // 최소 화폐 단위 (센트)
+  amount: number; // 최소 화폐 단위. KRW는 zero-decimal 통화이므로 원(₩) 단위 그대로.
   currency: string;
 }
 
+// 화면 표시가(₩12,900 / ₩23,900)와 실제 청구액을 일치시킨다.
 export const PLANS: Record<string, PlanDef> = {
-  pro: { id: "pro", label: "Pro", amount: 1299, currency: "usd" },
-  professional: { id: "professional", label: "Professional", amount: 1999, currency: "usd" },
+  pro: { id: "pro", label: "Pro", amount: 12900, currency: "krw" },
+  professional: { id: "professional", label: "Professional", amount: 23900, currency: "krw" },
 };
 
 export function getPlan(id: string | null | undefined): PlanDef | undefined {

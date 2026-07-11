@@ -315,6 +315,11 @@ const ru: Record<keyof typeof ko, string> = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "Контакты",
   "footer.ceo": "Генеральный директор",
+  "auth.field.username": "Логин",
+  "auth.field.usernameHint": "Не менее 4 букв/цифр · используется для входа и восстановления логина",
+  "auth.field.phoneNote": "Необязательное поле, используется только для восстановления аккаунта и уведомлений об оплате и безопасности.",
+  "auth.findId.idLabel": "Ваш логин",
+  "auth.findId.noId": "Для этого аккаунта логин не задан. Войдите по электронной почте.",
 };
 
 export default ru;

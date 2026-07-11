@@ -52,6 +52,14 @@ export async function POST(request: Request) {
       if (!ok) {
         return NextResponse.json({ error: "인증번호가 올바르지 않거나 만료되었습니다." }, { status: 400 });
       }
+      // 아이디 찾기: 인증에 성공하면 해당 이메일 계정의 아이디를 반환한다.
+      if (purpose === "find-id") {
+        const user = await prisma.user.findUnique({
+          where: { email: identifier.toLowerCase() },
+          select: { username: true },
+        });
+        return NextResponse.json({ ok: true, username: user?.username ?? null });
+      }
       return NextResponse.json({ ok: true });
     }
 

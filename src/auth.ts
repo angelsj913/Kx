@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -39,6 +40,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (token?.id && session.user) {
         session.user.id = token.id as string;
+      }
+      if (session.user) {
+        session.user.isAdmin = isAdminEmail(session.user.email);
       }
       return session;
     },

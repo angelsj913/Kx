@@ -10,7 +10,7 @@ export default function CheckoutCompletePage() {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="flex items-center justify-between border-b border-slate-200/80 px-6 py-3.5 dark:border-slate-800/80">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
+          <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:invert" />
           <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
         </Link>
         <ThemeToggle />

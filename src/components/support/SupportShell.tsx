@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { key: "faq", href: "/support", icon: HelpCircle, labelKey: "support.tab.faq" },
   { key: "notices", href: "/support/notices", icon: Megaphone, labelKey: "support.tab.announcements" },
   { key: "releases", href: "/support/releases", icon: Archive, labelKey: "support.tab.legacy" },
-  { key: "inquiry", href: "/support/inquiry", icon: Mail, labelKey: "support.tab.inquiry", newTab: true },
+  { key: "inquiry", href: "/support/inquiry", icon: Mail, labelKey: "support.tab.inquiry" },
   { key: "history", href: "/support/inquiry/history", icon: Inbox, labelKey: "support.nav.history", indent: true },
   { key: "legal", href: "/support/legal", icon: ScrollText, labelKey: "support.tab.legal" },
 ];
@@ -42,7 +42,7 @@ export default function SupportShell({
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <BackButton fallbackHref="/" />
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md" />
+            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:invert" />
             <span className="text-sm font-bold tracking-tight">{t("support.title")}</span>
           </Link>
           <ThemeToggle />
