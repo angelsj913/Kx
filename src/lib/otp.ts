@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
@@ -122,47 +121,14 @@ async function sendEmailOtp(email: string, code: string): Promise<void> {
   console.log(`[OTP:email:dev] ${email} -> ${code}`);
 }
 
-/** 전화번호(국가코드 포함)를 발송용 형식으로 정규화. +82(한국)는 0으로 시작하는 국내 형식으로 변환. */
-function normalizePhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("82")) return "0" + digits.slice(2);
-  return digits;
-}
-
-/** 국내 SMS 발송 — 솔라피(Solapi) REST API 연동. 키가 없으면 발송하지 않는다. */
+/** 국내 SMS 발송 핸들러 스터브 — 실제 연동(예: 솔라피/NHN Cloud) 시 이 함수만 구현하면 된다. */
 async function sendSmsOtp(phone: string, code: string): Promise<void> {
-  const apiKey = process.env.SOLAPI_API_KEY;
-  const apiSecret = process.env.SOLAPI_API_SECRET;
-  const sender = process.env.SMS_SENDER;
-
-  if (!apiKey || !apiSecret || !sender) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("문자 인증이 아직 설정되지 않았습니다. 이메일 인증을 이용해 주세요.");
-    }
-    console.log(`[OTP:sms:dev] ${phone} -> ${code}`);
-    return;
+  // TODO: 국내 SMS 게이트웨이 연동 지점. 현재는 스터브.
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[OTP:sms:stub] ${phone} -> ${code}`);
   }
-
-  const to = normalizePhone(phone);
-  const from = normalizePhone(sender);
-  const date = new Date().toISOString();
-  const salt = crypto.randomBytes(32).toString("hex");
-  const signature = crypto.createHmac("sha256", apiSecret).update(date + salt).digest("hex");
-
-  const res = await fetch("https://api.solapi.com/messages/v4/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`,
-    },
-    body: JSON.stringify({
-      message: { to, from, text: `[ZEFF AI] 인증번호 ${code} (3분 이내 입력)` },
-    }),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("solapi sms error:", res.status, detail);
-    throw new Error("문자 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+  // 프로덕션에서 SMS 미구현 상태로 호출되면 안내
+  if (process.env.NODE_ENV === "production" && !process.env.SMS_API_KEY) {
+    throw new Error("문자 인증은 준비 중입니다. 이메일 인증을 이용해 주세요.");
   }
 }
