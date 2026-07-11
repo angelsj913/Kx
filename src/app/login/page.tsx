@@ -35,10 +35,10 @@ function LoginCard() {
   const callbackUrl = params.get("callbackUrl") || "/app";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10">
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900">
         <Image
           src="/logo-zeff.png"
           alt="ZEFF AI"
@@ -46,13 +46,13 @@ function LoginCard() {
           height={48}
           className="mx-auto rounded-xl"
         />
-        <h1 className="mt-4 text-xl font-bold text-slate-900">{t("login.title")}</h1>
-        <p className="mt-2 text-sm text-slate-600">{t("login.subtitle")}</p>
+        <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-slate-50">{t("login.title")}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("login.subtitle")}</p>
 
         <button
           type="button"
           onClick={() => signIn("google", { callbackUrl })}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:border-blue-500/50 active:scale-[0.98]"
+          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:border-blue-500/50 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
           <GoogleIcon />
           {t("login.google")}
@@ -62,15 +62,15 @@ function LoginCard() {
           type="button"
           disabled
           title={t("login.apple")}
-          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400"
+          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-500"
         >
           {t("login.apple")}
         </button>
 
         <div className="mt-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-200" />
-          <span className="text-xs text-slate-500">{t("login.or")}</span>
-          <div className="h-px flex-1 bg-slate-200" />
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t("login.or")}</span>
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
         <form className="mt-6 space-y-3 text-left" onSubmit={(e) => e.preventDefault()}>
@@ -78,29 +78,29 @@ function LoginCard() {
             type="email"
             placeholder={t("login.email")}
             autoComplete="off"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           <input
             type="password"
             placeholder={t("login.password")}
             autoComplete="off"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           <button
             type="submit"
             disabled
-            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400"
+            className="flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-500"
           >
             {t("login.submit")}
           </button>
         </form>
 
-        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
-          <button type="button" className="hover:text-blue-600">
+        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <button type="button" className="hover:text-blue-600 dark:hover:text-blue-400">
             {t("login.findId")}
           </button>
-          <span className="text-slate-300">·</span>
-          <button type="button" className="hover:text-blue-600">
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <button type="button" className="hover:text-blue-600 dark:hover:text-blue-400">
             {t("login.findPassword")}
           </button>
         </div>

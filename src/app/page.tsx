@@ -9,7 +9,7 @@ import Footer from "@/components/landing/Footer";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-slate-50 font-[family-name:var(--font-noto-kr)] text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-[family-name:var(--font-noto-kr)] text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <Header />
       <main>
         <Hero />

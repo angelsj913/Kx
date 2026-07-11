@@ -1,18 +1,31 @@
 @import "tailwindcss";
 
+/* 클래스 기반 다크모드: <html>에 .dark 가 있을 때만 dark: 유틸이 적용된다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-html {
+/* 기본(라이트) — 초기 진입은 항상 라이트 */
+:root {
+  color-scheme: light;
+}
+:root.dark {
   color-scheme: dark;
 }
 
 body {
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark body {
   background: #020617;
   color: #f8fafc;
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 @keyframes shimmer {

@@ -59,7 +59,7 @@ export default function Hero() {
       >
         <motion.span
           variants={fadeUp}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm"
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300"
         >
           <Sparkles className="h-3.5 w-3.5" />
           {t("hero.badge")}
@@ -67,16 +67,16 @@ export default function Hero() {
 
         <motion.h1
           variants={fadeUp}
-          className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl"
+          className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50"
         >
           {t("hero.title.line1")}
           <br />
-          <span className="text-blue-600">{t("hero.title.line2")}</span>
+          <span className="text-blue-600 dark:text-blue-400">{t("hero.title.line2")}</span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
-          className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg"
+          className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
         >
           {t("hero.subtitle")}
         </motion.p>
@@ -106,7 +106,7 @@ export default function Hero() {
           </button>
         </motion.div>
 
-        <motion.p variants={fadeUp} className="mt-4 text-xs text-slate-500">
+        <motion.p variants={fadeUp} className="mt-4 text-xs text-slate-500 dark:text-slate-400">
           {t("hero.download.note")}
         </motion.p>
       </motion.div>
@@ -119,14 +119,14 @@ export default function Hero() {
           onClick={() => setSelected(null)}
         >
           <div
-            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/10"
+            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               aria-label="close"
               onClick={() => setSelected(null)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               <X className="h-5 w-5" />
             </button>
@@ -134,9 +134,9 @@ export default function Hero() {
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
               <info.icon className="h-5 w-5 text-white" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-slate-900">{info.title}</h3>
-            <p className="mt-2 text-sm text-slate-600">{info.note}</p>
-            <p className="mt-1 text-xs text-slate-500">{t("hero.modal.instruction")}</p>
+            <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-50">{info.title}</h3>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{info.note}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("hero.modal.instruction")}</p>
 
             <a
               href={info.url}
@@ -148,7 +148,7 @@ export default function Hero() {
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="mt-3 flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-600 transition-colors hover:border-blue-500/50"
+              className="mt-3 flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-600 transition-colors hover:border-blue-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
               {t("hero.modal.cancel")}
             </button>

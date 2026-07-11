@@ -12,8 +12,14 @@ import {
   LANGUAGE_ORDER,
   type LandingLanguage,
 } from "@/lib/landingI18n";
+import ThemeToggle from "@/components/ThemeToggle";
 import SupportCenter from "./SupportCenter";
-import CompanyInfoModal, { type CompanyTab } from "./CompanyInfoModal";
+
+const MENU_LINKS = [
+  { href: "/about", icon: Building2, labelKey: "nav.about" as const },
+  { href: "/vision", icon: TrendingUp, labelKey: "nav.potential" as const },
+  { href: "/prototype", icon: FlaskConical, labelKey: "nav.prototype" as const },
+];
 
 export default function Header() {
   const t = useLandingT();
@@ -22,7 +28,6 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [companyTab, setCompanyTab] = useState<CompanyTab | null>(null);
   const langRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -43,11 +48,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [langOpen]);
 
-  function openCompany(tabValue: CompanyTab) {
-    setMenuOpen(false);
-    setCompanyTab(tabValue);
-  }
-
   function goToDownload() {
     setMenuOpen(false);
     document.querySelector("#download")?.scrollIntoView({ behavior: "smooth" });
@@ -58,7 +58,7 @@ export default function Header() {
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
           scrolled
-            ? "border-b border-slate-200/80 bg-slate-50/80 shadow-sm backdrop-blur-md"
+            ? "border-b border-slate-200/80 bg-slate-50/80 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80"
             : "border-b border-transparent bg-transparent"
         }`}
       >
@@ -69,21 +69,26 @@ export default function Header() {
               aria-label="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5"
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={28} height={28} className="rounded-md" />
-            <span className="text-base font-bold tracking-tight text-slate-900">ZEFF AI</span>
+            <Link href="/" className="flex items-center gap-3" aria-label="ZEFF AI 홈">
+              <Image src="/logo-zeff.png" alt="ZEFF AI" width={28} height={28} className="rounded-md" />
+              <span className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                ZEFF AI
+              </span>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <div ref={langRef} className="relative">
               <button
                 type="button"
                 onClick={() => setLangOpen((v) => !v)}
                 aria-label={t("header.language")}
-                className="flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400/60 hover:text-slate-900"
+                className="flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400/60 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:text-white"
               >
                 {LANGUAGE_LABELS[language]}
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${langOpen ? "rotate-180" : ""}`} />
@@ -95,7 +100,7 @@ export default function Header() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 6 }}
                     transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                    className="absolute right-0 top-full mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10"
+                    className="absolute right-0 top-full mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900"
                   >
                     {LANGUAGE_ORDER.map((lang: LandingLanguage) => (
                       <button
@@ -106,7 +111,9 @@ export default function Header() {
                           setLangOpen(false);
                         }}
                         className={`flex w-full items-center px-3.5 py-2 text-left text-sm transition-colors ${
-                          lang === language ? "bg-blue-600/10 font-semibold text-blue-700" : "text-slate-600 hover:bg-slate-50"
+                          lang === language
+                            ? "bg-blue-600/10 font-semibold text-blue-700 dark:text-blue-300"
+                            : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                         }`}
                       >
                         {LANGUAGE_LABELS[lang]}
@@ -119,13 +126,13 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
               {t("header.support")}
             </button>
             <Link
               href="/login"
-              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
               {t("header.login")}
             </Link>
@@ -139,37 +146,24 @@ export default function Header() {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="overflow-hidden border-b border-slate-200 bg-slate-50/95 backdrop-blur-md"
+              className="overflow-hidden border-b border-slate-200 bg-slate-50/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95"
             >
               <nav className="mx-auto flex max-w-6xl flex-col px-6 py-4">
-                <button
-                  type="button"
-                  onClick={() => openCompany("about")}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600"
-                >
-                  <Building2 className="h-4 w-4" />
-                  {t("nav.about")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openCompany("vision")}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600"
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  {t("nav.potential")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openCompany("prototype")}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600"
-                >
-                  <FlaskConical className="h-4 w-4" />
-                  {t("nav.prototype")}
-                </button>
+                {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {t(labelKey)}
+                  </Link>
+                ))}
                 <button
                   type="button"
                   onClick={goToDownload}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600"
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300"
                 >
                   <Download className="h-4 w-4" />
                   {t("nav.download")}
@@ -181,11 +175,6 @@ export default function Header() {
       </header>
 
       <SupportCenter open={supportOpen} onClose={() => setSupportOpen(false)} />
-      <CompanyInfoModal
-        open={companyTab !== null}
-        onClose={() => setCompanyTab(null)}
-        initialTab={companyTab ?? "about"}
-      />
     </>
   );
 }
