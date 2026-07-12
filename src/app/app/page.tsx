@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
 import ChatWorkspace from "@/components/ChatWorkspace";
 import LibraryView from "@/components/LibraryView";
+import ReviewView from "@/components/ReviewView";
+import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ const ACCENT_VARS = {
 
 export default function AppWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [view, setView] = useState<"chat" | "library">("chat");
+  const [view, setView] = useState<"chat" | "library" | "review" | "rag">("chat");
   const { sessions, refetch, removeSession } = useSessions();
 
   function handleNewChat() {
@@ -62,12 +64,18 @@ export default function AppWorkspace() {
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
         onOpenLibrary={() => setView("library")}
+        onOpenReview={() => setView("review")}
+        onOpenRag={() => setView("rag")}
       />
 
       <main className="relative z-10 min-w-0 flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
-            key={view === "library" ? "library" : activeSessionId ?? "new"}
+            key={
+              view === "library" || view === "review" || view === "rag"
+                ? view
+                : activeSessionId ?? "new"
+            }
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -76,6 +84,10 @@ export default function AppWorkspace() {
           >
             {view === "library" ? (
               <LibraryView onOpenBookChat={handleOpenBookChat} />
+            ) : view === "review" ? (
+              <ReviewView />
+            ) : view === "rag" ? (
+              <RagView />
             ) : (
               <ChatWorkspace
                 sessionId={activeSessionId}

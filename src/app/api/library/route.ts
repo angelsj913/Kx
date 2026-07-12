@@ -4,18 +4,29 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
+import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
+  let scope;
+  try {
+    scope = await resolveScope(request, session.user.id);
+  } catch (err) {
+    if (err instanceof WorkspaceError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
+
   const items = await prisma.libraryItem.findMany({
-    where: { userId: session.user.id },
+    where: listWhere(scope, session.user.id),
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -36,6 +47,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   const userId = session.user.id;
+
+  let scope;
+  try {
+    scope = await resolveScope(request, userId);
+  } catch (err) {
+    if (err instanceof WorkspaceError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
 
   const form = await request.formData();
   const file = form.get("file");
@@ -68,6 +89,7 @@ export async function POST(request: Request) {
     const item = await prisma.libraryItem.create({
       data: {
         userId,
+        workspaceId: scope.workspaceId,
         title: titleInput || file.name.replace(/\.[^.]+$/, ""),
         fileUrl: blob.url,
         fileName: file.name,

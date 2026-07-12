@@ -1,10 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, MessageSquare, Trash2, BookOpen } from "lucide-react";
+import { Plus, MessageSquare, Trash2, BookOpen, Brain, Database } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import Logo from "@/components/ui/Logo";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import type { SessionSummary } from "@/lib/sessions";
 
 export default function Sidebar({
@@ -15,14 +16,18 @@ export default function Sidebar({
   onNewChat,
   onDeleteSession,
   onOpenLibrary,
+  onOpenReview,
+  onOpenRag,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
-  activeView: "chat" | "library";
+  activeView: "chat" | "library" | "review" | "rag";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenLibrary: () => void;
+  onOpenReview: () => void;
+  onOpenRag: () => void;
 }) {
   const t = useT();
 
@@ -34,6 +39,8 @@ export default function Sidebar({
           <Logo size="sm" />
         </span>
       </div>
+
+      <WorkspaceSwitcher />
 
       <div className="p-2 sm:p-3">
         <motion.button
@@ -58,6 +65,32 @@ export default function Sidebar({
         >
           <BookOpen className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">{t("sidebar.myLibrary")}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenReview}
+          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            activeView === "review"
+              ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+          }`}
+        >
+          <Brain className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">복습</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenRag}
+          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            activeView === "rag"
+              ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+          }`}
+        >
+          <Database className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">지식 검색</span>
         </button>
       </div>
 

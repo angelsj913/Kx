@@ -12,8 +12,13 @@ import {
   FileText,
   ImageIcon,
   Plus,
+  Mic,
+  Square,
+  Volume2,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { wsFetch } from "@/lib/workspaceClient";
+import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
 import { QUICK_TOOLS, isQuickToolEnabled } from "@/lib/quickTools";
 import type { ToolDef } from "@/lib/tools";
@@ -77,6 +82,19 @@ export default function ChatWorkspace({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // 음성 대화 모드: 인식된 문장을 그대로 전송하고, 그 턴의 답변은 소리 내어 읽어준다.
+  const sendSpokenRef = useRef<(text: string) => void>(() => {});
+  const {
+    listening,
+    speaking,
+    interim,
+    sttSupported,
+    startListening,
+    stopListening,
+    speak,
+    stopSpeaking,
+  } = useSpeech({ onFinal: (text) => sendSpokenRef.current(text) });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, loading]);
@@ -118,23 +136,29 @@ export default function ChatWorkspace({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function send(e?: React.FormEvent) {
+  async function send(e?: React.FormEvent, spoken?: string) {
     e?.preventDefault();
-    const text = draft.trim();
+    // 음성으로 들어온 턴은 첨부/퀵툴을 무시하고 순수 대화로 처리한다.
+    const spokenTurn = spoken !== undefined;
+    const text = (spoken ?? draft).trim();
     const requiresAttachment =
-      activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio";
-    if ((!text && pending.length === 0) || loading) return;
+      !spokenTurn &&
+      (activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio");
+    if (spokenTurn && !text) return;
+    if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
     if (requiresAttachment && pending.length === 0) return;
 
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
 
-    const optimisticFiles: StoredAttachment[] = pending.map((p) => ({
-      url: p.previewUrl,
-      filename: p.file.name,
-      mimeType: p.file.type || "application/octet-stream",
-    }));
+    const optimisticFiles: StoredAttachment[] = spokenTurn
+      ? []
+      : pending.map((p) => ({
+          url: p.previewUrl,
+          filename: p.file.name,
+          mimeType: p.file.type || "application/octet-stream",
+        }));
     setMessages((prev) => [
       ...prev,
       {
@@ -145,11 +169,13 @@ export default function ChatWorkspace({
       },
     ]);
 
-    const filesToUpload = pending.map((p) => p.file);
-    const quickToolId = activeQuickTool?.id ?? null;
-    setDraft("");
-    setPending([]);
-    setActiveQuickTool(null);
+    const filesToUpload = spokenTurn ? [] : pending.map((p) => p.file);
+    const quickToolId = spokenTurn ? null : activeQuickTool?.id ?? null;
+    if (!spokenTurn) {
+      setDraft("");
+      setPending([]);
+      setActiveQuickTool(null);
+    }
 
     try {
       const form = new FormData();
@@ -158,7 +184,7 @@ export default function ChatWorkspace({
       if (quickToolId) form.append("quickToolId", quickToolId);
       for (const f of filesToUpload) form.append("files", f);
 
-      const res = await fetch("/api/chat", { method: "POST", body: form });
+      const res = await wsFetch("/api/chat", { method: "POST", body: form });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "요청에 실패했습니다.");
@@ -190,7 +216,11 @@ export default function ChatWorkspace({
 
       if (errorMessage) throw new Error(errorMessage);
       if (!sessionId && newSessionId) onSessionCreated(newSessionId);
-      if (doneMessage) setMessages((prev) => [...prev, doneMessage as Msg]);
+      if (doneMessage) {
+        setMessages((prev) => [...prev, doneMessage as Msg]);
+        // 음성으로 물어본 턴이면 답변을 소리 내어 읽어준다.
+        if (spokenTurn && doneMessage.text) speak(doneMessage.text);
+      }
       onTurnSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
@@ -199,6 +229,14 @@ export default function ChatWorkspace({
       setStatusKey(null);
     }
   }
+
+  // 음성 인식 최종 결과를 전송에 연결(항상 최신 send를 가리키도록 갱신).
+  useEffect(() => {
+    sendSpokenRef.current = (text: string) => {
+      if (loading) return;
+      void send(undefined, text);
+    };
+  });
 
   const requiresAttachment =
     activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio";
@@ -384,6 +422,13 @@ export default function ChatWorkspace({
           </div>
         )}
 
+        {(listening || speaking) && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/30 dark:text-blue-200">
+            <span className={`flex h-2 w-2 rounded-full ${listening ? "animate-pulse bg-red-400" : "bg-blue-400"}`} />
+            {listening ? (interim ? `“${interim}”` : "듣고 있어요…") : "답변을 읽는 중…"}
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
           <div className="relative shrink-0">
             <motion.button
@@ -457,6 +502,35 @@ export default function ChatWorkspace({
             placeholder={activeQuickTool ? activeQuickTool.placeholder : t("chat.placeholder")}
             className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-600"
           />
+          {sttSupported && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (listening) stopListening();
+                else if (speaking) stopSpeaking();
+                else startListening();
+              }}
+              disabled={loading && !listening && !speaking}
+              title={listening ? "듣기 중지" : speaking ? "읽기 중지" : "음성으로 말하기"}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                listening
+                  ? "animate-pulse border-red-500/50 bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300"
+                  : speaking
+                    ? "border-blue-500/50 bg-blue-600/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200"
+                    : "border-slate-300 bg-white text-slate-500 hover:border-blue-500/50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
+              }`}
+            >
+              {listening ? (
+                <Square className="h-5 w-5" />
+              ) : speaking ? (
+                <Volume2 className="h-5 w-5" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </motion.button>
+          )}
+
           <motion.button
             type="submit"
             whileTap={{ scale: 0.95 }}

@@ -7,6 +7,7 @@ import { runAgentPipeline } from "@/lib/agents";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
+import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -57,12 +58,26 @@ export async function POST(request: Request) {
 
   let chatSession;
   if (sessionId) {
-    chatSession = await prisma.chatSession.findFirst({ where: { id: sessionId, userId } });
+    // 공유 워크스페이스 세션이면 멤버 누구나 이어서 대화할 수 있다.
+    chatSession = await prisma.chatSession.findFirst({
+      where: { id: sessionId, ...(await itemAccessWhere(userId)) },
+    });
     if (!chatSession) {
       return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
     }
   } else {
-    chatSession = await prisma.chatSession.create({ data: { userId } });
+    let scope;
+    try {
+      scope = await resolveScope(request, userId);
+    } catch (err) {
+      if (err instanceof WorkspaceError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
+      throw err;
+    }
+    chatSession = await prisma.chatSession.create({
+      data: { userId, workspaceId: scope.workspaceId },
+    });
   }
   const resolvedSessionId = chatSession.id;
 

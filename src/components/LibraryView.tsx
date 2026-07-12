@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Upload, Trash2, MessageCircle, FileText } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useWorkspace, wsFetch } from "@/lib/workspaceClient";
 
 interface LibraryItemSummary {
   id: string;
@@ -20,6 +21,7 @@ export default function LibraryView({
   onOpenBookChat: (sessionId: string) => void;
 }) {
   const t = useT();
+  const { activeId } = useWorkspace();
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -28,7 +30,7 @@ export default function LibraryView({
 
   async function refetch() {
     try {
-      const res = await fetch("/api/library");
+      const res = await wsFetch("/api/library");
       const data = await res.json();
       if (res.ok) setItems(data.items ?? []);
     } finally {
@@ -36,9 +38,10 @@ export default function LibraryView({
     }
   }
 
+  // 활성 워크스페이스가 바뀌면 해당 스코프의 서재로 다시 불러온다.
   useEffect(() => {
     refetch();
-  }, []);
+  }, [activeId]);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -50,7 +53,7 @@ export default function LibraryView({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/library", { method: "POST", body: form });
+      const res = await wsFetch("/api/library", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "업로드에 실패했습니다.");
       setItems((prev) => [data.item, ...prev]);
@@ -64,11 +67,11 @@ export default function LibraryView({
   async function onDelete(id: string) {
     if (!confirm(t("library.deleteConfirm"))) return;
     setItems((prev) => prev.filter((i) => i.id !== id));
-    await fetch(`/api/library/${id}`, { method: "DELETE" });
+    await wsFetch(`/api/library/${id}`, { method: "DELETE" });
   }
 
   async function onBookChat(id: string) {
-    const res = await fetch(`/api/library/${id}/chat`, { method: "POST" });
+    const res = await wsFetch(`/api/library/${id}/chat`, { method: "POST" });
     const data = await res.json();
     if (res.ok && data.sessionId) onOpenBookChat(data.sessionId);
   }

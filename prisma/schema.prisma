@@ -28,6 +28,11 @@ model User {
   inquiries    Inquiry[]
   orders       Order[]
   settings     UserSettings?
+
+  ownedWorkspaces      Workspace[]       @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  sentInvites          WorkspaceInvite[] @relation("InviteSender")
+  reviewCards          ReviewCard[]
 }
 
 model Account {
@@ -88,16 +93,19 @@ model HistoryItem {
 model ChatSession {
   id            String   @id @default(cuid())
   userId        String
+  workspaceId   String?
   title         String?
   libraryItemId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   libraryItem LibraryItem? @relation(fields: [libraryItemId], references: [id], onDelete: SetNull)
   history     ChatHistory[]
 
   @@index([userId, updatedAt])
+  @@index([workspaceId, updatedAt])
 }
 
 model ChatHistory {
@@ -130,6 +138,7 @@ model ChatHistory {
 model LibraryItem {
   id            String   @id @default(cuid())
   userId        String
+  workspaceId   String?
   title         String
   fileUrl       String
   fileName      String
@@ -137,10 +146,59 @@ model LibraryItem {
   extractedText String?  @db.Text
   createdAt     DateTime @default(now())
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   chatSessions ChatSession[]
+  reviewCards  ReviewCard[]
+  chunks       DocumentChunk[]
 
   @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+// ── 기업용 데이터 커넥터 / RAG (문서 청크 + 임베딩) ──
+model DocumentChunk {
+  id            String   @id @default(cuid())
+  libraryItemId String
+  userId        String
+  workspaceId   String?
+  idx           Int
+  content       String   @db.Text
+  embedding     Float[]
+  provider      String   @default("local")
+  createdAt     DateTime @default(now())
+
+  libraryItem LibraryItem @relation(fields: [libraryItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([libraryItemId])
+}
+
+// ── 자동 복습 스케줄러 (SM-2 간격 반복) ──
+model ReviewCard {
+  id            String    @id @default(cuid())
+  userId        String
+  workspaceId   String?
+  libraryItemId String?
+  front         String    @db.Text
+  back          String    @db.Text
+
+  // SM-2 스케줄링 상태
+  ease           Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  libraryItem LibraryItem? @relation(fields: [libraryItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dueAt])
+  @@index([workspaceId, dueAt])
 }
 
 // 이메일/전화 6자리 OTP 임시 저장. 검증 성공 또는 만료 시 정리된다.
@@ -174,6 +232,58 @@ model Inquiry {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+}
+
+// ── 팀 워크스페이스 (협업: 여러 명이 같은 세션·서재 공유) ──
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      WorkspaceMember[]
+  invites      WorkspaceInvite[]
+  chatSessions ChatSession[]
+  libraryItems LibraryItem[]
+  reviewCards  ReviewCard[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  // "owner" | "admin" | "member"
+  role        String   @default("member")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  email       String
+  role        String    @default("member")
+  token       String    @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([email])
 }
 
 model UserSettings {

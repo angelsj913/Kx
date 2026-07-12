@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
+import { WorkspaceProvider } from "@/lib/workspaceClient";
 
 export default async function AppLayout({
   children,
@@ -12,5 +13,9 @@ export default async function AppLayout({
     redirect("/login?callbackUrl=/app");
   }
 
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+  return (
+    <SessionProvider session={session}>
+      <WorkspaceProvider>{children}</WorkspaceProvider>
+    </SessionProvider>
+  );
 }
