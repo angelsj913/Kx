@@ -145,13 +145,33 @@ model LibraryItem {
   extractedText String?  @db.Text
   createdAt     DateTime @default(now())
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace    Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   chatSessions ChatSession[]
   reviewCards  ReviewCard[]
+  chunks       DocumentChunk[]
 
   @@index([userId, createdAt])
   @@index([workspaceId, createdAt])
+}
+
+// ── 기업용 데이터 커넥터 / RAG (문서 청크 + 임베딩) ──
+model DocumentChunk {
+  id            String   @id @default(cuid())
+  libraryItemId String
+  userId        String
+  workspaceId   String?
+  idx           Int
+  content       String   @db.Text
+  embedding     Float[]
+  provider      String   @default("local")
+  createdAt     DateTime @default(now())
+
+  libraryItem LibraryItem @relation(fields: [libraryItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([libraryItemId])
 }
 
 // ── 자동 복습 스케줄러 (SM-2 간격 반복) ──

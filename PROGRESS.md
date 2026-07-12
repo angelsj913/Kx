@@ -11,7 +11,9 @@
 1. **팀 워크스페이스** — ✅ 완료 (아래)
 2. **음성 대화 모드** (STT/TTS) — ✅ 완료 (아래)
 3. **자동 복습 스케줄러** (SM-2) — ✅ 완료 (아래)
-4. **기업용 데이터 커넥터 / RAG** — 예정
+4. **기업용 데이터 커넥터 / RAG** — ✅ 완료 (아래)
+
+**→ ZEFF 4대 기능 모두 Kx에 통합 완료.** 배포 전 Neon에 `prisma db push` 한 번 필요(신규 테이블: Workspace/WorkspaceMember/WorkspaceInvite/ReviewCard/DocumentChunk + ChatSession·LibraryItem의 workspaceId 컬럼).
 
 ### ✅ Feature 1 — 팀 워크스페이스 (여러 명이 같은 세션·서재 공유)
 
@@ -50,6 +52,18 @@
 - **UI (`src/components/ReviewView.tsx` + 사이드바 "복습" 탭)**: due 카운트/전체 통계, 카드 뒤집기 학습 세션 + 4버튼 채점(again은 세션 끝에 재큐), 수동 카드 추가, 서재 항목 선택 AI 자동 생성.
 
 **검증:** `tsc`/`eslint`/`next build` 통과. **SM-2 순수 로직 단위테스트 7/7**(간격 1→6→15, 실패 초기화, ease 하한, easy>good>hard 순서) + **로컬 Postgres 통합테스트 8/8**(개인/워크스페이스 스코프·만기 필터, 채점 후 dueAt 이동, 멤버 공유 접근·타인 카드 차단). 실제 AI 생성 품질은 API 키 필요.
+
+### ✅ Feature 4 — 기업용 데이터 커넥터 / RAG (근거 기반 문서 검색)
+
+서재 문서를 임베딩·색인하고, 질문에 대해 **관련 발췌문만 근거로** 답변한다(출처 표기).
+
+- **`src/lib/embeddings.ts`**: `GEMINI_API_KEY`가 있으면 Gemini `text-embedding-004`, 없으면 **결정론적 로컬 임베딩 폴백**(단어 토큰 + 문자 바이그램 해시→256차원 L2정규화). 키 없이도 검색이 동작하고 오프라인 테스트가 가능함.
+- **`src/lib/rag.ts`**(순수): `chunkText`(문단/문장 경계 우선, 겹침), `cosine`, `topK`.
+- **DB**: `DocumentChunk`(libraryItem별 청크 + `embedding Float[]` + userId/workspaceId 스코프 + provider). pgvector 불필요 — Postgres `double precision[]` + Node 코사인. LibraryItem 삭제 시 Cascade.
+- **API (`src/app/api/rag/`)**: `POST /index`(서재 항목 청킹→임베딩→기존 청크 교체 색인, 트랜잭션), `POST /search`(쿼리 임베딩→스코프 내 청크 topK→`chatReplyWithFallback`로 근거 기반 답변+출처 반환). 워크스페이스 스코프-인지.
+- **UI (`src/components/RagView.tsx` + 사이드바 "지식 검색" 탭)**: 검색창·답변·근거 스니펫, 서재 문서별 색인/재색인 버튼.
+
+**검증:** `tsc`/`eslint`/`next build` 통과. **순수 유틸 + 로컬 임베딩 단위테스트**(청킹 겹침, 결정론/정규화, 동일>무관 코사인) + **로컬 Postgres 색인→검색 통합테스트**(Float[] 저장/재색인, 스코프 필터) + **멀티청크 검색 랭킹 테스트**(환불/주차/와이파이 3주제 문서에서 각 질문마다 정답 청크가 1위). 로컬 임베딩만으로도 주제별 검색이 정확히 동작함을 확인. 실제 프로덕션은 Gemini 임베딩 사용(키 설정 시 자동 전환).
 
 ---
 
