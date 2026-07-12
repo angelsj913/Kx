@@ -31,6 +31,7 @@ model User {
   ownedWorkspaces      Workspace[]       @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
   sentInvites          WorkspaceInvite[] @relation("InviteSender")
+  reviewCards          ReviewCard[]
 }
 
 model Account {
@@ -147,9 +148,36 @@ model LibraryItem {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace    Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   chatSessions ChatSession[]
+  reviewCards  ReviewCard[]
 
   @@index([userId, createdAt])
   @@index([workspaceId, createdAt])
+}
+
+// ── 자동 복습 스케줄러 (SM-2 간격 반복) ──
+model ReviewCard {
+  id            String    @id @default(cuid())
+  userId        String
+  workspaceId   String?
+  libraryItemId String?
+  front         String    @db.Text
+  back          String    @db.Text
+
+  // SM-2 스케줄링 상태
+  ease           Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  libraryItem LibraryItem? @relation(fields: [libraryItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dueAt])
+  @@index([workspaceId, dueAt])
 }
 
 // 이메일/전화 6자리 OTP 임시 저장. 검증 성공 또는 만료 시 정리된다.
@@ -199,6 +227,7 @@ model Workspace {
   invites      WorkspaceInvite[]
   chatSessions ChatSession[]
   libraryItems LibraryItem[]
+  reviewCards  ReviewCard[]
 
   @@index([ownerId])
 }

@@ -10,7 +10,7 @@
 
 1. **팀 워크스페이스** — ✅ 완료 (아래)
 2. **음성 대화 모드** (STT/TTS) — ✅ 완료 (아래)
-3. **자동 복습 스케줄러** (SM-2/FSRS) — 예정
+3. **자동 복습 스케줄러** (SM-2) — ✅ 완료 (아래)
 4. **기업용 데이터 커넥터 / RAG** — 예정
 
 ### ✅ Feature 1 — 팀 워크스페이스 (여러 명이 같은 세션·서재 공유)
@@ -39,6 +39,17 @@
 - 음성 대화는 채팅 엔진 위에 얹은 클라이언트 레이어라 워크스페이스 공유·히스토리 저장과 자동으로 호환됨.
 
 **검증:** `tsc`/`eslint`/`next build` 통과(SSR window 가드 확인). 실제 마이크/TTS 재생은 브라우저 권한이 필요해 샌드박스(headless)에서는 구동 확인 불가 — 사용자 브라우저에서 확인 필요. 주의: 일부 브라우저는 자동재생 정책상 TTS에 사용자 제스처를 요구할 수 있음.
+
+### ✅ Feature 3 — 자동 복습 스케줄러 (SM-2 간격 반복)
+
+서재 자료·직접 입력을 복습 카드로 만들고, 정답률에 따라 다음 복습 시점을 자동 계산한다.
+
+- **`src/lib/srs.ts`**: 순수 SM-2 알고리즘(`schedule(state, grade)`). 4버튼(again/hard/good/easy)→품질값 매핑, E-Factor(≥1.3)·간격·반복 갱신, `again`은 즉시 재복습(초기화). `dueDateFrom`으로 만기 시각 변환.
+- **DB**: `ReviewCard`(front/back + SM-2 상태 ease/intervalDays/repetitions/dueAt/lastReviewedAt, 선택적 `libraryItemId`·`workspaceId`). 워크스페이스 공유 지원(SetNull). ⚠️ 배포 전 `prisma db push` 필요.
+- **API (`src/app/api/review/`)**: `GET/POST /cards`(오늘 due + 통계, 단일/다중 생성), `POST /cards/[id]/grade`(SM-2 채점→dueAt 갱신), `DELETE /cards/[id]`(생성자/admin), `POST /generate`(서재 항목 → `chatReplyWithFallback`로 JSON 플래시카드 자동 생성). 전부 워크스페이스 스코프-인지.
+- **UI (`src/components/ReviewView.tsx` + 사이드바 "복습" 탭)**: due 카운트/전체 통계, 카드 뒤집기 학습 세션 + 4버튼 채점(again은 세션 끝에 재큐), 수동 카드 추가, 서재 항목 선택 AI 자동 생성.
+
+**검증:** `tsc`/`eslint`/`next build` 통과. **SM-2 순수 로직 단위테스트 7/7**(간격 1→6→15, 실패 초기화, ease 하한, easy>good>hard 순서) + **로컬 Postgres 통합테스트 8/8**(개인/워크스페이스 스코프·만기 필터, 채점 후 dueAt 이동, 멤버 공유 접근·타인 카드 차단). 실제 AI 생성 품질은 API 키 필요.
 
 ---
 

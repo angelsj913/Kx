@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, MessageSquare, Trash2, BookOpen } from "lucide-react";
+import { Plus, MessageSquare, Trash2, BookOpen, Brain } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
@@ -16,14 +16,16 @@ export default function Sidebar({
   onNewChat,
   onDeleteSession,
   onOpenLibrary,
+  onOpenReview,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
-  activeView: "chat" | "library";
+  activeView: "chat" | "library" | "review";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenLibrary: () => void;
+  onOpenReview: () => void;
 }) {
   const t = useT();
 
@@ -67,6 +69,19 @@ export default function Sidebar({
         >
           <BookOpen className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">{t("sidebar.myLibrary")}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenReview}
+          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            activeView === "review"
+              ? "bg-violet-600/20 text-violet-200 ring-1 ring-violet-500/40"
+              : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+          }`}
+        >
+          <Brain className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">복습</span>
         </button>
       </div>
 
