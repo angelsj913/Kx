@@ -103,9 +103,11 @@ export default function DownloadPage() {
   const [loadingReleases, setLoadingReleases] = useState(true);
 
   useEffect(() => {
-    const ua = navigator.userAgent;
-    if (/Win/i.test(ua)) setOs("windows");
-    else if (/Mac/i.test(ua)) setOs("mac");
+    (async () => {
+      const ua = navigator.userAgent;
+      if (/Win/i.test(ua)) setOs("windows");
+      else if (/Mac/i.test(ua)) setOs("mac");
+    })();
   }, []);
 
   useEffect(() => {
