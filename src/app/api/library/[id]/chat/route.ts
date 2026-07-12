@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { itemAccessWhere } from "@/lib/workspace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,9 @@ export async function POST(
   const userId = session.user.id;
   const { id } = await params;
 
-  const item = await prisma.libraryItem.findFirst({ where: { id, userId } });
+  const item = await prisma.libraryItem.findFirst({
+    where: { id, ...(await itemAccessWhere(userId)) },
+  });
   if (!item) {
     return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 });
   }
@@ -24,6 +27,8 @@ export async function POST(
   const chatSession = await prisma.chatSession.create({
     data: {
       userId,
+      // 공유 서재 항목이면 그 워크스페이스에 속한 대화로 생성
+      workspaceId: item.workspaceId,
       title: item.title,
       libraryItemId: item.id,
     },

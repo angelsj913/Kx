@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus, MessageSquare, Trash2, BookOpen } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import type { SessionSummary } from "@/lib/sessions";
 
 export default function Sidebar({
@@ -40,6 +41,8 @@ export default function Sidebar({
           zeff
         </span>
       </div>
+
+      <WorkspaceSwitcher />
 
       <div className="p-2 sm:p-3">
         <motion.button

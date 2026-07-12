@@ -14,6 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { wsFetch } from "@/lib/workspaceClient";
 import { useSettings } from "@/lib/useSettings";
 import { QUICK_TOOLS, isQuickToolEnabled } from "@/lib/quickTools";
 import type { ToolDef } from "@/lib/tools";
@@ -158,7 +159,7 @@ export default function ChatWorkspace({
       if (quickToolId) form.append("quickToolId", quickToolId);
       for (const f of filesToUpload) form.append("files", f);
 
-      const res = await fetch("/api/chat", { method: "POST", body: form });
+      const res = await wsFetch("/api/chat", { method: "POST", body: form });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? "요청에 실패했습니다.");

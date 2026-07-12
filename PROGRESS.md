@@ -2,6 +2,36 @@
 
 > 다음 작업 세션은 이 문서부터 읽고 이어서 진행할 것. 새 세션 시작 시 최신 git 상태(`git log`, `git status`)와 이 문서 내용이 다르면 git 쪽을 신뢰할 것.
 
+---
+
+## 🆕 ZEFF 4대 기능 통합 (2026-07-12~, 브랜치 `claude/work-continuation-v7r7v2`)
+
+별도 Python 백엔드 없이 **Kx 자체(Next.js API + Prisma) 안에** ZEFF의 4대 기능을 엔진으로 구현하는 트랙. 우선순위 순서:
+
+1. **팀 워크스페이스** — ✅ 완료 (아래)
+2. **음성 대화 모드** (STT/TTS) — 예정
+3. **자동 복습 스케줄러** (SM-2/FSRS) — 예정
+4. **기업용 데이터 커넥터 / RAG** — 예정
+
+### ✅ Feature 1 — 팀 워크스페이스 (여러 명이 같은 세션·서재 공유)
+
+**DB (prisma/schema.prisma):**
+- 신규 모델 `Workspace`, `WorkspaceMember`(역할 owner/admin/member), `WorkspaceInvite`(토큰·만료·수락).
+- `ChatSession`·`LibraryItem`에 `workspaceId String?` 추가(+ 인덱스). null=개인, 값=공유. 워크스페이스 삭제 시 `SetNull`이라 항목 자체는 보존됨.
+- ⚠️ **배포 전 필수**: Neon DB에 스키마 반영 필요 → `DATABASE_URL=... npx prisma db push` (이 프로젝트는 마이그레이션 히스토리 없이 db push 방식).
+
+**서버 엔진 (`src/lib/workspace.ts`):** 역할 위계, `getMyWorkspaces`, `requireMembership`/`requireRole`, `resolveScope`(요청의 `X-Workspace-Id` 헤더/`?workspace=` 검증), `listWhere`(목록 스코프), `itemAccessWhere`(단일 항목 접근: 내 것 OR 내 워크스페이스 공유분), `createWorkspace`, 초대 토큰.
+
+**API 라우트 (`src/app/api/workspaces/`):** `GET/POST /workspaces`, `GET/PATCH/DELETE /workspaces/[id]`(상세+멤버), `GET/POST /workspaces/[id]/invites`, `DELETE /workspaces/[id]/members/[memberId]`(제거/나가기), `GET/POST /workspaces/invites/[token]`(미리보기/수락). 기존 chat/library 라우트를 스코프-인지로 배선(목록·생성·단일접근·삭제 권한).
+
+**클라이언트 (`src/lib/workspaceClient.tsx`):** `WorkspaceProvider`(app/layout에 주입) + `useWorkspace()` + `wsFetch`(활성 워크스페이스 헤더 자동 첨부, localStorage 보관). `useSessions`/`LibraryView`/`ChatWorkspace`가 활성 스코프 전환 시 자동 리페치.
+
+**UI:** 사이드바 상단 `WorkspaceSwitcher`(개인↔워크스페이스 전환, 생성), `WorkspaceModal`(멤버 목록·초대 링크 발급·역할·제거·나가기/삭제), `/invite/[token]` 수락 페이지.
+
+**검증:** `tsc`/`eslint`/`next build` 통과. 추가로 **로컬 Postgres 16에 `prisma db push` 성공 + 3사용자(alice/bob/carol) 시나리오 통합테스트 12/12 통과**(스코프 격리, 멤버 가시성, 비멤버 차단, 역할별 삭제권한, cascade/SetNull). 테스트는 `--no-save` 의존성으로 실행해 repo deps에는 영향 없음.
+
+---
+
 ## 프로젝트 개요
 
 - **레포**: `angelsj913/Kx` (GitHub)
