@@ -9,7 +9,7 @@
 별도 Python 백엔드 없이 **Kx 자체(Next.js API + Prisma) 안에** ZEFF의 4대 기능을 엔진으로 구현하는 트랙. 우선순위 순서:
 
 1. **팀 워크스페이스** — ✅ 완료 (아래)
-2. **음성 대화 모드** (STT/TTS) — 예정
+2. **음성 대화 모드** (STT/TTS) — ✅ 완료 (아래)
 3. **자동 복습 스케줄러** (SM-2/FSRS) — 예정
 4. **기업용 데이터 커넥터 / RAG** — 예정
 
@@ -29,6 +29,16 @@
 **UI:** 사이드바 상단 `WorkspaceSwitcher`(개인↔워크스페이스 전환, 생성), `WorkspaceModal`(멤버 목록·초대 링크 발급·역할·제거·나가기/삭제), `/invite/[token]` 수락 페이지.
 
 **검증:** `tsc`/`eslint`/`next build` 통과. 추가로 **로컬 Postgres 16에 `prisma db push` 성공 + 3사용자(alice/bob/carol) 시나리오 통합테스트 12/12 통과**(스코프 격리, 멤버 가시성, 비멤버 차단, 역할별 삭제권한, cascade/SetNull). 테스트는 `--no-save` 의존성으로 실행해 repo deps에는 영향 없음.
+
+### ✅ Feature 2 — 음성 대화 모드 (말로 묻고 소리로 듣기)
+
+외부 API 키 없이 **브라우저 Web Speech API** 기반. Chromium 계열(웹/Electron)에서 동작하고, 미지원 브라우저에서는 마이크 버튼이 자동으로 숨겨진다(graceful degrade).
+
+- **`src/lib/useSpeech.ts`**: STT(`SpeechRecognition`/`webkitSpeechRecognition`) + TTS(`speechSynthesis`) 래핑 훅. `listening`/`speaking`/`interim`(중간 인식 텍스트)/`sttSupported`/`ttsSupported` 상태 + `startListening`/`stopListening`/`speak`/`stopSpeaking`. Web Speech 타입을 직접 선언(lib.dom에 없음), SSR-safe(window 가드), 언마운트 시 정리.
+- **`src/components/ChatWorkspace.tsx`**: 입력창에 마이크 버튼 추가. 탭 → 받아쓰기 → 최종 문장이 확정되면 **기존 채팅 엔진으로 그대로 전송**(첨부/퀵툴 무시하는 순수 대화 턴), 그 턴의 답변이 오면 **소리 내어 읽어줌**. 듣는 중/읽는 중 상태를 실시간 표시(중간 인식 텍스트 포함). `send(e?, spoken?)`로 시그니처 확장 — 음성 턴과 일반 턴을 한 경로에서 처리.
+- 음성 대화는 채팅 엔진 위에 얹은 클라이언트 레이어라 워크스페이스 공유·히스토리 저장과 자동으로 호환됨.
+
+**검증:** `tsc`/`eslint`/`next build` 통과(SSR window 가드 확인). 실제 마이크/TTS 재생은 브라우저 권한이 필요해 샌드박스(headless)에서는 구동 확인 불가 — 사용자 브라우저에서 확인 필요. 주의: 일부 브라우저는 자동재생 정책상 TTS에 사용자 제스처를 요구할 수 있음.
 
 ---
 
