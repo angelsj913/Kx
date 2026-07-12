@@ -219,21 +219,21 @@ export default function ChatWorkspace({
     <div className="mx-auto flex h-full max-w-4xl flex-col px-4 py-4 sm:px-6">
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-700/50 bg-slate-800/40 p-4 shadow-xl shadow-black/30 backdrop-blur-md sm:p-5"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 p-4 shadow-sm dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md sm:p-5"
       >
         {messages.length === 0 && !loading && (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 shadow-lg shadow-blue-600/30">
               <Sparkles className="h-7 w-7 text-white" />
             </div>
-            <p className="max-w-sm text-sm text-slate-400">{t("chat.empty")}</p>
+            <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("chat.empty")}</p>
           </div>
         )}
 
         {messages.map((m) =>
           m.role === "user" ? (
             <div key={m.id} className="flex justify-end gap-2.5">
-              <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm text-white shadow-lg shadow-violet-900/30">
+              <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm text-white shadow-lg shadow-blue-600/30">
                 {m.attachments && m.attachments.length > 0 && (
                   <div className="mb-1.5 flex flex-wrap gap-1.5">
                     {m.attachments.map((f, j) => (
@@ -256,13 +256,13 @@ export default function ChatWorkspace({
                 )}
                 {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
               </div>
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-700/60 bg-slate-900/60">
-                <User className="h-4 w-4 text-slate-400" />
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/60">
+                <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
               </div>
             </div>
           ) : (
             <div key={m.id} className="flex gap-2.5">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-500">
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               {m.outputType === "pptx" || m.outputType === "xlsx" ? (
@@ -281,7 +281,7 @@ export default function ChatWorkspace({
                         : undefined
                     }
                   />
-                  <p className="mt-2 text-sm text-slate-300">{m.text}</p>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                 </div>
               ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                 <div className="min-w-0 flex-1">
@@ -291,10 +291,10 @@ export default function ChatWorkspace({
                     kind={m.structuredKind as StructuredKind}
                     data={JSON.parse(m.resultData)}
                   />
-                  <p className="mt-2 text-sm text-slate-300">{m.text}</p>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                 </div>
               ) : (
-                <div className="prose-ai max-w-[80%] rounded-2xl rounded-tl-sm border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm">
+                <div className="prose-ai max-w-[80%] rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900/60 px-4 py-2.5 text-sm">
                   <ReactMarkdown>{m.text}</ReactMarkdown>
                 </div>
               )}
@@ -304,19 +304,19 @@ export default function ChatWorkspace({
 
         {loading && (
           <div className="flex gap-2.5">
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-500">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-700/50 bg-slate-900/50 px-4 py-3">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-violet-400" />
-              <span className="h-2 w-2 animate-pulse rounded-full bg-violet-400 [animation-delay:150ms]" />
-              <span className="h-2 w-2 animate-pulse rounded-full bg-violet-400 [animation-delay:300ms]" />
+            <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900/60 px-4 py-3">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500 [animation-delay:150ms]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500 [animation-delay:300ms]" />
             </div>
           </div>
         )}
 
         {error && (
-          <p className="rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-2.5 text-sm text-red-300">
+          <p className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:border-red-500/30 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </p>
         )}
@@ -324,7 +324,7 @@ export default function ChatWorkspace({
 
       <form
         onSubmit={send}
-        className="relative mt-3 rounded-2xl border border-slate-700/50 bg-slate-800/40 p-3 shadow-xl shadow-black/30 backdrop-blur-md"
+        className="relative mt-3 rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 p-3 shadow-sm dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md"
       >
         <div className="mb-1.5 flex h-4 items-center px-1">
           <AnimatePresence mode="wait">
@@ -335,7 +335,7 @@ export default function ChatWorkspace({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 4 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="text-[11px] font-medium text-violet-300"
+                className="text-[11px] font-medium text-blue-600 dark:text-blue-300"
               >
                 {t(statusKey as Parameters<typeof t>[0])}
               </motion.span>
@@ -345,13 +345,13 @@ export default function ChatWorkspace({
 
         {activeQuickTool && (
           <div className="mb-2 flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/40 bg-violet-600/15 px-2.5 py-1 text-xs text-violet-200">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
               <activeQuickTool.icon className="h-3.5 w-3.5" />
               {activeQuickTool.short}
               <button
                 type="button"
                 onClick={() => setActiveQuickTool(null)}
-                className="text-violet-300 hover:text-white"
+                className="text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-white"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -364,18 +364,18 @@ export default function ChatWorkspace({
             {pending.map((p, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-2.5 py-1 text-xs text-slate-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
               >
                 {p.file.type.startsWith("image/") ? (
-                  <ImageIcon className="h-3.5 w-3.5 text-violet-400" />
+                  <ImageIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <FileText className="h-3.5 w-3.5 text-violet-400" />
+                  <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 )}
                 <span className="max-w-[10rem] truncate">{p.file.name}</span>
                 <button
                   type="button"
                   onClick={() => setPending((prev) => prev.filter((_, j) => j !== i))}
-                  className="text-slate-500 hover:text-red-400"
+                  className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -392,7 +392,7 @@ export default function ChatWorkspace({
               disabled={loading}
               whileTap={{ scale: 0.96 }}
               title={t("chat.quickActions")}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900/60 text-slate-400 transition-colors hover:border-violet-500/50 hover:text-violet-300 disabled:opacity-50"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 transition-colors hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-blue-300 disabled:opacity-50"
             >
               <Plus className="h-5 w-5" />
             </motion.button>
@@ -404,7 +404,7 @@ export default function ChatWorkspace({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96, y: 8 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/95 shadow-2xl shadow-black/40 backdrop-blur-md"
+                  className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                 >
                   <QuickToolGroup
                     label={t("chat.quickActions.office")}
@@ -432,7 +432,7 @@ export default function ChatWorkspace({
             onClick={() => fileRef.current?.click()}
             disabled={loading}
             title={t("chat.attach")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900/60 text-slate-400 transition-colors hover:border-violet-500/50 hover:text-violet-300 disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 transition-colors hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-blue-300 disabled:opacity-50"
           >
             <Paperclip className="h-5 w-5" />
           </button>
@@ -455,14 +455,14 @@ export default function ChatWorkspace({
             }}
             rows={1}
             placeholder={activeQuickTool ? activeQuickTool.placeholder : t("chat.placeholder")}
-            className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-2.5 text-sm text-slate-100 outline-none transition-all placeholder:text-slate-600 focus:border-violet-500/70 focus:ring-2 focus:ring-violet-500/20"
+            className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-600"
           />
           <motion.button
             type="submit"
             whileTap={{ scale: 0.95 }}
             disabled={!canSend}
             title={t("chat.send")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-900/40 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-600/30 transition-all disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-5 w-5" />
           </motion.button>
@@ -484,8 +484,8 @@ function QuickToolGroup({
   const t = useT();
   if (tools.length === 0) return null;
   return (
-    <div className="border-b border-slate-800/60 p-2 last:border-b-0">
-      <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+    <div className="border-b border-slate-200 p-2 last:border-b-0 dark:border-slate-800/60">
+      <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
         {label}
       </p>
       {tools.map((tool) => {
@@ -495,9 +495,9 @@ function QuickToolGroup({
             key={tool.id}
             type="button"
             onClick={() => onSelect(tool)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition-colors hover:bg-slate-800/60"
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
           >
-            <Icon className="h-4 w-4 text-violet-400" />
+            <Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             {t(`quicktool.${tool.id}.label` as Parameters<typeof t>[0])}
           </button>
         );

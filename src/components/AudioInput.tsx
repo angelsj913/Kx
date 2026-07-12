@@ -80,14 +80,14 @@ export default function AudioInput({
   }
 
   return (
-    <div className="flex flex-1 flex-col rounded-xl border border-slate-700/60 bg-slate-900/60 p-5">
+    <div className="flex flex-1 flex-col rounded-xl border border-slate-300 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/60">
       {file ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 shadow-lg shadow-violet-900/40">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 shadow-lg shadow-blue-600/30">
             <AudioLines className="h-7 w-7 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-slate-100">
+            <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
               {file.name}
             </p>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -98,7 +98,7 @@ export default function AudioInput({
             type="button"
             onClick={() => onChange(null)}
             disabled={disabled}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-500 transition-colors hover:border-red-500/40 hover:text-red-500 disabled:opacity-50 dark:border-slate-700 dark:text-slate-400 dark:hover:text-red-400"
           >
             <Trash2 className="h-3.5 w-3.5" />
             다시 선택
@@ -110,11 +110,11 @@ export default function AudioInput({
             className={`flex h-16 w-16 items-center justify-center rounded-full border transition-colors ${
               recording
                 ? "animate-pulse border-red-500/50 bg-red-500/20"
-                : "border-slate-700/60 bg-slate-800/60"
+                : "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/60"
             }`}
           >
             <Mic
-              className={`h-8 w-8 ${recording ? "text-red-400" : "text-violet-400"}`}
+              className={`h-8 w-8 ${recording ? "text-red-400" : "text-blue-600 dark:text-blue-400"}`}
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function AudioInput({
             </>
           ) : (
             <>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 수업을 바로 녹음하거나, 저장된 오디오 파일을 올려주세요.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
@@ -142,7 +142,7 @@ export default function AudioInput({
                   type="button"
                   onClick={startRecording}
                   disabled={disabled}
-                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
                   <Mic className="h-4 w-4" />
                   녹음 시작
@@ -151,7 +151,7 @@ export default function AudioInput({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={disabled}
-                  className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/50 px-5 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:border-violet-500/50 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-500/50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200"
                 >
                   <Upload className="h-4 w-4" />
                   파일 업로드

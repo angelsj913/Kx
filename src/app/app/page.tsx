@@ -9,11 +9,10 @@ import { useSessions } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
 
-// 모드 개념이 사라져 고정 포인트 컬러로 통일 (기존 학생 모드 팔레트와 동일한 톤).
+// 홈페이지와 동일한 파랑 강조색으로 통일. 결과/구조화 패널이 이 변수를 소비한다.
 const ACCENT_VARS = {
-  "--mode-bg": "#0F172A",
-  "--mode-accent": "#8B5CF6",
-  "--mode-accent-deep": "#6D28D9",
+  "--mode-accent": "#2563EB",
+  "--mode-accent-deep": "#4F46E5",
 } as CSSProperties;
 
 export default function AppWorkspace() {
@@ -50,10 +49,10 @@ export default function AppWorkspace() {
   return (
     <div
       style={ACCENT_VARS}
-      className="relative flex h-screen overflow-hidden bg-[var(--mode-bg)] text-slate-100"
+      className="relative flex h-screen overflow-hidden bg-slate-50 font-[family-name:var(--font-noto-kr)] text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100"
     >
-      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[var(--mode-accent)]/20 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-[var(--mode-accent-deep)]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute -top-40 left-1/3 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px] dark:bg-blue-500/20" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[24rem] w-[24rem] rounded-full bg-indigo-500/5 blur-[120px] dark:bg-indigo-500/10" />
 
       <Sidebar
         sessions={sessions}

@@ -19,9 +19,9 @@ export default function FileResultPanel({
   const HeaderIcon = isPptx ? Presentation : Table2;
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-700/50 bg-slate-800/40 shadow-2xl shadow-black/40 backdrop-blur-md">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-700/50 px-4 py-3 sm:px-5">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-300">
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
+        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />
           <span className="truncate">{title || "결과"}</span>
         </h2>
@@ -43,18 +43,18 @@ export default function FileResultPanel({
             {deck.slides.map((s, i) => (
               <li
                 key={i}
-                className="rounded-xl border border-slate-700/50 bg-slate-900/50 p-4"
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
               >
                 <div className="flex items-center gap-2">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--mode-accent)]/20 text-[11px] font-bold text-[var(--mode-accent)]">
                     {i + 1}
                   </span>
-                  <h3 className="text-sm font-semibold text-slate-100">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {s.title}
                   </h3>
                 </div>
                 {s.bullets && s.bullets.length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 pl-8 text-sm text-slate-400">
+                  <ul className="mt-2 list-disc space-y-1 pl-8 text-sm text-slate-600 dark:text-slate-400">
                     {s.bullets.map((b, j) => (
                       <li key={j}>{b}</li>
                     ))}
@@ -76,14 +76,14 @@ export default function FileResultPanel({
                 <p className="mb-2 text-xs font-semibold text-[var(--mode-accent)]">
                   {sheet.name}
                 </p>
-                <div className="overflow-x-auto rounded-xl border border-slate-700/50">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full border-collapse text-left text-sm">
                     <thead>
-                      <tr className="bg-slate-900/60">
+                      <tr className="bg-slate-100 dark:bg-slate-900/60">
                         {sheet.columns.map((c, i) => (
                           <th
                             key={i}
-                            className="whitespace-nowrap border-b border-slate-700/50 px-3 py-2 font-semibold text-slate-200"
+                            className="whitespace-nowrap border-b border-slate-200 px-3 py-2 font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200"
                           >
                             {c}
                           </th>
@@ -92,11 +92,11 @@ export default function FileResultPanel({
                     </thead>
                     <tbody>
                       {sheet.rows.map((row, ri) => (
-                        <tr key={ri} className="odd:bg-slate-900/20">
+                        <tr key={ri} className="odd:bg-slate-50 dark:odd:bg-slate-900/20">
                           {row.map((cell, ci) => (
                             <td
                               key={ci}
-                              className="whitespace-nowrap border-b border-slate-800/60 px-3 py-2 text-slate-400"
+                              className="whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600 dark:border-slate-800/60 dark:text-slate-400"
                             >
                               {String(cell)}
                             </td>
@@ -111,8 +111,8 @@ export default function FileResultPanel({
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-900/60">
-              <HeaderIcon className="h-7 w-7 text-slate-600" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60">
+              <HeaderIcon className="h-7 w-7 text-slate-400 dark:text-slate-600" />
             </div>
             <p className="text-sm text-slate-500">결과가 여기에 표시됩니다.</p>
           </div>
