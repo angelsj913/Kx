@@ -118,8 +118,13 @@ export default function WorkspaceModal({
         setError(data?.error ?? "초대에 실패했습니다.");
         return;
       }
-      setInviteLink(data.invite.inviteUrl);
+      setInviteLink(data.invite?.inviteUrl ?? "");
       setInviteEmail("");
+      if (data.emailSent) {
+        // 성공 안내는 error 슬롯이 아니라 링크로 표시
+      } else if (data.emailError || data.message) {
+        setError(data.emailError ? data.message : data.message);
+      }
       load();
     } finally {
       setInviting(false);
@@ -483,23 +488,28 @@ export default function WorkspaceModal({
                         disabled={inviting || !inviteEmail.trim()}
                         className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                       >
-                        초대
+                        {inviting ? "발송 중…" : "메일 초대"}
                       </button>
                     </div>
 
                     {inviteLink && (
-                      <div className="mt-2 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 dark:border-blue-500/30 dark:bg-blue-950/30">
-                        <span className="min-w-0 flex-1 truncate text-xs text-blue-700 dark:text-blue-200">
-                          {inviteLink}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={copyLink}
-                          className="flex shrink-0 items-center gap-1 rounded-md bg-blue-600/15 px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-600/25 dark:bg-blue-600/40 dark:text-blue-100 dark:hover:bg-blue-600/60"
-                        >
-                          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          {copied ? "복사됨" : "링크 복사"}
-                        </button>
+                      <div className="mt-2 space-y-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2.5 dark:border-blue-500/30 dark:bg-blue-950/30">
+                        <p className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                          초대 메일을 보냈습니다. 상대가 메일 속 링크로 가입할 수 있어요.
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-[11px] text-blue-700/80 dark:text-blue-200/80">
+                            {inviteLink}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={copyLink}
+                            className="flex shrink-0 items-center gap-1 rounded-md bg-blue-600/15 px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-600/25 dark:bg-blue-600/40 dark:text-blue-100 dark:hover:bg-blue-600/60"
+                          >
+                            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            {copied ? "복사됨" : "링크 복사"}
+                          </button>
+                        </div>
                       </div>
                     )}
 

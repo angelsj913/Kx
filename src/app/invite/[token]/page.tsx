@@ -56,6 +56,7 @@ export default function InvitePage() {
       // 수락한 워크스페이스를 활성 상태로 설정한 뒤 앱으로 이동.
       if (data.workspaceId) {
         window.localStorage.setItem("kx.activeWorkspace", data.workspaceId);
+        window.localStorage.setItem("__kx.activeWorkspace.current", data.workspaceId);
       }
       router.push("/app");
     } finally {
