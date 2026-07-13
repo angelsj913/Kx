@@ -134,3 +134,75 @@ body {
   border-color: rgba(148, 163, 184, 0.2);
   margin: 1rem 0;
 }
+
+/* ============================================
+   ZEFF AI - Workspace 전용 고급 다크 오피스 테마
+   (기존 스타일 아래에 추가)
+   ============================================ */
+
+:root {
+  --workspace-bg: #f8fafc;
+  --workspace-surface: #ffffff;
+  --workspace-text: #0f172a;
+  --workspace-text-secondary: #475569;
+  --workspace-border: #e2e8f0;
+  --workspace-accent: #2563eb;
+  --workspace-accent-hover: #1d4ed8;
+}
+
+.dark {
+  --workspace-bg: #0f172a;
+  --workspace-surface: #1e2937;
+  --workspace-text: #f1f5f9;
+  --workspace-text-secondary: #94a3b8;
+  --workspace-border: #334155;
+  --workspace-accent: #3b82f6;
+  --workspace-accent-hover: #60a5fa;
+}
+
+/* 워크스페이스 전용 클래스 */
+.workspace-container {
+  background-color: var(--workspace-bg);
+  color: var(--workspace-text);
+}
+
+.workspace-sidebar {
+  background-color: var(--workspace-surface);
+  border-right: 1px solid var(--workspace-border);
+}
+
+.workspace-main {
+  background-color: var(--workspace-bg);
+}
+
+.workspace-surface {
+  background-color: var(--workspace-surface);
+  border: 1px solid var(--workspace-border);
+}
+
+.workspace-btn-primary {
+  background-color: var(--workspace-accent);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.workspace-btn-primary:hover {
+  background-color: var(--workspace-accent-hover);
+}
+
+.workspace-input {
+  background-color: var(--workspace-surface);
+  border: 1px solid var(--workspace-border);
+  color: var(--workspace-text);
+}
+
+.workspace-input:focus {
+  border-color: var(--workspace-accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* prose-ai 스타일도 workspace 변수와 연동 */
+.prose-ai {
+  color: var(--workspace-text-secondary);
+}
