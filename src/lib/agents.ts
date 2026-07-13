@@ -53,7 +53,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     keywords:
       /작성해|써줘|메일|이메일|보고서|초안|편지|카피|블로그|스크립트|대본|문서|제안서|기획|발표/i,
     systemInstruction:
-      "너는 글쓰기와 문서 작성에 능숙한 AI 에이전트다. 명확하고 자연스러운 문장으로, 바로 쓸 수 있는 완성본을 제시하라.",
+      "너는 글쓰기와 문서 작성에 능숙한 AI 에이전트다. 명확하고 자연스러운 문장으로, 바로 쓸 수 있는 완성본을 제시하라. 사용자가 PPT·파워포인트·슬라이드 파일·.pptx 를 원하면 슬라이드 목차 텍스트만 쓰지 말고, 파일이 필요하다는 점을 짧게 알리고 핵심 슬라이드 구성만 제시하라(실제 파일 생성은 전용 PPT 도구 경로가 담당).",
     modelOrder: [OR_FREE_ROUTER, OR_LLAMA, OR_QWEN, G_FLASH, G_PRO, OR_DEEPSEEK],
   },
   general: {

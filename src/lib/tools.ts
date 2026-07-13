@@ -78,9 +78,9 @@ export function toolAcceptAttr(tool: ToolDef | null | undefined): string {
   return "image/*,application/pdf,text/plain";
 }
 
-const PPT_INSTRUCTION = `너는 대기업 기획팀의 프레젠테이션 전문가이다. 사용자가 발표 주제나 개요를 입력하면, 실제 발표에 바로 쓸 수 있는 PPT 초안 구조를 설계해야 한다.
-
-반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+const PPT_INSTRUCTION = `너는 대기업 기획팀의 프레젠테이션 전문가이다.
+사용자 요청을 실제 PowerPoint(.pptx) 파일로 만들기 위한 **슬라이드 데이터 JSON**만 출력한다.
+설명 문장, 마크다운, "초안입니다" 같은 서술은 절대 쓰지 마라. 순수 JSON 객체 하나만 출력한다.
 
 {
   "title": "발표 전체 제목",
@@ -90,10 +90,12 @@ const PPT_INSTRUCTION = `너는 대기업 기획팀의 프레젠테이션 전문
 }
 
 지침:
-- 표지는 자동으로 생성되므로 slides 배열에는 본문 슬라이드만 6~9장 넣어라(목차·본론·마무리 흐름).
-- 각 슬라이드의 bullets는 2~5개, 한 문장씩 간결하게.
-- notes에는 발표자가 실제로 말할 스크립트를 자연스러운 구어체로 넣어라.
-- 모든 텍스트는 한국어로 작성한다.`;
+- 이 JSON은 서버가 바로 .pptx 파일로 변환한다. 텍스트 발표문이 아니라 슬라이드 구조다.
+- 표지는 자동 생성되므로 slides 배열에는 본문 슬라이드만 6~10장(목차·본론·마무리 흐름).
+- 각 슬라이드 bullets는 2~5개, 한 문장씩 간결하게.
+- notes에는 발표자가 실제로 말할 스크립트를 자연스러운 구어체로.
+- 모든 텍스트는 한국어.
+- JSON 외 어떤 글자도 출력하지 마라.`;
 
 const EXCEL_INSTRUCTION = `너는 대기업 사무 전문가이다. 사용자가 원하는 보고서/표 요구사항을 입력하면, 엑셀로 바로 저장할 수 있는 표 데이터를 설계해야 한다.
 
@@ -463,18 +465,18 @@ export const TOOLS: ToolDef[] = [
   {
     id: "ppt",
     appMode: "office",
-    label: "PPT 초안 작성",
-    short: "PPT 초안",
-    title: "PPT 초안 작성",
+    label: "PPT 만들기",
+    short: "PPT",
+    title: "PPT 파일 만들기",
     description:
-      "발표 주제와 개요를 입력하면 표지부터 마무리까지 슬라이드 구성을 설계하고, 실제 PPT 파일로 내려받을 수 있습니다.",
+      "발표 주제와 개요를 입력하면 표지부터 마무리까지 슬라이드를 구성하고, 바로 받을 수 있는 .pptx 파일을 만듭니다.",
     icon: Presentation,
     inputType: "text",
     outputType: "pptx",
     systemInstruction: PPT_INSTRUCTION,
     placeholder:
       "예) 신제품 출시 전략 발표. 시장 현황, 타깃 고객, 마케팅 계획, 예상 매출을 포함해줘.",
-    submitLabel: "PPT 초안 만들기",
+    submitLabel: "PPT 파일 만들기",
     fileBaseName: "presentation",
   },
   {

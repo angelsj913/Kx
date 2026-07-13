@@ -11,6 +11,7 @@ import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
+import { detectQuickToolFromText } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -57,6 +58,12 @@ export async function POST(request: Request) {
 
   if (!text && uploads.length === 0) {
     return NextResponse.json({ error: "메시지를 입력해 주세요." }, { status: 400 });
+  }
+
+  // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
+  const autoDetectedTool = !quickToolId && text ? detectQuickToolFromText(text) : null;
+  if (autoDetectedTool) {
+    quickToolId = autoDetectedTool;
   }
 
   try {
@@ -140,7 +147,14 @@ export async function POST(request: Request) {
 
       try {
         if (quickToolId) {
-          send({ type: "status", key: "status.quicktool.generating", sessionId: resolvedSessionId });
+          send({
+            type: "status",
+            key: "status.quicktool.generating",
+            sessionId: resolvedSessionId,
+            detail: autoDetectedTool
+              ? `auto:${quickToolId}`
+              : quickToolId,
+          });
 
           const quickTool = getTool(quickToolId);
           // 첨부 파일을 오디오 / 이미지·문서 파트로 분리 (mixed·url·image 도구 지원)
@@ -211,6 +225,18 @@ export async function POST(request: Request) {
             replyText = `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
             resultData = result.resultData;
             structuredKind = result.structuredKind;
+          } else if (result.outputType === "pptx") {
+            replyText =
+              "PPT 파일(.pptx)을 만들었어요. 아래에서 미리보고 다운로드할 수 있어요.";
+            resultData = result.resultData;
+            fileUrl = result.file.url;
+            fileName = result.file.filename;
+          } else if (result.outputType === "xlsx") {
+            replyText =
+              "엑셀 파일(.xlsx)을 만들었어요. 아래에서 확인하고 다운로드하세요.";
+            resultData = result.resultData;
+            fileUrl = result.file.url;
+            fileName = result.file.filename;
           } else {
             replyText = `${result.tool.short} 파일을 만들었어요. 아래에서 확인하고 다운로드하세요.`;
             resultData = result.resultData;
