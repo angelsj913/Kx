@@ -10,7 +10,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// 멤버 제거 (Owner만 강제 추방 가능) + 스스로 나가기
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string; memberId: string }> },
@@ -26,7 +25,6 @@ export async function DELETE(
   try {
     const me = await requireMembership(id, meId);
 
-    // 스스로 나가기
     if (memberId === meId) {
       if (me.role === "owner") {
         return NextResponse.json(
@@ -40,7 +38,6 @@ export async function DELETE(
       return NextResponse.json({ ok: true });
     }
 
-    // 타인 강제 추방 — Owner만 가능
     if (me.role !== "owner") {
       return NextResponse.json({ error: "팀원 강제 추방은 소유자만 가능합니다." }, { status: 403 });
     }
