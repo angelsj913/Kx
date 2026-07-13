@@ -46,11 +46,11 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`relative z-30 flex shrink-0 flex-col overflow-visible border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
+      className={`flex h-full max-h-[100dvh] shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
         isCollapsed ? "w-16" : "w-72"
       }`}
     >
-      {/* 상단: 로고 + 접기/펼치기 (헤더 안에서만) */}
+      {/* 상단: 로고 + 접기/펼치기 */}
       <div
         className={`flex h-14 shrink-0 items-center border-b border-[var(--workspace-border)] ${
           isCollapsed ? "justify-center px-1" : "justify-between gap-1 px-3"
@@ -80,7 +80,6 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* 접힌 상태: 헤더 아래 펼치기 버튼 (라인 안으로) */}
       {isCollapsed && (
         <div className="flex shrink-0 items-center justify-center border-b border-[var(--workspace-border)] py-1">
           <button
@@ -96,7 +95,7 @@ export default function Sidebar({
 
       <WorkspaceSwitcher collapsed={isCollapsed} />
 
-      <div className={`flex flex-col gap-1 ${isCollapsed ? "p-1.5" : "p-2"}`}>
+      <div className={`flex shrink-0 flex-col gap-1 ${isCollapsed ? "p-1.5" : "p-2"}`}>
         <button
           type="button"
           onClick={onNewChat}
@@ -136,13 +135,14 @@ export default function Sidebar({
         </NavItem>
       </div>
 
-      <div className={`flex min-h-0 flex-1 flex-col pb-2 ${isCollapsed ? "px-1.5" : "px-2"}`}>
+      {/* 세션 목록 — 남는 공간만 차지, 프로필은 항상 하단 */}
+      <div className={`flex min-h-0 flex-1 flex-col ${isCollapsed ? "px-1.5" : "px-2"}`}>
         {!isCollapsed && (
-          <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--workspace-text-secondary)]">
+          <p className="mb-1 shrink-0 px-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--workspace-text-secondary)]">
             {t("sidebar.library")}
           </p>
         )}
-        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden pb-2">
           {sessions.length === 0 && !isCollapsed && (
             <li className="px-2 py-6 text-center text-xs text-[var(--workspace-text-secondary)]">
               {t("sidebar.libraryEmpty")}
@@ -196,7 +196,10 @@ export default function Sidebar({
         </ul>
       </div>
 
-      <ProfileMenu collapsed={isCollapsed} />
+      {/* 하단 고정 프로필 — 사이드바와 동일 배경, 떠 보이지 않게 */}
+      <div className="mt-auto shrink-0 border-t border-[var(--workspace-border)] bg-[var(--workspace-surface)]">
+        <ProfileMenu collapsed={isCollapsed} />
+      </div>
     </aside>
   );
 }

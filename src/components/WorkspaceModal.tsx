@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { X, Users, Trash2, Mail, Copy, Check, LogOut, Loader2 } from "lucide-react";
@@ -84,6 +85,19 @@ export default function WorkspaceModal({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
   const canManage = detail && detail.myRole !== "member";
 
@@ -225,13 +239,24 @@ export default function WorkspaceModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.15 }}
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900"
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700/70 dark:bg-slate-900"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2.5">
@@ -514,7 +539,8 @@ export default function WorkspaceModal({
           </>
         ) : null}
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

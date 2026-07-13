@@ -33,10 +33,20 @@ export default function AppWorkspace() {
         />
       )}
 
+      {/*
+        모바일: fixed 드로어.
+        데스크톱: static flex 자식 (transform 없음 — fixed 모달이 body 기준이어야 함).
+        설정/워크스페이스 모달은 createPortal(document.body)로 렌더.
+      */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 md:static md:z-auto md:translate-x-0 ${
-          mobileNav ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        className={[
+          "h-full shrink-0",
+          // 모바일 오버레이 드로어
+          "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-2xl max-md:transition-transform max-md:duration-300",
+          mobileNav ? "max-md:translate-x-0" : "max-md:-translate-x-full",
+          // 데스크톱: 일반 플로우, transform 없음
+          "md:relative md:z-auto md:shadow-none",
+        ].join(" ")}
       >
         <Sidebar
           sessions={sessions}

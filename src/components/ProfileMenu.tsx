@@ -88,7 +88,7 @@ export default function ProfileMenu({
     <div
       ref={rootRef}
       key={userId ?? "signed-out"}
-      className={`relative z-50 shrink-0 border-t border-[var(--workspace-border)] ${
+      className={`relative shrink-0 bg-[var(--workspace-surface)] ${
         collapsed ? "p-1.5" : "p-2 sm:p-3"
       }`}
     >

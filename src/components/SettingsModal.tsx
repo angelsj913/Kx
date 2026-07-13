@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   X,
@@ -59,22 +60,34 @@ export default function SettingsModal({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("general");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
+    // 스크롤 잠금
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // document.body 포털 — 사이드바 transform 안에 갇히지 않도록
+  return createPortal(
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-[400] flex items-center justify-center p-3 sm:p-6"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6"
         role="dialog"
         aria-modal="true"
         aria-label="설정"
@@ -83,7 +96,7 @@ export default function SettingsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
           onClick={onClose}
         />
 
@@ -143,7 +156,8 @@ export default function SettingsModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
