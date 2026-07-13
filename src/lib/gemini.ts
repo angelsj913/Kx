@@ -1,4 +1,4 @@
-import { GoogleGenAI, createUserContent, type Content } from "@google/genai";
+import { GoogleGenAI, createUserContent, type Content, type Part } from "@google/genai";
 import type { ToolDef } from "./tools";
 
 export class MissingApiKeyError extends Error {}
@@ -9,7 +9,7 @@ function client(apiKey?: string): GoogleGenAI {
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) {
     throw new MissingApiKeyError(
-      "Gemini API 키가 없습니다. 앱 설정에서 키를 입력하거나 서버에 GEMINI_API_KEY를 설정하세요."
+      "Gemini API 키가 없습니다. 앱 설정에서 키를 입력하거나 서버에 GEMINI_API_KEY를 설정하세요.",
     );
   }
   return new GoogleGenAI({ apiKey: key });
@@ -24,29 +24,67 @@ export interface GenInput {
   apiKey?: string;
 }
 
+function looksLikeUrl(s: string): boolean {
+  return /^https?:\/\/\S+/i.test(s.trim());
+}
+
+/** 도구 입력(텍스트·URL·이미지·오디오)을 멀티모달 content로 조립 */
+function buildContents(input: GenInput): string | Content {
+  const { tool } = input;
+  const text = (input.text ?? "").trim();
+  const images = input.images ?? [];
+  const audio = input.audio;
+
+  if (!audio && images.length === 0) {
+    if (
+      (tool.inputType === "url" || tool.id === "video-summary") &&
+      text &&
+      looksLikeUrl(text)
+    ) {
+      return createUserContent([
+        { fileData: { fileUri: text } },
+        "위 영상의 내용을 시스템 지침에 따라 정리·요약해 주세요.",
+      ]);
+    }
+    return text || "요청을 수행해 주세요.";
+  }
+
+  const parts: Part[] = [];
+
+  for (const img of images) {
+    parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } });
+  }
+  if (audio) {
+    parts.push({ inlineData: { data: audio.data, mimeType: audio.mimeType } });
+  }
+
+  if (text && looksLikeUrl(text) && (tool.inputType === "url" || tool.id === "video-summary")) {
+    parts.push({ fileData: { fileUri: text } });
+    parts.push({
+      text: `영상 URL: ${text}\n첨부 자료와 함께 시스템 지침에 따라 요약·정리해 주세요.`,
+    });
+  } else if (text) {
+    parts.push({ text });
+  } else {
+    parts.push({
+      text:
+        tool.id === "video-summary"
+          ? "첨부된 미디어(오디오·이미지·문서) 내용을 시스템 지침에 따라 영상/강의 요약 형식으로 정리해 주세요."
+          : tool.id === "note-a4"
+            ? "첨부된 자료(판서·교재 등)를 시스템 지침에 따라 A4 노트로 정리해 주세요."
+            : tool.id === "math-solve"
+              ? "첨부된 문제 이미지를 읽고 시스템 지침에 따라 풀이·검산해 주세요."
+              : "첨부된 자료를 시스템 지침에 따라 분석해 주세요.",
+    });
+  }
+
+  return createUserContent(parts);
+}
+
 export async function geminiGenerateForTool(input: GenInput): Promise<string> {
   const ai = client(input.apiKey);
   const { tool } = input;
-
-  let contents: string | Content;
-  if (tool.inputType === "url") {
-    contents = createUserContent([
-      { fileData: { fileUri: input.text ?? "" } },
-      "위 영상의 내용을 지침에 따라 정리해줘.",
-    ]);
-  } else if (tool.inputType === "audio" && input.audio) {
-    contents = createUserContent([
-      { inlineData: { data: input.audio.data, mimeType: input.audio.mimeType } },
-      "위 오디오의 내용을 지침에 따라 정리해줘.",
-    ]);
-  } else if (tool.inputType === "image" && input.images && input.images.length > 0) {
-    contents = createUserContent([
-      ...input.images.map((img) => ({ inlineData: { data: img.data, mimeType: img.mimeType } })),
-      input.text || "위 이미지의 내용을 지침에 따라 분석해줘.",
-    ]);
-  } else {
-    contents = input.text ?? "";
-  }
+  const contents = buildContents(input);
 
   const needsJson =
     tool.outputType === "pptx" ||

@@ -22,7 +22,12 @@ import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
 import { groupedQuickTools } from "@/lib/quickTools";
-import type { ToolDef } from "@/lib/tools";
+import {
+  toolAcceptAttr,
+  toolAllowsAttachments,
+  toolRequiresAttachment,
+  type ToolDef,
+} from "@/lib/tools";
 import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
@@ -243,6 +248,7 @@ export default function ChatWorkspace({
   const [statusKey, setStatusKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [activeQuickTool, setActiveQuickTool] = useState<ToolDef | null>(null);
+  const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -374,13 +380,19 @@ export default function ChatWorkspace({
   async function send(e?: React.FormEvent, spoken?: string) {
     e?.preventDefault();
     const spokenTurn = spoken !== undefined;
-    const text = (spoken ?? draft).trim();
+    let text = (spoken ?? draft).trim();
+    // A4 노트 출력 형식 힌트를 본문에 주입
+    if (!spokenTurn && activeQuickTool?.id === "note-a4") {
+      text = text
+        ? `${text}\n\n형식: ${noteFormat}`
+        : `형식: ${noteFormat}\n첨부/입력 내용을 A4 노트로 정리해 주세요.`;
+    }
     const requiresAttachment =
-      !spokenTurn &&
-      (activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio");
+      !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
     if (spokenTurn && !text) return;
     if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
     if (requiresAttachment && pending.length === 0) return;
+    // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
 
     setError("");
     setLoading(true);
@@ -500,11 +512,13 @@ export default function ChatWorkspace({
   });
 
   const requiresAttachment =
-    activeQuickTool?.inputType === "image" || activeQuickTool?.inputType === "audio";
+    activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
+  const allowsAttach = activeQuickTool == null || toolAllowsAttachments(activeQuickTool);
   const canSend =
-    !loading && pending.length > 0
-      ? true
-      : !loading && !requiresAttachment && draft.trim().length > 0;
+    !loading &&
+    (requiresAttachment
+      ? pending.length > 0
+      : draft.trim().length > 0 || pending.length > 0);
 
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
   const featureGroups = groupedQuickTools(enabledQuickTools);
@@ -692,7 +706,7 @@ export default function ChatWorkspace({
           </div>
 
           {activeQuickTool && (
-            <div className="mb-2 flex items-center gap-1.5">
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
                 <activeQuickTool.icon className="h-3.5 w-3.5" />
                 {activeQuickTool.short}
@@ -704,6 +718,31 @@ export default function ChatWorkspace({
                   <X className="h-3.5 w-3.5" />
                 </button>
               </span>
+              {activeQuickTool.id === "note-a4" &&
+                (["markdown", "pdf", "image"] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    type="button"
+                    onClick={() => setNoteFormat(fmt)}
+                    className={`rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors ${
+                      noteFormat === fmt
+                        ? "border-blue-500 bg-blue-600 text-white"
+                        : "border-slate-300 text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:text-slate-300"
+                    }`}
+                  >
+                    {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? "PDF용" : "이미지용"}
+                  </button>
+                ))}
+              {activeQuickTool.id === "video-summary" && (
+                <span className="text-[11px] text-slate-500">
+                  URL 입력 또는 대본·오디오·캡처 첨부
+                </span>
+              )}
+              {activeQuickTool.id === "exam-maker" && (
+                <span className="text-[11px] text-slate-500">
+                  과목·범위·키워드 → 20문항 + 해설
+                </span>
+              )}
             </div>
           )}
 
@@ -791,7 +830,7 @@ export default function ChatWorkspace({
             <input
               ref={fileRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept={toolAcceptAttr(activeQuickTool)}
               multiple
               onChange={onPickFiles}
               className="hidden"

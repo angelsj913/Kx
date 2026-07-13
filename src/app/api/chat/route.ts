@@ -137,12 +137,39 @@ export async function POST(request: Request) {
           send({ type: "status", key: "status.quicktool.generating", sessionId: resolvedSessionId });
 
           const quickTool = getTool(quickToolId);
+          // 첨부 파일을 오디오 / 이미지·문서 파트로 분리 (mixed·url·image 도구 지원)
+          const audioFile = inlineFiles.find((f) => f.mimeType.startsWith("audio/"));
+          const imageLike = inlineFiles.filter(
+            (f) =>
+              f.mimeType.startsWith("image/") ||
+              f.mimeType.startsWith("video/") ||
+              f.mimeType === "application/pdf" ||
+              f.mimeType.startsWith("text/"),
+          );
+          const useMixed =
+            quickTool?.inputType === "mixed" ||
+            quickTool?.inputType === "url" ||
+            quickTool?.inputType === "image" ||
+            quickTool?.inputType === "audio";
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text,
             userId,
-            audio: quickTool?.inputType === "audio" ? inlineFiles[0] : undefined,
-            images: quickTool?.inputType === "image" ? inlineFiles : undefined,
+            audio:
+              quickTool?.inputType === "audio"
+                ? inlineFiles[0]
+                : useMixed
+                  ? audioFile
+                  : undefined,
+            images:
+              quickTool?.inputType === "image"
+                ? inlineFiles
+                : useMixed
+                  ? imageLike.length
+                    ? imageLike
+                    : undefined
+                  : undefined,
             onAttempt: () =>
               send({ type: "status", key: "status.ai.trying", sessionId: resolvedSessionId }),
             onUploadStart: () =>

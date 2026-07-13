@@ -52,13 +52,19 @@ export async function runToolGeneration(
   const tool = getTool(input.toolId);
   if (!tool) throw new Error("알 수 없는 도구입니다.");
 
+  const hasText = !!(input.text && input.text.trim());
+  const hasImages = !!(input.images && input.images.length > 0);
+  const hasAudio = !!input.audio;
+
   if (tool.inputType === "audio") {
-    if (!input.audio) throw new Error("오디오 파일을 첨부해 주세요.");
+    if (!hasAudio) throw new Error("오디오 파일을 첨부해 주세요.");
   } else if (tool.inputType === "image") {
-    if (!input.images || input.images.length === 0) {
-      throw new Error("이미지 파일을 첨부해 주세요.");
+    if (!hasImages) throw new Error("이미지 파일을 첨부해 주세요.");
+  } else if (tool.inputType === "mixed" || tool.inputType === "url") {
+    if (!hasText && !hasImages && !hasAudio) {
+      throw new Error("URL·텍스트를 입력하거나 파일을 첨부해 주세요.");
     }
-  } else if (!input.text) {
+  } else if (!hasText && !hasImages) {
     throw new Error("요청할 내용을 입력해 주세요.");
   }
 
