@@ -63,7 +63,11 @@ export default function AdminUserPlanControl({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "인증번호 발송에 실패했습니다.");
       setSentTo(data.sentTo ?? "");
-      setDevCode(data.devCode);
+      setDevCode(typeof data.devCode === "string" ? data.devCode : undefined);
+      if (data.mailError && data.devCode) {
+        // 메일은 실패했지만 화면 코드로 진행 가능
+        setError(String(data.mailError));
+      }
       setStep("otp");
     } catch (e) {
       setError(e instanceof Error ? e.message : "오류가 발생했습니다.");
@@ -215,9 +219,18 @@ export default function AdminUserPlanControl({
                   )}
                 </p>
                 {devCode && (
-                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                    개발 모드 · 인증번호: <strong className="font-mono tracking-widest">{devCode}</strong>
-                  </p>
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
+                    <p className="text-[11px] font-semibold">
+                      메일 미도착 · 화면 인증번호 (관리자 폴백)
+                    </p>
+                    <p className="mt-1 text-center font-mono text-2xl font-bold tracking-[0.35em]">
+                      {devCode}
+                    </p>
+                    <p className="mt-2 text-[10px] leading-relaxed opacity-80">
+                      Vercel에 SMTP 또는 RESEND_API_KEY 를 등록하면 이메일로 발송됩니다.
+                      Resend 무료 플랜은 인증된 수신 주소만 받을 수 있습니다.
+                    </p>
+                  </div>
                 )}
                 <input
                   type="text"

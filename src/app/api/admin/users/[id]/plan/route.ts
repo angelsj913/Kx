@@ -68,17 +68,40 @@ export async function POST(request: Request, ctx: RouteCtx) {
 
     // ── 1단계: 관리자 이메일로 OTP 발송 ──
     if (action === "send-otp") {
-      const { devCode } = await issueOtp(adminEmail, "email", "admin-plan-change");
+      const result = await issueOtp(adminEmail, "email", "admin-plan-change");
+      const masked = maskEmail(adminEmail);
+
+      // 메일 실패해도 관리자 작업은 막지 않음 — 화면 코드(devCode)로 2단계 진행
+      const message = result.sent
+        ? `${masked} 으로 인증번호를 보냈습니다. 3분 안에 입력해 주세요.`
+        : result.devCode
+          ? `메일 발송에 실패해 화면에 인증번호를 표시합니다. (${result.mailError ?? "발송 수단 확인 필요"})`
+          : result.mailError ?? "인증번호 발송에 실패했습니다.";
+
+      if (!result.sent && !result.devCode) {
+        return NextResponse.json(
+          {
+            error: message,
+            mailMode: result.mode,
+            sent: false,
+          },
+          { status: 502 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
-        sentTo: maskEmail(adminEmail),
+        sent: result.sent,
+        mailMode: result.mode,
+        sentTo: masked,
         targetUserId: target.id,
         targetEmail: target.email,
         fromPlan: currentPlan,
         toPlan: plan,
-        // 로컬/미연동 환경에서만 코드 노출
-        devCode,
-        message: `${maskEmail(adminEmail)} 으로 인증번호를 보냈습니다. 3분 안에 입력해 주세요.`,
+        // 메일 미발송 시 관리자 폴백 코드 (issueOtp 가 admin-plan-change 에 허용)
+        devCode: result.devCode,
+        mailError: result.mailError,
+        message,
       });
     }
 

@@ -9,18 +9,36 @@ export type OtpPurpose =
   | "find-password"
   | "workspace-delete"
   | "admin-plan-change"; // 관리자 회원 요금제 변경 2단계 인증
+
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
 export function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+export function hasEmailProvider(): boolean {
+  return (
+    !!(process.env.SMTP_USER && process.env.SMTP_PASS) ||
+    !!process.env.RESEND_API_KEY
+  );
+}
+
+export type IssueOtpResult = {
+  /** 실제 메일 발송 성공 여부 */
+  sent: boolean;
+  mode: "smtp" | "resend" | "dev-log" | "none";
+  /** 개발 또는 메일 미설정/실패 시 화면에 보여줄 코드 (admin 폴백 포함) */
+  devCode?: string;
+  /** 발송 실패 사유 (있으면) */
+  mailError?: string;
+};
+
 /** 6자리 코드를 발급·저장하고 채널로 발송한다. */
 export async function issueOtp(
   identifier: string,
   channel: OtpChannel,
   purpose: OtpPurpose
-): Promise<{ devCode?: string }> {
+): Promise<IssueOtpResult> {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
 
@@ -32,18 +50,27 @@ export async function issueOtp(
     data: { identifier, channel, purpose, code, expiresAt },
   });
 
-  if (channel === "email") {
-    await sendEmailOtp(identifier, code, purpose);
-  } else {
+  if (channel === "sms") {
     await sendSmsOtp(identifier, code);
+    return { sent: false, mode: "none", devCode: code };
   }
 
-  // 프로덕션이 아니고 실제 발송 수단이 없으면 테스트용으로 코드를 반환
-  const hasMail =
-    !!(process.env.SMTP_USER && process.env.SMTP_PASS) || !!process.env.RESEND_API_KEY;
-  const devCode =
-    process.env.NODE_ENV !== "production" && !hasMail ? code : undefined;
-  return { devCode };
+  const mail = await sendEmailOtp(identifier, code, purpose);
+
+  // 메일이 안 나갔을 때: 개발 환경이거나 관리자 요금제 변경이면 코드를 응답에 포함
+  // (운영에서 메일 키 미설정/Resend 제한으로 막혀도 관리 작업이 가능하도록)
+  const allowInlineCode =
+    !mail.sent &&
+    (process.env.NODE_ENV !== "production" ||
+      purpose === "admin-plan-change" ||
+      process.env.ADMIN_OTP_INLINE === "1");
+
+  return {
+    sent: mail.sent,
+    mode: mail.mode,
+    mailError: mail.error,
+    devCode: allowInlineCode ? code : undefined,
+  };
 }
 
 /** 코드 검증. 성공 시 소비 처리하고 true. */
@@ -83,11 +110,17 @@ export async function hasRecentVerifiedOtp(
   return !!row;
 }
 
+type MailResult = {
+  sent: boolean;
+  mode: "smtp" | "resend" | "dev-log" | "none";
+  error?: string;
+};
+
 async function sendEmailOtp(
   email: string,
   code: string,
   purpose: OtpPurpose = "signup"
-): Promise<void> {
+): Promise<MailResult> {
   const isAdminPlan = purpose === "admin-plan-change";
   const subject = isAdminPlan
     ? "[ZEFF AI] 관리자 · 요금제 변경 인증번호"
@@ -104,52 +137,88 @@ async function sendEmailOtp(
       </div>`
     : `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`;
 
-  // 1) 구글 워크스페이스(Gmail) SMTP — SMTP_USER/SMTP_PASS(앱 비밀번호)가 있으면 우선 사용
+  // 1) SMTP (Gmail 등)
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT || 465),
-      secure: true,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || `ZEFF AI <${process.env.SMTP_USER}>`,
-      to: email,
-      subject,
-      text,
-      html,
-    });
-    return;
+    try {
+      const port = Number(process.env.SMTP_PORT || 465);
+      const secure =
+        process.env.SMTP_SECURE === "false"
+          ? false
+          : process.env.SMTP_SECURE === "true"
+            ? true
+            : port === 465;
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port,
+        secure,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      });
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `ZEFF AI <${process.env.SMTP_USER}>`,
+        to: email,
+        subject,
+        text,
+        html,
+      });
+      return { sent: true, mode: "smtp" };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[OTP:email:smtp] failed:", msg);
+      return { sent: false, mode: "smtp", error: `SMTP 발송 실패: ${msg}` };
+    }
   }
 
-  // 2) Resend(대체) — RESEND_API_KEY가 있으면 사용
+  // 2) Resend
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
-    const resend = new Resend(apiKey);
-    await resend.emails.send({
-      from: process.env.RESEND_FROM || "ZEFF AI <onboarding@resend.dev>",
-      to: email,
-      subject,
-      text,
-      html,
-    });
-    return;
+    try {
+      const resend = new Resend(apiKey);
+      const from =
+        process.env.RESEND_FROM || "ZEFF AI <onboarding@resend.dev>";
+      const result = await resend.emails.send({
+        from,
+        to: email,
+        subject,
+        text,
+        html,
+      });
+      // Resend SDK 는 예외 대신 { error } 를 반환하는 경우가 많음
+      if (result && typeof result === "object" && "error" in result && result.error) {
+        const errObj = result.error as { message?: string };
+        const msg = errObj?.message || JSON.stringify(result.error);
+        console.error("[OTP:email:resend] API error:", msg);
+        return {
+          sent: false,
+          mode: "resend",
+          error: `Resend 발송 실패: ${msg}`,
+        };
+      }
+      return { sent: true, mode: "resend" };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[OTP:email:resend] failed:", msg);
+      return { sent: false, mode: "resend", error: `Resend 발송 실패: ${msg}` };
+    }
   }
 
   // 3) 발송 수단 없음
+  console.log(`[OTP:email:dev] ${email} -> ${code} (purpose=${purpose})`);
   if (process.env.NODE_ENV === "production") {
-    throw new Error("이메일 발송이 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+    return {
+      sent: false,
+      mode: "none",
+      error:
+        "이메일 발송이 설정되지 않았습니다. Vercel에 SMTP_USER/SMTP_PASS 또는 RESEND_API_KEY를 등록해 주세요.",
+    };
   }
-  console.log(`[OTP:email:dev] ${email} -> ${code}`);
+  return { sent: false, mode: "dev-log" };
 }
 
-/** 국내 SMS 발송 핸들러 스터브 — 실제 연동(예: 솔라피/NHN Cloud) 시 이 함수만 구현하면 된다. */
+/** 국내 SMS 발송 핸들러 스터브 */
 async function sendSmsOtp(phone: string, code: string): Promise<void> {
-  // TODO: 국내 SMS 게이트웨이 연동 지점. 현재는 스터브.
   if (process.env.NODE_ENV !== "production") {
     console.log(`[OTP:sms:stub] ${phone} -> ${code}`);
   }
-  // 프로덕션에서 SMS 미구현 상태로 호출되면 안내
   if (process.env.NODE_ENV === "production" && !process.env.SMS_API_KEY) {
     throw new Error("문자 인증은 준비 중입니다. 이메일 인증을 이용해 주세요.");
   }

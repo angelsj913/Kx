@@ -33,13 +33,19 @@ export async function sendEmail(opts: {
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     const resend = new Resend(apiKey);
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: process.env.RESEND_FROM || "ZEFF AI <onboarding@resend.dev>",
       to,
       subject,
       text,
       html,
     });
+    if (result && typeof result === "object" && "error" in result && result.error) {
+      const msg =
+        (result.error as { message?: string })?.message ||
+        JSON.stringify(result.error);
+      throw new Error(`Resend 발송 실패: ${msg}`);
+    }
     return { mode: "resend" };
   }
 
