@@ -39,36 +39,70 @@ export default function FileResultPanel({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {isPptx && deck ? (
-          <ol className="space-y-3">
-            {deck.slides.map((s, i) => (
-              <li
-                key={i}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--mode-accent)]/20 text-[11px] font-bold text-[var(--mode-accent)]">
-                    {i + 1}
-                  </span>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {s.title}
-                  </h3>
-                </div>
-                {s.bullets && s.bullets.length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 pl-8 text-sm text-slate-600 dark:text-slate-400">
-                    {s.bullets.map((b, j) => (
-                      <li key={j}>{b}</li>
-                    ))}
-                  </ul>
+          <div className="space-y-3">
+            {(deck.subtitle || deck.title) && (
+              <div className="rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 dark:border-blue-900/40 dark:from-blue-950/40 dark:to-indigo-950/30">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                  표지
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {deck.title}
+                </p>
+                {deck.subtitle && (
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{deck.subtitle}</p>
                 )}
-                {s.notes && (
-                  <p className="mt-2 flex items-start gap-1.5 pl-8 text-xs text-slate-500">
-                    <FileText className="mt-0.5 h-3 w-3 shrink-0" />
-                    {s.notes}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
+              </div>
+            )}
+            <ol className="space-y-3">
+              {deck.slides.map((s, i) => (
+                <li
+                  key={i}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--mode-accent)]/20 text-[11px] font-bold text-[var(--mode-accent)]">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {s.title}
+                        </h3>
+                        {s.layout && s.layout !== "content" && (
+                          <span className="rounded-md bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            {s.layout}
+                          </span>
+                        )}
+                      </div>
+                      {s.subtitle && (
+                        <p className="mt-0.5 text-xs text-slate-500">{s.subtitle}</p>
+                      )}
+                    </div>
+                  </div>
+                  {s.bullets && s.bullets.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-8 text-sm text-slate-600 dark:text-slate-400">
+                      {s.bullets.map((b, j) => (
+                        <li key={j}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {s.bulletsRight && s.bulletsRight.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 border-l-2 border-indigo-200 pl-8 text-sm text-slate-600 dark:border-indigo-800 dark:text-slate-400">
+                      {s.bulletsRight.map((b, j) => (
+                        <li key={j}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {s.notes && (
+                    <p className="mt-2 flex items-start gap-1.5 pl-8 text-xs text-slate-500">
+                      <FileText className="mt-0.5 h-3 w-3 shrink-0" />
+                      {s.notes}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
         ) : workbook ? (
           <div className="space-y-6">
             {workbook.sheets.map((sheet, si) => (

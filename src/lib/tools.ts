@@ -78,24 +78,43 @@ export function toolAcceptAttr(tool: ToolDef | null | undefined): string {
   return "image/*,application/pdf,text/plain";
 }
 
-const PPT_INSTRUCTION = `너는 대기업 기획팀의 프레젠테이션 전문가이다.
-사용자 요청을 실제 PowerPoint(.pptx) 파일로 만들기 위한 **슬라이드 데이터 JSON**만 출력한다.
-설명 문장, 마크다운, "초안입니다" 같은 서술은 절대 쓰지 마라. 순수 JSON 객체 하나만 출력한다.
+const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 시니어 프레젠테이션 디렉터다.
+사용자 요청을 실제 PowerPoint(.pptx)로 변환할 **순수 JSON만** 출력한다.
+설명·마크다운·코드펜스·인사말 금지. JSON 객체 하나만.
 
+스키마:
 {
-  "title": "발표 전체 제목",
+  "title": "발표 전체 제목 ( enticing 하게, 12~28자 권장 )",
+  "subtitle": "한 줄 맥락 (대상·목적·분량 예: 중학생 대상 10분 발표)",
   "slides": [
-    { "title": "슬라이드 제목", "bullets": ["핵심 요점 문장", "핵심 요점 문장"], "notes": "발표자가 말할 대본 한두 문장" }
+    {
+      "layout": "agenda|section|content|twoColumn|closing",
+      "title": "슬라이드 제목",
+      "subtitle": "선택 — 한 줄 보조 설명",
+      "bullets": ["핵심 1", "핵심 2"],
+      "bulletsRight": ["twoColumn일 때만 오른쪽 열"],
+      "notes": "발표자 노트 2~4문장 (구어체 대본)"
+    }
   ]
 }
 
-지침:
-- 이 JSON은 서버가 바로 .pptx 파일로 변환한다. 텍스트 발표문이 아니라 슬라이드 구조다.
-- 표지는 자동 생성되므로 slides 배열에는 본문 슬라이드만 6~10장(목차·본론·마무리 흐름).
-- 각 슬라이드 bullets는 2~5개, 한 문장씩 간결하게.
-- notes에는 발표자가 실제로 말할 스크립트를 자연스러운 구어체로.
-- 모든 텍스트는 한국어.
-- JSON 외 어떤 글자도 출력하지 마라.`;
+구성 규칙 (품질 극대화):
+1) 표지는 시스템이 자동 생성 → slides에는 본문만.
+2) 권장 흐름 (8~12장):
+   - 1: layout=agenda (목차 4~7항목, 번호형 한 줄씩)
+   - 2: layout=section (첫 섹션 제목)
+   - 이어서 content 본론 슬라이드 여러 장
+   - 중간 전환마다 section 1장
+   - 비교·장단점이면 twoColumn (bullets / bulletsRight)
+   - 마지막: layout=closing (감사·Q&A·핵심 takeaway 1~3개)
+3) 각 content 슬라이드:
+   - 제목은 결과·주장 중심 (명사 나열 금지 예: "세포분열 정의" 대신 "세포분열은 생명 유지의 핵심 과정")
+   - bullets 3~5개, 한 bullet = 한 메시지, 15~40자 권장
+   - 전문 용어는 쉬운 비유 1개를 섞어라
+   - notes에 발표자가 말할 스크립트 (청중 시선·예시 포함)
+4) 주제 깊이: 사용자 수준(초등/중등/고등/대학/직장)을 추정해 맞춤.
+5) 모든 텍스트 한국어. 빈 slides 금지.
+6) JSON 외 문자 금지.`;
 
 const EXCEL_INSTRUCTION = `너는 대기업 사무 전문가이다. 사용자가 원하는 보고서/표 요구사항을 입력하면, 엑셀로 바로 저장할 수 있는 표 데이터를 설계해야 한다.
 

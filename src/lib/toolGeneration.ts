@@ -104,39 +104,69 @@ export async function runToolGeneration(
   }
 
   if (tool.outputType === "pptx") {
-    const deck = parseDeck(raw);
+    let deck;
+    try {
+      deck = parseDeck(raw);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
+      console.error("[toolGeneration] pptx parse", msg, raw.slice(0, 400));
+      throw new Error(msg);
+    }
     input.onUploadStart?.();
     const base64 = await buildPptxBase64(deck);
+    const safeName = (deck.title || tool.fileBaseName)
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .slice(0, 40) || tool.fileBaseName;
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: PPTX_MIME }
+      { access: "public", contentType: PPTX_MIME },
     );
     return {
       tool,
       outputType: "pptx",
       preview: deck,
       resultData: JSON.stringify(deck),
-      file: { url: blob.url, filename: `${tool.fileBaseName}.pptx`, mimeType: PPTX_MIME },
+      file: {
+        url: blob.url,
+        filename: `${safeName}.pptx`,
+        mimeType: PPTX_MIME,
+      },
       meta,
     };
   }
 
   if (tool.outputType === "xlsx") {
-    const wb = parseWorkbook(raw);
+    let wb;
+    try {
+      wb = parseWorkbook(raw);
+    } catch (err) {
+      console.error("[toolGeneration] xlsx parse", err);
+      throw new Error("엑셀 데이터 파싱에 실패했습니다. 다시 시도해 주세요.");
+    }
+    if (!wb.sheets.length) {
+      throw new Error("엑셀 시트가 비어 있습니다. 요청을 더 구체적으로 적어 주세요.");
+    }
     input.onUploadStart?.();
     const base64 = await buildXlsxBase64(wb);
+    const safeName = (wb.title || tool.fileBaseName)
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .slice(0, 40) || tool.fileBaseName;
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: XLSX_MIME }
+      { access: "public", contentType: XLSX_MIME },
     );
     return {
       tool,
       outputType: "xlsx",
       preview: wb,
       resultData: JSON.stringify(wb),
-      file: { url: blob.url, filename: `${tool.fileBaseName}.xlsx`, mimeType: XLSX_MIME },
+      file: {
+        url: blob.url,
+        filename: `${safeName}.xlsx`,
+        mimeType: XLSX_MIME,
+      },
       meta,
     };
   }
