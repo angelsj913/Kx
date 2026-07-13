@@ -14,7 +14,7 @@ export function friendlyError(err: unknown): string {
     lower.includes("api 키가 없") ||
     (lower.includes("401") && (lower.includes("key") || lower.includes("auth")))
   ) {
-    return "API 키가 올바르지 않습니다. Vercel에서 GROQ_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / GEMINI_API_KEY 를 확인해 주세요.";
+    return "API 키가 올바르지 않습니다. Vercel에서 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키를 확인해 주세요.";
   }
 
   if (

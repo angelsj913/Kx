@@ -56,14 +56,13 @@ export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDe
     const configured = listConfiguredProviders().filter((p) => p.set);
     if (configured.length === 0) {
       throw new MissingApiKeyError(
-        "AI API 키가 없습니다. Vercel에 다음 중 하나 이상을 설정하세요: GROQ_API_KEY(무료), OPENROUTER_API_KEY(무료), DEEPSEEK_API_KEY(초저가), GEMINI_API_KEY.",
+        "AI API 키가 없습니다. Vercel에 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키 중 하나 이상을 설정하세요.",
       );
     }
-    // health 로 전부 스킵된 경우 — 한 번 무시하고 재시도
     const relaxed = candidates.filter((m) => hasProviderKey(m.provider));
     if (relaxed.length === 0) {
       throw new MissingApiKeyError(
-        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
+        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ·CEREBRAS·MISTRAL·OPENROUTER·DEEPSEEK·GEMINI 키를 확인하세요.",
       );
     }
     return relaxed;
@@ -167,7 +166,7 @@ async function runWithFallback(
 
   if (attemptNumber === 0) {
     throw new MissingApiKeyError(
-      "사용 가능한 AI 모델이 없습니다. GROQ_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / GEMINI_API_KEY 를 확인하세요.",
+      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
     );
   }
   throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");

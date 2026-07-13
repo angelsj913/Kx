@@ -1,6 +1,5 @@
 /**
- * OpenAI 호환 Chat Completions 클라이언트.
- * DeepSeek / Groq / OpenRouter 등 baseUrl 만 다른 제공자에 재사용.
+ * OpenAI 호환 Chat Completions — 다중 제공자.
  */
 import { MissingApiKeyError, type ChatMessage } from "./gemini";
 import type { ToolDef } from "./tools";
@@ -11,7 +10,6 @@ export interface CompatProviderConfig {
   envKey: string;
   baseUrl: string;
   defaultModel: string;
-  /** OpenRouter 전용 헤더 등 */
   extraHeaders?: Record<string, string>;
   missingKeyMessage: string;
 }
@@ -30,15 +28,14 @@ export const PROVIDER_CONFIG: Record<
       "X-Title": "ZEFF",
     },
     missingKeyMessage:
-      "OpenRouter API 키가 없습니다. Vercel에 OPENROUTER_API_KEY를 설정하세요. (openrouter.ai 무료 발급)",
+      "OpenRouter API 키가 없습니다. OPENROUTER_API_KEY 설정 (openrouter.ai 무료)",
   },
   groq: {
     provider: "groq",
     envKey: "GROQ_API_KEY",
     baseUrl: "https://api.groq.com/openai/v1/chat/completions",
     defaultModel: "llama-3.3-70b-versatile",
-    missingKeyMessage:
-      "Groq API 키가 없습니다. Vercel에 GROQ_API_KEY를 설정하세요. (console.groq.com 무료 발급)",
+    missingKeyMessage: "Groq API 키가 없습니다. GROQ_API_KEY 설정 (console.groq.com 무료)",
   },
   deepseek: {
     provider: "deepseek",
@@ -46,7 +43,23 @@ export const PROVIDER_CONFIG: Record<
     baseUrl: "https://api.deepseek.com/chat/completions",
     defaultModel: "deepseek-v4-flash",
     missingKeyMessage:
-      "DeepSeek API 키가 없습니다. Vercel에 DEEPSEEK_API_KEY를 설정하세요. (platform.deepseek.com · 매우 저렴)",
+      "DeepSeek API 키가 없습니다. DEEPSEEK_API_KEY 설정 (platform.deepseek.com 초저가)",
+  },
+  cerebras: {
+    provider: "cerebras",
+    envKey: "CEREBRAS_API_KEY",
+    baseUrl: "https://api.cerebras.ai/v1/chat/completions",
+    defaultModel: "llama-3.3-70b",
+    missingKeyMessage:
+      "Cerebras API 키가 없습니다. CEREBRAS_API_KEY 설정 (cloud.cerebras.ai 무료 티어)",
+  },
+  mistral: {
+    provider: "mistral",
+    envKey: "MISTRAL_API_KEY",
+    baseUrl: "https://api.mistral.ai/v1/chat/completions",
+    defaultModel: "mistral-small-latest",
+    missingKeyMessage:
+      "Mistral API 키가 없습니다. MISTRAL_API_KEY 설정 (console.mistral.ai Experiment 무료)",
   },
 };
 
@@ -89,7 +102,6 @@ async function callCompat(
       const err = await res.json();
       const detail =
         err?.error?.message ||
-        err?.error?.metadata?.raw ||
         err?.message ||
         (typeof err?.error === "string" ? err.error : null);
       if (detail) msg = String(detail);
@@ -111,27 +123,6 @@ async function callCompat(
   return "";
 }
 
-function toolMessages(tool: ToolDef, text: string): OAIMessage[] {
-  return [
-    { role: "system", content: tool.systemInstruction },
-    { role: "user", content: text || "요청을 수행해 주세요." },
-  ];
-}
-
-function chatMessages(
-  systemInstruction: string,
-  messages: ChatMessage[],
-): OAIMessage[] {
-  return [
-    { role: "system", content: systemInstruction },
-    ...messages.map((m) => ({
-      role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
-      // 멀티모달은 Gemini 전용 — 호환 API에는 텍스트만
-      content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
-    })),
-  ];
-}
-
 export async function compatGenerateForTool(opts: {
   provider: Exclude<Provider, "gemini">;
   tool: ToolDef;
@@ -147,7 +138,10 @@ export async function compatGenerateForTool(opts: {
   return callCompat(
     cfg,
     opts.model || cfg.defaultModel,
-    toolMessages(opts.tool, opts.text),
+    [
+      { role: "system", content: opts.tool.systemInstruction },
+      { role: "user", content: opts.text || "요청을 수행해 주세요." },
+    ],
     jsonMode,
     opts.apiKey,
   );
@@ -164,7 +158,13 @@ export async function compatChatReply(opts: {
   return callCompat(
     cfg,
     opts.model || cfg.defaultModel,
-    chatMessages(opts.systemInstruction, opts.messages),
+    [
+      { role: "system", content: opts.systemInstruction },
+      ...opts.messages.map((m) => ({
+        role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
+        content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
+      })),
+    ],
     false,
     opts.apiKey,
   );
@@ -177,12 +177,29 @@ export function hasProviderKey(provider: Provider): boolean {
   return !!process.env[cfg.envKey]?.trim();
 }
 
-/** 디버그·온보딩용: 어떤 키가 설정돼 있는지 */
-export function listConfiguredProviders(): { provider: string; envKey: string; set: boolean }[] {
+export function listConfiguredProviders(): {
+  provider: string;
+  envKey: string;
+  set: boolean;
+}[] {
   return [
     { provider: "gemini", envKey: "GEMINI_API_KEY", set: !!process.env.GEMINI_API_KEY?.trim() },
-    { provider: "openrouter", envKey: "OPENROUTER_API_KEY", set: !!process.env.OPENROUTER_API_KEY?.trim() },
     { provider: "groq", envKey: "GROQ_API_KEY", set: !!process.env.GROQ_API_KEY?.trim() },
-    { provider: "deepseek", envKey: "DEEPSEEK_API_KEY", set: !!process.env.DEEPSEEK_API_KEY?.trim() },
+    {
+      provider: "cerebras",
+      envKey: "CEREBRAS_API_KEY",
+      set: !!process.env.CEREBRAS_API_KEY?.trim(),
+    },
+    { provider: "mistral", envKey: "MISTRAL_API_KEY", set: !!process.env.MISTRAL_API_KEY?.trim() },
+    {
+      provider: "openrouter",
+      envKey: "OPENROUTER_API_KEY",
+      set: !!process.env.OPENROUTER_API_KEY?.trim(),
+    },
+    {
+      provider: "deepseek",
+      envKey: "DEEPSEEK_API_KEY",
+      set: !!process.env.DEEPSEEK_API_KEY?.trim(),
+    },
   ];
 }
