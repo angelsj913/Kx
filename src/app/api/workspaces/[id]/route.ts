@@ -1,5 +1,5 @@
-// 워크스페이스 삭제 (Owner 전용 + 이메일 OTP 2단계 인증)
-export async function DELETE(
+// 이름 변경 + Ownership Transfer
+export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -10,54 +10,79 @@ export async function DELETE(
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
-  const otpCode = body?.otp?.toString().trim();
 
   try {
-    // Owner 확인
-    await requireRole(id, session.user.id, "owner");
+    // === Ownership Transfer (대표 권한 양도) ===
+    if (body.action === "transfer-ownership" && body.newOwnerId) {
+      const newOwnerId = String(body.newOwnerId);
 
-    const workspace = await prisma.workspace.findUnique({
-      where: { id },
-      include: { owner: { select: { email: true, name: true } } },
-    });
+      // 호출자가 현재 Owner인지 확인
+      await requireRole(id, session.user.id, "owner");
 
-    if (!workspace?.owner?.email) {
-      return NextResponse.json({ error: "워크스페이스 소유자 정보를 찾을 수 없습니다." }, { status: 404 });
-    }
+      if (newOwnerId === session.user.id) {
+        return NextResponse.json({ error: "자신에게 권한을 양도할 수 없습니다." }, { status: 400 });
+      }
 
-    const ownerEmail = workspace.owner.email;
-
-    // OTP가 없으면 → OTP 발송 후 종료
-    if (!otpCode) {
-      const { issueOtp } = await import("@/lib/otp");
-
-      const result = await issueOtp(ownerEmail, "email", "workspace-delete");
-
-      return NextResponse.json({
-        ok: true,
-        otpSent: true,
-        message: "대표자 이메일로 6자리 OTP가 발송되었습니다.",
-        devCode: result.devCode, // 개발 환경에서만 반환
+      // 대상이 워크스페이스 멤버인지 확인
+      const targetMember = await prisma.workspaceMember.findUnique({
+        where: { workspaceId_userId: { workspaceId: id, userId: newOwnerId } },
       });
+
+      if (!targetMember) {
+        return NextResponse.json({ error: "해당 유저는 이 워크스페이스 멤버가 아닙니다." }, { status: 400 });
+      }
+
+      if (targetMember.role === "owner") {
+        return NextResponse.json({ error: "이미 소유자입니다." }, { status: 400 });
+      }
+
+      // 트랜잭션으로 안전하게 권한 양도
+      await prisma.$transaction(async (tx) => {
+        // 기존 Owner를 admin으로 변경
+        await tx.workspaceMember.update({
+          where: { workspaceId_userId: { workspaceId: id, userId: session.user.id } },
+          data: { role: "admin" },
+        });
+
+        // Workspace ownerId 변경
+        await tx.workspace.update({
+          where: { id },
+          data: { ownerId: newOwnerId },
+        });
+
+        // 새 Owner role을 owner로 변경
+        await tx.workspaceMember.update({
+          where: { workspaceId_userId: { workspaceId: id, userId: newOwnerId } },
+          data: { role: "owner" },
+        });
+      });
+
+      return NextResponse.json({ ok: true, newOwnerId });
     }
 
-    // OTP가 있으면 → 검증 후 실제 삭제
-    const { verifyOtp } = await import("@/lib/otp");
-    const isValid = await verifyOtp(ownerEmail, "workspace-delete", otpCode);
+    // === 기존 이름 변경 ===
+    const name = String(body?.name ?? "").trim();
+    if (name) {
+      if (name.length > 60) {
+        return NextResponse.json({ error: "이름은 1\~60자로 입력해 주세요." }, { status: 400 });
+      }
 
-    if (!isValid) {
-      return NextResponse.json({ error: "OTP가 일치하지 않거나 만료되었습니다." }, { status: 400 });
+      await requireRole(id, session.user.id, "admin");
+
+      const workspace = await prisma.workspace.update({
+        where: { id },
+        data: { name },
+      });
+
+      return NextResponse.json({ workspace: { id: workspace.id, name: workspace.name } });
     }
 
-    // 실제 Hard Delete 실행
-    await prisma.workspace.delete({ where: { id } });
-
-    return NextResponse.json({ ok: true, deleted: true });
+    return NextResponse.json({ error: "지원하지 않는 요청입니다." }, { status: 400 });
   } catch (err) {
     if (err instanceof WorkspaceError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    console.error("[workspace delete] error:", err);
-    return NextResponse.json({ error: "삭제 처리 중 오류가 발생했습니다." }, { status: 500 });
+    console.error("[workspace patch] error:", err);
+    return NextResponse.json({ error: "처리 중 오류가 발생했습니다." }, { status: 500 });
   }
 }
