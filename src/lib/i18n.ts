@@ -66,7 +66,7 @@ const DICT = {
     "library.bookChat": "Book Chat",
     "library.delete": "삭제",
     "library.deleteConfirm": "이 문서를 서재에서 삭제할까요?",
-    "sidebar.plan.free": "무료 플랜",
+    "sidebar.plan.free": "free 플랜",
     "sidebar.plan.pro": "프로",
     "sidebar.plan.professional": "프로페셔널",
 
