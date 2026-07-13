@@ -39,6 +39,24 @@ export class WorkspaceError extends Error {
   }
 }
 
+/** 초대 코드가 없으면 발급해 DB에 저장 (기존 워크스페이스 백필). */
+export async function ensureInviteCode(workspaceId: string, current?: string | null): Promise<string> {
+  if (current) return current;
+  for (let i = 0; i < 5; i++) {
+    const code = newInviteCode();
+    try {
+      await prisma.workspace.update({
+        where: { id: workspaceId },
+        data: { inviteCode: code },
+      });
+      return code;
+    } catch {
+      // unique 충돌 시 재시도
+    }
+  }
+  throw new WorkspaceError("초대 코드 발급에 실패했습니다.", 500);
+}
+
 /** 내가 속한 워크스페이스 목록(역할·멤버 수 포함). */
 export async function getMyWorkspaces(userId: string): Promise<WorkspaceSummary[]> {
   const memberships = await prisma.workspaceMember.findMany({
@@ -51,15 +69,23 @@ export async function getMyWorkspaces(userId: string): Promise<WorkspaceSummary[
     orderBy: { createdAt: "asc" },
   });
 
-  return memberships.map((m) => ({
-    id: m.workspaceId,
-    name: m.workspace.name,
-    role: m.role as WorkspaceRole,
-    memberCount: m.workspace._count.members,
-    createdAt: m.workspace.createdAt.toISOString(),
-    imageUrl: m.workspace.imageUrl,
-    inviteCode: m.role === "owner" || m.role === "admin" ? m.workspace.inviteCode : null,
-  }));
+  const result: WorkspaceSummary[] = [];
+  for (const m of memberships) {
+    let inviteCode: string | null = null;
+    if (m.role === "owner" || m.role === "admin") {
+      inviteCode = await ensureInviteCode(m.workspaceId, m.workspace.inviteCode);
+    }
+    result.push({
+      id: m.workspaceId,
+      name: m.workspace.name,
+      role: m.role as WorkspaceRole,
+      memberCount: m.workspace._count.members,
+      createdAt: m.workspace.createdAt.toISOString(),
+      imageUrl: m.workspace.imageUrl,
+      inviteCode,
+    });
+  }
+  return result;
 }
 
 /** 내 멤버십(없으면 null). */

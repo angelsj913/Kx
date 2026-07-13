@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  ensureInviteCode,
   newInviteCode,
   requireMembership,
   requireRole,
@@ -39,13 +40,17 @@ export async function GET(
       return NextResponse.json({ error: "워크스페이스를 찾을 수 없습니다." }, { status: 404 });
     }
 
+    const inviteCode =
+      me.role === "owner" || me.role === "admin"
+        ? await ensureInviteCode(workspace.id, workspace.inviteCode)
+        : null;
+
     return NextResponse.json({
       workspace: {
         id: workspace.id,
         name: workspace.name,
         imageUrl: workspace.imageUrl,
-        inviteCode:
-          me.role === "owner" || me.role === "admin" ? workspace.inviteCode : null,
+        inviteCode,
         ownerId: workspace.ownerId,
         myRole: me.role,
         sessionCount: workspace._count.chatSessions,

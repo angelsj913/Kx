@@ -1,5 +1,15 @@
 import { chatReplyWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
-import { FALLBACK_MODELS, type ModelDef } from "./models";
+import {
+  FALLBACK_MODELS,
+  G_FLASH,
+  G_PRO,
+  OR_DEEPSEEK,
+  OR_LLAMA,
+  OR_QWEN,
+  modelsForTier,
+  type ModelDef,
+  type ModelTier,
+} from "./models";
 import type { ChatMessage } from "./gemini";
 
 export type AgentId = "reasoning" | "research" | "writing" | "general";
@@ -8,14 +18,9 @@ export interface AgentDef {
   id: AgentId;
   keywords: RegExp | null; // null = 캐치올(항상 매치)
   systemInstruction: string;
+  /** 에이전트 기본 순서 (티어에 따라 재배열·필터됨) */
   modelOrder: ModelDef[];
 }
-
-const G_FLASH: ModelDef = { provider: "gemini", model: "gemini-2.5-flash" };
-const G_PRO: ModelDef = { provider: "gemini", model: "gemini-2.5-pro" };
-const OR_LLAMA: ModelDef = { provider: "openrouter", model: "meta-llama/llama-3.3-70b-instruct:free" };
-const OR_DEEPSEEK: ModelDef = { provider: "openrouter", model: "deepseek/deepseek-r1:free" };
-const OR_QWEN: ModelDef = { provider: "openrouter", model: "qwen/qwen-2.5-72b-instruct:free" };
 
 const URL_PATTERN = /https?:\/\//;
 
@@ -62,8 +67,46 @@ export function pickAgent(text: string, hasAttachments: boolean): AgentDef {
   return AGENTS.general;
 }
 
-function buildCandidates(agent: AgentDef, hasFiles: boolean): ModelDef[] {
-  return hasFiles ? agent.modelOrder.filter((m) => m.provider === "gemini") : agent.modelOrder;
+/** 티어에 맞게 에이전트 모델 순서를 재배치 */
+function orderForTier(agent: AgentDef, tier: ModelTier, hasFiles: boolean): ModelDef[] {
+  const tierList = modelsForTier(tier, { multimodal: hasFiles });
+  const preferred = hasFiles
+    ? agent.modelOrder.filter((m) => m.provider === "gemini")
+    : agent.modelOrder;
+
+  // 1) 티어 우선 목록 중 에이전트가 쓰는 모델
+  // 2) 에이전트 목록에만 있는 모델
+  const seen = new Set<string>();
+  const out: ModelDef[] = [];
+  const key = (m: ModelDef) => `${m.provider}:${m.model}`;
+
+  for (const m of tierList) {
+    if (preferred.some((p) => key(p) === key(m)) || tier === "top") {
+      if (!seen.has(key(m))) {
+        seen.add(key(m));
+        out.push(m);
+      }
+    }
+  }
+  for (const m of preferred) {
+    if (!seen.has(key(m))) {
+      // free: pro는 맨 뒤만
+      if (tier === "standard" && m.model.includes("pro") && m.provider === "gemini") {
+        continue; // 티어 리스트 끝에만 포함
+      }
+      seen.add(key(m));
+      out.push(m);
+    }
+  }
+  if (tier === "standard" && !hasFiles) {
+    for (const m of tierList) {
+      if (!seen.has(key(m))) {
+        seen.add(key(m));
+        out.push(m);
+      }
+    }
+  }
+  return out.length ? out : preferred;
 }
 
 export interface AgentAttemptInfo extends AttemptInfo {
@@ -72,26 +115,40 @@ export interface AgentAttemptInfo extends AttemptInfo {
 
 export interface AgentPipelineResult extends FallbackResult {
   agentId: AgentId;
+  modelTier: ModelTier;
 }
 
 /**
- * 1차 에이전트를 키워드로 선정하고, 실패 시 고정 우선순위(reasoning>research>writing>general)로
- * 다음 에이전트의 모델 목록으로 자동 페일오버한다. 이미 시도한 provider+model 조합은 건너뛴다.
- * system instruction은 1차로 선택된 에이전트(과업 성격)의 것을 체인 전체에 유지한다.
+ * 1차 에이전트 선정 후 페일오버.
+ * modelTier에 따라 모델 우선순위가 달라진다 (free / pro / professional).
  */
 export async function runAgentPipeline(args: {
   text: string;
   hasFiles: boolean;
   messages: ChatMessage[];
+  modelTier?: ModelTier;
   onAttempt?: (info: AgentAttemptInfo) => void;
 }): Promise<AgentPipelineResult> {
+  const tier: ModelTier = args.modelTier ?? "standard";
   const primary = pickAgent(args.text, args.hasFiles);
-  const order = [primary, ...AGENT_PRIORITY.filter((id) => id !== primary.id).map((id) => AGENTS[id])];
+  const order = [
+    primary,
+    ...AGENT_PRIORITY.filter((id) => id !== primary.id).map((id) => AGENTS[id]),
+  ];
+
+  // professional: 모든 에이전트를 넓게 체인 (최상위 멀티 라우트)
+  // free: 1차 에이전트 위주 + general 폴백
+  const agentsToUse =
+    tier === "top"
+      ? order
+      : tier === "priority"
+        ? order
+        : [primary, AGENTS.general];
 
   const candidates: ModelDef[] = [];
   const agentByKey = new Map<string, AgentId>();
-  for (const agent of order) {
-    for (const m of buildCandidates(agent, args.hasFiles)) {
+  for (const agent of agentsToUse) {
+    for (const m of orderForTier(agent, tier, args.hasFiles)) {
       const key = `${m.provider}:${m.model}`;
       if (agentByKey.has(key)) continue;
       agentByKey.set(key, agent.id);
@@ -99,8 +156,26 @@ export async function runAgentPipeline(args: {
     }
   }
 
+  // free에서도 완전 실패 방지용 최소 후보
+  if (candidates.length === 0) {
+    for (const m of modelsForTier(tier, { multimodal: args.hasFiles })) {
+      const key = `${m.provider}:${m.model}`;
+      if (!agentByKey.has(key)) {
+        agentByKey.set(key, primary.id);
+        candidates.push(m);
+      }
+    }
+  }
+
+  const systemExtra =
+    tier === "top"
+      ? "\n\n[모드] 최상위 멀티 에이전트 라우트. 필요하면 더 깊게 추론하고 근거를 분명히 하라."
+      : tier === "priority"
+        ? "\n\n[모드] 우선 처리 큐. 정확도와 완성도를 균형 있게."
+        : "\n\n[모드] 표준 모델. 핵심을 간결하고 정확하게.";
+
   const result = await chatReplyWithFallback({
-    systemInstruction: primary.systemInstruction,
+    systemInstruction: primary.systemInstruction + systemExtra,
     messages: args.messages,
     candidates,
     onAttempt: (info) => {
@@ -110,5 +185,5 @@ export async function runAgentPipeline(args: {
   });
 
   const wonAgentId = agentByKey.get(`${result.provider}:${result.model}`) ?? primary.id;
-  return { ...result, agentId: wonAgentId };
+  return { ...result, agentId: wonAgentId, modelTier: tier };
 }

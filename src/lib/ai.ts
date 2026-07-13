@@ -5,7 +5,14 @@ import {
   type ChatMessage,
 } from "./gemini";
 import { openrouterGenerateForTool, openrouterChatReply } from "./openrouter";
-import { FALLBACK_MODELS, MULTIMODAL_MODELS, type ModelDef, type Provider } from "./models";
+import {
+  FALLBACK_MODELS,
+  MULTIMODAL_MODELS,
+  modelsForTier,
+  type ModelDef,
+  type ModelTier,
+  type Provider,
+} from "./models";
 import type { ToolDef } from "./tools";
 
 /** 이 오류를 만나면 다음 모델로 자동 전환해도 되는지 판단 */
@@ -60,13 +67,19 @@ export async function generateWithFallback(args: {
   text?: string;
   audio?: { data: string; mimeType: string };
   images?: { data: string; mimeType: string }[];
+  modelTier?: ModelTier;
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const { tool } = args;
-  const candidates =
-    tool.inputType === "url" || tool.inputType === "audio" || tool.inputType === "image"
-      ? MULTIMODAL_MODELS
-      : FALLBACK_MODELS;
+  const tier: ModelTier = args.modelTier ?? "standard";
+  const multi =
+    tool.inputType === "url" ||
+    tool.inputType === "audio" ||
+    tool.inputType === "image" ||
+    tool.inputType === "mixed" ||
+    !!args.audio ||
+    !!(args.images && args.images.length);
+  const candidates = modelsForTier(tier, { multimodal: multi });
 
   let lastErr: unknown;
   let attemptNumber = 0;

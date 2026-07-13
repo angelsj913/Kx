@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
+import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
@@ -16,6 +17,7 @@ export interface ToolGenerationInput {
   audio?: { data: string; mimeType: string };
   images?: { data: string; mimeType: string }[];
   userId: string;
+  modelTier?: ModelTier;
   onAttempt?: (info: AttemptInfo) => void;
   onUploadStart?: () => void;
 }
@@ -73,6 +75,7 @@ export async function runToolGeneration(
     text: input.text,
     audio: input.audio,
     images: input.images,
+    modelTier: input.modelTier,
     onAttempt: input.onAttempt,
   });
   if (!raw) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");

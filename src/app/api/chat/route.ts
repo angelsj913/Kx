@@ -9,6 +9,7 @@ import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
+import { getPlanOrFree } from "@/lib/plans";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
     }
     throw err;
   }
+
+  // 요금제 → 모델 티어 (free=standard, pro=priority, professional=top)
+  const settings = await prisma.userSettings.findUnique({ where: { userId } });
+  const modelTier = getPlanOrFree(settings?.plan).modelTier;
 
   let chatSession;
   if (sessionId) {
@@ -156,6 +161,7 @@ export async function POST(request: Request) {
             toolId: quickToolId,
             text,
             userId,
+            modelTier,
             audio:
               quickTool?.inputType === "audio"
                 ? inlineFiles[0]
@@ -235,6 +241,7 @@ export async function POST(request: Request) {
             text,
             hasFiles: inlineFiles.length > 0,
             messages,
+            modelTier,
             onAttempt: () => {
               send({
                 type: "status",
