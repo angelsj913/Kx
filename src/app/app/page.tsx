@@ -18,9 +18,11 @@ export default function AppWorkspace() {
   const [mobileNav, setMobileNav] = useState(false);
   const { sessions, loading, refetch, removeSession, createSession, upsertSession } =
     useSessions();
-  const bootstrapped = useRef(false);
 
-  /** 새 대화: DB 세션을 바로 만들어 라이브러리에 즉시 표시 */
+  // 워크스페이스·목록 로딩이 끝난 뒤 한 번만 부트스트랩
+  const bootKey = useRef<string | null>(null);
+
+  /** 새 대화: 타이핑 전에 라이브러리에 「새 대화」가 바로 보이게 */
   const handleNewChat = useCallback(async () => {
     setView("chat");
     setMobileNav(false);
@@ -32,34 +34,62 @@ export default function AppWorkspace() {
     }
   }, [createSession]);
 
-  // 앱 진입 시 활성 세션이 없으면 빈 대화를 하나 만들어 목록에 바로 보이게
+  /**
+   * 앱 진입 / 워크스페이스 전환:
+   * - 기존 대화가 있으면 최근 대화 선택 (목록은 이미 표시)
+   * - 없으면 빈 「새 대화」 세션을 만들어 타이핑 전에 라이브러리에 표시
+   */
   useEffect(() => {
-    if (loading || bootstrapped.current) return;
-    bootstrapped.current = true;
-    if (activeSessionId) return;
+    if (loading) return;
+
+    // sessions 목록 내용으로 키를 잡으면 생성 직후 재실행되어 중복 생성됨 → loading 경계만
+    const key = `ready:${sessions.map((s) => s.id).join(",") || "empty"}`;
+    // 같은 empty 상태에서 create 중 재진입 방지
+    if (bootKey.current === key || bootKey.current === "creating") return;
 
     if (sessions.length > 0) {
-      // 가장 최근 대화 선택 (입력 전에도 라이브러리에 기존 목록 표시)
-      setActiveSessionId(sessions[0].id);
+      bootKey.current = key;
+      setActiveSessionId((cur) => {
+        if (cur && sessions.some((s) => s.id === cur)) return cur;
+        // temp id 는 create 완료 전 — 유지
+        if (cur?.startsWith("temp-")) return cur;
+        return sessions[0].id;
+      });
       return;
     }
 
+    // 목록이 비어 있음 → 타이핑 전에 라이브러리에 올릴 빈 대화 생성
+    bootKey.current = "creating";
     void (async () => {
       try {
         const s = await createSession("새 대화");
         setActiveSessionId(s.id);
+        bootKey.current = `ready:${s.id}`;
       } catch {
-        /* 로그인 직후 등 실패 시 무시 — 첫 메시지로 생성됨 */
+        bootKey.current = null;
       }
     })();
-  }, [loading, sessions, activeSessionId, createSession]);
+  }, [loading, sessions, createSession]);
+
+  // 워크스페이스가 바뀌면 부트스트랩 키 리셋 (useSessions 가 목록을 다시 불러옴)
+  const prevLoading = useRef(loading);
+  useEffect(() => {
+    if (prevLoading.current && !loading) {
+      // 로딩 막 끝남 — empty 부트스트랩 허용
+    }
+    if (!prevLoading.current && loading) {
+      // 다시 로딩 시작 (워크스페이스 전환)
+      bootKey.current = null;
+      setActiveSessionId(null);
+    }
+    prevLoading.current = loading;
+  }, [loading]);
 
   return (
     <div
       style={workspaceAccentCssVars()}
       className="flex h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-[var(--workspace-bg)] font-[family-name:var(--font-noto-kr)] text-[var(--workspace-text)]"
     >
-      {/* 모바일 사이드바 오버레이 */}
       {mobileNav && (
         <button
           type="button"
@@ -69,18 +99,11 @@ export default function AppWorkspace() {
         />
       )}
 
-      {/*
-        모바일: fixed 드로어.
-        데스크톱: static flex 자식 (transform 없음 — fixed 모달이 body 기준이어야 함).
-        설정/워크스페이스 모달은 createPortal(document.body)로 렌더.
-      */}
       <div
         className={[
           "h-full shrink-0",
-          // 모바일 오버레이 드로어
           "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-2xl max-md:transition-transform max-md:duration-300",
           mobileNav ? "max-md:translate-x-0" : "max-md:-translate-x-full",
-          // 데스크톱: 일반 플로우, transform 없음
           "md:relative md:z-auto md:shadow-none",
         ].join(" ")}
       >
@@ -89,6 +112,7 @@ export default function AppWorkspace() {
           activeSessionId={activeSessionId}
           activeView={view}
           onSelectSession={(id) => {
+            if (id.startsWith("temp-")) return;
             setActiveSessionId(id);
             setView("chat");
             setMobileNav(false);
@@ -97,12 +121,15 @@ export default function AppWorkspace() {
             void handleNewChat();
           }}
           onDeleteSession={async (id) => {
+            if (id.startsWith("temp-")) return;
             await removeSession(id);
             if (id === activeSessionId) {
-              // 삭제 후 다음 세션 또는 새 대화
-              const next = sessions.find((s) => s.id !== id);
+              const next = sessions.find((s) => s.id !== id && !s.id.startsWith("temp-"));
               if (next) setActiveSessionId(next.id);
-              else void handleNewChat();
+              else {
+                bootKey.current = null;
+                void handleNewChat();
+              }
             }
           }}
           onOpenLibrary={() => {
@@ -121,7 +148,6 @@ export default function AppWorkspace() {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* 모바일 상단 바 */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-3 py-2 md:hidden">
           <button
             type="button"
@@ -137,7 +163,11 @@ export default function AppWorkspace() {
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
           {view === "chat" && (
             <ChatWorkspace
-              sessionId={activeSessionId}
+              sessionId={
+                activeSessionId && !activeSessionId.startsWith("temp-")
+                  ? activeSessionId
+                  : null
+              }
               onSessionCreated={(id) => {
                 setActiveSessionId(id);
                 upsertSession({
@@ -157,7 +187,7 @@ export default function AppWorkspace() {
             <LibraryView
               onOpenBookChat={(sessionId) => {
                 setActiveSessionId(sessionId);
-                refetch();
+                void refetch();
                 setView("chat");
               }}
             />

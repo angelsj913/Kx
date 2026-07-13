@@ -30,39 +30,60 @@ export async function createEmptySession(title = "새 대화"): Promise<SessionS
 }
 
 export function useSessions() {
-  const { activeId } = useWorkspace();
+  const { activeId, loading: workspaceLoading } = useWorkspace();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
     try {
-      setSessions(await fetchSessions());
+      const list = await fetchSessions();
+      setSessions(list);
+      return list;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 활성 워크스페이스가 바뀌면 해당 스코프의 목록으로 다시 불러온다.
+  // 워크스페이스 스코프가 준비된 뒤에만 목록 로드 (헤더 레이스 방지)
   useEffect(() => {
-    refetch();
-  }, [refetch, activeId]);
+    if (workspaceLoading) return;
+    setLoading(true);
+    void refetch();
+  }, [refetch, activeId, workspaceLoading]);
 
   const removeSession = useCallback(async (id: string) => {
     setSessions((prev) => prev.filter((s) => s.id !== id));
     await wsFetch(`/api/chat/sessions/${id}`, { method: "DELETE" });
   }, []);
 
-  /** 새 대화를 만들고 목록 맨 위에 즉시 반영 */
+  /**
+   * 새 대화 생성.
+   * 낙관적 UI: API 응답 전에 라이브러리에 「새 대화」를 먼저 띄운다.
+   */
   const createSession = useCallback(async (title = "새 대화") => {
-    const session = await createEmptySession(title);
-    setSessions((prev) => {
-      if (prev.some((s) => s.id === session.id)) return prev;
-      return [session, ...prev];
-    });
-    return session;
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
+    const optimistic: SessionSummary = {
+      id: tempId,
+      title,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setSessions((prev) => [optimistic, ...prev.filter((s) => s.id !== tempId)]);
+
+    try {
+      const session = await createEmptySession(title);
+      setSessions((prev) => {
+        const withoutTemp = prev.filter((s) => s.id !== tempId && s.id !== session.id);
+        return [session, ...withoutTemp];
+      });
+      return session;
+    } catch (err) {
+      setSessions((prev) => prev.filter((s) => s.id !== tempId));
+      throw err;
+    }
   }, []);
 
-  /** 목록에 없거나 제목이 바뀐 세션을 낙관적으로 반영 */
   const upsertSession = useCallback((session: SessionSummary) => {
     setSessions((prev) => {
       const rest = prev.filter((s) => s.id !== session.id);
@@ -70,5 +91,12 @@ export function useSessions() {
     });
   }, []);
 
-  return { sessions, loading, refetch, removeSession, createSession, upsertSession };
+  return {
+    sessions,
+    loading: loading || workspaceLoading,
+    refetch,
+    removeSession,
+    createSession,
+    upsertSession,
+  };
 }
