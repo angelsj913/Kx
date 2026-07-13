@@ -19,6 +19,12 @@ import type { ToolDef } from "./tools";
 export function isRetryableProviderError(err: unknown): boolean {
   if (err instanceof MissingApiKeyError) return true;
   const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
+  // ApiError status 필드 (Gemini SDK)
+  const status =
+    err && typeof err === "object" && "status" in err
+      ? Number((err as { status?: number }).status)
+      : NaN;
+  if ([401, 403, 404, 429, 500, 502, 503].includes(status)) return true;
   return (
     msg.includes("api key not valid") ||
     msg.includes("api_key_invalid") ||
@@ -26,14 +32,43 @@ export function isRetryableProviderError(err: unknown): boolean {
     msg.includes("unauthorized") ||
     msg.includes("401") ||
     msg.includes("403") ||
+    msg.includes("404") ||
     msg.includes("429") ||
     msg.includes("quota") ||
     msg.includes("rate limit") ||
     msg.includes("overloaded") ||
+    msg.includes("no longer available") ||
+    msg.includes("not found") ||
+    msg.includes("unavailable for free") ||
+    msg.includes("model is unavailable") ||
     msg.includes("503") ||
     msg.includes("502") ||
     msg.includes("500")
   );
+}
+
+/** 설정된 제공자 키만 후보에 남긴다. 둘 다 없으면 MissingApiKeyError. */
+export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDef[] {
+  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
+  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY?.trim();
+  const filtered = candidates.filter((m) => {
+    if (m.provider === "gemini") return hasGemini;
+    if (m.provider === "openrouter") return hasOpenRouter;
+    return false;
+  });
+  if (filtered.length === 0) {
+    if (!hasGemini && !hasOpenRouter) {
+      throw new MissingApiKeyError(
+        "AI API 키가 없습니다. Vercel 환경 변수에 GEMINI_API_KEY 또는 OPENROUTER_API_KEY를 설정하세요.",
+      );
+    }
+    throw new MissingApiKeyError(
+      hasGemini
+        ? "OpenRouter 전용 모델만 후보에 있으나 OPENROUTER_API_KEY가 없습니다."
+        : "Gemini 전용 모델만 후보에 있으나 GEMINI_API_KEY가 없습니다.",
+    );
+  }
+  return filtered;
 }
 
 export interface AttemptInfo {
@@ -79,7 +114,9 @@ export async function generateWithFallback(args: {
     tool.inputType === "mixed" ||
     !!args.audio ||
     !!(args.images && args.images.length);
-  const candidates = modelsForTier(tier, { multimodal: multi });
+  const candidates = filterCandidatesByAvailableKeys(
+    modelsForTier(tier, { multimodal: multi }),
+  );
 
   let lastErr: unknown;
   let attemptNumber = 0;
@@ -91,6 +128,10 @@ export async function generateWithFallback(args: {
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
       lastErr = err;
+      console.warn(
+        `[ai] model fail ${m.provider}/${m.model}:`,
+        err instanceof Error ? err.message : err,
+      );
       if (!isRetryableProviderError(err)) throw err;
     }
   }
@@ -105,7 +146,8 @@ export async function chatReplyWithFallback(args: {
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const hasFiles = args.messages.some((m) => m.files && m.files.length > 0);
-  const candidates = args.candidates ?? (hasFiles ? MULTIMODAL_MODELS : FALLBACK_MODELS);
+  const raw = args.candidates ?? (hasFiles ? MULTIMODAL_MODELS : FALLBACK_MODELS);
+  const candidates = filterCandidatesByAvailableKeys(raw);
 
   let lastErr: unknown;
   let attemptNumber = 0;
@@ -128,6 +170,10 @@ export async function chatReplyWithFallback(args: {
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
       lastErr = err;
+      console.warn(
+        `[ai] chat model fail ${m.provider}/${m.model}:`,
+        err instanceof Error ? err.message : err,
+      );
       if (!isRetryableProviderError(err)) throw err;
     }
   }

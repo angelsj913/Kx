@@ -3,7 +3,7 @@ import type { ToolDef } from "./tools";
 
 export class MissingApiKeyError extends Error {}
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 
 function client(apiKey?: string): GoogleGenAI {
   const key = apiKey || process.env.GEMINI_API_KEY;
