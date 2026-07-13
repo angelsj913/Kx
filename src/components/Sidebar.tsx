@@ -141,9 +141,9 @@ export default function Sidebar({
         </ul>
       </div>
 
-      {/* 하단 프로필 */}
+      {/* 하단 프로필 (collapsed prop 제거) */}
       <div className="border-t border-[var(--workspace-border)] p-3">
-        <ProfileMenu collapsed={isCollapsed} />
+        <ProfileMenu />
       </div>
     </aside>
   );
