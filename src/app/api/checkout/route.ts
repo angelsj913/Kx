@@ -13,6 +13,14 @@ export async function POST(request: Request) {
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
+    // 요금제 권한은 계정에 붙으므로 로그인 필수
+    if (!userId) {
+      return NextResponse.json(
+        { error: "결제를 위해 로그인이 필요합니다.", needLogin: true },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const plan = getPlan(body?.plan);
     if (!plan) {
@@ -35,9 +43,15 @@ export async function POST(request: Request) {
       },
     });
 
-    // Stripe 키가 없으면 스텁 모드 — 결제창 없이 안내 페이지로
+    // Stripe 키가 없으면 스텁 모드 — 완료 페이지에서 결제 확인 후 권한 부여
     if (!stripe) {
-      return NextResponse.json({ ok: true, stub: true, merchantUid });
+      return NextResponse.json({
+        ok: true,
+        stub: true,
+        merchantUid,
+        // 프론트가 바로 완료(시뮬) 페이지로 이동할 수 있게 URL 제공
+        completeUrl: `/checkout/complete?uid=${encodeURIComponent(merchantUid)}&stub=1`,
+      });
     }
 
     const checkout = await stripe.checkout.sessions.create({
@@ -54,9 +68,10 @@ export async function POST(request: Request) {
         },
       ],
       client_reference_id: merchantUid,
-      metadata: { merchantUid, plan: plan.id, userId: userId ?? "" },
-      success_url: `${baseUrl}/checkout/complete?uid=${merchantUid}`,
+      metadata: { merchantUid, plan: plan.id, userId },
+      success_url: `${baseUrl}/checkout/complete?uid=${encodeURIComponent(merchantUid)}`,
       cancel_url: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,
+      customer_email: session.user?.email ?? undefined,
     });
 
     await prisma.order.update({

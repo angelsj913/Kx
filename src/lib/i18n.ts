@@ -81,7 +81,7 @@ const DICT = {
     "settings.features.student": "학생 도구",
     "settings.plan.current": "현재 플랜",
     "settings.plan.select": "선택",
-    "settings.plan.note": "테스트용 전환입니다. 실제 결제는 연동되어 있지 않습니다.",
+    "settings.plan.note": "결제 완료 시 선택한 요금제 권한이 자동으로 적용됩니다.",
     "settings.language.label": "언어",
     "settings.language.apply": "변경",
 
@@ -155,7 +155,7 @@ const DICT = {
     "settings.features.student": "Student tools",
     "settings.plan.current": "Current plan",
     "settings.plan.select": "Select",
-    "settings.plan.note": "This is a test-only switch. No real billing is connected.",
+    "settings.plan.note": "Your plan is applied automatically after payment is confirmed.",
     "settings.language.label": "Language",
     "settings.language.apply": "Apply",
 

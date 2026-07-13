@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { fulfillPaidOrder } from "@/lib/billing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,25 +28,18 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const merchantUid = session.metadata?.merchantUid || session.client_reference_id || "";
-    const plan = session.metadata?.plan || "";
     const userId = session.metadata?.userId || "";
 
     if (merchantUid) {
-      await prisma.order.updateMany({
-        where: { merchantUid },
-        data: {
-          status: "paid",
-          stripeSession: session.id,
-        },
+      const result = await fulfillPaidOrder({
+        merchantUid,
+        userId: userId || null,
+        stripeSession: session.id,
+        source: "stripe_webhook",
       });
-    }
-    // 유저 등급 즉시 갱신
-    if (userId && plan) {
-      await prisma.userSettings.upsert({
-        where: { userId },
-        create: { userId, plan },
-        update: { plan },
-      });
+      if (!result.ok) {
+        console.error("fulfill from webhook failed:", result.error, merchantUid);
+      }
     }
   }
 

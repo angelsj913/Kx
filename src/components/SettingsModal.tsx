@@ -517,7 +517,7 @@ function PlanPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        홈페이지 요금제와 동일한 구성입니다. 현재 이용 중인 플랜의 결제 버튼은 비활성화됩니다.
+        홈페이지 요금제와 동일한 구성입니다. 결제 완료 시 해당 요금제 권한이 계정에 자동 적용됩니다.
       </p>
       <div className="grid gap-4 lg:grid-cols-3">
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
