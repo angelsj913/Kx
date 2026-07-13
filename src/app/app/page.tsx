@@ -41,30 +41,33 @@ export default function AppWorkspace() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
-      {/* 사이드바 */}
-      <Sidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        activeView={view}
-        onSelectSession={handleSelectSession}
-        onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession}
-        onOpenLibrary={() => setView("library")}
-        onOpenReview={() => setView("review")}
-        onOpenRag={() => setView("rag")}
-      />
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
+      
+      {/* 왼쪽 사이드바 (고정 폭) */}
+      <div className="w-72 shrink-0 border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)]">
+        <Sidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          activeView={view}
+          onSelectSession={handleSelectSession}
+          onNewChat={handleNewChat}
+          onDeleteSession={handleDeleteSession}
+          onOpenLibrary={() => setView("library")}
+          onOpenReview={() => setView("review")}
+          onOpenRag={() => setView("rag")}
+        />
+      </div>
 
-      {/* 메인 콘텐츠 영역 */}
-      <main className="flex-1 min-w-0 overflow-hidden relative">
+      {/* 오른쪽 메인 영역 (자동으로 남은 공간 채움) */}
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={view === "chat" ? (activeSessionId ?? "new") : view}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="h-full w-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex flex-1 flex-col min-h-0"
           >
             {view === "library" ? (
               <LibraryView onOpenBookChat={handleOpenBookChat} />
@@ -81,7 +84,7 @@ export default function AppWorkspace() {
             )}
           </motion.div>
         </AnimatePresence>
-      </main>
+      </div>
     </div>
   );
 }
