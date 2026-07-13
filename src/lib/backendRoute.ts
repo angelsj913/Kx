@@ -1,22 +1,16 @@
 /**
- * ZEFF 백엔드 라우트 — 요청을 전문 에이전트로 분류하고,
- * 요금제 티어에 따라 모델 체인·정밀 검증 패스를 적용한다.
+ * ZEFF 백엔드 라우트 (안정성 우선 개편)
  *
- * 단계:
- *  1. classify  — 키워드·첨부 기반 에이전트 선정
- *  2. generate  — 1차 답변 생성 (모델 페일오버)
- *  3. verify    — (priority/top) 정밀 검토·보정 2차 패스
- *  4. complete  — 최종 응답
+ * 1. classify — 키워드로 전문 에이전트(시스템 프롬프트)만 선정
+ * 2. generate — 고정 안정 모델 체인 1회 (openrouter/free → … → gemini)
+ * 3. verify   — top 티어만, 실패해도 초안 유지 (추가 API 1회 이내)
+ * 4. complete
+ *
+ * 예전 멀티에이전트×다모델 교차 후보는 할당량·지연을 키워 제거.
  */
 import { chatReplyWithFallback, type AttemptInfo } from "./ai";
-import {
-  AGENTS,
-  orderModelsForAgent,
-  pickAgent,
-  type AgentDef,
-  type AgentId,
-} from "./agents";
-import { G_FLASH, G_PRO, modelsForTier, type ModelDef, type ModelTier } from "./models";
+import { AGENTS, pickAgent, type AgentId } from "./agents";
+import { modelsForTier, type ModelDef, type ModelTier } from "./models";
 import type { ChatMessage } from "./gemini";
 
 export type RouteStage = "classify" | "generate" | "verify" | "complete";
@@ -42,89 +36,46 @@ export interface BackendRouteResult {
   routeLabel: string;
 }
 
-const VERIFY_INSTRUCTION = `너는 답변 품질을 검수하는 시니어 에디터·검증 에이전트다.
-주어진 [초안]을 다음 기준으로 다듬어 **최종 답변만** 출력하라. 과정 설명·메타 코멘트는 쓰지 마라.
+const VERIFY_INSTRUCTION = `너는 답변 품질을 검수하는 시니어 에디터다.
+[초안]을 다듬어 **최종 답변만** 출력하라. 과정·메타 코멘트 금지.
+사실·논리 오류 수정, 핵심 보강, 한국어 문장 정리. 날조 금지.`;
 
-검수 기준:
-1. 사실·논리 오류 수정
-2. 빠진 핵심 단계·근거 보강
-3. 모호한 표현을 구체적으로
-4. 구조(제목·목록)를 읽기 쉽게
-5. 불필요한 군더더기 제거
-6. 한국어 문장 자연스럽게
-
-초안이 이미 완벽하면 소폭 다듬기만 하고, 내용을 날조하지 마라.`;
+const ZEFF_BASE = `너는 ZEFF 워크스페이스 AI 어시스턴트다.
+- 한국어로 명확·친절하게 답한다.
+- 사용자가 PPT·엑셀·파일 생성을 원하면 텍스트 목차만 길게 쓰지 말고, 핵심 구성만 간결히 제시한다. (실제 파일은 전용 생성 경로가 처리한다)
+- 불확실하면 추측하지 말고 한계를 말한다.
+- 바로 쓸 수 있게 구조화한다.`;
 
 function tierRouteLabel(tier: ModelTier): string {
-  if (tier === "top") return "backend-route:top (멀티에이전트+정밀검증)";
-  if (tier === "priority") return "backend-route:priority (전문에이전트+경량검증)";
-  return "backend-route:standard (표준)";
+  if (tier === "top") return "route:top";
+  if (tier === "priority") return "route:priority";
+  return "route:standard";
 }
 
-function buildCandidates(
-  primary: AgentDef,
-  tier: ModelTier,
-  hasFiles: boolean,
-): { candidates: ModelDef[]; agentByKey: Map<string, AgentId> } {
-  const chain: AgentDef[] =
-    tier === "standard"
-      ? [primary, AGENTS.general]
-      : [
-          primary,
-          ...(["reasoning", "research", "writing", "general"] as AgentId[])
-            .filter((id) => id !== primary.id)
-            .map((id) => AGENTS[id]),
-        ];
+function systemFor(agentId: AgentId, tier: ModelTier): string {
+  const agent = AGENTS[agentId];
+  const tierHint =
+    tier === "top"
+      ? "깊게 추론하고 근거를 분명히 하라."
+      : tier === "priority"
+        ? "정확도와 완성도의 균형을 맞춰라."
+        : "핵심을 간결·정확하게.";
+  return `${ZEFF_BASE}
 
-  const candidates: ModelDef[] = [];
-  const agentByKey = new Map<string, AgentId>();
-  for (const agent of chain) {
-    for (const m of orderModelsForAgent(agent, tier, hasFiles)) {
-      const key = `${m.provider}:${m.model}`;
-      if (agentByKey.has(key)) continue;
-      agentByKey.set(key, agent.id);
-      candidates.push(m);
-    }
-  }
-  if (candidates.length === 0) {
-    for (const m of modelsForTier(tier, { multimodal: hasFiles })) {
-      const key = `${m.provider}:${m.model}`;
-      if (!agentByKey.has(key)) {
-        agentByKey.set(key, primary.id);
-        candidates.push(m);
-      }
-    }
-  }
-  return { candidates, agentByKey };
-}
+[전문 모드: ${agent.label}]
+${agent.systemInstruction}
 
-function systemForTier(agent: AgentDef, tier: ModelTier): string {
-  const base = agent.systemInstruction;
-  if (tier === "top") {
-    return `${base}
-
-[백엔드 라우트 · TOP]
-- 멀티 에이전트 라우팅으로 선정된 전문 모드다.
-- 깊게 추론하고, 근거·단계를 분명히 하라.
-- 불확실하면 추측하지 말고 한계를 명시하라.
-- 최종 답은 바로 쓸 수 있게 구조화하라.`;
-  }
-  if (tier === "priority") {
-    return `${base}
-
-[백엔드 라우트 · PRIORITY]
-- 우선 처리 큐. 정확도와 완성도를 균형 있게.
-- 핵심을 빠뜨리지 말고 군더더기는 줄여라.`;
-  }
-  return `${base}
-
-[백엔드 라우트 · STANDARD]
-- 표준 경로. 핵심을 간결·정확하게.`;
+[품질]
+${tierHint}`;
 }
 
 /**
- * 정밀 백엔드 라우트 실행.
+ * 안정 모델 체인만 사용. 에이전트는 프롬프트에만 영향.
  */
+function candidatesFor(tier: ModelTier, hasFiles: boolean): ModelDef[] {
+  return modelsForTier(tier, { multimodal: hasFiles });
+}
+
 export async function runBackendRoute(args: {
   text: string;
   hasFiles: boolean;
@@ -136,7 +87,7 @@ export async function runBackendRoute(args: {
   const tier: ModelTier = args.modelTier ?? "standard";
   const stages: RouteStage[] = [];
 
-  // ── 1. classify ──
+  // 1. classify
   stages.push("classify");
   const primary = pickAgent(args.text, args.hasFiles);
   args.onStage?.({
@@ -146,9 +97,9 @@ export async function runBackendRoute(args: {
     agentId: primary.id,
   });
 
-  const { candidates, agentByKey } = buildCandidates(primary, tier, args.hasFiles);
+  const candidates = candidatesFor(tier, args.hasFiles);
 
-  // ── 2. generate ──
+  // 2. generate
   stages.push("generate");
   args.onStage?.({
     stage: "generate",
@@ -159,85 +110,61 @@ export async function runBackendRoute(args: {
 
   let draftAttempts = 0;
   const draft = await chatReplyWithFallback({
-    systemInstruction: systemForTier(primary, tier),
+    systemInstruction: systemFor(primary.id, tier),
     messages: args.messages,
     candidates,
     onAttempt: (info) => {
       draftAttempts = info.attemptNumber;
-      const agentId = agentByKey.get(`${info.provider}:${info.model}`) ?? primary.id;
-      args.onAttempt?.({ ...info, agentId, stage: "generate" });
+      args.onAttempt?.({ ...info, agentId: primary.id, stage: "generate" });
       args.onStage?.({
         stage: "generate",
         key: "status.route.generate.try",
-        agentId,
+        agentId: primary.id,
         provider: info.provider,
         model: info.model,
-        detail: `try#${info.attemptNumber}`,
+        detail: `${info.provider}/${info.model} #${info.attemptNumber}`,
       });
     },
   });
 
-  const draftAgent =
-    agentByKey.get(`${draft.provider}:${draft.model}`) ?? primary.id;
-
-  // ── 3. verify (priority: 짧은 보정, top: 강한 정밀 검증) ──
   let finalText = draft.text;
   let finalProvider = draft.provider;
   let finalModel = draft.model;
   let refined = false;
   let verifyAttempts = 0;
 
+  // 3. verify — top 만, free 체인 1~2개만, 실패 시 초안
   const shouldVerify =
-    (tier === "top" || tier === "priority") &&
-    draft.text.trim().length > 40 &&
-    !args.hasFiles; // 멀티모달 초안 검증은 텍스트 중심으로 (파일 재첨부 부담↓)
+    tier === "top" &&
+    draft.text.trim().length > 80 &&
+    !args.hasFiles &&
+    process.env.AI_SKIP_VERIFY !== "1";
 
   if (shouldVerify) {
     stages.push("verify");
     args.onStage?.({
       stage: "verify",
-      key: tier === "top" ? "status.route.verify.deep" : "status.route.verify.light",
-      agentId: draftAgent,
+      key: "status.route.verify.deep",
+      agentId: primary.id,
     });
 
-    // 검증 실패 시 초안 유지. free OR 우선 (Gemini free 0 환경)
-    const freeOr = modelsForTier("standard").filter(
+    const verifyModels = modelsForTier("standard").filter(
       (m) => m.provider === "openrouter" && m.free,
-    );
-    const verifyModels: ModelDef[] =
-      tier === "top"
-        ? [...freeOr, G_FLASH, G_PRO]
-        : [...freeOr, G_FLASH, G_PRO];
-
-    const verifyMessages: ChatMessage[] = [
-      {
-        role: "user",
-        text: [
-          "[사용자 질문]",
-          args.text,
-          "",
-          "[초안]",
-          draft.text,
-          "",
-          tier === "top"
-            ? "위 초안을 엄격히 검수·보정해 최종 답변만 출력하라."
-            : "위 초안을 가볍게 다듬어 최종 답변만 출력하라. 구조를 크게 바꾸지 마라.",
-        ].join("\n"),
-      },
-    ];
+    ).slice(0, 2);
 
     try {
       const verified = await chatReplyWithFallback({
         systemInstruction: VERIFY_INSTRUCTION,
-        messages: verifyMessages,
-        candidates: verifyModels,
+        messages: [
+          {
+            role: "user",
+            text: `[사용자 질문]\n${args.text}\n\n[초안]\n${draft.text}\n\n위 초안을 검수·보정해 최종 답변만 출력하라.`,
+          },
+        ],
+        candidates: verifyModels.length ? verifyModels : candidates.slice(0, 2),
         onAttempt: (info) => {
           verifyAttempts = info.attemptNumber;
-          args.onAttempt?.({
-            ...info,
-            agentId: draftAgent,
-            stage: "verify",
-          });
+          args.onAttempt?.({ ...info, agentId: primary.id, stage: "verify" });
         },
       });
       if (verified.text.trim().length > 20) {
@@ -247,8 +174,7 @@ export async function runBackendRoute(args: {
         refined = true;
       }
     } catch (err) {
-      // 검증 실패 시 초안 유지
-      console.warn("[backendRoute] verify failed, keeping draft", err);
+      console.warn("[backendRoute] verify skipped, keeping draft", err);
     }
   }
 
@@ -256,14 +182,14 @@ export async function runBackendRoute(args: {
   args.onStage?.({
     stage: "complete",
     key: refined ? "status.route.complete.refined" : "status.route.complete",
-    agentId: draftAgent,
+    agentId: primary.id,
     provider: finalProvider,
     model: finalModel,
   });
 
   return {
     text: finalText,
-    agentId: draftAgent,
+    agentId: primary.id,
     modelTier: tier,
     provider: finalProvider,
     model: finalModel,

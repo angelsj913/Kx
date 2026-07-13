@@ -1,35 +1,47 @@
 /**
- * 일반 채팅 문장에서 파일/전용 도구 의도를 감지한다.
- * 사이드바 퀵툴을 고르지 않아도 "ppt 만들어줘" → 실제 .pptx 생성 경로로 보낸다.
+ * 일반 채팅 → 전용 파일/도구 경로 자동 연결.
+ * "ppt 만들어줘" 를 글쓰기 에이전트 텍스트 초안으로 보내지 않는다.
  */
 
-/** 명시적 퀵툴이 없을 때 텍스트로 toolId 추론 */
 export function detectQuickToolFromText(text: string): string | null {
   const t = text.trim();
   if (!t) return null;
 
-  // ── PPT / 슬라이드 파일 (발표 대본보다 우선) ──
-  const mentionsPptFile =
+  // ── PPT 파일 (.pptx) ──
+  const wantsPpt =
     /\b(ppt|pptx|powerpoint)\b/i.test(t) ||
     /파워\s*포인트|파워포인트/.test(t) ||
-    /슬라이드\s*(자료|파일|덱|장|로|를|만들어|생성|작성|초안)?/i.test(t) ||
+    /슬라이드\s*(자료|파일|덱|장|로|를|만들어|생성|작성|초안|로\s*만들)?/i.test(t) ||
     /프레젠테이션\s*(자료|파일|덱|만들어|생성|작성)?/i.test(t) ||
-    /발표\s*(용\s*)?(자료|슬라이드|덱|ppt)/i.test(t);
+    /발표\s*(용\s*)?(자료|슬라이드|덱)/i.test(t) ||
+    // "발표 해야 하는데 자료 만들어", "발표용으로 만들어줘"
+    (/발표/.test(t) &&
+      /(자료|슬라이드|덱|ppt)/i.test(t) &&
+      /(만들|작성|생성|해\s*줘|해줘)/i.test(t));
 
   const wantsScriptOnly =
     /발표\s*(문|대본|원고|스크립트)|스피치\s*원고|연설\s*원고/i.test(t) &&
     !/\b(ppt|pptx|powerpoint)\b/i.test(t) &&
-    !/파워\s*포인트|파워포인트|슬라이드|프레젠테이션\s*파일/i.test(t);
+    !/파워\s*포인트|파워포인트|슬라이드|발표\s*자료/i.test(t);
 
-  if (mentionsPptFile && !wantsScriptOnly) return "ppt";
+  if (wantsPpt && !wantsScriptOnly) return "ppt";
   if (wantsScriptOnly) return "presentation";
 
   // ── 엑셀 ──
   if (
     /\b(xlsx|excel)\b/i.test(t) ||
-    /엑셀|스프레드시트|표\s*(자료|파일)?\s*(만들|작성|생성)/i.test(t)
+    /엑셀|스프레드시트/.test(t) ||
+    (/표\s*(로|를|자료)/.test(t) && /(만들|작성|생성)/.test(t))
   ) {
     return "excel";
+  }
+
+  // ── 워드/문서 ──
+  if (
+    (/\b(docx|word)\b/i.test(t) || /워드\s*문서|보고서\s*파일/.test(t)) &&
+    /(만들|작성|생성|해\s*줘|해줘)/.test(t)
+  ) {
+    return "word-doc";
   }
 
   // ── 영상 요약 ──
@@ -50,10 +62,25 @@ export function detectQuickToolFromText(text: string): string | null {
     return "exam-maker";
   }
 
-  // ── 수학 풀이 ──
+  // ── 수학 ──
   if (/수학\s*풀이|문제\s*풀어|방정식\s*풀/i.test(t)) {
     return "math-solve";
   }
 
   return null;
+}
+
+/** UI/로그용 라벨 */
+export function toolIntentLabel(toolId: string): string {
+  const map: Record<string, string> = {
+    ppt: "PPT 파일 생성",
+    excel: "엑셀 파일 생성",
+    "word-doc": "문서 작성",
+    presentation: "발표문 작성",
+    "video-summary": "영상 요약",
+    "note-a4": "A4 노트",
+    "exam-maker": "시험지",
+    "math-solve": "수학 풀이",
+  };
+  return map[toolId] ?? toolId;
 }

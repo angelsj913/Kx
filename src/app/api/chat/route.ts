@@ -11,7 +11,7 @@ import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
-import { detectQuickToolFromText } from "@/lib/intentTools";
+import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -152,8 +152,8 @@ export async function POST(request: Request) {
             key: "status.quicktool.generating",
             sessionId: resolvedSessionId,
             detail: autoDetectedTool
-              ? `auto:${quickToolId}`
-              : quickToolId,
+              ? `자동 감지 · ${toolIntentLabel(quickToolId)}`
+              : toolIntentLabel(quickToolId),
           });
 
           const quickTool = getTool(quickToolId);
