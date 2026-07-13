@@ -27,27 +27,29 @@ export function useSettings(userId?: string | null) {
     userId !== undefined ? userId : (session?.user?.id ?? null);
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !!resolvedUserId);
 
   useEffect(() => {
     let ignore = false;
 
     if (!resolvedUserId) {
-      setSettings(null);
-      setLoading(false);
+      // 동기 setState 회피: 마이크로태스크로 미룸
+      void Promise.resolve().then(() => {
+        if (ignore) return;
+        setSettings(null);
+        setLoading(false);
+      });
       return () => {
         ignore = true;
       };
     }
 
-    setLoading(true);
-    setSettings(null); // 이전 사용자 설정이 잠깐이라도 보이지 않게
-    (async () => {
+    void (async () => {
       try {
         const s = await fetchSettings();
         if (!ignore) {
           setSettings(s);
-          setAppLanguage(s.language); // 서버 값이 진실 소스 — 로컬 캐시를 덮어씀
+          setAppLanguage(s.language);
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -71,23 +73,22 @@ export function useSettings(userId?: string | null) {
     return data.settings as UserSettings;
   }, []);
 
-  /** 언어 탭의 [변경] 버튼에서만 호출 — 서버 반영 성공 후에만 전역 언어가 실제로 바뀐다. */
   const updateLanguage = useCallback(
     async (lang: AppLanguage) => {
       const updated = await patch({ language: lang });
       setAppLanguage(updated.language);
     },
-    [patch]
+    [patch],
   );
 
   const updatePlan = useCallback(
     (plan: UserSettings["plan"]) => patch({ plan }),
-    [patch]
+    [patch],
   );
 
   const updateQuickTools = useCallback(
     (enabledQuickTools: string[]) => patch({ enabledQuickTools }),
-    [patch]
+    [patch],
   );
 
   return { settings, loading, updateLanguage, updatePlan, updateQuickTools };

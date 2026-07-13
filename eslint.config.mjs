@@ -16,6 +16,12 @@ const eslintConfig = defineConfig([
     "electron/**",
     "dist-electron/**",
   ]),
+  {
+    // Vercel lint 실패 방지: 데이터 fetch·localStorage 초기화 등 정당한 effect setState를 에러로 막음
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

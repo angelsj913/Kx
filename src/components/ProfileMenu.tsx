@@ -67,10 +67,7 @@ export default function ProfileMenu({
     };
   }, [open]);
 
-  useEffect(() => {
-    setOpen(false);
-    setSettingsOpen(false);
-  }, [userId]);
+  // 계정 전환 시 메뉴 초기: 루트 key={userId} + 레이아웃 WorkspaceProvider key 로 리마운트
 
   const plan = settingsHook.settings?.plan ?? "free";
   const user = session?.user;

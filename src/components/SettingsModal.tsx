@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -60,11 +60,12 @@ export default function SettingsModal({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("general");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // SSR/포털용 마운트 여부 — effect setState 대신 useSyncExternalStore
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -164,11 +165,8 @@ export default function SettingsModal({
 function GeneralPanel() {
   const t = useT();
   const { settings, updateLanguage, updatePlan } = useSettings();
-  const [lang, setLang] = useState<AppLanguage>("ko");
-
-  useEffect(() => {
-    if (settings?.language) setLang(settings.language);
-  }, [settings?.language]);
+  // 서버 설정이 진실 소스 (effect로 로컬 state 동기화하지 않음)
+  const lang: AppLanguage = settings?.language ?? "ko";
 
   return (
     <div className="space-y-6">
@@ -181,7 +179,6 @@ function GeneralPanel() {
               key={l}
               type="button"
               onClick={async () => {
-                setLang(l);
                 await updateLanguage(l);
               }}
               className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
@@ -270,9 +267,26 @@ function BillingPanel() {
     if (o.orders) setOrders(o.orders);
   }, []);
 
+  // await 이후 setState — 동기 effect setState 회피
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [m, o] = await Promise.all([
+          fetch("/api/billing/methods").then((r) => r.json()),
+          fetch("/api/billing/orders").then((r) => r.json()),
+        ]);
+        if (cancelled) return;
+        if (m.methods) setMethods(m.methods);
+        if (o.orders) setOrders(o.orders);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function addMethod() {
     setBusy(true);

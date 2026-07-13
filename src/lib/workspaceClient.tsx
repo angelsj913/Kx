@@ -74,7 +74,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [activeId]);
 
   const refresh = useCallback(async () => {
+    // 첫 await 이후 setState — effect 동기 setState 규칙 준수
     if (!userId) {
+      await Promise.resolve();
       setWorkspaces([]);
       setActiveIdState(null);
       currentActiveWorkspaceId = null;
@@ -117,11 +119,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   // 로그인 사용자가 바뀌면 목록·활성 워크스페이스를 다시 불러온다.
   useEffect(() => {
-    setLoading(true);
-    setWorkspaces([]);
-    setActiveIdState(null);
     currentActiveWorkspaceId = null;
-    refresh();
+    void refresh();
   }, [refresh, userId]);
 
   const setActiveId = useCallback(

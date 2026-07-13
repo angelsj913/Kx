@@ -33,13 +33,10 @@ export default function WorkspaceSwitcher({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  // 접히면 드롭다운 닫기
-  useEffect(() => {
-    if (collapsed) {
-      setOpen(false);
-      setCreating(false);
-    }
-  }, [collapsed]);
+  // 접힌 동안 메뉴는 표시하지 않음 (effect setState 대신 파생 상태)
+  const menuOpen = open && !collapsed;
+  const showCreating = creating && !collapsed;
+  const showJoining = joining && !collapsed;
 
   async function createWorkspace() {
     const trimmed = name.trim();
@@ -137,7 +134,7 @@ export default function WorkspaceSwitcher({
       </button>
 
       <AnimatePresence>
-        {open && (
+        {menuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -183,7 +180,7 @@ export default function WorkspaceSwitcher({
               {error && (
                 <p className="px-2.5 py-1 text-[11px] text-red-500">{error}</p>
               )}
-              {creating ? (
+              {showCreating ? (
                 <div className="flex items-center gap-1.5 p-1.5">
                   <input
                     autoFocus
@@ -203,7 +200,7 @@ export default function WorkspaceSwitcher({
                     생성
                   </button>
                 </div>
-              ) : joining ? (
+              ) : showJoining ? (
                 <div className="flex items-center gap-1.5 p-1.5">
                   <input
                     autoFocus

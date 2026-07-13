@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, Apple, Monitor, HardDrive, Cpu, MemoryStick, CheckCircle2, Package, ExternalLink, Loader2 } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";

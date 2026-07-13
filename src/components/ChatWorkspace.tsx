@@ -24,7 +24,6 @@ import { useSettings } from "@/lib/useSettings";
 import { groupedQuickTools } from "@/lib/quickTools";
 import {
   toolAcceptAttr,
-  toolAllowsAttachments,
   toolRequiresAttachment,
   type ToolDef,
 } from "@/lib/tools";
@@ -255,18 +254,13 @@ export default function ChatWorkspace({
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // 우측 패널 (데스크톱) / 모바일 시트
-  const [panelOpen, setPanelOpen] = useState(true);
+  // 우측 패널 (데스크톱) / 모바일 시트 — localStorage는 lazy init (effect setState 금지)
+  const [panelOpen, setPanelOpen] = useState(() => readStoredOpen());
   const [mobileSheet, setMobileSheet] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT);
+  const [panelWidth, setPanelWidth] = useState(() => readStoredWidth());
   const [panelTab, setPanelTab] = useState<PanelTab>("files");
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const dragging = useRef(false);
-
-  useEffect(() => {
-    setPanelWidth(readStoredWidth());
-    setPanelOpen(readStoredOpen());
-  }, []);
 
   const pushTerminal = useCallback((text: string, level: TerminalLine["level"] = "info") => {
     setTerminalLines((prev) => [
@@ -513,7 +507,6 @@ export default function ChatWorkspace({
 
   const requiresAttachment =
     activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
-  const allowsAttach = activeQuickTool == null || toolAllowsAttachments(activeQuickTool);
   const canSend =
     !loading &&
     (requiresAttachment
