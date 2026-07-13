@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Settings, UserRound, Sun, Moon, Home } from "lucide-react";
+import { LogOut, Settings, UserRound, Sun, Moon, Home, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useT } from "@/lib/i18n";
@@ -72,6 +72,7 @@ export default function ProfileMenu({
 
   const plan = settingsHook.settings?.plan ?? "free";
   const user = session?.user;
+  const isAdmin = !!(user as { isAdmin?: boolean } | undefined)?.isAdmin;
   const label = displayName(user);
 
   async function handleLogout() {
@@ -189,6 +190,18 @@ export default function ProfileMenu({
               <Home className={ICON} />
               홈페이지로 나가기
             </Link>
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40"
+              >
+                <Wrench className={ICON} />
+                관리자 패널
+              </Link>
+            )}
 
             <button
               type="button"

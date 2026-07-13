@@ -83,8 +83,13 @@ export default function Header() {
 
           <div className="flex items-center gap-3">
             {isAdmin && (
-              <a href="/admin" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-500/50 bg-blue-600/10 text-blue-600 transition-colors hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white">
-                <Wrench className="h-4 w-4" />
+              <a
+                href="/admin"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-blue-500/50 bg-blue-600/10 px-3 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
+                title="관리자 패널"
+              >
+                <Wrench className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">관리자</span>
               </a>
             )}
 

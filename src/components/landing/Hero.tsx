@@ -72,9 +72,12 @@ export default function Hero() {
         >
           {t("hero.title.line1")}
           <br />
-          <span className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:mt-4">
-            <span className="text-slate-900 dark:text-slate-50">{t("hero.title.line2Prefix")}</span>
-            <Logo size="lg" className="!items-center scale-110 sm:scale-125" />
+          <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
+            <span className="text-4xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+              {t("hero.title.line2Prefix")}
+            </span>
+            {/* 헤드라인과 같은 시각 크기 */}
+            <Logo size="hero" className="!items-center" />
           </span>
         </motion.h1>
 
