@@ -3,11 +3,12 @@ import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
 export type OtpChannel = "email" | "sms";
-export type OtpPurpose = 
-  | "signup" 
-  | "find-id" 
-  | "find-password" 
-  | "workspace-delete";     // ← 이 줄 추가
+export type OtpPurpose =
+  | "signup"
+  | "find-id"
+  | "find-password"
+  | "workspace-delete"
+  | "admin-plan-change"; // 관리자 회원 요금제 변경 2단계 인증
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
 export function generateCode(): string {
@@ -32,14 +33,16 @@ export async function issueOtp(
   });
 
   if (channel === "email") {
-    await sendEmailOtp(identifier, code);
+    await sendEmailOtp(identifier, code, purpose);
   } else {
     await sendSmsOtp(identifier, code);
   }
 
   // 프로덕션이 아니고 실제 발송 수단이 없으면 테스트용으로 코드를 반환
+  const hasMail =
+    !!(process.env.SMTP_USER && process.env.SMTP_PASS) || !!process.env.RESEND_API_KEY;
   const devCode =
-    process.env.NODE_ENV !== "production" && !process.env.RESEND_API_KEY ? code : undefined;
+    process.env.NODE_ENV !== "production" && !hasMail ? code : undefined;
   return { devCode };
 }
 
@@ -80,10 +83,26 @@ export async function hasRecentVerifiedOtp(
   return !!row;
 }
 
-async function sendEmailOtp(email: string, code: string): Promise<void> {
-  const subject = "[ZEFF AI] 인증번호";
-  const text = `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
-  const html = `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`;
+async function sendEmailOtp(
+  email: string,
+  code: string,
+  purpose: OtpPurpose = "signup"
+): Promise<void> {
+  const isAdminPlan = purpose === "admin-plan-change";
+  const subject = isAdminPlan
+    ? "[ZEFF AI] 관리자 · 요금제 변경 인증번호"
+    : "[ZEFF AI] 인증번호";
+  const text = isAdminPlan
+    ? `ZEFF AI 관리자 요금제 변경 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 요청하지 않았다면 무시하세요.`
+    : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
+  const html = isAdminPlan
+    ? `<div style="font-family:sans-serif;padding:24px;max-width:420px">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#2563eb">ZEFF AI · 관리자</p>
+        <p style="margin:0 0 12px;font-size:15px;color:#0f172a">회원 요금제 변경 인증번호</p>
+        <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:6px;color:#0f172a">${code}</p>
+        <p style="margin:16px 0 0;font-size:13px;color:#64748b">3분 안에 관리자 패널에 입력해 주세요. 요청하지 않았다면 이 메일을 무시하세요.</p>
+      </div>`
+    : `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`;
 
   // 1) 구글 워크스페이스(Gmail) SMTP — SMTP_USER/SMTP_PASS(앱 비밀번호)가 있으면 우선 사용
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
