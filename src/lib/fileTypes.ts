@@ -1,28 +1,72 @@
-// pptx/xlsx 생성 결과의 순수 데이터 타입 (서버·클라이언트 공용, 무거운 라이브러리 의존 없음)
+// pptx/xlsx 생성 결과의 순수 데이터 타입 (서버·클라이언트 공용)
 
-/** 슬라이드 레이아웃 — pptx 빌더가 시각 템플릿을 고른다 */
+/** 슬라이드 레이아웃 */
 export type SlideLayout =
-  | "content" // 제목 + 불릿 (기본)
-  | "agenda" // 목차
-  | "section" // 섹션 구분
-  | "twoColumn" // 좌·우 불릿
-  | "closing"; // 마무리·Q&A
+  | "content"
+  | "agenda"
+  | "section"
+  | "twoColumn"
+  | "closing"
+  | "table"
+  | "process"
+  | "cycle"
+  | "cards";
+
+/** 주제 테마 (색상 프리셋 또는 커스텀 hex) */
+export type ThemePreset =
+  | "science"
+  | "nature"
+  | "medical"
+  | "business"
+  | "tech"
+  | "education"
+  | "creative"
+  | "energy"
+  | "finance"
+  | "default";
+
+export interface DeckTheme {
+  /** 프리셋 이름 — 빌더가 팔레트 매핑 */
+  preset?: ThemePreset | string;
+  /** #RRGGBB 또는 RRGGBB */
+  primary?: string;
+  secondary?: string;
+  accent?: string;
+}
+
+export interface SlideTable {
+  headers: string[];
+  rows: string[][];
+}
+
+export interface DiagramStep {
+  label: string;
+  desc?: string;
+}
+
+export interface SlideDiagram {
+  /** process=가로 단계, cycle=순환, cards=카드 그리드, hierarchy=상하 */
+  type: "process" | "cycle" | "cards" | "hierarchy" | string;
+  steps: DiagramStep[];
+}
 
 export interface Slide {
   title: string;
-  /** 부제·한 줄 요약 */
   subtitle?: string;
   bullets?: string[];
-  /** twoColumn 레이아웃 오른쪽 열 */
   bulletsRight?: string[];
   notes?: string;
   layout?: SlideLayout;
+  /** 표 데이터 */
+  table?: SlideTable;
+  /** 이해를 돕는 다이어그램 */
+  diagram?: SlideDiagram;
 }
 
 export interface Deck {
   title: string;
-  /** 표지 부제 (발표자·맥락) */
   subtitle?: string;
+  theme?: DeckTheme;
   slides: Slide[];
 }
 
