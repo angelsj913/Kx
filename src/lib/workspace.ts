@@ -148,15 +148,17 @@ export async function resolveScope(
 
 /**
  * 목록 조회용 where 절.
- * 개인 스코프면 내 개인 항목(workspaceId=null)만, 워크스페이스 스코프면 그 공유 항목 전체.
+ * - 팀 워크스페이스: 해당 workspace 공유 항목만
+ * - 개인 스코프: 내가 만든 대화 전부 (workspaceId null + 과거 팀 스코프 대화 포함)
+ *   → 입장 시 「예전에 한 채팅」이 라이브러리에 바로 보이도록
  */
 export function listWhere(
   scope: { workspaceId: string | null },
   userId: string,
-): { userId: string; workspaceId: null } | { workspaceId: string } {
+): { workspaceId: string } | { userId: string } {
   return scope.workspaceId
     ? { workspaceId: scope.workspaceId }
-    : { userId, workspaceId: null };
+    : { userId };
 }
 
 /**

@@ -22,16 +22,32 @@ export async function GET(request: Request) {
     throw err;
   }
 
-  const sessions = await prisma.chatSession.findMany({
+  // 메시지 있는 실제 대화를 위에, 빈 「새 대화」는 아래로
+  const rows = await prisma.chatSession.findMany({
     where: listWhere(scope, session.user.id),
     orderBy: { updatedAt: "desc" },
-    select: { id: true, title: true, updatedAt: true, createdAt: true },
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      createdAt: true,
+      _count: { select: { history: true } },
+    },
   });
+
+  const withMessages = rows.filter((r) => r._count.history > 0);
+  const emptyOnly = rows.filter((r) => r._count.history === 0);
+  const ordered = [...withMessages, ...emptyOnly];
+
+  const sessions = ordered.map(({ _count, ...s }) => ({
+    ...s,
+    messageCount: _count.history,
+  }));
 
   return NextResponse.json({ sessions });
 }
 
-/** 빈 대화 세션 생성 — 첫 메시지 전에도 라이브러리(사이드바)에 표시 */
+/** 새 대화 버튼으로만 호출 — 입장 시 자동 생성하지 않음 */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -61,8 +77,16 @@ export async function POST(request: Request) {
       workspaceId: scope.workspaceId,
       title,
     },
-    select: { id: true, title: true, updatedAt: true, createdAt: true },
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      createdAt: true,
+    },
   });
 
-  return NextResponse.json({ session: chatSession }, { status: 201 });
+  return NextResponse.json(
+    { session: { ...chatSession, messageCount: 0 } },
+    { status: 201 },
+  );
 }

@@ -19,10 +19,10 @@ export default function AppWorkspace() {
   const { sessions, loading, refetch, removeSession, createSession, upsertSession } =
     useSessions();
 
-  // 워크스페이스·목록 로딩이 끝난 뒤 한 번만 부트스트랩
-  const bootKey = useRef<string | null>(null);
+  /** 워크스페이스/목록 로딩 사이클마다 한 번만 활성 세션 결정 */
+  const selectedForLoad = useRef(false);
 
-  /** 새 대화: 타이핑 전에 라이브러리에 「새 대화」가 바로 보이게 */
+  /** 새 대화 — 사용자가 버튼 누를 때만 */
   const handleNewChat = useCallback(async () => {
     setView("chat");
     setMobileNav(false);
@@ -35,54 +35,39 @@ export default function AppWorkspace() {
   }, [createSession]);
 
   /**
-   * 앱 진입 / 워크스페이스 전환:
-   * - 기존 대화가 있으면 최근 대화 선택 (목록은 이미 표시)
-   * - 없으면 빈 「새 대화」 세션을 만들어 타이핑 전에 라이브러리에 표시
+   * 입장 시:
+   * 1) 이전 대화 목록을 라이브러리에 표시 (sessions 그대로)
+   * 2) 메시지 있는 최근 대화를 화면에도 열기
+   * 3) 자동으로 「새 대화」를 만들지 않음
    */
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      selectedForLoad.current = false;
+      return;
+    }
+    if (selectedForLoad.current) return;
+    selectedForLoad.current = true;
 
-    // sessions 목록 내용으로 키를 잡으면 생성 직후 재실행되어 중복 생성됨 → loading 경계만
-    const key = `ready:${sessions.map((s) => s.id).join(",") || "empty"}`;
-    // 같은 empty 상태에서 create 중 재진입 방지
-    if (bootKey.current === key || bootKey.current === "creating") return;
-
-    if (sessions.length > 0) {
-      bootKey.current = key;
-      setActiveSessionId((cur) => {
-        if (cur && sessions.some((s) => s.id === cur)) return cur;
-        // temp id 는 create 완료 전 — 유지
-        if (cur?.startsWith("temp-")) return cur;
-        return sessions[0].id;
-      });
+    if (sessions.length === 0) {
+      // 과거 대화 없음 → 빈 입력 화면 (라이브러리도 비어 있음). 새 대화는 버튼으로.
+      setActiveSessionId(null);
       return;
     }
 
-    // 목록이 비어 있음 → 타이핑 전에 라이브러리에 올릴 빈 대화 생성
-    bootKey.current = "creating";
-    void (async () => {
-      try {
-        const s = await createSession("새 대화");
-        setActiveSessionId(s.id);
-        bootKey.current = `ready:${s.id}`;
-      } catch {
-        bootKey.current = null;
-      }
-    })();
-  }, [loading, sessions, createSession]);
+    // 메시지 있는 대화 우선, 없으면 목록 첫 항목
+    const withMsgs = sessions.find((s) => (s.messageCount ?? 0) > 0);
+    const pick = withMsgs ?? sessions[0];
+    setActiveSessionId(pick.id);
+  }, [loading, sessions]);
 
-  // 워크스페이스가 바뀌면 부트스트랩 키 리셋 (useSessions 가 목록을 다시 불러옴)
-  const prevLoading = useRef(loading);
+  // 워크스페이스 전환으로 다시 로딩되면 선택 초기화
+  const wasLoading = useRef(loading);
   useEffect(() => {
-    if (prevLoading.current && !loading) {
-      // 로딩 막 끝남 — empty 부트스트랩 허용
-    }
-    if (!prevLoading.current && loading) {
-      // 다시 로딩 시작 (워크스페이스 전환)
-      bootKey.current = null;
+    if (!wasLoading.current && loading) {
+      selectedForLoad.current = false;
       setActiveSessionId(null);
     }
-    prevLoading.current = loading;
+    wasLoading.current = loading;
   }, [loading]);
 
   return (
@@ -112,7 +97,6 @@ export default function AppWorkspace() {
           activeSessionId={activeSessionId}
           activeView={view}
           onSelectSession={(id) => {
-            if (id.startsWith("temp-")) return;
             setActiveSessionId(id);
             setView("chat");
             setMobileNav(false);
@@ -121,15 +105,10 @@ export default function AppWorkspace() {
             void handleNewChat();
           }}
           onDeleteSession={async (id) => {
-            if (id.startsWith("temp-")) return;
             await removeSession(id);
             if (id === activeSessionId) {
-              const next = sessions.find((s) => s.id !== id && !s.id.startsWith("temp-"));
-              if (next) setActiveSessionId(next.id);
-              else {
-                bootKey.current = null;
-                void handleNewChat();
-              }
+              const next = sessions.find((s) => s.id !== id);
+              setActiveSessionId(next?.id ?? null);
             }
           }}
           onOpenLibrary={() => {
@@ -163,11 +142,7 @@ export default function AppWorkspace() {
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
           {view === "chat" && (
             <ChatWorkspace
-              sessionId={
-                activeSessionId && !activeSessionId.startsWith("temp-")
-                  ? activeSessionId
-                  : null
-              }
+              sessionId={activeSessionId}
               onSessionCreated={(id) => {
                 setActiveSessionId(id);
                 upsertSession({
@@ -175,6 +150,7 @@ export default function AppWorkspace() {
                   title: "새 대화",
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
+                  messageCount: 1,
                 });
                 void refetch();
               }}
