@@ -2,14 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useLandingT } from "@/lib/landingI18n";
+import { useLandingLanguage, useLandingT } from "@/lib/landingI18n";
 import Logo from "@/components/ui/Logo";
 
 const CONTACT_EMAIL = "zeff@zeffai.com";
-const CEO_NAME = "KWON SEUNGJUN";
 
 export default function Footer() {
   const t = useLandingT();
+  const { language } = useLandingLanguage();
+  const ceoName = language === "ko" ? "권승준" : "Kwon Seungjun";
 
   return (
     <footer className="relative overflow-hidden bg-slate-50 py-14 dark:bg-slate-950">
@@ -29,9 +30,10 @@ export default function Footer() {
         >
           {t("footer.privacy")}
         </Link>
+        {/* 브랜드 워드마크 (텍스트 'ZEFF AI' 대신 디자인 로고) */}
         <Logo size="md" />
         <p>
-          {t("footer.contact")} {CONTACT_EMAIL} · {t("footer.ceo")} {CEO_NAME}
+          {t("footer.contact")} {CONTACT_EMAIL} · {t("footer.ceo")} {ceoName}
         </p>
       </div>
     </footer>

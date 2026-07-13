@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Settings, UserRound, Sun, Moon } from "lucide-react";
+import { LogOut, Settings, UserRound, Sun, Moon, Home } from "lucide-react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
@@ -178,6 +179,16 @@ export default function ProfileMenu({
               <Settings className={ICON} />
               {t("profile.settings")}
             </button>
+
+            <Link
+              href="/"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <Home className={ICON} />
+              홈페이지로 나가기
+            </Link>
 
             <button
               type="button"

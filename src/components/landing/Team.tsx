@@ -1,11 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Compass, HeartHandshake, Rocket } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
-
-const FOUNDER_NAME = "KWON SEUNGJUN";
-const FOUNDER_INITIAL = "K";
+import { useLandingLanguage } from "@/lib/landingI18n";
 
 type Value = { title: string; desc: string };
 
@@ -43,6 +42,8 @@ const VALUE_ICONS = [Rocket, HeartHandshake, Compass];
 
 export default function Team() {
   const copy = useLocalCopy(COPY);
+  const { language } = useLandingLanguage();
+  const founderName = language === "ko" ? "권승준" : "Kwon Seungjun";
 
   return (
     <section className="bg-slate-50 py-20 dark:bg-slate-950">
@@ -56,7 +57,6 @@ export default function Team() {
           </p>
         </div>
 
-        {/* 대표 카드 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -64,17 +64,23 @@ export default function Team() {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           className="mx-auto mt-12 flex max-w-2xl flex-col items-center gap-5 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:flex-row sm:text-left dark:border-slate-800 dark:bg-slate-900"
         >
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-3xl font-extrabold text-white shadow-lg shadow-blue-600/30">
-            {FOUNDER_INITIAL}
+          {/* 브랜드 로고: 라이트=검정, 다크=흰색(invert) */}
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+            <Image
+              src="/logo-zeff.png"
+              alt="ZEFF"
+              width={56}
+              height={56}
+              className="h-14 w-14 object-contain dark:invert"
+            />
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900 dark:text-slate-50">{FOUNDER_NAME}</p>
+            <p className="text-lg font-bold text-slate-900 dark:text-slate-50">{founderName}</p>
             <p className="mt-0.5 text-sm font-medium text-blue-600 dark:text-blue-400">{copy.role}</p>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{copy.bio}</p>
           </div>
         </motion.div>
 
-        {/* 일하는 원칙 */}
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {copy.values.map((v, i) => {
             const Icon = VALUE_ICONS[i];

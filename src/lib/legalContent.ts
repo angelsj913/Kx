@@ -7,11 +7,11 @@ export type LegalArticle = { id: string; title: string; body: string };
 export const COMPANY_INFO = {
   serviceName: "ZEFF AI",
   companyName: "ZEFF AI",
-  representative: "KWON SEUNGJUN",
+  representative: "권승준",
   address: "[사업자 소재지 — 등록 후 기재]",
   businessNo: "[사업자등록번호 — 등록 후 기재]",
   mailOrderNo: "[통신판매업 신고번호 — 등록 후 기재]",
-  privacyOfficer: "KWON SEUNGJUN",
+  privacyOfficer: "권승준",
   privacyOfficerContact: "zeff@zeffai.com",
   contactEmail: "zeff@zeffai.com",
   effectiveDate: "2026년 7월 11일",

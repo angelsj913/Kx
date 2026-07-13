@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Download, Apple, Sparkles, X } from "lucide-react";
 import { WINDOWS_DOWNLOAD_URL, MAC_DOWNLOAD_URL } from "@/lib/constants";
 import { useLandingT } from "@/lib/landingI18n";
+import Logo from "@/components/ui/Logo";
 
 type OS = "windows" | "mac";
 
@@ -71,7 +72,10 @@ export default function Hero() {
         >
           {t("hero.title.line1")}
           <br />
-          <span className="text-blue-600 dark:text-blue-400">{t("hero.title.line2")}</span>
+          <span className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:mt-4">
+            <span className="text-slate-900 dark:text-slate-50">{t("hero.title.line2Prefix")}</span>
+            <Logo size="lg" className="!items-center scale-110 sm:scale-125" />
+          </span>
         </motion.h1>
 
         <motion.p
