@@ -63,7 +63,7 @@ export default function ProfileMenu() {
             </span>
           </span>
         </button>
-        <ThemeToggle className="hidden shrink-0 sm:inline-flex" />
+        <ThemeToggle className="shrink-0" />
       </div>
 
       <AnimatePresence>

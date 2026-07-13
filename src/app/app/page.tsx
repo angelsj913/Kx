@@ -7,6 +7,7 @@ import LibraryView from "@/components/LibraryView";
 import ReviewView from "@/components/ReviewView";
 import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
+import { workspaceAccentCssVars } from "@/lib/theme";
 
 export default function AppWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -14,8 +15,10 @@ export default function AppWorkspace() {
   const { sessions, refetch, removeSession } = useSessions();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
-      
+    <div
+      style={workspaceAccentCssVars()}
+      className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] font-[family-name:var(--font-noto-kr)] text-[var(--workspace-text)]"
+    >
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -37,7 +40,7 @@ export default function AppWorkspace() {
         onOpenRag={() => setView("rag")}
       />
 
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {view === "chat" && (
           <ChatWorkspace
             sessionId={activeSessionId}
@@ -48,7 +51,15 @@ export default function AppWorkspace() {
             onTurnSaved={refetch}
           />
         )}
-        {view === "library" && <LibraryView onOpenBookChat={() => {}} />}
+        {view === "library" && (
+          <LibraryView
+            onOpenBookChat={(sessionId) => {
+              setActiveSessionId(sessionId);
+              refetch();
+              setView("chat");
+            }}
+          />
+        )}
         {view === "review" && <ReviewView />}
         {view === "rag" && <RagView />}
       </div>

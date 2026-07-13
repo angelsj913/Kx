@@ -37,15 +37,25 @@ body {
   }
 }
 
+/* 라이트: 연한 slate 시머 / 다크: 더 밝은 하이라이트로 대비 확보 */
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(148, 163, 184, 0.08) 25%,
-    rgba(148, 163, 184, 0.18) 50%,
-    rgba(148, 163, 184, 0.08) 75%
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.28) 50%,
+    rgba(148, 163, 184, 0.12) 75%
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite linear;
+}
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.06) 25%,
+    rgba(148, 163, 184, 0.16) 50%,
+    rgba(148, 163, 184, 0.06) 75%
+  );
+  background-size: 1000px 100%;
 }
 
 /* Markdown output styling — 라이트 기본 + .dark 오버라이드, 강조색은 홈과 동일한 파랑 */

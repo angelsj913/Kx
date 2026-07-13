@@ -1,34 +1,19 @@
 import type { CSSProperties } from "react";
-import type { AppMode } from "./tools";
 
-export interface ModeTheme {
-  /** 워크스페이스 배경 */
-  bg: string;
-  /** 포인트 컬러(버튼, 활성 상태, 슬라이더 등) */
-  accent: string;
-  /** accent보다 약간 어두운 톤 — 그라디언트 종점용 */
-  accentDeep: string;
-}
-
-export const MODE_THEMES: Record<AppMode, ModeTheme> = {
-  office: {
-    bg: "#0F172A",
-    accent: "#38BDF8",
-    accentDeep: "#0EA5E9",
-  },
-  student: {
-    bg: "#1E1B4B",
-    accent: "#C084FC",
-    accentDeep: "#A855F7",
-  },
-};
+/**
+ * 홈페이지와 동일한 워크스페이스 강조색 (파랑).
+ * 결과/구조화 패널 등이 --mode-accent 변수를 소비한다.
+ * (구 office/student 모드별 보라·시안 테마는 라이트/다크 통일 이후 폐기)
+ */
+export const WORKSPACE_ACCENT = {
+  accent: "#2563EB",
+  accentDeep: "#4F46E5",
+} as const;
 
 /** AppWorkspace 루트에 꽂아 하위 전체에 상속시키는 CSS 커스텀 프로퍼티 */
-export function themeCssVars(mode: AppMode): CSSProperties {
-  const t = MODE_THEMES[mode];
+export function workspaceAccentCssVars(): CSSProperties {
   return {
-    "--mode-bg": t.bg,
-    "--mode-accent": t.accent,
-    "--mode-accent-deep": t.accentDeep,
+    "--mode-accent": WORKSPACE_ACCENT.accent,
+    "--mode-accent-deep": WORKSPACE_ACCENT.accentDeep,
   } as CSSProperties;
 }
