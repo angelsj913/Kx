@@ -16,7 +16,6 @@ export default function AppWorkspace() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
       
-      {/* 사이드바 */}
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -38,7 +37,6 @@ export default function AppWorkspace() {
         onOpenRag={() => setView("rag")}
       />
 
-      {/* 메인 컨텐츠 영역 - 높이와 flex를 명확하게 줌 */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {view === "chat" && (
           <ChatWorkspace
@@ -50,7 +48,7 @@ export default function AppWorkspace() {
             onTurnSaved={refetch}
           />
         )}
-        {view === "library" && <LibraryView />}
+        {view === "library" && <LibraryView onOpenBookChat={() => {}} />}
         {view === "review" && <ReviewView />}
         {view === "rag" && <RagView />}
       </div>
