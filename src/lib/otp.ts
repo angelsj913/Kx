@@ -184,20 +184,20 @@ async function sendEmailOtp(
       });
       // Resend SDK 는 예외 대신 { error } 를 반환하는 경우가 많음
       if (result && typeof result === "object" && "error" in result && result.error) {
-        const errObj = result.error as { message?: string };
+        const errObj = result.error as { message?: string; name?: string; statusCode?: number };
         const msg = errObj?.message || JSON.stringify(result.error);
         console.error("[OTP:email:resend] API error:", msg);
         return {
           sent: false,
           mode: "resend",
-          error: `Resend 발송 실패: ${msg}`,
+          error: friendlyResendError(msg),
         };
       }
       return { sent: true, mode: "resend" };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[OTP:email:resend] failed:", msg);
-      return { sent: false, mode: "resend", error: `Resend 발송 실패: ${msg}` };
+      return { sent: false, mode: "resend", error: friendlyResendError(msg) };
     }
   }
 
@@ -212,6 +212,25 @@ async function sendEmailOtp(
     };
   }
   return { sent: false, mode: "dev-log" };
+}
+
+/** Resend 제한(테스트 도메인 등)을 관리자 UI용 한국어로 변환 */
+function friendlyResendError(msg: string): string {
+  const lower = msg.toLowerCase();
+  if (
+    lower.includes("testing domain") ||
+    lower.includes("resend.dev") ||
+    lower.includes("only send to your own") ||
+    lower.includes("verify a domain")
+  ) {
+    return (
+      "Resend 테스트 발신(onboarding@resend.dev)은 Resend 가입 이메일로만 보낼 수 있습니다. " +
+      "zeff@zeffai.com 으로 받으려면 Resend에서 zeffai.com 도메인을 인증한 뒤 " +
+      "Vercel RESEND_FROM 을 예: ZEFF AI <noreply@zeffai.com> 으로 바꾸세요. " +
+      "지금은 아래 화면 인증번호로 진행할 수 있습니다."
+    );
+  }
+  return `Resend 발송 실패: ${msg}`;
 }
 
 /** 국내 SMS 발송 핸들러 스터브 */
