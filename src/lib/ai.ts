@@ -4,7 +4,12 @@ import {
   MissingApiKeyError,
   type ChatMessage,
 } from "./gemini";
-import { openrouterGenerateForTool, openrouterChatReply } from "./openrouter";
+import {
+  compatChatReply,
+  compatGenerateForTool,
+  hasProviderKey,
+  listConfiguredProviders,
+} from "./openaiCompat";
 import {
   FALLBACK_MODELS,
   MULTIMODAL_MODELS,
@@ -17,9 +22,9 @@ import {
   isProviderSkipped,
   markProviderHealthy,
   noteProviderFailure,
+  type ProviderId,
 } from "./providerHealth";
 import type { ToolDef } from "./tools";
-// isProviderSkipped used for multimodal gemini gate
 
 function errorText(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -31,22 +36,6 @@ function errorText(err: unknown): string {
   }
 }
 
-function errorStatus(err: unknown): number {
-  if (err && typeof err === "object" && "status" in err) {
-    return Number((err as { status?: number }).status);
-  }
-  return NaN;
-}
-
-export function isGeminiFreeTierBlocked(err: unknown): boolean {
-  const msg = errorText(err).toLowerCase();
-  return (
-    msg.includes("free_tier") ||
-    msg.includes("generate_content_free_tier") ||
-    (msg.includes("resource_exhausted") && msg.includes("quota"))
-  );
-}
-
 export function isOpenRouterCreditsError(err: unknown): boolean {
   const msg = errorText(err).toLowerCase();
   return (
@@ -56,62 +45,28 @@ export function isOpenRouterCreditsError(err: unknown): boolean {
   );
 }
 
-/** 다음 모델로 넘길지 — 사실상 거의 항상 true (안정성 우선) */
-export function isRetryableProviderError(err: unknown): boolean {
-  if (err instanceof MissingApiKeyError) return true;
-  const status = errorStatus(err);
-  if ([401, 403, 404, 408, 429, 500, 502, 503, 520, 522, 524].includes(status)) {
-    return true;
-  }
-  // 알 수 없는 오류도 폴백 (마지막 후보에서만 throw)
-  return true;
-}
-
 export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDef[] {
-  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
-  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY?.trim();
-
   const filtered = candidates.filter((m) => {
-    if (m.provider === "gemini") {
-      if (!hasGemini) return false;
-      if (isProviderSkipped("gemini")) return false;
-      return true;
-    }
-    if (m.provider === "openrouter") {
-      if (!hasOpenRouter) return false;
-      if (isProviderSkipped("openrouter")) return false;
-      return true;
-    }
-    return false;
+    if (!hasProviderKey(m.provider)) return false;
+    if (isProviderSkipped(m.provider as ProviderId)) return false;
+    return true;
   });
 
   if (filtered.length === 0) {
-    if (!hasGemini && !hasOpenRouter) {
+    const configured = listConfiguredProviders().filter((p) => p.set);
+    if (configured.length === 0) {
       throw new MissingApiKeyError(
-        "AI API 키가 없습니다. Vercel에 GEMINI_API_KEY 또는 OPENROUTER_API_KEY를 설정하세요.",
+        "AI API 키가 없습니다. Vercel에 다음 중 하나 이상을 설정하세요: GROQ_API_KEY(무료), OPENROUTER_API_KEY(무료), DEEPSEEK_API_KEY(초저가), GEMINI_API_KEY.",
       );
     }
-    if (isProviderSkipped("gemini") && isProviderSkipped("openrouter")) {
-      throw new Error(
-        "일시적으로 모든 AI 제공자를 사용할 수 없습니다. 몇 분 후 다시 시도해 주세요.",
+    // health 로 전부 스킵된 경우 — 한 번 무시하고 재시도
+    const relaxed = candidates.filter((m) => hasProviderKey(m.provider));
+    if (relaxed.length === 0) {
+      throw new MissingApiKeyError(
+        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
       );
     }
-    if (isProviderSkipped("gemini") && !hasOpenRouter) {
-      throw new Error(
-        "Gemini 할당량이 소진되었습니다. OPENROUTER_API_KEY를 추가하거나 Google AI Studio 할당량을 확인해 주세요.",
-      );
-    }
-    if (isProviderSkipped("openrouter") && !hasGemini) {
-      throw new Error(
-        "OpenRouter를 사용할 수 없습니다. 키/크레딧을 확인하거나 GEMINI_API_KEY를 설정해 주세요.",
-      );
-    }
-    // 키가 있는데 health 로 전부 걸러진 경우 → health 무시하고 키 있는 것만 재시도
-    return candidates.filter((m) => {
-      if (m.provider === "gemini") return hasGemini;
-      if (m.provider === "openrouter") return hasOpenRouter;
-      return false;
-    });
+    return relaxed;
   }
   return filtered;
 }
@@ -129,6 +84,52 @@ export interface FallbackResult {
   attempts: number;
 }
 
+async function invokeModel(
+  m: ModelDef,
+  opts: {
+    mode: "tool" | "chat";
+    tool?: ToolDef;
+    text?: string;
+    audio?: { data: string; mimeType: string };
+    images?: { data: string; mimeType: string }[];
+    systemInstruction?: string;
+    messages?: ChatMessage[];
+  },
+): Promise<string> {
+  if (m.provider === "gemini") {
+    if (opts.mode === "tool" && opts.tool) {
+      return geminiGenerateForTool({
+        tool: opts.tool,
+        text: opts.text,
+        audio: opts.audio,
+        images: opts.images,
+        model: m.model,
+      });
+    }
+    return geminiChatReply({
+      model: m.model,
+      systemInstruction: opts.systemInstruction ?? "",
+      messages: opts.messages ?? [],
+    });
+  }
+
+  // openrouter | groq | deepseek
+  if (opts.mode === "tool" && opts.tool) {
+    return compatGenerateForTool({
+      provider: m.provider,
+      tool: opts.tool,
+      text: opts.text ?? "",
+      model: m.model,
+    });
+  }
+  return compatChatReply({
+    provider: m.provider,
+    systemInstruction: opts.systemInstruction ?? "",
+    messages: opts.messages ?? [],
+    model: m.model,
+  });
+}
+
 async function runWithFallback(
   candidates: ModelDef[],
   invoke: (m: ModelDef) => Promise<string>,
@@ -141,7 +142,7 @@ async function runWithFallback(
 
   for (const m of list) {
     if (skipPaidOpenRouter && m.provider === "openrouter" && !m.free) continue;
-    if (isProviderSkipped(m.provider)) continue;
+    if (isProviderSkipped(m.provider as ProviderId)) continue;
 
     attemptNumber += 1;
     onAttempt?.({ provider: m.provider, model: m.model, attemptNumber });
@@ -151,24 +152,22 @@ async function runWithFallback(
       if (!text || !String(text).trim()) {
         throw new Error("빈 응답 (empty model output)");
       }
-      markProviderHealthy(m.provider);
+      markProviderHealthy(m.provider as ProviderId);
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
       lastErr = err;
-      const msg = errorText(err);
-      console.warn(`[ai] fail ${m.provider}/${m.model}:`, msg.slice(0, 300));
-      noteProviderFailure(m.provider, err);
+      console.warn(`[ai] fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
+      noteProviderFailure(m.provider as ProviderId, err);
 
       if (m.provider === "openrouter" && isOpenRouterCreditsError(err) && !m.free) {
         skipPaidOpenRouter = true;
       }
-      // 계속 다음 모델
     }
   }
 
   if (attemptNumber === 0) {
     throw new MissingApiKeyError(
-      "사용 가능한 AI 모델이 없습니다. GEMINI_API_KEY / OPENROUTER_API_KEY를 확인하세요.",
+      "사용 가능한 AI 모델이 없습니다. GROQ_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / GEMINI_API_KEY 를 확인하세요.",
     );
   }
   throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");
@@ -183,35 +182,25 @@ export async function generateWithFallback(args: {
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
-  // 실제 바이너리 첨부가 있을 때만 Gemini 멀티모달 체인.
-  // URL·텍스트만 있는 영상 요약 등은 OpenRouter free 로도 동작해야 함.
-  const hasBinary =
-    !!args.audio || !!(args.images && args.images.length > 0);
+  const hasBinary = !!args.audio || !!(args.images && args.images.length > 0);
   const multi = hasBinary;
 
-  if (multi && isProviderSkipped("gemini") && !process.env.GEMINI_API_KEY?.trim()) {
+  if (multi && !hasProviderKey("gemini")) {
     throw new MissingApiKeyError(
-      "이미지·오디오 분석에는 GEMINI_API_KEY가 필요합니다. URL·대본만으로 요약하려면 첨부를 빼고 다시 시도하세요.",
+      "이미지·오디오 분석에는 GEMINI_API_KEY가 필요합니다. URL·대본만으로 요청하려면 첨부를 빼고 다시 시도하세요.",
     );
   }
 
   return runWithFallback(
     modelsForTier(tier, { multimodal: multi }),
     (m) =>
-      m.provider === "gemini"
-        ? geminiGenerateForTool({
-            tool: args.tool,
-            text: args.text,
-            audio: args.audio,
-            images: args.images,
-            model: m.model,
-          })
-        : openrouterGenerateForTool({
-            tool: args.tool,
-            // OpenRouter 는 바이너리 미지원 — 텍스트 지침만 전달
-            text: args.text ?? "",
-            model: m.model,
-          }),
+      invokeModel(m, {
+        mode: "tool",
+        tool: args.tool,
+        text: args.text,
+        audio: args.audio,
+        images: args.images,
+      }),
     args.onAttempt,
   );
 }
@@ -234,18 +223,14 @@ export async function chatReplyWithFallback(args: {
 
   return runWithFallback(
     raw,
-    async (m) =>
-      m.provider === "gemini"
-        ? geminiChatReply({
-            model: m.model,
-            systemInstruction: args.systemInstruction,
-            messages: args.messages,
-          })
-        : openrouterChatReply({
-            model: m.model,
-            systemInstruction: args.systemInstruction,
-            messages: args.messages,
-          }),
+    (m) =>
+      invokeModel(m, {
+        mode: "chat",
+        systemInstruction: args.systemInstruction,
+        messages: args.messages,
+      }),
     args.onAttempt,
   );
 }
+
+export { listConfiguredProviders, hasProviderKey };

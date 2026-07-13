@@ -1,13 +1,10 @@
 /**
  * 프로세스 단위 제공자 건강 상태.
- * Gemini free tier limit:0 처럼 "당분간 전 모델 실패" 상태를 기억해
- * 요청마다 pro→flash 를 연쇄 실패하지 않게 한다.
  */
 
-export type ProviderId = "gemini" | "openrouter";
+export type ProviderId = "gemini" | "openrouter" | "groq" | "deepseek";
 
 interface HealthState {
-  /** 이 시각 이전까지 해당 제공자 스킵 */
   skipUntil: number;
   reason: string;
 }
@@ -15,9 +12,11 @@ interface HealthState {
 const health: Record<ProviderId, HealthState> = {
   gemini: { skipUntil: 0, reason: "" },
   openrouter: { skipUntil: 0, reason: "" },
+  groq: { skipUntil: 0, reason: "" },
+  deepseek: { skipUntil: 0, reason: "" },
 };
 
-const DEFAULT_SKIP_MS = 10 * 60 * 1000; // 10분
+const DEFAULT_SKIP_MS = 10 * 60 * 1000;
 
 export function isProviderSkipped(provider: ProviderId): boolean {
   return Date.now() < (health[provider]?.skipUntil ?? 0);
@@ -33,10 +32,7 @@ export function markProviderUnhealthy(
   reason: string,
   ms: number = DEFAULT_SKIP_MS,
 ): void {
-  health[provider] = {
-    skipUntil: Date.now() + ms,
-    reason,
-  };
+  health[provider] = { skipUntil: Date.now() + ms, reason };
   console.warn(
     `[providerHealth] ${provider} unhealthy for ${Math.round(ms / 1000)}s: ${reason}`,
   );
@@ -49,7 +45,6 @@ export function markProviderHealthy(provider: ProviderId): void {
   health[provider] = { skipUntil: 0, reason: "" };
 }
 
-/** 에러 메시지 기반 자동 마킹 */
 export function noteProviderFailure(provider: ProviderId, err: unknown): void {
   const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
 
@@ -60,19 +55,32 @@ export function noteProviderFailure(provider: ProviderId, err: unknown): void {
       (msg.includes("quota") && msg.includes("limit")) ||
       msg.includes("resource_exhausted")
     ) {
-      // free tier 0 / 일일 한도 → 길게 스킵
-      const long = msg.includes("limit: 0") || msg.includes("free_tier") ? 30 * 60 * 1000 : 5 * 60 * 1000;
+      const long =
+        msg.includes("limit: 0") || msg.includes("free_tier") ? 30 * 60 * 1000 : 5 * 60 * 1000;
       markProviderUnhealthy("gemini", msg.slice(0, 160), long);
     }
   }
 
-  if (provider === "openrouter") {
-    if (msg.includes("insufficient credits") || msg.includes("never purchased")) {
-      // paid 만 막힌 경우와 전체 차단을 구분하기 어려우면 paid 는 모델 free 플래그로 처리
-      // free 모델까지 전부 실패하는 경우는 짧게만
-    }
-    if (msg.includes("401") || msg.includes("invalid api key") || msg.includes("user not found")) {
-      markProviderUnhealthy("openrouter", msg.slice(0, 160), 15 * 60 * 1000);
-    }
+  if (msg.includes("401") || msg.includes("invalid api key") || msg.includes("authentication")) {
+    markProviderUnhealthy(provider, msg.slice(0, 160), 15 * 60 * 1000);
+    return;
+  }
+
+  if (provider === "groq" && (msg.includes("rate limit") || msg.includes("429"))) {
+    markProviderUnhealthy("groq", msg.slice(0, 160), 2 * 60 * 1000);
+  }
+
+  if (
+    provider === "deepseek" &&
+    (msg.includes("insufficient") || msg.includes("balance") || msg.includes("quota"))
+  ) {
+    markProviderUnhealthy("deepseek", msg.slice(0, 160), 10 * 60 * 1000);
+  }
+
+  if (
+    provider === "openrouter" &&
+    (msg.includes("insufficient credits") || msg.includes("never purchased"))
+  ) {
+    // free 모델은 계속 시도 — paid 만 스킵은 ai 루프에서
   }
 }

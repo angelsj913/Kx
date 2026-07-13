@@ -14,14 +14,18 @@ export function friendlyError(err: unknown): string {
     lower.includes("api 키가 없") ||
     (lower.includes("401") && (lower.includes("key") || lower.includes("auth")))
   ) {
-    return "API 키가 올바르지 않습니다. Vercel 환경 변수 GEMINI_API_KEY / OPENROUTER_API_KEY를 확인해 주세요.";
+    return "API 키가 올바르지 않습니다. Vercel에서 GROQ_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / GEMINI_API_KEY 를 확인해 주세요.";
   }
 
   if (
     lower.includes("insufficient credits") ||
     lower.includes("never purchased credits")
   ) {
-    return "OpenRouter 크레딧이 없습니다. free 모델(openrouter/free)을 쓰거나 openrouter.ai에서 충전하세요.";
+    return "OpenRouter 크레딧이 없습니다. free 모델·Groq·DeepSeek 키를 쓰거나 openrouter.ai에서 충전하세요.";
+  }
+
+  if (lower.includes("deepseek") && (lower.includes("balance") || lower.includes("insufficient"))) {
+    return "DeepSeek 잔액이 부족합니다. platform.deepseek.com 에서 소액 충전하거나 다른 키(Groq/OpenRouter)를 사용하세요.";
   }
 
   if (
