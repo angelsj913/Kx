@@ -25,14 +25,18 @@ const MENU_LINKS = [
 export default function Header() {
   const t = useLandingT();
   const { language, setLanguage } = useLandingLanguage();
-  const { data: session, status } = useSession();
+  
+  // useSession 안전하게 사용 (prerender 에러 방지)
+  const sessionResult = useSession?.();
+  const session = sessionResult?.data ?? null;
+  const status = sessionResult?.status ?? "unauthenticated";
+  const isLoggedIn = status === "authenticated";
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const langRef = useRef<HTMLDivElement | null>(null);
-
-  const isLoggedIn = status === "authenticated";
 
   // 관리자 여부 확인
   useEffect(() => {
@@ -105,10 +109,9 @@ export default function Header() {
               </AnimatePresence>
             </div>
 
-            {/* 로그인 상태에 따른 버튼 */}
+            {/* 로그인 상태에 따른 버튼 (안전하게 처리) */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
-                {/* 로그아웃 버튼 */}
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
@@ -116,7 +119,6 @@ export default function Header() {
                   로그아웃
                 </button>
 
-                {/* 웹에서 시작하기 CTA (요구사항 15 핵심) */}
                 <Link
                   href="/app"
                   className="workspace-btn-primary rounded-xl px-5 py-2 text-sm font-semibold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.985]"
@@ -132,7 +134,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* 모바일 메뉴 */}
         <AnimatePresence>
           {menuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-200 bg-slate-50/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
