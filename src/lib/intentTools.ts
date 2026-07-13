@@ -3,6 +3,8 @@
  * "ppt 만들어줘" 를 글쓰기 에이전트 텍스트 초안으로 보내지 않는다.
  */
 
+const URL_RE_FOR_INTENT = /https?:\/\/[^\s<>"')\]]+/gi;
+
 export function detectQuickToolFromText(text: string): string | null {
   const t = text.trim();
   if (!t) return null;
@@ -45,12 +47,15 @@ export function detectQuickToolFromText(text: string): string | null {
   }
 
   // ── 영상 요약 ──
-  if (
-    /영상\s*요약|유튜브\s*요약|강의\s*요약|video\s*summar/i.test(t) ||
-    (/요약/.test(t) && /https?:\/\/\S*(youtube|youtu\.be)/i.test(t))
-  ) {
-    return "video-summary";
-  }
+  const hasYt = /https?:\/\/\S*(youtube\.com|youtu\.be|youtube-nocookie\.com)/i.test(t);
+  const wantsVideoSummary =
+    /영상\s*요약|동영상\s*요약|유튜브\s*요약|유튜브\s*정리|강의\s*요약|video\s*summar|유튜브.*요약|요약.*유튜브/i.test(
+      t,
+    ) ||
+    (/요약|정리|노트|핵심|스크립트|대본/.test(t) && hasYt) ||
+    // YouTube URL 만 붙여넣은 경우도 요약 도구로
+    (hasYt && t.replace(URL_RE_FOR_INTENT, "").trim().length < 40);
+  if (wantsVideoSummary) return "video-summary";
 
   // ── A4 노트 ──
   if (/a4\s*노트|노트\s*정리|필기\s*정리|수업\s*노트/i.test(t)) {

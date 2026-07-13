@@ -19,6 +19,7 @@ import {
   noteProviderFailure,
 } from "./providerHealth";
 import type { ToolDef } from "./tools";
+// isProviderSkipped used for multimodal gemini gate
 
 function errorText(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -182,13 +183,17 @@ export async function generateWithFallback(args: {
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
-  const multi =
-    args.tool.inputType === "url" ||
-    args.tool.inputType === "audio" ||
-    args.tool.inputType === "image" ||
-    args.tool.inputType === "mixed" ||
-    !!args.audio ||
-    !!(args.images && args.images.length);
+  // 실제 바이너리 첨부가 있을 때만 Gemini 멀티모달 체인.
+  // URL·텍스트만 있는 영상 요약 등은 OpenRouter free 로도 동작해야 함.
+  const hasBinary =
+    !!args.audio || !!(args.images && args.images.length > 0);
+  const multi = hasBinary;
+
+  if (multi && isProviderSkipped("gemini") && !process.env.GEMINI_API_KEY?.trim()) {
+    throw new MissingApiKeyError(
+      "이미지·오디오 분석에는 GEMINI_API_KEY가 필요합니다. URL·대본만으로 요약하려면 첨부를 빼고 다시 시도하세요.",
+    );
+  }
 
   return runWithFallback(
     modelsForTier(tier, { multimodal: multi }),
@@ -203,6 +208,7 @@ export async function generateWithFallback(args: {
           })
         : openrouterGenerateForTool({
             tool: args.tool,
+            // OpenRouter 는 바이너리 미지원 — 텍스트 지침만 전달
             text: args.text ?? "",
             model: m.model,
           }),

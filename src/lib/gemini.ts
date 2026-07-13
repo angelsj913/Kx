@@ -24,10 +24,6 @@ export interface GenInput {
   apiKey?: string;
 }
 
-function looksLikeUrl(s: string): boolean {
-  return /^https?:\/\/\S+/i.test(s.trim());
-}
-
 /** 도구 입력(텍스트·URL·이미지·오디오)을 멀티모달 content로 조립 */
 function buildContents(input: GenInput): string | Content {
   const { tool } = input;
@@ -35,17 +31,9 @@ function buildContents(input: GenInput): string | Content {
   const images = input.images ?? [];
   const audio = input.audio;
 
+  // URL 전용: YouTube fileUri 는 할당·권한 이슈가 잦아 텍스트 메타 요약 경로 사용
+  // (chat 라우트에서 oEmbed 메타를 text 에 이미 보강함)
   if (!audio && images.length === 0) {
-    if (
-      (tool.inputType === "url" || tool.id === "video-summary") &&
-      text &&
-      looksLikeUrl(text)
-    ) {
-      return createUserContent([
-        { fileData: { fileUri: text } },
-        "위 영상의 내용을 시스템 지침에 따라 정리·요약해 주세요.",
-      ]);
-    }
     return text || "요청을 수행해 주세요.";
   }
 
@@ -58,12 +46,7 @@ function buildContents(input: GenInput): string | Content {
     parts.push({ inlineData: { data: audio.data, mimeType: audio.mimeType } });
   }
 
-  if (text && looksLikeUrl(text) && (tool.inputType === "url" || tool.id === "video-summary")) {
-    parts.push({ fileData: { fileUri: text } });
-    parts.push({
-      text: `영상 URL: ${text}\n첨부 자료와 함께 시스템 지침에 따라 요약·정리해 주세요.`,
-    });
-  } else if (text) {
+  if (text) {
     parts.push({ text });
   } else {
     parts.push({

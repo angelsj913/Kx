@@ -89,7 +89,8 @@ export function modelsForTier(
   opts?: { multimodal?: boolean },
 ): ModelDef[] {
   if (opts?.multimodal) {
-    if (tier === "top") return [G_PRO, G_FLASH, G_FLASH_LITE];
+    // 이미지·오디오: Gemini 필수. free 텍스트 모델은 바이너리 불가.
+    if (tier === "top") return [G_FLASH, G_PRO, G_FLASH_LITE];
     return [G_FLASH, G_FLASH_LITE, G_PRO];
   }
 

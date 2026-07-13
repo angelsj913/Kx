@@ -85,17 +85,21 @@ export async function enrichVideoSummaryPrompt(userText: string): Promise<{
   }
 
   const lines = [
-    userText.trim() || "아래 영상 내용을 시스템 지침에 따라 요약·정리해 주세요.",
+    userText.trim() || "아래 영상을 시스템 지침에 따라 학습 노트 형식으로 요약·정리해 주세요.",
     "",
-    "[영상 메타데이터 — 요약 시 참고]",
+    "[영상 메타데이터 — 반드시 반영]",
     `URL: ${url}`,
     meta.platform === "youtube" ? `플랫폼: YouTube` : `플랫폼: 기타`,
     meta.videoId ? `비디오 ID: ${meta.videoId}` : null,
     meta.title ? `제목: ${meta.title}` : null,
     meta.author ? `채널/작성자: ${meta.author}` : null,
+    meta.thumbnail ? `썸네일: ${meta.thumbnail}` : null,
     "",
-    "가능하면 섹션·타임라인 단위로 정리하고, 제목·주제를 반영하세요.",
-    "영상에 직접 접근이 어렵다면 제목·채널·URL·첨부 자료(대본·오디오·캡처)를 근거로 구조화하고 한계를 명시하세요.",
+    "[작성 지시]",
+    "- 제목·채널에서 주제를 읽고 섹션형 학습 노트로 풍부하게 작성하세요.",
+    "- 영상 본문/자막에 직접 접근할 수 없으면 상단에 한계를 한 줄 명시하되, 빈 요약은 금지.",
+    "- 핵심 키워드·섹션별 요점·복습 질문·한 페이지 요약을 채우세요.",
+    "- 첨부 대본·오디오·이미지가 있으면 그것을 최우선 근거로 사용하세요.",
   ].filter((x) => x !== null);
 
   return { enrichedText: lines.join("\n"), meta };
