@@ -125,7 +125,7 @@ export default function SignupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "가입에 실패했습니다.");
-      await signIn("credentials", { email, password, callbackUrl: "/app" });
+      await signIn("credentials", { email, password, callbackUrl: "/" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
       setLoading(false);
@@ -136,7 +136,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-lg items-center justify-between px-6 py-3.5">
-          <BackButton fallbackHref="/login" />
+          <BackButton fallbackHref="/login" forceFallback />
           <Link href="/" className="flex items-center">
             <Logo size="sm" />
           </Link>

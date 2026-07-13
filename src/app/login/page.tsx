@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,8 +33,7 @@ function GoogleIcon() {
 
 function LoginCard() {
   const t = useLandingT();
-  const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") || "/app";
+  const callbackUrl = "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,7 +62,7 @@ function LoginCard() {
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4">
-        <BackButton fallbackHref="/" />
+        <BackButton fallbackHref="/" forceFallback />
         <ThemeToggle />
       </div>
 

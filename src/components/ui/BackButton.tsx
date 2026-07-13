@@ -3,19 +3,29 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-/** 모든 하위 페이지·탭 상단에 배치하는 공통 뒤로가기 버튼. fallbackHref가 있으면 히스토리가 없을 때 그 곳으로 이동. */
+/**
+ * 모든 하위 페이지·탭 상단에 배치하는 공통 뒤로가기 버튼.
+ * - fallbackHref: 히스토리가 없을 때 이동할 경로
+ * - forceFallback: true 이면 항상 fallbackHref 로 이동 (로그인/회원가입 페이지처럼 히스토리를 타면 안 되는 곳에 사용)
+ */
 export default function BackButton({
   label = "뒤로가기",
   fallbackHref = "/",
+  forceFallback = false,
   className = "",
 }: {
   label?: string;
   fallbackHref?: string;
+  forceFallback?: boolean;
   className?: string;
 }) {
   const router = useRouter();
 
   function onBack() {
+    if (forceFallback) {
+      router.push(fallbackHref);
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
