@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { friendlyError } from "@/lib/errors";
+import { isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,10 @@ const STATUSES = ["등록", "처리중", "답변완료"];
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user?.isAdmin) {
+    if (
+      !session?.user ||
+      (session.user.isAdmin !== true && !isAdminEmail(session.user.email))
+    ) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
 

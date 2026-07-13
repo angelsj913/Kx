@@ -72,7 +72,12 @@ export default function ProfileMenu({
 
   const plan = settingsHook.settings?.plan ?? "free";
   const user = session?.user;
-  const isAdmin = !!(user as { isAdmin?: boolean } | undefined)?.isAdmin;
+  const sessionEmail = (user?.email ?? "").trim().toLowerCase();
+  // 세션 플래그 + 기본 관리자 이메일 fallback (Header 와 동일)
+  const isAdmin =
+    !!(user as { isAdmin?: boolean } | undefined)?.isAdmin ||
+    sessionEmail === "zeff@zeffai.com" ||
+    sessionEmail === "kxeung9@gmail.com";
   const label = displayName(user);
 
   async function handleLogout() {
@@ -192,7 +197,7 @@ export default function ProfileMenu({
             </Link>
 
             {isAdmin && (
-              <Link
+              <a
                 href="/admin"
                 role="menuitem"
                 onClick={() => setOpen(false)}
@@ -200,7 +205,7 @@ export default function ProfileMenu({
               >
                 <Wrench className={ICON} />
                 관리자 패널
-              </Link>
+              </a>
             )}
 
             <button

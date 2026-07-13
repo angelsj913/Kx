@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { LayoutDashboard, MessageSquare, CreditCard, Users, ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { isAdminEmail } from "@/lib/admin";
+import AdminAccessDenied from "@/components/admin/AdminAccessDenied";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "개발자 관리 · ZEFF AI" };
@@ -16,12 +16,18 @@ const NAV = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  const email = session?.user?.email ?? null;
   // isAdmin 플래그 + 이메일 allowlist 둘 다 허용 (Google 세션 불일치 방지)
   const allowed =
     !!session?.user &&
-    (session.user.isAdmin === true || isAdminEmail(session.user.email));
+    (session.user.isAdmin === true || isAdminEmail(email));
+
+  // 조용히 홈으로 튕기지 않음 — 원인(미로그인/권한없음)을 화면에 표시
+  if (!session?.user) {
+    return <AdminAccessDenied reason="unauthenticated" />;
+  }
   if (!allowed) {
-    redirect("/?admin=denied");
+    return <AdminAccessDenied reason="forbidden" email={email} />;
   }
 
   return (
@@ -33,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="text-sm font-bold tracking-tight">ZEFF AI 관리 콘솔</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-            <span className="hidden sm:inline">{session.user.email}</span>
+            <span className="hidden sm:inline">{email}</span>
             <Link href="/" className="inline-flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400">
               <ArrowLeft className="h-3.5 w-3.5" />
               사이트로

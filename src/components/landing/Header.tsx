@@ -77,15 +77,16 @@ export default function Header() {
 
           <div className="flex items-center gap-3">
             {isAdmin && (
-              <Link
+              // 일반 <a> 로 전체 페이지 이동 — soft navigation 후 silent redirect 가
+              // 홈에서 '버튼 무반응'처럼 보이던 문제 방지
+              <a
                 href="/admin"
-                prefetch={false}
                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-blue-500/50 bg-blue-600/10 px-3 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
                 title="관리자 패널"
               >
                 <Wrench className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden sm:inline">관리자</span>
-              </Link>
+              </a>
             )}
 
             <ThemeToggle />

@@ -7,9 +7,20 @@ import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // 커스텀 도메인(www.zeffai.com)에서 세션 쿠키/호스트 검증이 깨지지 않도록
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google,
+    Google({
+      // Google 계정 이메일로 관리자 판별 — 이메일 scope 보장
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "online",
+          response_type: "code",
+        },
+      },
+    }),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
@@ -41,12 +52,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, account, profile }) {
       // 로그인 시마다 토큰에 해당 사용자 정보를 다시 심어, 다른 계정 전환 시 프로필이 갱신되게 한다.
       if (user) {
         token.id = user.id;
         token.name = user.name;
-        token.email = user.email;
+        if (typeof user.email === "string" && user.email) {
+          token.email = user.email.trim().toLowerCase();
+        }
         token.picture = user.image;
         const username =
           "username" in user && typeof user.username === "string"
@@ -54,18 +67,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             : undefined;
         if (username) token.username = username;
       }
+      // Google profile 에서 이메일이 오면 JWT 에 강제 반영 (세션 이메일 누락 방지)
+      if (account?.provider === "google" && profile && typeof profile === "object") {
+        const pe = (profile as { email?: string }).email;
+        if (typeof pe === "string" && pe) {
+          token.email = pe.trim().toLowerCase();
+        }
+      }
       // Google / 이메일 공통: 매 요청 관리자 여부 재계산
       const email =
         (typeof token.email === "string" && token.email) ||
         (user && typeof user.email === "string" ? user.email : null);
-      token.isAdmin = isAdminEmail(email);
+      const normalized = email ? String(email).trim().toLowerCase() : null;
+      if (normalized) token.email = normalized;
+      token.isAdmin = isAdminEmail(normalized);
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         if (token?.id) session.user.id = token.id as string;
         if (typeof token?.name === "string") session.user.name = token.name;
-        if (typeof token?.email === "string") session.user.email = token.email;
+        if (typeof token?.email === "string") {
+          session.user.email = token.email.trim().toLowerCase();
+        }
         if (typeof token?.picture === "string") session.user.image = token.picture;
         if (typeof token?.username === "string") session.user.username = token.username;
         session.user.isAdmin =
