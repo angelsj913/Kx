@@ -107,6 +107,7 @@ interface StreamEvent {
   type: "status" | "done" | "error";
   sessionId: string;
   key?: string;
+  detail?: string;
   message?: Msg | string;
 }
 
@@ -462,11 +463,14 @@ export default function ChatWorkspace({
             const key = event.key ?? null;
             setStatusKey(key);
             if (key) {
+              let label = key;
               try {
-                pushTerminal(`status › ${t(key as Parameters<typeof t>[0])}`, "info");
+                label = t(key as Parameters<typeof t>[0]);
               } catch {
-                pushTerminal(`status › ${key}`, "info");
+                /* keep key */
               }
+              const extra = event.detail ? ` · ${event.detail}` : "";
+              pushTerminal(`route › ${label}${extra}`, "info");
             }
           } else if (event.type === "done") {
             doneMessage = event.message as Msg;

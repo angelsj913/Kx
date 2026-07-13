@@ -3,7 +3,7 @@ import { put } from "@vercel/blob";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { runAgentPipeline } from "@/lib/agents";
+import { runBackendRoute } from "@/lib/backendRoute";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
@@ -23,7 +23,7 @@ interface StoredAttachment {
 }
 
 type StreamEvent =
-  | { type: "status"; key: string; sessionId: string }
+  | { type: "status"; key: string; sessionId: string; detail?: string }
   | { type: "done"; sessionId: string; message: Record<string, unknown> }
   | { type: "error"; sessionId: string; message: string };
 
@@ -241,7 +241,13 @@ export async function POST(request: Request) {
 
           send({ type: "done", sessionId: resolvedSessionId, message: assistantRow });
         } else {
-          send({ type: "status", key: "status.agent.selecting", sessionId: resolvedSessionId });
+          // ── 백엔드 라우트: 분류 → 생성 → (티어별) 정밀 검증 ──
+          send({
+            type: "status",
+            key: "status.route.start",
+            sessionId: resolvedSessionId,
+            detail: modelTier,
+          });
 
           const history = await prisma.chatHistory.findMany({
             where: { sessionId: resolvedSessionId },
@@ -253,19 +259,26 @@ export async function POST(request: Request) {
             files: i === history.length - 1 && inlineFiles.length ? inlineFiles : undefined,
           }));
 
-          let firstAttempt = true;
-          const result = await runAgentPipeline({
+          const result = await runBackendRoute({
             text,
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
-            onAttempt: () => {
+            onStage: (e) => {
               send({
                 type: "status",
-                key: firstAttempt ? "status.agent.selected" : "status.ai.trying",
+                key: e.key,
                 sessionId: resolvedSessionId,
+                detail: [e.agentId, e.model, e.detail].filter(Boolean).join(" · "),
               });
-              firstAttempt = false;
+            },
+            onAttempt: (info) => {
+              send({
+                type: "status",
+                key: "status.route.generate.try",
+                sessionId: resolvedSessionId,
+                detail: `${info.stage} · ${info.agentId} · ${info.provider}/${info.model}`,
+              });
             },
           });
 
@@ -274,7 +287,7 @@ export async function POST(request: Request) {
               sessionId: resolvedSessionId,
               role: "model",
               text: result.text,
-              agentId: result.agentId,
+              agentId: `route:${result.agentId}${result.refined ? "+verify" : ""}`,
               provider: result.provider,
               modelName: result.model,
               attempts: result.attempts,
