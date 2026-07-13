@@ -7,6 +7,7 @@ import {
   G_FLASH,
   G_PRO,
   OR_DEEPSEEK,
+  OR_FREE_ROUTER,
   OR_LLAMA,
   OR_QWEN,
   modelsForTier,
@@ -34,8 +35,8 @@ export const AGENTS: Record<AgentId, AgentDef> = {
       /계산|풀어|증명|알고리즘|코드|디버그|버그|최적화|분석해|논리|수학|공식|리팩터|regex|함수|sql|python|javascript|typescript|방정식|미분|적분|확률|통계|시험|문제/i,
     systemInstruction:
       "너는 정확하고 꼼꼼한 논리·수학·코드 전문 AI 에이전트다. 단계적으로 검증하며 명확하게 답하라. 식·근거를 생략하지 마라.",
-    // free OpenRouter 를 유료(deepseek)보다 앞에 둬 크레딧 0 계정에서도 폴백
-    modelOrder: [G_PRO, G_FLASH, OR_LLAMA, OR_QWEN, OR_DEEPSEEK],
+    // free OR 라우터 우선 (Gemini free tier 0 대응)
+    modelOrder: [OR_FREE_ROUTER, G_FLASH, OR_LLAMA, OR_QWEN, G_PRO, OR_DEEPSEEK],
   },
   research: {
     id: "research",
@@ -44,7 +45,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
       /요약|정리해|찾아줘|조사|리서치|자료|출처|참고문헌|비교분석|트렌드|동향|비교해|차이|장단점|리뷰|영상|강의/i,
     systemInstruction:
       "너는 자료 조사와 요약에 능숙한 리서치 전문 AI 에이전트다. 핵심 근거를 명확히 밝히며 답하라. 불확실하면 한계를 밝혀라.",
-    modelOrder: [G_FLASH, G_PRO, OR_QWEN, OR_LLAMA, OR_DEEPSEEK],
+    modelOrder: [OR_FREE_ROUTER, G_FLASH, OR_QWEN, OR_LLAMA, G_PRO, OR_DEEPSEEK],
   },
   writing: {
     id: "writing",
@@ -53,7 +54,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
       /작성해|써줘|메일|이메일|보고서|초안|편지|카피|블로그|스크립트|대본|문서|제안서|기획|발표/i,
     systemInstruction:
       "너는 글쓰기와 문서 작성에 능숙한 AI 에이전트다. 명확하고 자연스러운 문장으로, 바로 쓸 수 있는 완성본을 제시하라.",
-    modelOrder: [G_FLASH, OR_LLAMA, OR_QWEN, G_PRO, OR_DEEPSEEK],
+    modelOrder: [OR_FREE_ROUTER, OR_LLAMA, OR_QWEN, G_FLASH, G_PRO, OR_DEEPSEEK],
   },
   general: {
     id: "general",
