@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
 import ChatWorkspace from "@/components/ChatWorkspace";
 import LibraryView from "@/components/LibraryView";
@@ -14,69 +13,46 @@ export default function AppWorkspace() {
   const [view, setView] = useState<"chat" | "library" | "review" | "rag">("chat");
   const { sessions, refetch, removeSession } = useSessions();
 
-  const handleNewChat = () => {
-    setActiveSessionId(null);
-    setView("chat");
-  };
-
-  const handleSelectSession = (id: string) => {
-    setActiveSessionId(id);
-    setView("chat");
-  };
-
-  const handleSessionCreated = (id: string) => {
-    setActiveSessionId(id);
-    refetch();
-  };
-
-  const handleDeleteSession = async (id: string) => {
-    await removeSession(id);
-    if (id === activeSessionId) setActiveSessionId(null);
-  };
-
-  const handleOpenBookChat = (sessionId: string) => {
-    setActiveSessionId(sessionId);
-    refetch();
-    setView("chat");
-  };
-
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
       
+      {/* 사이드바 */}
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
         activeView={view}
-        onSelectSession={handleSelectSession}
-        onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession}
+        onSelectSession={(id) => {
+          setActiveSessionId(id);
+          setView("chat");
+        }}
+        onNewChat={() => {
+          setActiveSessionId(null);
+          setView("chat");
+        }}
+        onDeleteSession={async (id) => {
+          await removeSession(id);
+          if (id === activeSessionId) setActiveSessionId(null);
+        }}
         onOpenLibrary={() => setView("library")}
         onOpenReview={() => setView("review")}
         onOpenRag={() => setView("rag")}
       />
 
-      <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view === "chat" ? (activeSessionId ?? "new") : view}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex-1 min-h-0"
-          >
-            {view === "library" && <LibraryView onOpenBookChat={handleOpenBookChat} />}
-            {view === "review" && <ReviewView />}
-            {view === "rag" && <RagView />}
-            {view === "chat" && (
-              <ChatWorkspace
-                sessionId={activeSessionId}
-                onSessionCreated={handleSessionCreated}
-                onTurnSaved={refetch}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+      {/* 메인 컨텐츠 영역 - 높이와 flex를 명확하게 줌 */}
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        {view === "chat" && (
+          <ChatWorkspace
+            sessionId={activeSessionId}
+            onSessionCreated={(id) => {
+              setActiveSessionId(id);
+              refetch();
+            }}
+            onTurnSaved={refetch}
+          />
+        )}
+        {view === "library" && <LibraryView />}
+        {view === "review" && <ReviewView />}
+        {view === "rag" && <RagView />}
       </div>
     </div>
   );
