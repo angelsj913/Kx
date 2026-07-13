@@ -187,4 +187,71 @@ function PlanTab() {
           return (
             <button
               key={p.id}
-              type
+              type="button"
+              onClick={() => updatePlan(p.id)}
+              className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors duration-200 ${
+                active
+                  ? "border-blue-500/60 bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                  : "border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--workspace-text-secondary)] hover:border-[var(--workspace-accent)]"
+              }`}
+            >
+              {t(p.labelKey)}
+              {active && <Check className="h-4 w-4" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LanguageTab() {
+  const t = useT();
+  const committed = useAppLanguage();
+  const { updateLanguage } = useSettings();
+  const [draft, setDraft] = useState<AppLanguage>(committed);
+  const [applying, setApplying] = useState(false);
+
+  const dirty = draft !== committed;
+
+  async function apply() {
+    setApplying(true);
+    try {
+      await updateLanguage(draft);
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  return (
+    <div>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--workspace-text-secondary)]">
+        {t("settings.language.label")}
+      </p>
+      <div className="mb-4 flex gap-2">
+        {(["ko", "en"] as AppLanguage[]).map((lang) => (
+          <button
+            key={lang}
+            type="button"
+            onClick={() => setDraft(lang)}
+            className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+              draft === lang
+                ? "border-blue-500/60 bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                : "border-[var(--workspace-border)] bg-[var(--workspace-surface)] text-[var(--workspace-text-secondary)] hover:border-[var(--workspace-accent)]"
+            }`}
+          >
+            {lang === "ko" ? "한국어" : "English"}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={apply}
+        disabled={!dirty || applying}
+        className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {t("settings.language.apply")}
+      </button>
+    </div>
+  );
+}
