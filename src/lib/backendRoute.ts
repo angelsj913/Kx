@@ -200,10 +200,15 @@ export async function runBackendRoute(args: {
       agentId: draftAgent,
     });
 
+    // 검증 실패 시 초안 유지. free OpenRouter 를 유료보다 앞에 둬 할당 소진 시에도 보정 가능
     const verifyModels: ModelDef[] =
       tier === "top"
-        ? [G_PRO, G_FLASH, ...modelsForTier("top").filter((m) => m.provider !== "gemini")]
-        : [G_FLASH, G_PRO];
+        ? [
+            G_FLASH,
+            G_PRO,
+            ...modelsForTier("top").filter((m) => m.provider !== "gemini"),
+          ]
+        : [G_FLASH, ...modelsForTier("priority").filter((m) => m.provider === "openrouter" && m.free), G_PRO];
 
     const verifyMessages: ChatMessage[] = [
       {
