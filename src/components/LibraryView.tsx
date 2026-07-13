@@ -23,6 +23,7 @@ export default function LibraryView({
   const t = useT();
   const { activeId } = useWorkspace();
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
+  const [usage, setUsage] = useState<{ used: number; max: number; plan: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +33,10 @@ export default function LibraryView({
     try {
       const res = await wsFetch("/api/library");
       const data = await res.json();
-      if (res.ok) setItems(data.items ?? []);
+      if (res.ok) {
+        setItems(data.items ?? []);
+        if (data.usage) setUsage(data.usage);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,6 +61,7 @@ export default function LibraryView({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "업로드에 실패했습니다.");
       setItems((prev) => [data.item, ...prev]);
+      if (data.usage) setUsage(data.usage);
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     } finally {
@@ -85,6 +90,12 @@ export default function LibraryView({
             {t("library.title")}
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("library.subtitle")}</p>
+          {usage && (
+            <p className="mt-1 text-xs text-slate-400">
+              저장 {usage.used} / {usage.max}개
+              {usage.used >= usage.max ? " · 한도 도달" : ""}
+            </p>
+          )}
         </div>
 
         <div>
@@ -98,7 +109,7 @@ export default function LibraryView({
           <motion.button
             type="button"
             onClick={() => fileRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || (!!usage && usage.used >= usage.max)}
             whileTap={{ scale: 0.96 }}
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all disabled:opacity-60"
           >

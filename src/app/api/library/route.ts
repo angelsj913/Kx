@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
 import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
+import { getPlanOrFree } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,14 @@ export async function GET(request: Request) {
     throw err;
   }
 
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: session.user.id },
+  });
+  const plan = getPlanOrFree(settings?.plan);
+  const count = await prisma.libraryItem.count({
+    where: listWhere(scope, session.user.id),
+  });
+
   const items = await prisma.libraryItem.findMany({
     where: listWhere(scope, session.user.id),
     orderBy: { createdAt: "desc" },
@@ -38,7 +47,10 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json({ items });
+  return NextResponse.json({
+    items,
+    usage: { used: count, max: plan.libraryMax, plan: plan.id },
+  });
 }
 
 export async function POST(request: Request) {
@@ -56,6 +68,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
+  }
+
+  // 요금제별 서재 용량 제한
+  const settings = await prisma.userSettings.findUnique({ where: { userId } });
+  const plan = getPlanOrFree(settings?.plan);
+  const currentCount = await prisma.libraryItem.count({
+    where: listWhere(scope, userId),
+  });
+  if (currentCount >= plan.libraryMax) {
+    return NextResponse.json(
+      {
+        error: `서재 저장 한도(${plan.libraryMax}개)에 도달했습니다. ${plan.name} 플랜 기준입니다.`,
+        code: "LIBRARY_QUOTA",
+        used: currentCount,
+        max: plan.libraryMax,
+      },
+      { status: 402 },
+    );
   }
 
   const form = await request.formData();
@@ -81,6 +111,7 @@ export async function POST(request: Request) {
     const { text: extractedText } = await runToolGeneration({
       toolId: "library-extract",
       userId,
+      modelTier: plan.modelTier,
       images: [{ data: buf.toString("base64"), mimeType }],
     }).then((result) => ({
       text: result.outputType === "markdown" ? result.text : "",
@@ -98,7 +129,10 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ item });
+    return NextResponse.json({
+      item,
+      usage: { used: currentCount + 1, max: plan.libraryMax, plan: plan.id },
+    });
   } catch (err) {
     console.error("library upload error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
