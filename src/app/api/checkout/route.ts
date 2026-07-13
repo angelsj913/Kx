@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     const userId = session?.user?.id ?? null;
+    const userEmail = session?.user?.email ?? undefined;
 
     // 요금제 권한은 계정에 붙으므로 로그인 필수
     if (!userId) {
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       metadata: { merchantUid, plan: plan.id, userId },
       success_url: `${baseUrl}/checkout/complete?uid=${encodeURIComponent(merchantUid)}`,
       cancel_url: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,
-      customer_email: session.user?.email ?? undefined,
+      customer_email: userEmail,
     });
 
     await prisma.order.update({
