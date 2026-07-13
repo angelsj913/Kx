@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LayoutDashboard, MessageSquare, CreditCard, Users, ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
+import { isAdminEmail } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "개발자 관리 · ZEFF AI" };
@@ -15,8 +16,12 @@ const NAV = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user?.isAdmin) {
-    redirect("/");
+  // isAdmin 플래그 + 이메일 allowlist 둘 다 허용 (Google 세션 불일치 방지)
+  const allowed =
+    !!session?.user &&
+    (session.user.isAdmin === true || isAdminEmail(session.user.email));
+  if (!allowed) {
+    redirect("/?admin=denied");
   }
 
   return (

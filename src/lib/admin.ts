@@ -1,13 +1,22 @@
-// 개발자(관리자) 판별. 별도 role 필드 없이 환경변수 allowlist로 관리한다.
-// ADMIN_EMAILS: 쉼표로 구분된 이메일 목록. 미설정 시 아래 기본 계정 사용.
-const DEFAULT_ADMIN = "zeff@zeffai.com,kxeung9@gmail.com";
+// 개발자(관리자) 판별 — 이메일 allowlist
+// ADMIN_EMAILS 환경변수(쉼표 구분) + 아래 기본 관리자는 항상 포함
 
-export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? DEFAULT_ADMIN)
-  .split(",")
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean);
+const DEFAULT_ADMINS = ["zeff@zeffai.com", "kxeung9@gmail.com"];
+
+function parseList(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** 기본 관리자 + Vercel ADMIN_EMAILS (중복 제거) */
+export const ADMIN_EMAILS = Array.from(
+  new Set([...DEFAULT_ADMINS, ...parseList(process.env.ADMIN_EMAILS)]),
+);
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
