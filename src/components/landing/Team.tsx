@@ -46,8 +46,18 @@ export default function Team() {
   const founderName = language === "ko" ? "권승준" : "Kwon Seungjun";
 
   return (
-    <section className="bg-slate-50 py-20 dark:bg-slate-950">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-slate-50 to-slate-50 py-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
+      {/* 위 FeatureShowcase 와 이음새 제거 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-50/0 via-slate-50/50 to-transparent dark:from-slate-950 dark:via-slate-950/90 dark:to-transparent"
+      />
+      {/* Footer 로 자연스럽게 이어지는 하단 페이드 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-slate-50 dark:to-slate-950"
+      />
+      <div className="relative mx-auto max-w-5xl px-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
             {copy.title}

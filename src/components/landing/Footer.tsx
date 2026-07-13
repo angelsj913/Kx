@@ -13,7 +13,12 @@ export default function Footer() {
   const ceoName = language === "ko" ? "권승준" : "Kwon Seungjun";
 
   return (
-    <footer className="relative overflow-hidden bg-slate-50 py-14 dark:bg-slate-950">
+    <footer className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-50 py-14 dark:from-slate-950 dark:to-slate-950">
+      {/* Team 섹션과 상단 이음새 제거 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-slate-50/0 to-transparent dark:from-slate-950 dark:to-transparent"
+      />
       <Image
         src="/logo-zeff.png"
         alt=""
