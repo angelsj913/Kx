@@ -1,3 +1,12 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { requireRole, WorkspaceError } from "@/lib/workspace";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// ==================== DELETE (OTP 기반 워크스페이스 삭제) ====================
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
