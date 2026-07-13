@@ -36,129 +36,114 @@ export default function Sidebar({
   return (
     <aside
       className={`flex shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-all duration-300 ${
-        isCollapsed ? "w-16" : "w-72"
+        isCollapsed ? "w-[68px]" : "w-72"
       }`}
     >
-      {/* 상단 로고 + 토글 버튼 */}
-      <div className="flex items-center justify-between border-b border-[var(--workspace-border)] px-4 py-4">
-        <div className="flex items-center gap-2">
+      {/* 상단 로고 + 접기 버튼 */}
+      <div className="flex h-16 items-center justify-between border-b border-[var(--workspace-border)] px-3">
+        <div className="flex items-center">
           <Logo size="sm" withWordmark={!isCollapsed} />
         </div>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="rounded-lg p-1.5 text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)] transition-colors"
         >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
       <WorkspaceSwitcher />
 
-      {/* 메뉴 영역 */}
-      <div className="p-3 space-y-1">
-        {/* 새 대화 버튼 */}
+      {/* 상단 메뉴 */}
+      <div className="p-2.5 space-y-1.5">
         <button
           onClick={onNewChat}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/30 hover:brightness-105 transition-all"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 py-2.5 text-sm font-semibold text-white shadow-md hover:brightness-105 transition-all"
         >
-          <Plus className="h-4 w-4" />
+          <Plus size={18} />
           {!isCollapsed && <span>{t("sidebar.newChat")}</span>}
         </button>
 
-        {/* 메뉴 버튼들 */}
         <button
           onClick={onOpenLibrary}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
             activeView === "library"
               ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
               : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
-          <BookOpen className="h-4 w-4 shrink-0" />
+          <BookOpen size={18} />
           {!isCollapsed && <span>{t("sidebar.myLibrary")}</span>}
         </button>
 
         <button
           onClick={onOpenReview}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
             activeView === "review"
               ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
               : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
-          <Brain className="h-4 w-4 shrink-0" />
+          <Brain size={18} />
           {!isCollapsed && <span>복습</span>}
         </button>
 
         <button
           onClick={onOpenRag}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
             activeView === "rag"
               ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
               : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
-          <Database className="h-4 w-4 shrink-0" />
+          <Database size={18} />
           {!isCollapsed && <span>지식 검색</span>}
         </button>
       </div>
 
       {/* 채팅 세션 목록 */}
-      <div className="flex min-h-0 flex-1 flex-col px-3 pb-2">
+      <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-2">
         {!isCollapsed && (
-          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-[var(--workspace-text-secondary)]">
+          <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-[var(--workspace-text-secondary)]">
             최근 대화
-          </p>
+          </div>
         )}
 
-        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-          {sessions.length === 0 && !isCollapsed && (
-            <li className="px-3 py-8 text-center text-xs text-[var(--workspace-text-secondary)]">
-              아직 대화가 없습니다
+        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+          {sessions.map((session) => (
+            <li
+              key={session.id}
+              onClick={() => onSelectSession(session.id)}
+              className={`group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
+                session.id === activeSessionId
+                  ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                  : "hover:bg-[var(--workspace-bg)] text-[var(--workspace-text-secondary)]"
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <MessageSquare size={16} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                {!isCollapsed && <span className="truncate">{session.title || "새 대화"}</span>}
+              </div>
+
+              {!isCollapsed && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteSession(session.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-500"
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
             </li>
-          )}
-
-          <AnimatePresence>
-            {sessions.map((session) => (
-              <motion.li
-                key={session.id}
-                layout
-                className={`group flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
-                  session.id === activeSessionId
-                    ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
-                    : "hover:bg-[var(--workspace-bg)] text-[var(--workspace-text-secondary)]"
-                }`}
-                onClick={() => onSelectSession(session.id)}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <MessageSquare className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-                  {!isCollapsed && (
-                    <span className="truncate text-sm">
-                      {session.title || "새 대화"}
-                    </span>
-                  )}
-                </div>
-
-                {!isCollapsed && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteSession(session.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-500 transition-opacity"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </motion.li>
-            ))}
-          </AnimatePresence>
+          ))}
         </ul>
       </div>
 
       {/* 하단 프로필 */}
       <div className="border-t border-[var(--workspace-border)] p-3">
-        <ProfileMenu />
+        <ProfileMenu collapsed={isCollapsed} />
       </div>
     </aside>
   );
