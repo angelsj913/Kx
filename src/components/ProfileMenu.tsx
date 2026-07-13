@@ -18,7 +18,6 @@ const PLAN_LABEL_KEY = {
 
 const ICON = "h-4 w-4 shrink-0";
 
-/** 현재 로그인 사용자 표시명 — 계정마다 달라야 한다. */
 function displayName(user: {
   name?: string | null;
   username?: string | null;
@@ -46,16 +45,26 @@ export default function ProfileMenu({
   const { resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
     if (!open) return;
     function onClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -67,56 +76,43 @@ export default function ProfileMenu({
   const user = session?.user;
   const label = displayName(user);
 
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setOpen(false);
+    // 세션 종료 후 홈페이지 첫 화면으로 (로그아웃 상태)
+    await signOut({ redirect: true, callbackUrl: "/" });
+  }
+
   return (
     <div
       ref={rootRef}
       key={userId ?? "signed-out"}
-      className={`relative shrink-0 overflow-hidden border-t border-[var(--workspace-border)] ${
+      className={`relative z-50 shrink-0 border-t border-[var(--workspace-border)] ${
         collapsed ? "p-1.5" : "p-2 sm:p-3"
       }`}
     >
       {collapsed ? (
-        /* 접힌 상태: 아바타만 중앙 — 테마 토글은 메뉴 안으로 */
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           title={label}
+          aria-expanded={open}
+          aria-haspopup="menu"
           className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
         >
-          {user?.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={user.image}
-              src={user.image}
-              alt=""
-              className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700/60"
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
-              <UserRound className={`${ICON} text-white`} />
-            </div>
-          )}
+          <Avatar user={user} />
         </button>
       ) : (
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-haspopup="menu"
             className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors duration-200 hover:bg-[var(--workspace-bg)]"
           >
-            {user?.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={user.image}
-                src={user.image}
-                alt=""
-                className="h-8 w-8 shrink-0 rounded-full border border-slate-200 dark:border-slate-700/60"
-              />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
-                <UserRound className={`${ICON} text-white`} />
-              </div>
-            )}
+            <Avatar user={user} />
             <span className="min-w-0">
               <span
                 className="block truncate text-xs font-medium text-slate-700 dark:text-slate-200"
@@ -135,62 +131,95 @@ export default function ProfileMenu({
         </div>
       )}
 
+      {/* 프로필 메뉴: 설정 · 로그아웃 */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className={`absolute z-40 mb-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md ${
+            role="menu"
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={`absolute z-[100] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/50 ${
               collapsed
-                ? "bottom-full left-full ml-1 w-52"
-                : "bottom-full left-2 right-2"
+                ? "bottom-2 left-full ml-2 w-52"
+                : "bottom-full left-2 right-2 mb-2"
             }`}
           >
-            {user?.email && (
-              <div className="border-b border-slate-100 px-3.5 py-2 dark:border-slate-800">
-                <p className="truncate text-xs font-medium text-slate-800 dark:text-slate-100">
+            {(user?.email || label) && (
+              <div className="border-b border-slate-100 px-3.5 py-2.5 dark:border-slate-800">
+                <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
                   {label}
                 </p>
-                <p className="truncate text-[11px] text-slate-500">{user.email}</p>
+                {user?.email && (
+                  <p className="mt-0.5 truncate text-[11px] text-slate-500">{user.email}</p>
+                )}
               </div>
             )}
-            {/* 접힌 상태: 테마 전환을 메뉴 항목으로 */}
+
             {collapsed && (
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 {isDark ? <Sun className={ICON} /> : <Moon className={ICON} />}
                 {isDark ? "라이트 모드" : "다크 모드"}
               </button>
             )}
+
             <button
               type="button"
+              role="menuitem"
               onClick={() => {
                 setOpen(false);
                 setSettingsOpen(true);
               }}
-              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
+              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <Settings className={ICON} />
               {t("profile.settings")}
             </button>
+
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-red-500 transition-colors hover:bg-slate-100 dark:text-red-400 dark:hover:bg-slate-800/60"
+              role="menuitem"
+              disabled={loggingOut}
+              onClick={() => void handleLogout()}
+              className="flex w-full items-center gap-2.5 border-t border-slate-100 px-3.5 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-slate-800 dark:text-red-400 dark:hover:bg-red-950/40"
             >
               <LogOut className={ICON} />
-              {t("profile.logout")}
+              {loggingOut ? "로그아웃 중…" : t("profile.logout")}
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+    </div>
+  );
+}
+
+function Avatar({
+  user,
+}: {
+  user?: { image?: string | null } | null;
+}) {
+  if (user?.image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={user.image}
+        src={user.image}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full border border-slate-200 dark:border-slate-700/60"
+      />
+    );
+  }
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
+      <UserRound className={`${ICON} text-white`} />
     </div>
   );
 }

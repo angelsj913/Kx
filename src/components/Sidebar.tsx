@@ -46,8 +46,8 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`relative z-20 flex shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
-        isCollapsed ? "w-16 overflow-visible" : "w-72 overflow-hidden"
+      className={`relative z-30 flex shrink-0 flex-col overflow-visible border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
+        isCollapsed ? "w-16" : "w-72"
       }`}
     >
       {/* 상단: 로고 + 접기/펼치기 (헤더 안에서만) */}
