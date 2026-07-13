@@ -10,6 +10,7 @@ import { friendlyError } from "@/lib/errors";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
 import { getPlanOrFree } from "@/lib/plans";
+import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -157,9 +158,21 @@ export async function POST(request: Request) {
             quickTool?.inputType === "image" ||
             quickTool?.inputType === "audio";
 
+          // 영상 요약: YouTube oEmbed 메타 보강
+          let toolText = text;
+          if (quickToolId === "video-summary") {
+            send({
+              type: "status",
+              key: "status.quicktool.generating",
+              sessionId: resolvedSessionId,
+            });
+            const enriched = await enrichVideoSummaryPrompt(text);
+            toolText = enriched.enrichedText;
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
-            text,
+            text: toolText,
             userId,
             modelTier,
             audio:
@@ -190,6 +203,10 @@ export async function POST(request: Request) {
 
           if (result.outputType === "markdown") {
             replyText = result.text;
+            if (result.file) {
+              fileUrl = result.file.url;
+              fileName = result.file.filename;
+            }
           } else if (result.outputType === "structured") {
             replyText = `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
             resultData = result.resultData;

@@ -16,7 +16,14 @@ import {
   Square,
   Volume2,
   PanelRight,
+  Download,
+  Printer,
 } from "lucide-react";
+import {
+  downloadMarkdown,
+  downloadTextFile,
+  openPrintableHtml,
+} from "@/lib/textExport";
 import { useT } from "@/lib/i18n";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
@@ -643,8 +650,63 @@ export default function ChatWorkspace({
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                   </div>
                 ) : (
-                  <div className="prose-ai max-w-[80%] rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                    <ReactMarkdown>{m.text}</ReactMarkdown>
+                  <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
+                    <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                      <ReactMarkdown>{m.text}</ReactMarkdown>
+                    </div>
+                    {/* 노트·요약·시험지 등 긴 마크다운: 파일 다운로드 */}
+                    {m.text && m.text.length > 80 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {m.fileUrl && m.fileName && (
+                          <a
+                            href={m.fileUrl}
+                            download={m.fileName}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300"
+                          >
+                            <Download className="h-3 w-3" />
+                            .md 저장
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadMarkdown(
+                              (m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "") || "zeff-note",
+                              m.text,
+                            )
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Markdown
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadTextFile(
+                              `${(m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "")}.txt`,
+                              m.text,
+                            )
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        >
+                          TXT
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openPrintableHtml(m.fileName ?? "ZEFF 문서", m.text)
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title="인쇄 대화상자에서 PDF로 저장"
+                        >
+                          <Printer className="h-3 w-3" />
+                          PDF 인쇄
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

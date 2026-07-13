@@ -6,6 +6,7 @@ import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
 import { parseStructured, type StructuredKind } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
+import { exportHeader } from "./videoContext";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -29,7 +30,14 @@ interface Meta {
 }
 
 export type ToolGenerationResult =
-  | { tool: ToolDef; outputType: "markdown"; text: string; meta: Meta }
+  | {
+      tool: ToolDef;
+      outputType: "markdown";
+      text: string;
+      meta: Meta;
+      /** .md 등 텍스트 파일 다운로드용 */
+      file?: { url: string; filename: string; mimeType: string };
+    }
   | {
       tool: ToolDef;
       outputType: "structured";
@@ -46,6 +54,8 @@ export type ToolGenerationResult =
       file: { url: string; filename: string; mimeType: string };
       meta: Meta;
     };
+
+const MD_EXPORT_TOOLS = new Set(["note-a4", "video-summary", "exam-maker", "word-doc", "math-solve"]);
 
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */
 export async function runToolGeneration(
@@ -129,6 +139,41 @@ export async function runToolGeneration(
       file: { url: blob.url, filename: `${tool.fileBaseName}.xlsx`, mimeType: XLSX_MIME },
       meta,
     };
+  }
+
+  // 노트·영상 요약·시험지 등은 .md 파일로 Blob 저장 (다운로드 링크)
+  if (MD_EXPORT_TOOLS.has(tool.id)) {
+    try {
+      input.onUploadStart?.();
+      const kind =
+        tool.id === "note-a4"
+          ? "note"
+          : tool.id === "video-summary"
+            ? "video"
+            : tool.id === "exam-maker"
+              ? "exam"
+              : "generic";
+      const body = `${exportHeader(kind)}\n${raw.trim()}\n`;
+      const blob = await put(
+        `exports/${input.userId}/${tool.fileBaseName}-${Date.now()}.md`,
+        body,
+        { access: "public", contentType: "text/markdown; charset=utf-8" },
+      );
+      return {
+        tool,
+        outputType: "markdown",
+        text: raw,
+        meta,
+        file: {
+          url: blob.url,
+          filename: `${tool.fileBaseName}.md`,
+          mimeType: "text/markdown",
+        },
+      };
+    } catch (err) {
+      console.error("[markdown export upload]", err);
+      // 업로드 실패해도 본문 응답은 유지
+    }
   }
 
   return { tool, outputType: "markdown", text: raw, meta };
