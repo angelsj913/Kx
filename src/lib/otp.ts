@@ -3,8 +3,11 @@ import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
 export type OtpChannel = "email" | "sms";
-export type OtpPurpose = "signup" | "find-id" | "find-password";
-
+export type OtpPurpose = 
+  | "signup" 
+  | "find-id" 
+  | "find-password" 
+  | "workspace-delete";     // ← 이 줄 추가
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
 export function generateCode(): string {
