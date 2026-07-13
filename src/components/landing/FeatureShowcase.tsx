@@ -144,8 +144,13 @@ export default function FeatureShowcase() {
   const copy = useLocalCopy(COPY);
 
   return (
-    <section className="bg-white py-20 dark:bg-slate-900/40">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="relative bg-gradient-to-b from-white via-white to-slate-50 py-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
+      {/* 위 요금제 섹션에서 이어지는 상단 페이드 (이음새 제거) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/0 via-white/40 to-transparent dark:from-slate-950 dark:via-slate-950/80 dark:to-transparent"
+      />
+      <div className="relative mx-auto max-w-5xl px-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
             {copy.title}
