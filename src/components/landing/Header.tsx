@@ -31,24 +31,18 @@ export default function Header() {
   const session = sessionResult?.data ?? null;
   const status = sessionResult?.status ?? "unauthenticated";
   const isLoggedIn = status === "authenticated";
+  // 세션의 isAdmin (Google/이메일 공통) + 이메일 fallback
+  const sessionEmail = (session?.user?.email ?? "").toLowerCase();
+  const isAdmin =
+    isLoggedIn &&
+    (!!session?.user?.isAdmin ||
+      sessionEmail === "zeff@zeffai.com" ||
+      sessionEmail === "kxeung9@gmail.com");
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const langRef = useRef<HTMLDivElement | null>(null);
-
-  // 관리자 여부 확인
-  useEffect(() => {
-    let ignore = false;
-    fetch("/api/auth/session")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!ignore) setIsAdmin(!!d?.user?.isAdmin);
-      })
-      .catch(() => {});
-    return () => { ignore = true; };
-  }, []);
 
   useEffect(() => {
     function onScroll() { setScrolled(window.scrollY > 8); }

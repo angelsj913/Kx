@@ -54,6 +54,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             : undefined;
         if (username) token.username = username;
       }
+      // Google / 이메일 공통: 매 요청 관리자 여부 재계산
+      const email =
+        (typeof token.email === "string" && token.email) ||
+        (user && typeof user.email === "string" ? user.email : null);
+      token.isAdmin = isAdminEmail(email);
       return token;
     },
     session({ session, token }) {
@@ -63,7 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (typeof token?.email === "string") session.user.email = token.email;
         if (typeof token?.picture === "string") session.user.image = token.picture;
         if (typeof token?.username === "string") session.user.username = token.username;
-        session.user.isAdmin = isAdminEmail(session.user.email);
+        session.user.isAdmin =
+          token?.isAdmin === true || isAdminEmail(session.user.email);
       }
       return session;
     },
