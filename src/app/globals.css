@@ -37,6 +37,16 @@ body {
   }
 }
 
+/* 브랜드 로고 로딩 스핀 */
+@keyframes zeff-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 라이트: 연한 slate 시머 / 다크: 더 밝은 하이라이트로 대비 확보 */
 .skeleton-shimmer {
   background: linear-gradient(

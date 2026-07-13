@@ -59,7 +59,7 @@ export default function WorkspaceSwitcher() {
         className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60"
       >
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
             active
               ? "bg-blue-600/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300"
               : "bg-slate-200 text-slate-500 dark:bg-slate-700/50 dark:text-slate-300"

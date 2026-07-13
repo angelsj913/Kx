@@ -4,10 +4,10 @@ import Image from "next/image";
 
 type LogoSize = "sm" | "md" | "lg";
 
-const MARK_PX: Record<LogoSize, number> = { sm: 24, md: 32, lg: 40 };
+const MARK_PX: Record<LogoSize, number> = { sm: 28, md: 36, lg: 44 };
 const TEXT_CLS: Record<LogoSize, string> = {
-  sm: "text-sm",
-  md: "text-lg",
+  sm: "text-base",
+  md: "text-xl",
   lg: "text-2xl",
 };
 
@@ -20,10 +20,13 @@ export default function Logo({
   size = "md",
   withWordmark = true,
   className = "",
+  /** AI 작업 중 로딩 표시용 — 마크만 회전 */
+  spin = false,
 }: {
   size?: LogoSize;
   withWordmark?: boolean;
   className?: string;
+  spin?: boolean;
 }) {
   const px = MARK_PX[size];
   return (
@@ -34,7 +37,9 @@ export default function Logo({
         width={px}
         height={px}
         priority
-        className="shrink-0 rounded-md transition-[filter] duration-300 dark:invert"
+        className={`shrink-0 rounded-md transition-[filter] duration-300 dark:invert ${
+          spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
+        }`}
       />
       {withWordmark && (
         <span

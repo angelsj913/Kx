@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { setAppLanguage, type AppLanguage } from "./i18n";
 
 export interface UserSettings {
@@ -16,12 +17,31 @@ async function fetchSettings(): Promise<UserSettings> {
   return data.settings;
 }
 
-export function useSettings() {
+/**
+ * 사용자별 설정. `userId` 가 바뀌면(다른 계정 로그인) 다시 불러온다.
+ * 인자 생략 시 현재 세션의 user.id 를 쓴다.
+ */
+export function useSettings(userId?: string | null) {
+  const { data: session } = useSession();
+  const resolvedUserId =
+    userId !== undefined ? userId : (session?.user?.id ?? null);
+
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let ignore = false;
+
+    if (!resolvedUserId) {
+      setSettings(null);
+      setLoading(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setLoading(true);
+    setSettings(null); // 이전 사용자 설정이 잠깐이라도 보이지 않게
     (async () => {
       try {
         const s = await fetchSettings();
@@ -33,10 +53,11 @@ export function useSettings() {
         if (!ignore) setLoading(false);
       }
     })();
+
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [resolvedUserId]);
 
   const patch = useCallback(async (body: Partial<UserSettings>) => {
     const res = await fetch("/api/settings", {

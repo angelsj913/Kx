@@ -13,9 +13,10 @@ export default async function AppLayout({
     redirect("/login?callbackUrl=/app");
   }
 
+  // key=userId: 다른 계정으로 로그인하면 클라이언트 상태(프로필/워크스페이스)를 통째로 리셋
   return (
-    <SessionProvider session={session}>
-      <WorkspaceProvider>{children}</WorkspaceProvider>
+    <SessionProvider session={session} refetchOnWindowFocus>
+      <WorkspaceProvider key={session.user.id}>{children}</WorkspaceProvider>
     </SessionProvider>
   );
 }

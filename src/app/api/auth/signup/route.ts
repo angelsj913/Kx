@@ -52,6 +52,8 @@ export async function POST(request: Request) {
       data: {
         email,
         username,
+        // 프로필 표시용 — name 이 비면 UI 가 전부 "사용자"로 같아 보인다
+        name: username,
         passwordHash,
         phone,
         emailVerified: new Date(),

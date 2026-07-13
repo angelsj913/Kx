@@ -26,7 +26,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        return { id: user.id, email: user.email, name: user.name, image: user.image };
+        // name 이 비어 있으면 username 으로 표시 (이메일 가입 사용자)
+        const displayName = user.name?.trim() || user.username || user.email;
+        return {
+          id: user.id,
+          email: user.email,
+          name: displayName,
+          image: user.image,
+          username: user.username ?? undefined,
+        };
       },
     }),
   ],
@@ -34,14 +42,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id;
+      // 로그인 시마다 토큰에 해당 사용자 정보를 다시 심어, 다른 계정 전환 시 프로필이 갱신되게 한다.
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
+        const username =
+          "username" in user && typeof user.username === "string"
+            ? user.username
+            : undefined;
+        if (username) token.username = username;
+      }
       return token;
     },
     session({ session, token }) {
-      if (token?.id && session.user) {
-        session.user.id = token.id as string;
-      }
       if (session.user) {
+        if (token?.id) session.user.id = token.id as string;
+        if (typeof token?.name === "string") session.user.name = token.name;
+        if (typeof token?.email === "string") session.user.email = token.email;
+        if (typeof token?.picture === "string") session.user.image = token.picture;
+        if (typeof token?.username === "string") session.user.username = token.username;
         session.user.isAdmin = isAdminEmail(session.user.email);
       }
       return session;
