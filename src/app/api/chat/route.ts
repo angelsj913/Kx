@@ -134,7 +134,10 @@ export async function POST(request: Request) {
     where: { id: resolvedSessionId },
     data: {
       updatedAt: new Date(),
-      ...(chatSession.title ? {} : { title: text.slice(0, 40) || "새 대화" }),
+      // 빈 제목·기본 "새 대화" 는 첫 메시지로 제목 갱신
+      ...(!chatSession.title || chatSession.title === "새 대화"
+        ? { title: text.slice(0, 40) || "새 대화" }
+        : {}),
     },
   });
 

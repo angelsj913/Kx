@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import ChatWorkspace from "@/components/ChatWorkspace";
@@ -16,7 +16,43 @@ export default function AppWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [view, setView] = useState<AppView>("chat");
   const [mobileNav, setMobileNav] = useState(false);
-  const { sessions, refetch, removeSession } = useSessions();
+  const { sessions, loading, refetch, removeSession, createSession, upsertSession } =
+    useSessions();
+  const bootstrapped = useRef(false);
+
+  /** 새 대화: DB 세션을 바로 만들어 라이브러리에 즉시 표시 */
+  const handleNewChat = useCallback(async () => {
+    setView("chat");
+    setMobileNav(false);
+    try {
+      const s = await createSession("새 대화");
+      setActiveSessionId(s.id);
+    } catch {
+      setActiveSessionId(null);
+    }
+  }, [createSession]);
+
+  // 앱 진입 시 활성 세션이 없으면 빈 대화를 하나 만들어 목록에 바로 보이게
+  useEffect(() => {
+    if (loading || bootstrapped.current) return;
+    bootstrapped.current = true;
+    if (activeSessionId) return;
+
+    if (sessions.length > 0) {
+      // 가장 최근 대화 선택 (입력 전에도 라이브러리에 기존 목록 표시)
+      setActiveSessionId(sessions[0].id);
+      return;
+    }
+
+    void (async () => {
+      try {
+        const s = await createSession("새 대화");
+        setActiveSessionId(s.id);
+      } catch {
+        /* 로그인 직후 등 실패 시 무시 — 첫 메시지로 생성됨 */
+      }
+    })();
+  }, [loading, sessions, activeSessionId, createSession]);
 
   return (
     <div
@@ -58,13 +94,16 @@ export default function AppWorkspace() {
             setMobileNav(false);
           }}
           onNewChat={() => {
-            setActiveSessionId(null);
-            setView("chat");
-            setMobileNav(false);
+            void handleNewChat();
           }}
           onDeleteSession={async (id) => {
             await removeSession(id);
-            if (id === activeSessionId) setActiveSessionId(null);
+            if (id === activeSessionId) {
+              // 삭제 후 다음 세션 또는 새 대화
+              const next = sessions.find((s) => s.id !== id);
+              if (next) setActiveSessionId(next.id);
+              else void handleNewChat();
+            }
           }}
           onOpenLibrary={() => {
             setView("library");
@@ -101,9 +140,17 @@ export default function AppWorkspace() {
               sessionId={activeSessionId}
               onSessionCreated={(id) => {
                 setActiveSessionId(id);
-                refetch();
+                upsertSession({
+                  id,
+                  title: "새 대화",
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                });
+                void refetch();
               }}
-              onTurnSaved={refetch}
+              onTurnSaved={() => {
+                void refetch();
+              }}
             />
           )}
           {view === "library" && (

@@ -300,6 +300,10 @@ export default function ChatWorkspace({
   }, [messages, loading]);
 
   useEffect(() => {
+    // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
+    setMessages([]);
+    setError("");
+    setStatusKey(null);
     if (!sessionId) return;
     let ignore = false;
     (async () => {
