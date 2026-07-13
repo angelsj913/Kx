@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Settings, UserRound } from "lucide-react";
+import { LogOut, Settings, UserRound, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
 import SettingsModal from "./SettingsModal";
@@ -33,14 +34,20 @@ function displayName(user: {
   return "사용자";
 }
 
-export default function ProfileMenu() {
+export default function ProfileMenu({
+  collapsed = false,
+}: {
+  collapsed?: boolean;
+}) {
   const t = useT();
   const { data: session, status } = useSession();
   const userId = session?.user?.id ?? null;
   const settingsHook = useSettings(userId);
+  const { resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
     if (!open) return;
@@ -64,17 +71,17 @@ export default function ProfileMenu() {
     <div
       ref={rootRef}
       key={userId ?? "signed-out"}
-      className="relative shrink-0 overflow-visible border-t border-slate-200 p-2 dark:border-slate-800 sm:p-3"
+      className={`relative shrink-0 overflow-hidden border-t border-[var(--workspace-border)] ${
+        collapsed ? "p-1.5" : "p-2 sm:p-3"
+      }`}
     >
-      {/*
-        좁은 사이드바(w-16): 세로 스택 → 토글이 가로로 넘치지 않음
-        sm+: 가로 배치 (아바타+이름 | 토글)
-      */}
-      <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-1.5">
+      {collapsed ? (
+        /* 접힌 상태: 아바타만 중앙 — 테마 토글은 메뉴 안으로 */
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex min-w-0 w-full flex-1 items-center justify-center gap-2.5 rounded-xl px-1 py-2 text-left transition-colors duration-200 hover:bg-slate-100 sm:justify-start sm:px-2 dark:hover:bg-slate-800/60"
+          title={label}
+          className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
         >
           {user?.image ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -82,31 +89,51 @@ export default function ProfileMenu() {
               key={user.image}
               src={user.image}
               alt=""
-              className="h-8 w-8 shrink-0 rounded-full border border-slate-200 dark:border-slate-700/60"
+              className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700/60"
             />
           ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
               <UserRound className={`${ICON} text-white`} />
             </div>
           )}
-          <span className="hidden min-w-0 sm:block">
-            <span
-              className="block truncate text-xs font-medium text-slate-700 dark:text-slate-200"
-              title={user?.email ?? label}
-            >
-              {status === "loading" ? "…" : label}
-            </span>
-            <span className="block truncate text-[11px] text-slate-500 dark:text-slate-500">
-              {t(PLAN_LABEL_KEY[plan])}
-            </span>
-          </span>
         </button>
-
-        {/* 사이드바 안쪽에 고정 — 아이콘 전환 모션이 밖으로 튀지 않도록 클립 */}
-        <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full">
-          <ThemeToggle className="shrink-0" compact />
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors duration-200 hover:bg-[var(--workspace-bg)]"
+          >
+            {user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={user.image}
+                src={user.image}
+                alt=""
+                className="h-8 w-8 shrink-0 rounded-full border border-slate-200 dark:border-slate-700/60"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
+                <UserRound className={`${ICON} text-white`} />
+              </div>
+            )}
+            <span className="min-w-0">
+              <span
+                className="block truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+                title={user?.email ?? label}
+              >
+                {status === "loading" ? "…" : label}
+              </span>
+              <span className="block truncate text-[11px] text-slate-500">
+                {t(PLAN_LABEL_KEY[plan])}
+              </span>
+            </span>
+          </button>
+          <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full">
+            <ThemeToggle className="shrink-0" compact />
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {open && (
@@ -115,7 +142,11 @@ export default function ProfileMenu() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="absolute bottom-full left-1 right-1 z-40 mb-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:left-3 sm:right-3 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
+            className={`absolute z-40 mb-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md ${
+              collapsed
+                ? "bottom-full left-full ml-1 w-52"
+                : "bottom-full left-2 right-2"
+            }`}
           >
             {user?.email && (
               <div className="border-b border-slate-100 px-3.5 py-2 dark:border-slate-800">
@@ -124,6 +155,17 @@ export default function ProfileMenu() {
                 </p>
                 <p className="truncate text-[11px] text-slate-500">{user.email}</p>
               </div>
+            )}
+            {/* 접힌 상태: 테마 전환을 메뉴 항목으로 */}
+            {collapsed && (
+              <button
+                type="button"
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
+              >
+                {isDark ? <Sun className={ICON} /> : <Moon className={ICON} />}
+                {isDark ? "라이트 모드" : "다크 모드"}
+              </button>
             )}
             <button
               type="button"

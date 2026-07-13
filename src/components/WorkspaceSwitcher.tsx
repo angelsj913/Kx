@@ -6,7 +6,11 @@ import { Users, Check, Plus, ChevronDown, Settings, User as UserIcon } from "luc
 import { useWorkspace } from "@/lib/workspaceClient";
 import WorkspaceModal from "./WorkspaceModal";
 
-export default function WorkspaceSwitcher() {
+export default function WorkspaceSwitcher({
+  collapsed = false,
+}: {
+  collapsed?: boolean;
+}) {
   const { activeId, active, workspaces, setActiveId, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -25,6 +29,14 @@ export default function WorkspaceSwitcher() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  // 접히면 드롭다운 닫기
+  useEffect(() => {
+    if (collapsed) {
+      setOpen(false);
+      setCreating(false);
+    }
+  }, [collapsed]);
 
   async function createWorkspace() {
     const trimmed = name.trim();
@@ -52,11 +64,21 @@ export default function WorkspaceSwitcher() {
   const label = active ? active.name : "개인 워크스페이스";
 
   return (
-    <div ref={ref} className="relative border-b border-slate-200 px-2 py-2 dark:border-slate-800/60 sm:px-3">
+    <div
+      ref={ref}
+      className={`relative shrink-0 border-b border-[var(--workspace-border)] ${
+        collapsed ? "px-1.5 py-1.5" : "px-2 py-2"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60"
+        title={collapsed ? label : undefined}
+        className={`flex w-full items-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)] ${
+          collapsed
+            ? "justify-center px-0 py-1.5"
+            : "gap-2 px-2 py-2 text-left"
+        }`}
       >
         <span
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
@@ -67,15 +89,19 @@ export default function WorkspaceSwitcher() {
         >
           {active ? <Users className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
         </span>
-        <span className="hidden min-w-0 flex-1 sm:block">
-          <span className="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
-            {label}
-          </span>
-          <span className="block truncate text-[10px] text-slate-500 dark:text-slate-500">
-            {active ? `멤버 ${active.memberCount}명 · ${roleLabel(active.role)}` : "나만의 공간"}
-          </span>
-        </span>
-        <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 sm:block" />
+        {!collapsed && (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+                {label}
+              </span>
+              <span className="block truncate text-[10px] text-slate-500">
+                {active ? `멤버 ${active.memberCount}명 · ${roleLabel(active.role)}` : "나만의 공간"}
+              </span>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+          </>
+        )}
       </button>
 
       <AnimatePresence>
@@ -85,7 +111,11 @@ export default function WorkspaceSwitcher() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-2 right-2 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md sm:left-3 sm:right-3"
+            className={`absolute z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md ${
+              collapsed
+                ? "left-full top-0 ml-1 w-56"
+                : "left-2 right-2 top-full"
+            }`}
           >
             <ul className="max-h-64 overflow-y-auto p-1">
               <ScopeRow

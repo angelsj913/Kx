@@ -44,19 +44,16 @@ export default function Sidebar({
   const t = useT();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const collapsedWidth = "w-[64px]";
-  const expandedWidth = "w-72";
-
   return (
     <aside
-      className={`flex shrink-0 flex-col overflow-x-hidden border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-all duration-300 ${
-        isCollapsed ? collapsedWidth : expandedWidth
+      className={`relative z-20 flex shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
+        isCollapsed ? "w-16 overflow-visible" : "w-72 overflow-hidden"
       }`}
     >
-      {/* 상단: 확대 로고 + 접기 버튼 */}
+      {/* 상단: 로고 + 접기/펼치기 (헤더 안에서만) */}
       <div
-        className={`flex h-16 items-center border-b border-[var(--workspace-border)] px-2 ${
-          isCollapsed ? "justify-center" : "justify-between gap-1 px-3"
+        className={`flex h-14 shrink-0 items-center border-b border-[var(--workspace-border)] ${
+          isCollapsed ? "justify-center px-1" : "justify-between gap-1 px-3"
         }`}
       >
         {isCollapsed ? (
@@ -64,43 +61,47 @@ export default function Sidebar({
             type="button"
             onClick={() => setIsCollapsed(false)}
             title="사이드바 펼치기"
-            className="flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-[var(--workspace-bg)]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
           >
-            <Logo size="md" withWordmark={false} />
+            <Logo size="sm" withWordmark={false} />
           </button>
         ) : (
           <>
-            <Logo size="md" withWordmark />
+            <Logo size="md" withWordmark className="min-w-0" />
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
               title="사이드바 접기"
-              className="shrink-0 rounded-lg p-1.5 text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)]"
             >
               <ChevronLeft size={ICON} />
             </button>
           </>
         )}
-        {isCollapsed && (
+      </div>
+
+      {/* 접힌 상태: 헤더 아래 펼치기 버튼 (라인 안으로) */}
+      {isCollapsed && (
+        <div className="flex shrink-0 items-center justify-center border-b border-[var(--workspace-border)] py-1">
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            className="absolute left-0 top-14 flex w-16 items-center justify-center py-1 text-[var(--workspace-text-secondary)] hover:text-blue-600"
             title="사이드바 펼치기"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)] hover:text-blue-600"
           >
             <ChevronRight size={ICON} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <WorkspaceSwitcher />
+      <WorkspaceSwitcher collapsed={isCollapsed} />
 
-      <div className="flex flex-col gap-1 p-2">
+      <div className={`flex flex-col gap-1 ${isCollapsed ? "p-1.5" : "p-2"}`}>
         <button
           type="button"
           onClick={onNewChat}
           title={isCollapsed ? t("sidebar.newChat") : undefined}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md transition-all hover:brightness-105"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md transition-all hover:brightness-105"
         >
           <Plus size={ICON} className="shrink-0" />
           {!isCollapsed && <span className="font-semibold">{t("sidebar.newChat")}</span>}
@@ -135,7 +136,7 @@ export default function Sidebar({
         </NavItem>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-2 pb-2">
+      <div className={`flex min-h-0 flex-1 flex-col pb-2 ${isCollapsed ? "px-1.5" : "px-2"}`}>
         {!isCollapsed && (
           <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--workspace-text-secondary)]">
             {t("sidebar.library")}
@@ -153,8 +154,8 @@ export default function Sidebar({
                 type="button"
                 onClick={() => onSelectSession(s.id)}
                 title={s.title || t("sidebar.newChat")}
-                className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition-colors ${
-                  isCollapsed ? "justify-center" : "justify-between"
+                className={`group flex w-full items-center gap-2 rounded-xl py-2 text-left text-sm transition-colors ${
+                  isCollapsed ? "justify-center px-0" : "justify-between px-2.5"
                 } ${
                   s.id === activeSessionId
                     ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
@@ -195,7 +196,7 @@ export default function Sidebar({
         </ul>
       </div>
 
-      <ProfileMenu />
+      <ProfileMenu collapsed={isCollapsed} />
     </aside>
   );
 }
@@ -220,8 +221,8 @@ function NavItem({
       type="button"
       onClick={onClick}
       title={collapsed ? title : undefined}
-      className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm transition-colors ${
-        collapsed ? "justify-center px-0" : ""
+      className={`flex h-10 w-full items-center rounded-xl text-sm transition-colors ${
+        collapsed ? "justify-center px-0" : "gap-3 px-3"
       } ${
         active
           ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
