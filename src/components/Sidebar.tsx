@@ -6,7 +6,7 @@ import {
   MessageSquare,
   Trash2,
   BookOpen,
-  Brain,
+  Kanban,
   Database,
   ChevronLeft,
   ChevronRight,
@@ -28,17 +28,17 @@ export default function Sidebar({
   onNewChat,
   onDeleteSession,
   onOpenLibrary,
-  onOpenReview,
+  onOpenBoard,
   onOpenRag,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
-  activeView: "chat" | "library" | "review" | "rag";
+  activeView: "chat" | "library" | "board" | "rag";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenLibrary: () => void;
-  onOpenReview: () => void;
+  onOpenBoard: () => void;
   onOpenRag: () => void;
 }) {
   const t = useT();
@@ -117,13 +117,13 @@ export default function Sidebar({
           {t("sidebar.myLibrary")}
         </NavItem>
         <NavItem
-          active={activeView === "review"}
+          active={activeView === "board"}
           collapsed={isCollapsed}
-          onClick={onOpenReview}
-          title="복습"
-          icon={<Brain size={ICON} className="shrink-0" />}
+          onClick={onOpenBoard}
+          title="워크보드"
+          icon={<Kanban size={ICON} className="shrink-0" />}
         >
-          복습
+          워크보드
         </NavItem>
         <NavItem
           active={activeView === "rag"}

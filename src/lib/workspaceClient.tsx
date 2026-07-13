@@ -18,6 +18,8 @@ export interface WorkspaceSummary {
   name: string;
   role: "owner" | "admin" | "member";
   memberCount: number;
+  imageUrl?: string | null;
+  inviteCode?: string | null;
 }
 
 const WS_KEY_PREFIX = "kx.activeWorkspace";

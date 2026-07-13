@@ -8,6 +8,7 @@ import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
+import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
 import type { ChatMessage } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -54,6 +55,17 @@ export async function POST(request: Request) {
 
   if (!text && uploads.length === 0) {
     return NextResponse.json({ error: "메시지를 입력해 주세요." }, { status: 400 });
+  }
+
+  try {
+    await assertAndConsumeQuota(userId, quickToolId, {
+      isNewSession: !sessionId,
+    });
+  } catch (err) {
+    if (err instanceof QuotaError) {
+      return NextResponse.json({ error: err.message, code: "QUOTA" }, { status: 402 });
+    }
+    throw err;
   }
 
   let chatSession;

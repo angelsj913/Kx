@@ -29,10 +29,13 @@ model User {
   orders       Order[]
   settings     UserSettings?
 
-  ownedWorkspaces      Workspace[]       @relation("WorkspaceOwner")
+  ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
-  sentInvites          WorkspaceInvite[] @relation("InviteSender")
+  sentInvites          WorkspaceInvite[]     @relation("InviteSender")
   reviewCards          ReviewCard[]
+  paymentMethods       SavedPaymentMethod[]
+  usageCounters        UsageCounter[]
+  boardTasks           WorkBoardTask[]
 }
 
 model Account {
@@ -237,11 +240,14 @@ model Inquiry {
 // ── 팀 워크스페이스 (협업: 여러 명이 같은 세션·서재 공유) ──
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  ownerId    String
+  imageUrl   String?
+  /** 짧은 초대 코드 — 상대가 붙여넣어 가입 */
+  inviteCode String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   owner        User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members      WorkspaceMember[]
@@ -249,6 +255,7 @@ model Workspace {
   chatSessions ChatSession[]
   libraryItems LibraryItem[]
   reviewCards  ReviewCard[]
+  boardTasks   WorkBoardTask[]
 
   @@index([ownerId])
 }
@@ -315,4 +322,53 @@ model Order {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+}
+
+/** 자체 결제수단 UI용(플랫폼 연동 전 로컬 저장). brand=visa|mastercard|amex|local 등 */
+model SavedPaymentMethod {
+  id        String   @id @default(cuid())
+  userId    String
+  brand     String
+  last4     String
+  holder    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/** 요금제 쿼터 집계 — periodKey: YYYY-MM 또는 YYYY-Www */
+model UsageCounter {
+  id        String   @id @default(cuid())
+  userId    String
+  feature   String
+  periodKey String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feature, periodKey])
+  @@index([userId, feature])
+}
+
+/** 워크보드 칸반 태스크 (복습 스케줄러 대체) */
+model WorkBoardTask {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String?
+  title       String
+  description String?   @db.Text
+  status      String    @default("todo") // todo | doing | done
+  priority    String    @default("normal") // low | normal | high
+  dueAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, updatedAt])
+  @@index([workspaceId, status])
 }

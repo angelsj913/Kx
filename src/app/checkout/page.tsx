@@ -7,13 +7,13 @@ import { useSearchParams } from "next/navigation";
 import { Loader2, CreditCard, AlertCircle } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PLANS } from "@/lib/plans";
+import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
 
 function CheckoutInner() {
   const params = useSearchParams();
   const planId = params.get("plan") ?? "";
   const canceled = params.get("canceled") === "1";
-  const plan = PLANS[planId];
+  const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
 
   const [state, setState] = useState<"init" | "loading" | "stub" | "error">(
     !plan ? "error" : canceled ? "init" : "loading"

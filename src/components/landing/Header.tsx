@@ -112,22 +112,28 @@ export default function Header() {
             {/* 로그인 상태에 따른 버튼 (안전하게 처리) */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
+                <span className="hidden max-w-[8rem] truncate text-xs font-medium text-slate-600 sm:inline dark:text-slate-300">
+                  {session?.user?.name || session?.user?.email || "프로필"}
+                </span>
                 <button
+                  type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                  className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 sm:inline dark:text-slate-300 dark:hover:text-white"
                 >
                   로그아웃
                 </button>
-
                 <Link
                   href="/app"
-                  className="workspace-btn-primary rounded-xl px-5 py-2 text-sm font-semibold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.985]"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.985] sm:px-5"
                 >
                   웹에서 시작하기
                 </Link>
               </div>
             ) : (
-              <Link href="/login" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              >
                 {t("header.login")}
               </Link>
             )}

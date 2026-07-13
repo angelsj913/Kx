@@ -21,7 +21,7 @@ import { useT } from "@/lib/i18n";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
-import { QUICK_TOOLS, isQuickToolEnabled } from "@/lib/quickTools";
+import { groupedQuickTools } from "@/lib/quickTools";
 import type { ToolDef } from "@/lib/tools";
 import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
@@ -507,12 +507,7 @@ export default function ChatWorkspace({
       : !loading && !requiresAttachment && draft.trim().length > 0;
 
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
-  const officeTools = QUICK_TOOLS.filter(
-    (tool) => tool.appMode === "office" && isQuickToolEnabled(enabledQuickTools, tool.id),
-  );
-  const studentTools = QUICK_TOOLS.filter(
-    (tool) => tool.appMode === "student" && isQuickToolEnabled(enabledQuickTools, tool.id),
-  );
+  const featureGroups = groupedQuickTools(enabledQuickTools);
 
   const artifacts = useMemo(() => buildArtifacts(messages), [messages]);
   const planSteps = useMemo(
@@ -766,24 +761,19 @@ export default function ChatWorkspace({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 8 }}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="absolute bottom-full left-0 z-20 mb-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
+                    className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                   >
-                    <QuickToolGroup
-                      label={t("chat.quickActions.office")}
-                      tools={officeTools}
-                      onSelect={(tool) => {
-                        setActiveQuickTool(tool);
-                        setQuickActionsOpen(false);
-                      }}
-                    />
-                    <QuickToolGroup
-                      label={t("chat.quickActions.student")}
-                      tools={studentTools}
-                      onSelect={(tool) => {
-                        setActiveQuickTool(tool);
-                        setQuickActionsOpen(false);
-                      }}
-                    />
+                    {featureGroups.map((g) => (
+                      <QuickToolGroup
+                        key={g.id}
+                        label={g.label}
+                        tools={g.tools}
+                        onSelect={(tool) => {
+                          setActiveQuickTool(tool);
+                          setQuickActionsOpen(false);
+                        }}
+                      />
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -14,8 +14,11 @@ export default function WorkspaceSwitcher({
   const { activeId, active, workspaces, setActiveId, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [name, setName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [manageId, setManageId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -42,6 +45,7 @@ export default function WorkspaceSwitcher({
     const trimmed = name.trim();
     if (!trimmed || busy) return;
     setBusy(true);
+    setError("");
     try {
       const res = await fetch("/api/workspaces", {
         method: "POST",
@@ -55,6 +59,34 @@ export default function WorkspaceSwitcher({
         setName("");
         setCreating(false);
         setOpen(false);
+      } else {
+        setError(data?.error ?? "생성 실패");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function joinWorkspace() {
+    const code = joinCode.trim();
+    if (!code || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/workspaces/join", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.workspace) {
+        await refresh();
+        setActiveId(data.workspace.id);
+        setJoinCode("");
+        setJoining(false);
+        setOpen(false);
+      } else {
+        setError(data?.error ?? "가입 실패");
       }
     } finally {
       setBusy(false);
@@ -148,6 +180,9 @@ export default function WorkspaceSwitcher({
             </ul>
 
             <div className="border-t border-slate-200 p-1 dark:border-slate-800/70">
+              {error && (
+                <p className="px-2.5 py-1 text-[11px] text-red-500">{error}</p>
+              )}
               {creating ? (
                 <div className="flex items-center gap-1.5 p-1.5">
                   <input
@@ -168,14 +203,49 @@ export default function WorkspaceSwitcher({
                     생성
                   </button>
                 </div>
+              ) : joining ? (
+                <div className="flex items-center gap-1.5 p-1.5">
+                  <input
+                    autoFocus
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === "Enter" && joinWorkspace()}
+                    placeholder="초대 코드 붙여넣기"
+                    maxLength={16}
+                    className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs uppercase tracking-wider text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={joinWorkspace}
+                    disabled={busy || !joinCode.trim()}
+                    className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    가입
+                  </button>
+                </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setCreating(true)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-slate-100 dark:text-blue-300 dark:hover:bg-slate-800/60"
-                >
-                  <Plus className="h-4 w-4" />새 워크스페이스 만들기
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreating(true);
+                      setJoining(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-slate-100 dark:text-blue-300 dark:hover:bg-slate-800/60"
+                  >
+                    <Plus className="h-4 w-4" />새 워크스페이스 만들기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setJoining(true);
+                      setCreating(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                  >
+                    초대 코드로 가입
+                  </button>
+                </>
               )}
             </div>
           </motion.div>

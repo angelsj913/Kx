@@ -24,6 +24,8 @@ export interface WorkspaceSummary {
   role: WorkspaceRole;
   memberCount: number;
   createdAt: string;
+  imageUrl?: string | null;
+  inviteCode?: string | null;
 }
 
 /** 요청 처리 중 조기 반환을 위한 에러(라우트에서 status로 변환). */
@@ -55,6 +57,8 @@ export async function getMyWorkspaces(userId: string): Promise<WorkspaceSummary[
     role: m.role as WorkspaceRole,
     memberCount: m.workspace._count.members,
     createdAt: m.workspace.createdAt.toISOString(),
+    imageUrl: m.workspace.imageUrl,
+    inviteCode: m.role === "owner" || m.role === "admin" ? m.workspace.inviteCode : null,
   }));
 }
 
@@ -140,12 +144,22 @@ export async function itemAccessWhere(userId: string) {
     : { userId };
 }
 
+/** 짧은 초대 코드 (8자, 혼동 문자 제외). */
+export function newInviteCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(8);
+  let out = "";
+  for (let i = 0; i < 8; i++) out += alphabet[bytes[i]! % alphabet.length];
+  return out;
+}
+
 /** 새 워크스페이스 생성 + 생성자를 owner 멤버로 등록. */
 export async function createWorkspace(userId: string, name: string) {
   return prisma.workspace.create({
     data: {
       name,
       ownerId: userId,
+      inviteCode: newInviteCode(),
       members: { create: { userId, role: "owner" } },
     },
   });
@@ -157,3 +171,51 @@ export function newInviteToken(): string {
 }
 
 export const INVITE_TTL_DAYS = 14;
+
+/** 코드로 워크스페이스 가입 (이미 멤버면 그대로 반환). */
+export async function joinByInviteCode(userId: string, rawCode: string) {
+  const code = rawCode.trim().toUpperCase().replace(/\s+/g, "");
+  if (code.length < 4) throw new WorkspaceError("초대 코드를 확인해 주세요.", 400);
+
+  const ws = await prisma.workspace.findFirst({
+    where: { inviteCode: code },
+  });
+  if (!ws) throw new WorkspaceError("유효하지 않은 초대 코드입니다.", 404);
+
+  const existing = await getMembership(ws.id, userId);
+  if (existing) return { workspace: ws, alreadyMember: true as const };
+
+  await prisma.workspaceMember.create({
+    data: { workspaceId: ws.id, userId, role: "member" },
+  });
+  return { workspace: ws, alreadyMember: false as const };
+}
+
+/** 대표 권한 양도 — 대상 멤버를 owner로, 기존 owner를 member로. */
+export async function transferOwnership(
+  workspaceId: string,
+  currentOwnerId: string,
+  newOwnerId: string,
+) {
+  if (currentOwnerId === newOwnerId) {
+    throw new WorkspaceError("이미 대표인 멤버입니다.", 400);
+  }
+  await requireRole(workspaceId, currentOwnerId, "owner");
+  const target = await getMembership(workspaceId, newOwnerId);
+  if (!target) throw new WorkspaceError("양도 대상이 멤버가 아닙니다.", 400);
+
+  await prisma.$transaction([
+    prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { ownerId: newOwnerId },
+    }),
+    prisma.workspaceMember.update({
+      where: { workspaceId_userId: { workspaceId, userId: newOwnerId } },
+      data: { role: "owner" },
+    }),
+    prisma.workspaceMember.update({
+      where: { workspaceId_userId: { workspaceId, userId: currentOwnerId } },
+      data: { role: "member" },
+    }),
+  ]);
+}
