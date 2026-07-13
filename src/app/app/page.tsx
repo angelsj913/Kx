@@ -1,72 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import ChatWorkspace from "@/components/ChatWorkspace";
-import LibraryView from "@/components/LibraryView";
-import ReviewView from "@/components/ReviewView";
-import RagView from "@/components/RagView";
-import { useSessions } from "@/lib/sessions";
 
 export default function AppWorkspace() {
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [view, setView] = useState<"chat" | "library" | "review" | "rag">("chat");
-  const { sessions, refetch, removeSession } = useSessions();
-
-  const handleNewChat = () => {
-    setActiveSessionId(null);
-    setView("chat");
-  };
-
-  const handleSelectSession = (id: string) => {
-    setActiveSessionId(id);
-    setView("chat");
-  };
-
-  const handleSessionCreated = (id: string) => {
-    setActiveSessionId(id);
-    refetch();
-  };
-
-  const handleDeleteSession = async (id: string) => {
-    await removeSession(id);
-    if (id === activeSessionId) setActiveSessionId(null);
-  };
-
-  const handleOpenBookChat = (sessionId: string) => {
-    setActiveSessionId(sessionId);
-    refetch();
-    setView("chat");
-  };
-
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--workspace-bg)] text-[var(--workspace-text)]">
+    <div className="flex h-screen w-full overflow-hidden bg-white">
       
-      {/* 사이드바 */}
-      <Sidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        activeView={view}
-        onSelectSession={handleSelectSession}
-        onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession}
-        onOpenLibrary={() => setView("library")}
-        onOpenReview={() => setView("review")}
-        onOpenRag={() => setView("rag")}
-      />
+      {/* 왼쪽 사이드바 */}
+      <Sidebar />
 
-      {/* 메인 영역 */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        {view === "library" && <LibraryView onOpenBookChat={handleOpenBookChat} />}
-        {view === "review" && <ReviewView />}
-        {view === "rag" && <RagView />}
-        {view === "chat" && (
-          <ChatWorkspace
-            sessionId={activeSessionId}
-            onSessionCreated={handleSessionCreated}
-            onTurnSaved={refetch}
-          />
-        )}
+      {/* 오른쪽 메인 영역 (흰 배경만) */}
+      <div className="flex-1 min-w-0 bg-white flex items-center justify-center">
+        <div className="text-center text-gray-400">
+          <p className="text-lg">워크스페이스 영역</p>
+          <p className="text-sm mt-1">아직 아무것도 없습니다.</p>
+        </div>
       </div>
     </div>
   );
