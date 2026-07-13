@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, MessageSquare, Trash2, BookOpen, Brain, Database } from "lucide-react";
+import { Plus, MessageSquare, Trash2, BookOpen, Brain, Database, ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import Logo from "@/components/ui/Logo";
@@ -30,125 +31,135 @@ export default function Sidebar({
   onOpenRag: () => void;
 }) {
   const t = useT();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col border-r border-slate-200 bg-white/80 backdrop-blur-md sm:w-64 dark:border-slate-800 dark:bg-slate-900/60">
-      <div className="flex items-center gap-2.5 border-b border-slate-200 px-3 py-4 sm:px-5 dark:border-slate-800">
-        <Logo size="sm" withWordmark={false} className="sm:hidden" />
-        <span className="hidden sm:block">
-          <Logo size="sm" />
-        </span>
+    <aside
+      className={`flex shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-all duration-300 ${
+        isCollapsed ? "w-16" : "w-72"
+      }`}
+    >
+      {/* 상단 로고 + 토글 버튼 */}
+      <div className="flex items-center justify-between border-b border-[var(--workspace-border)] px-4 py-4">
+        <div className="flex items-center gap-2">
+          <Logo size="sm" withWordmark={!isCollapsed} />
+        </div>
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="rounded-lg p-1.5 text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)] transition-colors"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
       </div>
 
       <WorkspaceSwitcher />
 
-      <div className="p-2 sm:p-3">
-        <motion.button
-          type="button"
-          onClick={onNewChat}
-          whileTap={{ scale: 0.96 }}
-          whileHover={{ scale: 1.02 }}
-          className="flex w-full items-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors"
-        >
-          <Plus className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">{t("sidebar.newChat")}</span>
-        </motion.button>
-
+      {/* 메뉴 영역 */}
+      <div className="p-3 space-y-1">
+        {/* 새 대화 버튼 */}
         <button
-          type="button"
+          onClick={onNewChat}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/30 hover:brightness-105 transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          {!isCollapsed && <span>{t("sidebar.newChat")}</span>}
+        </button>
+
+        {/* 메뉴 버튼들 */}
+        <button
           onClick={onOpenLibrary}
-          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
             activeView === "library"
-              ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+              ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+              : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
           <BookOpen className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">{t("sidebar.myLibrary")}</span>
+          {!isCollapsed && <span>{t("sidebar.myLibrary")}</span>}
         </button>
 
         <button
-          type="button"
           onClick={onOpenReview}
-          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
             activeView === "review"
-              ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+              ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+              : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
           <Brain className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">복습</span>
+          {!isCollapsed && <span>복습</span>}
         </button>
 
         <button
-          type="button"
           onClick={onOpenRag}
-          className={`mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
             activeView === "rag"
-              ? "bg-blue-600/10 text-blue-700 ring-1 ring-blue-500/40 dark:bg-blue-500/15 dark:text-blue-300"
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+              ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+              : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
           }`}
         >
           <Database className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">지식 검색</span>
+          {!isCollapsed && <span>지식 검색</span>}
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 sm:px-3">
-        <p className="mb-1 hidden px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 sm:block dark:text-slate-600">
-          {t("sidebar.library")}
-        </p>
-        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
-          {sessions.length === 0 && (
-            <li className="hidden px-2 py-6 text-center text-xs text-slate-400 sm:block dark:text-slate-600">
-              {t("sidebar.libraryEmpty")}
+      {/* 채팅 세션 목록 */}
+      <div className="flex min-h-0 flex-1 flex-col px-3 pb-2">
+        {!isCollapsed && (
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-[var(--workspace-text-secondary)]">
+            최근 대화
+          </p>
+        )}
+
+        <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+          {sessions.length === 0 && !isCollapsed && (
+            <li className="px-3 py-8 text-center text-xs text-[var(--workspace-text-secondary)]">
+              아직 대화가 없습니다
             </li>
           )}
-          <AnimatePresence initial={false}>
-            {sessions.map((s) => (
+
+          <AnimatePresence>
+            {sessions.map((session) => (
               <motion.li
-                key={s.id}
+                key={session.id}
                 layout
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className={`group flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer ${
+                  session.id === activeSessionId
+                    ? "bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                    : "hover:bg-[var(--workspace-bg)] text-[var(--workspace-text-secondary)]"
+                }`}
+                onClick={() => onSelectSession(session.id)}
               >
-                <button
-                  type="button"
-                  onClick={() => onSelectSession(s.id)}
-                  title={s.title ?? undefined}
-                  className={`group flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left transition-colors duration-200 sm:px-3 ${
-                    s.id === activeSessionId
-                      ? "bg-blue-600/10 ring-1 ring-blue-500/40 dark:bg-blue-500/15"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                  }`}
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
-                    <span className="hidden truncate text-xs text-slate-600 sm:inline dark:text-slate-300">
-                      {s.title || t("sidebar.newChat")}
+                <div className="flex items-center gap-2 min-w-0">
+                  <MessageSquare className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                  {!isCollapsed && (
+                    <span className="truncate text-sm">
+                      {session.title || "새 대화"}
                     </span>
-                  </span>
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDeleteSession(s.id);
+                      onDeleteSession(session.id);
                     }}
-                    className="hidden shrink-0 text-slate-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 sm:inline-block dark:text-slate-600 dark:hover:text-red-400"
+                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-500 transition-opacity"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </span>
-                </button>
+                  </button>
+                )}
               </motion.li>
             ))}
           </AnimatePresence>
         </ul>
       </div>
 
-      <ProfileMenu />
+      {/* 하단 프로필 */}
+      <div className="border-t border-[var(--workspace-border)] p-3">
+        <ProfileMenu />
+      </div>
     </aside>
   );
 }
