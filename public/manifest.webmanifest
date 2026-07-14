@@ -1,0 +1,20 @@
+{
+  "name": "ZEFF AI",
+  "short_name": "ZEFF AI",
+  "description": "생각의 속도로 일하는 개인용 AI 워크스페이스",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/logo-zeff.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

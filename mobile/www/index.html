@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <title>ZEFF AI</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .wrap {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+        gap: 1rem;
+      }
+      .logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        object-fit: cover;
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.35);
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        max-width: 20rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: #94a3b8;
+      }
+      a {
+        margin-top: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem;
+        background: linear-gradient(90deg, #2563eb, #6366f1);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+      }
+      .spin {
+        width: 28px;
+        height: 28px;
+        border: 3px solid #334155;
+        border-top-color: #60a5fa;
+        border-radius: 50%;
+        animation: r 0.8s linear infinite;
+      }
+      @keyframes r {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="spin" aria-hidden="true"></div>
+      <h1>ZEFF AI</h1>
+      <p>워크스페이스를 불러오는 중…</p>
+      <p>
+        연결이 안 되면
+        <a href="https://zeffai.com/login">브라우저에서 열기</a>
+      </p>
+    </div>
+    <script>
+      // Capacitor server.url 이 있으면 자동 로드. 폴백만 브라우저로 이동.
+      setTimeout(function () {
+        if (location.protocol === "https:" && location.hostname === "zeffai.com")
+          return;
+        // file:// 또는 capacitor 로컬일 때만 원격으로 유도
+        if (location.protocol === "file:" || location.hostname === "localhost") {
+          /* server.url 이 우선이므로 보통 여기까지 안 옴 */
+        }
+      }, 4000);
+    </script>
+  </body>
+</html>

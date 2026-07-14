@@ -1,6 +1,8 @@
 {
-  "name": "ai-gemini-app",
-  "version": "0.1.0",
+  "name": "zeff-ai",
+  "version": "1.0.0",
+  "description": "ZEFF AI Workspace (Web, Desktop, Android)",
+  "author": "ZEFF AI",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -11,13 +13,19 @@
     "lint": "eslint",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:build:win": "electron-builder --win --publish never",
+    "electron:build:win": "electron-builder --win --publish never && node scripts/copy-win-installer-alias.cjs",
     "electron:build:mac": "electron-builder --mac --publish never",
-    "electron:build:all": "electron-builder --win --mac --publish never"
+    "electron:build:all": "electron-builder --win --mac --publish never",
+    "cap:sync": "npx cap sync android",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:bundle": "npx cap sync android && cd android && ./gradlew bundleRelease",
+    "android:apk": "npx cap sync android && cd android && ./gradlew assembleDebug"
   },
   "build": {
-    "appId": "com.aitoolkit.desktop",
-    "productName": "AI Toolkit",
+    "appId": "com.zeffai.desktop",
+    "productName": "ZEFF AI",
+    "copyright": "Copyright © ZEFF AI",
     "directories": {
       "output": "dist-electron",
       "buildResources": "build"
@@ -26,27 +34,51 @@
       "electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "public/logo-zeff.png",
+        "to": "logo-zeff.png"
+      },
+      {
+        "from": "build/license.txt",
+        "to": "license.txt"
+      }
+    ],
     "win": {
       "target": "nsis",
-      "artifactName": "AI-Toolkit-Windows-Installer.${ext}"
+      "icon": "build/icon.png",
+      "artifactName": "zeffai.installer.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "ZEFF AI",
+      "uninstallDisplayName": "ZEFF AI",
+      "license": "build/license.txt",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
-      "artifactName": "AI-Toolkit-Mac-Installer.${ext}"
+      "artifactName": "zeffai-mac.${ext}",
+      "icon": "build/icon.png"
     },
     "dmg": {
-      "title": "AI Toolkit Installer"
+      "title": "ZEFF AI Installer"
     }
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@google/genai": "^2.10.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.8.0",
@@ -70,6 +102,8 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

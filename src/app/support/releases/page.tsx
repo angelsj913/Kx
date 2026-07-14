@@ -2,7 +2,12 @@
 
 import { Download } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
-import { WINDOWS_DOWNLOAD_URL, MAC_DOWNLOAD_URL, ALL_RELEASES_URL } from "@/lib/constants";
+import {
+  WINDOWS_DOWNLOAD_URL,
+  MAC_DOWNLOAD_URL,
+  PLAY_STORE_URL,
+  ALL_RELEASES_URL,
+} from "@/lib/constants";
 import SupportShell from "@/components/support/SupportShell";
 
 export default function SupportReleasesPage() {
@@ -24,6 +29,20 @@ export default function SupportReleasesPage() {
         >
           Windows <Download className="h-4 w-4" />
         </a>
+        {PLAY_STORE_URL ? (
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-xl border border-emerald-200 px-4 py-3 text-sm text-emerald-800 transition-colors duration-300 hover:border-emerald-400/60 hover:text-emerald-700 dark:border-emerald-900 dark:text-emerald-200 dark:hover:border-emerald-500/60"
+          >
+            Android (Google Play) <Download className="h-4 w-4" />
+          </a>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            Android (Google Play) — {t("hero.download.soon")}
+          </div>
+        )}
         <a
           href={MAC_DOWNLOAD_URL}
           download

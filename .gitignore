@@ -43,5 +43,18 @@ next-env.d.ts
 # electron build output
 /dist-electron
 
+# android / capacitor
+android/app/build
+android/build
+android/.gradle
+android/captures
+android/local.properties
+android/keystore.properties
+android/*.jks
+android/*.keystore
+*.jks
+*.keystore
+.capacitor
+
 # prisma generated client
 /src/generated/prisma

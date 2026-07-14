@@ -23,6 +23,29 @@ const notoSansKr = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: "ZEFF AI",
   description: "생각의 속도로 일하는 개인용 AI 워크스페이스, ZEFF AI",
+  applicationName: "ZEFF AI",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "ZEFF AI",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
 };
 
 export default function RootLayout({
