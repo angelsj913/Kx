@@ -23,6 +23,11 @@ body {
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* 공식 홈 큰 화면 스케일 (LandingViewportScale → html font-size + 변수) */
+:root {
+  --landing-ui-scale: 1;
+}
 .dark body {
   background: #020617;
   color: #f8fafc;
