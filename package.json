@@ -13,7 +13,7 @@
     "lint": "eslint",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:build:win": "electron-builder --win --publish never",
+    "electron:build:win": "electron-builder --win --publish never && node scripts/copy-win-installer-alias.cjs",
     "electron:build:mac": "electron-builder --mac --publish never",
     "electron:build:all": "electron-builder --win --mac --publish never"
   },
