@@ -4,6 +4,9 @@ import { dirname, resolve } from "node:path";
 const OUT_JSONL = resolve("/workspace/docs/datasets/zeff-ai-training-1000.jsonl");
 const OUT_CHAT = resolve("/workspace/docs/datasets/zeff-ai-training-1000.messages.jsonl");
 const OUT_RAG = resolve("/workspace/docs/datasets/zeff-ai-rag-source.md");
+const OUT_JSONL_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.jsonl");
+const OUT_CHAT_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.messages.jsonl");
+const OUT_RAG_EXTENDED = resolve("/workspace/docs/datasets/zeff-ai-rag-source-extended.md");
 
 function fact(
   slug,
@@ -463,6 +466,88 @@ const patterns = [
   },
 ];
 
+const queryFrames = [
+  {
+    id: "plain",
+    wrap: (instruction) => instruction,
+  },
+  {
+    id: "current",
+    wrap: (instruction) => `현재 기준으로 ${instruction}`,
+  },
+  {
+    id: "practical",
+    wrap: (instruction) => `실무적으로 ${instruction}`,
+  },
+  {
+    id: "ops",
+    wrap: (instruction) => `운영 관점에서 ${instruction}`,
+  },
+  {
+    id: "cost",
+    wrap: (instruction) => `비용 관점도 반영해서 ${instruction}`,
+  },
+  {
+    id: "product",
+    wrap: (instruction) => `ZEFF AI 제품 문맥에서 ${instruction}`,
+  },
+  {
+    id: "handoff",
+    wrap: (instruction) => `handoff 문서를 기준으로 ${instruction}`,
+  },
+  {
+    id: "playstore",
+    wrap: (instruction) => `Play Store 준비 흐름까지 고려해서 ${instruction}`,
+  },
+  {
+    id: "caution",
+    wrap: (instruction) => `오해하지 않게 ${instruction}`,
+  },
+  {
+    id: "next-step",
+    wrap: (instruction) => `${instruction} 그리고 바로 다음 단계도 알려줘.`,
+  },
+];
+
+const handoffNarrative = [
+  "## Chat Handoff 요약",
+  "- ZEFF AI는 https://zeffai.com 중심의 개인 AI 워크스페이스 웹앱입니다.",
+  "- Windows와 Android 앱은 독립 AI 프로그램이 아니라 웹앱을 여는 thin client 입니다.",
+  "- Windows 배포는 GitHub Releases의 unsigned installer 흐름을 유지합니다.",
+  "- Windows SmartScreen 경고는 정식 서명이나 Store 경로 없이 제거할 수 없습니다.",
+  "- 사용자는 비용 민감도를 우선했고, Windows 코드 서명 구매보다 Android + Play Store 경로를 선택했습니다.",
+  "- Android 패키지 ID는 com.zeffai.app 이고, production 진입 URL은 https://zeffai.com/login 입니다.",
+  "- Play Console 등록, 업로드 키스토어, workflow 복사, signed AAB, 실제 PLAY_STORE_URL 반영은 아직 남은 과업입니다.",
+  "- homepage는 큰 모니터에서 너무 작게 보이던 문제를 landing scale 설정으로 완화했습니다.",
+  "- mobile, tablet, desktop 스케일은 별도로 분리되어 있습니다.",
+  "- Prisma 7.8 환경에서는 prisma db push --skip-generate 를 쓰면 안 되고, build는 prisma generate && prisma db push && next build 형태를 유지해야 합니다.",
+  "",
+  "## 이전 대화 핵심 의사결정",
+  "- 고비용 Windows OV/EV 인증서 구매는 현재 기본안이 아닙니다.",
+  "- 배포 신뢰를 가장 싸게 가져가려면 Android Play Store가 우선안입니다.",
+  "- Microsoft Store MSIX는 추후 Windows 신뢰 배포안으로만 보류합니다.",
+  "- 이미 결정된 방향은 다시 설득하지 않고 다음 실행 단계로 이어가는 것이 답변 원칙입니다.",
+  "- 기본 응답 언어는 한국어입니다.",
+  "",
+  "## Play Store 제출 실무 메모",
+  "- Play 개발자 등록은 일반적으로 25달러 1회 비용입니다.",
+  "- 업로드 형식은 AAB 기준으로 준비합니다.",
+  "- 업로드 키스토어는 분실하지 않도록 안전하게 보관합니다.",
+  "- Play App Signing은 무료이며 최종 배포 키 관리를 Google에 맡길 수 있습니다.",
+  "- 공개 전에는 내부 테스트 트랙으로 먼저 설치와 로그인 흐름을 점검하는 편이 좋습니다.",
+  "- 개인정보처리방침 링크는 https://zeffai.com/support/legal#privacy 를 기준으로 씁니다.",
+  "- 공개 후에는 PLAY_STORE_URL 상수를 실제 스토어 링크로 바꾸고 랜딩 버튼을 연결합니다.",
+  "- assetlinks.json 의 SHA256 placeholder는 실제 서명 지문으로 교체해야 합니다.",
+  "",
+  "## 답변 정책 메모",
+  "- ZEFF AI는 웹앱 중심 서비스로 설명합니다.",
+  "- 데스크톱과 모바일은 shell app 이라고 설명합니다.",
+  "- Groq는 추론 제공자로 설명하고, 학습 플랫폼처럼 단정하지 않습니다.",
+  "- SmartScreen 경고를 서명 없이 숨길 수 있다고 말하지 않습니다.",
+  "- 없는 기능을 구현 완료처럼 말하지 않습니다.",
+  "- 사용자가 비용을 중요하게 볼 때는 더 저렴하고 단순한 경로부터 제안합니다.",
+];
+
 function joinSentences(...parts) {
   return parts
     .map((part) => String(part || "").trim())
@@ -502,6 +587,24 @@ if (records.length !== 1000) {
   throw new Error(`Expected 1000 records but got ${records.length}`);
 }
 
+const records10000 = [];
+for (const row of records) {
+  for (const frame of queryFrames) {
+    records10000.push({
+      id: `${row.id}-${frame.id}`,
+      language: row.language,
+      category: row.category,
+      tags: [...row.tags, frame.id],
+      instruction: frame.wrap(row.instruction),
+      output: row.output,
+    });
+  }
+}
+
+if (records10000.length !== 10000) {
+  throw new Error(`Expected 10000 records but got ${records10000.length}`);
+}
+
 mkdirSync(dirname(OUT_JSONL), { recursive: true });
 
 writeFileSync(OUT_JSONL, `${records.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
@@ -521,6 +624,23 @@ const chatRows = records.map((row) => ({
 
 writeFileSync(OUT_CHAT, `${chatRows.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
 
+writeFileSync(OUT_JSONL_10000, `${records10000.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
+
+const chatRows10000 = records10000.map((row) => ({
+  id: row.id,
+  messages: [
+    {
+      role: "system",
+      content:
+        "당신은 ZEFF AI 운영 문맥을 따르는 한국어 도우미입니다. 공식 도메인은 https://zeffai.com 이며, 비용 효율과 실무적 정확성을 우선합니다. 데스크톱과 모바일은 웹앱을 여는 셸 앱으로 설명하고, 확인되지 않은 내용은 단정하지 않습니다.",
+    },
+    { role: "user", content: row.instruction },
+    { role: "assistant", content: row.output },
+  ],
+}));
+
+writeFileSync(OUT_CHAT_10000, `${chatRows10000.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
+
 const ragDoc = [
   "# ZEFF AI RAG Source",
   "",
@@ -532,7 +652,24 @@ const ragDoc = [
 
 writeFileSync(OUT_RAG, `${ragDoc}\n`, "utf8");
 
+const extendedRagDoc = [
+  "# ZEFF AI RAG Source Extended",
+  "",
+  "이 문서는 기존 RAG 원문에 handoff 문서 핵심, 대화 의사결정, Play Store 실무 메모를 더한 확장본입니다.",
+  "대화형 문맥과 운영 규칙을 함께 검색하도록 만들 때 이 파일을 우선 쓰면 됩니다.",
+  "",
+  ...handoffNarrative,
+  "",
+  ...ragSections,
+].join("\n");
+
+writeFileSync(OUT_RAG_EXTENDED, `${extendedRagDoc}\n`, "utf8");
+
 console.log(`generated records: ${records.length}`);
 console.log(`jsonl: ${OUT_JSONL}`);
 console.log(`chat: ${OUT_CHAT}`);
 console.log(`rag: ${OUT_RAG}`);
+console.log(`generated records extended: ${records10000.length}`);
+console.log(`jsonl extended: ${OUT_JSONL_10000}`);
+console.log(`chat extended: ${OUT_CHAT_10000}`);
+console.log(`rag extended: ${OUT_RAG_EXTENDED}`);
