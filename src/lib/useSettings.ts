@@ -82,8 +82,12 @@ export function useSettings(userId?: string | null) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error ?? "설정을 저장하지 못했습니다.");
-    setSettings(data.settings);
-    return data.settings as UserSettings;
+    const next = {
+      ...data.settings,
+      language: normalizeLanguage(data.settings?.language),
+    } as UserSettings;
+    setSettings(next);
+    return next;
   }, []);
 
   const updateLanguage = useCallback(
