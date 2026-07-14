@@ -40,37 +40,22 @@
       }
     ],
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        }
-      ],
+      "target": "nsis",
       "icon": "build/icon.png",
-      "artifactName": "zeffai.installer.${ext}",
-      "publisherName": "ZEFF AI"
+      "artifactName": "zeffai.installer.${ext}"
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ZEFF AI",
       "uninstallDisplayName": "ZEFF AI",
       "license": "build/license.txt",
-      "installerIcon": "build/icon.png",
-      "uninstallerIcon": "build/icon.png",
-      "installerHeaderIcon": "build/icon.png",
       "installerSidebar": "build/installerSidebar.bmp",
       "uninstallerSidebar": "build/installerSidebar.bmp",
-      "include": "build/installer.nsh",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true,
-      "menuCategory": false,
-      "displayLanguageSelector": false,
-      "installerLanguages": ["ko_KR", "en_US"]
+      "runAfterFinish": true
     },
     "mac": {
       "target": "dmg",
