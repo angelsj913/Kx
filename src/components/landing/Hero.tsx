@@ -38,13 +38,15 @@ export default function Hero() {
           note: t("hero.modal.windowsNote"),
           url: WINDOWS_DOWNLOAD_URL,
           icon: Download,
+          ready: true,
         }
       : selected === "mac"
         ? {
             title: t("hero.modal.macTitle"),
-            note: t("hero.modal.macNote"),
+            note: t("hero.modal.macComingSoon"),
             url: MAC_DOWNLOAD_URL,
             icon: Apple,
+            ready: false,
           }
         : null;
 
@@ -76,7 +78,6 @@ export default function Hero() {
             <span className="text-4xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
               {t("hero.title.line2Prefix")}
             </span>
-            {/* 헤드라인과 같은 시각 크기 */}
             <Logo size="hero" className="!items-center" />
           </span>
         </motion.h1>
@@ -105,11 +106,13 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("mac")}
-            className="group flex flex-1 items-center justify-center gap-3 rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98]"
+            className="group flex flex-1 items-center justify-center gap-3 rounded-2xl border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
           >
             <Apple className="h-6 w-6" />
             {t("hero.download.mac")}
-            <Download className="ml-1 h-4 w-4 opacity-70 transition-transform duration-300 group-hover:translate-y-0.5" />
+            <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              {t("hero.download.soon")}
+            </span>
           </button>
         </motion.div>
 
@@ -138,21 +141,32 @@ export default function Hero() {
               <X className="h-5 w-5" />
             </button>
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-              <info.icon className="h-5 w-5 text-white" />
+            <div className="flex justify-center">
+              <Logo size="lg" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-50">{info.title}</h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{info.note}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("hero.modal.instruction")}</p>
-
-            <a
-              href={info.url}
-              download
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
-            >
-              <Download className="h-4 w-4" />
-              {t("hero.modal.confirm")}
-            </a>
+            <h3 className="mt-4 text-center text-lg font-semibold text-slate-900 dark:text-slate-50">
+              {info.title}
+            </h3>
+            <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-300">{info.note}</p>
+            {info.ready ? (
+              <>
+                <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                  {t("hero.modal.instruction")}
+                </p>
+                <a
+                  href={info.url}
+                  download="zeffai.installer.exe"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
+                >
+                  <Download className="h-4 w-4" />
+                  {t("hero.modal.confirm")}
+                </a>
+              </>
+            ) : (
+              <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                {t("hero.modal.macComingSoon")}
+              </p>
+            )}
             <button
               type="button"
               onClick={() => setSelected(null)}
