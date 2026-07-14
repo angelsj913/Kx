@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -9,6 +9,8 @@ import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
 import { getCheckoutT, readCheckoutLanguage } from "@/lib/checkoutI18n";
+import { setAppLanguage, type AppLanguage } from "@/lib/i18n";
+import { LANGUAGE_ORDER } from "@/lib/languages";
 
 function CheckoutInner() {
   const params = useSearchParams();
@@ -16,14 +18,44 @@ function CheckoutInner() {
   const planId = params.get("plan") ?? "";
   const canceled = params.get("canceled") === "1";
   const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
-  const ct = getCheckoutT(readCheckoutLanguage());
+
+  // 설정 언어 우선 동기화 (UserSettings → localStorage 폴백)
+  const [lang, setLang] = useState<AppLanguage>(() => readCheckoutLanguage());
+  const ct = useMemo(() => getCheckoutT(lang), [lang]);
 
   const [state, setState] = useState<"init" | "loading" | "stub" | "error">(
-    !plan ? "error" : canceled ? "init" : "loading"
+    !plan ? "error" : canceled ? "init" : "loading",
   );
-  const [error, setError] = useState(!plan ? ct.unknownPlan : "");
+  const [error, setError] = useState(!plan ? getCheckoutT(readCheckoutLanguage()).unknownPlan : "");
   const [merchantUid, setMerchantUid] = useState("");
   const [paying, setPaying] = useState(false);
+
+  // 워크스페이스 설정 언어 → 결제창 동기화
+  useEffect(() => {
+    let ignore = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) return;
+        const data = await res.json();
+        const raw = data?.settings?.language;
+        if (
+          typeof raw === "string" &&
+          (LANGUAGE_ORDER as string[]).includes(raw) &&
+          !ignore
+        ) {
+          const next = raw as AppLanguage;
+          setLang(next);
+          setAppLanguage(next);
+        }
+      } catch {
+        /* keep localStorage language */
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!plan || canceled) return;
@@ -39,16 +71,17 @@ function CheckoutInner() {
         if (ignore) return;
         if (res.status === 401 || data?.needLogin) {
           router.replace(
-            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}`)}`
+            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}`)}`,
           );
           return;
         }
         if (!res.ok) throw new Error(data?.error ?? ct.prepareFail);
         if (data.url) {
-          window.location.href = data.url; // Stripe 결제창
+          // Stripe locale 힌트 (지원 시)
+          const url = String(data.url);
+          window.location.href = url;
           return;
         }
-        // 스텁: 주문 생성됨 → 결제 확인 UI
         setMerchantUid(data.merchantUid ?? "");
         setState("stub");
       } catch (err) {
@@ -68,7 +101,6 @@ function CheckoutInner() {
   function goComplete() {
     if (!merchantUid || paying) return;
     setPaying(true);
-    // 완료 페이지에서 confirm API 호출 → 권한 부여
     window.location.href = `/checkout/complete?uid=${encodeURIComponent(merchantUid)}&stub=1`;
   }
 
@@ -77,7 +109,13 @@ function CheckoutInner() {
       <header className="flex items-center justify-between border-b border-slate-200/80 px-6 py-3.5 dark:border-slate-800/80">
         <BackButton fallbackHref="/" />
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:invert" />
+          <Image
+            src="/logo-zeff.png"
+            alt="ZEFF AI"
+            width={24}
+            height={24}
+            className="rounded-md dark:invert"
+          />
           <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
         </Link>
         <ThemeToggle />
@@ -91,7 +129,11 @@ function CheckoutInner() {
           <h1 className="mt-4 text-lg font-bold">
             ZEFF AI {plan?.label ?? ""} {plan ? ct.subscribe : ""}
           </h1>
-          {plan && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{amount} {ct.perMonth}</p>}
+          {plan && (
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {amount} {ct.perMonth}
+            </p>
+          )}
 
           <div className="mt-6">
             {state === "loading" && (
@@ -108,12 +150,15 @@ function CheckoutInner() {
                     {ct.orderSummary}
                   </p>
                   <div className="mt-2 flex justify-between text-sm">
-                    <span>{plan.name} 플랜</span>
+                    <span>{plan.name}</span>
                     <span className="font-semibold">{amount}</span>
                   </div>
                   <ul className="mt-3 space-y-1">
                     {plan.bullets.slice(0, 4).map((b) => (
-                      <li key={b} className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      <li
+                        key={b}
+                        className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+                      >
                         <Check className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
                         {b}
                       </li>

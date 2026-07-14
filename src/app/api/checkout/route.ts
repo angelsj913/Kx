@@ -55,8 +55,33 @@ export async function POST(request: Request) {
       });
     }
 
+    // 워크스페이스 설정 언어 → Stripe 결제창 locale 동기화
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+    const lang = settings?.language || "ko";
+    const stripeLocaleMap: Record<string, string> = {
+      ko: "ko",
+      en: "en",
+      ja: "ja",
+      zh: "zh",
+      de: "de",
+      fr: "fr",
+      es: "es",
+      ru: "ru",
+    };
+    const locale = (stripeLocaleMap[lang] || "auto") as
+      | "ko"
+      | "en"
+      | "ja"
+      | "zh"
+      | "de"
+      | "fr"
+      | "es"
+      | "ru"
+      | "auto";
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
+      locale,
       line_items: [
         {
           price_data: {
