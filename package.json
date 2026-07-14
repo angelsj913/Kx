@@ -1,6 +1,8 @@
 {
-  "name": "ai-gemini-app",
-  "version": "0.1.0",
+  "name": "zeff-ai",
+  "version": "1.0.0",
+  "description": "ZEFF AI Desktop Workspace",
+  "author": "ZEFF AI",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -16,8 +18,9 @@
     "electron:build:all": "electron-builder --win --mac --publish never"
   },
   "build": {
-    "appId": "com.aitoolkit.desktop",
-    "productName": "AI Toolkit",
+    "appId": "com.zeffai.desktop",
+    "productName": "ZEFF AI",
+    "copyright": "Copyright © ZEFF AI",
     "directories": {
       "output": "dist-electron",
       "buildResources": "build"
@@ -26,23 +29,57 @@
       "electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "public/logo-zeff.png",
+        "to": "logo-zeff.png"
+      },
+      {
+        "from": "build/license.txt",
+        "to": "license.txt"
+      }
+    ],
     "win": {
-      "target": "nsis",
-      "artifactName": "AI-Toolkit-Windows-Installer.${ext}"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "zeffai.installer.${ext}",
+      "publisherName": "ZEFF AI"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "ZEFF AI",
+      "uninstallDisplayName": "ZEFF AI",
+      "license": "build/license.txt",
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png",
+      "installerHeaderIcon": "build/icon.png",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": ["ko_KR", "en_US"]
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
-      "artifactName": "AI-Toolkit-Mac-Installer.${ext}"
+      "artifactName": "zeffai-mac.${ext}",
+      "icon": "build/icon.png"
     },
     "dmg": {
-      "title": "AI Toolkit Installer"
+      "title": "ZEFF AI Installer"
     }
   },
   "dependencies": {
