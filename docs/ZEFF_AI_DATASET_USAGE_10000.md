@@ -167,6 +167,32 @@ npm run rag:index:zeff -- --user-email you@example.com --workspace-id YOUR_WORKS
 이 스크립트는 기본적으로 `docs/datasets/zeff-ai-rag-source-extended.md`를 읽어 같은 제목의 서재 항목을 만들거나 갱신하고, 기존 청크를 지운 뒤 다시 색인합니다.
 실행 전에는 최소한 `DATABASE_URL`이 설정되어 있어야 하며, 의존성이 설치된 환경이어야 합니다.
 
+### 배포 서버에서 바로 반영
+
+Vercel 배포 환경에서 바로 처리하려면 관리자 세션 또는 `ZEFF_RAG_INDEX_SECRET`으로 아래 API를 호출하면 됩니다.
+
+```bash
+curl -X POST "https://YOUR_DOMAIN/api/admin/rag/zeff" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ZEFF_RAG_INDEX_SECRET" \
+  -d '{"userEmail":"you@example.com"}'
+```
+
+특정 워크스페이스까지 넣으려면:
+
+```bash
+curl -X POST "https://YOUR_DOMAIN/api/admin/rag/zeff" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ZEFF_RAG_INDEX_SECRET" \
+  -d '{"userEmail":"you@example.com","workspaceId":"YOUR_WORKSPACE_ID"}'
+```
+
+브라우저에서 직접 실행하려면 관리자 로그인 상태에서 아래처럼 `GET`으로도 호출할 수 있습니다.
+
+```text
+https://YOUR_DOMAIN/api/admin/rag/zeff?userEmail=you@example.com
+```
+
 ### 단계 2. 업로드할 파일 선택
 
 권장 파일:
