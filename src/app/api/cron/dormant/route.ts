@@ -12,6 +12,9 @@ function dormantDays(): number {
 }
 
 function authorize(request: Request): boolean {
+  // Vercel Cron 은 x-vercel-cron: 1 헤더를 붙인다
+  if (request.headers.get("x-vercel-cron") === "1") return true;
+
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     // 개발: 시크릿 없으면 로컬만 허용
