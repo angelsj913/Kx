@@ -74,7 +74,7 @@ const fr: Record<keyof typeof ko, string> = {
   "grid.subtitle": "Disponibles directement dans votre espace de travail dès la connexion.",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "Discutez librement avec un livre ajouté à votre bibliothèque.",
-  "grid.library.label": "Ma bibliothèque",
+  "grid.library.label": "Ma bibliothèque & partagée",
   "grid.library.desc": "Rassemblez vos documents fréquemment utilisés en un seul endroit, accessibles à tout moment.",
   "grid.lectureChat.label": "Chat de cours",
   "grid.lectureChat.desc": "Commencez avec un simple lien de cours, puis continuez à poser vos questions.",
