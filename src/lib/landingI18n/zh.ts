@@ -26,6 +26,8 @@ const zh: Record<keyof typeof ko, string> = {
   "hero.modal.instruction": "运行下载的文件并按照屏幕提示完成安装。",
   "hero.modal.confirm": "获取安装程序",
   "hero.modal.cancel": "取消",
+  "hero.modal.macComingSoon": "macOS 版本即将推出，请先使用 Windows 安装包。",
+  "hero.download.soon": "即将推出",
 
   "workspace.title": "零延迟运算，突破极限的推理引擎。",
   "workspace.subtitle": "亲自体验 ZEFF AI 的真实性能。",
