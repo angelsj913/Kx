@@ -27,6 +27,12 @@
 - 시스템 프롬프트 초안: `docs/datasets/zeff-ai-system-prompt.txt`
 - 생성 스크립트: `scripts/generate-zeff-dataset.mjs`
 
+## 저장소 운영 원칙
+
+- `10만개` 산출물 2개는 파일 크기가 커서 기본 Git 추적 대상에서는 제외하는 편이 안전합니다.
+- 필요하면 로컬에서 `node scripts/generate-zeff-dataset.mjs`로 다시 생성해 학습용 또는 외부 실험용으로 따로 보관합니다.
+- 레포에는 생성 스크립트, 가이드, RAG 원문, 시스템 프롬프트, 비교적 작은 샘플셋을 남기는 구성이 운영하기 쉽습니다.
+
 ## 10만개는 어떻게 만들어졌나
 
 기본 1000개 사실셋 위에 질문 프레이밍을 100가지로 확장해 `1000 x 100 = 100000` 구조로 만들었습니다.
@@ -144,6 +150,7 @@ node scripts/generate-zeff-dataset.mjs
 ### 사용할 파일
 
 - `docs/datasets/zeff-ai-training-100000.messages.jsonl`
+- 이 파일은 대용량이므로 레포에 고정 보관하기보다 로컬 생성 후 별도 보관하는 편이 좋습니다.
 
 ### 추천 분할
 
@@ -227,7 +234,7 @@ node scripts/generate-zeff-dataset.mjs
 2. `zeff-ai-rag-source-extended.md` 업로드
 3. RAG 색인
 4. `zeff-ai-system-prompt.txt`를 현재 응답 규칙에 반영
-5. `zeff-ai-training-100000.messages.jsonl`은 외부 실험이나 평가셋으로 보관
+5. `zeff-ai-training-100000.messages.jsonl`은 로컬에서 생성한 뒤 외부 실험이나 평가셋으로 별도 보관
 
 ## 한 줄 결론
 
