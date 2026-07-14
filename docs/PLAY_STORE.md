@@ -53,14 +53,19 @@ npm run android:bundle
 
 ### GitHub Actions (권장)
 
-1. repo Secrets 등록 (선택, 서명 AAB용):
+워크플로 원본: `docs/ci/build-android.yml`  
+(GitHub PAT에 `workflow` 스코프가 없으면 `.github/workflows/` 직접 푸시가 막혀, 원본을 여기 둡니다.)
+
+1. GitHub 웹에서 `docs/ci/build-android.yml` 내용을  
+   `.github/workflows/build-android.yml` 로 **새로 추가/커밋**  
+2. repo Secrets 등록 (선택, 서명 AAB용):
    - `ANDROID_KEYSTORE_BASE64` — jks를 base64한 값  
    - `ANDROID_KEYSTORE_PASSWORD`  
    - `ANDROID_KEY_ALIAS`  
    - `ANDROID_KEY_PASSWORD`  
-2. Actions → **Build Android (Play Store AAB)** → Run workflow  
-3. 또는 태그: `git tag android-v1.0.0 && git push origin android-v1.0.0`  
-4. Artifacts에서 `zeffai-android-aab` 다운로드  
+3. Actions → **Build Android (Play Store AAB)** → Run workflow  
+4. 또는 태그: `git tag android-v1.0.0 && git push origin android-v1.0.0`  
+5. Artifacts에서 `zeffai-android-aab` 다운로드  
 
 서명을 안 넣어도 AAB는 나올 수 있으나, **Play 업로드용으로는 서명된 AAB**가 필요합니다.  
 Play App Signing을 쓰면 **업로드 키**만 있으면 되고, 최종 배포 키는 Google이 관리합니다.
