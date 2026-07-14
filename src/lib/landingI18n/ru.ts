@@ -74,7 +74,7 @@ const ru: Record<keyof typeof ko, string> = {
   "grid.subtitle": "Всё это доступно сразу в рабочем пространстве после входа в аккаунт.",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "Свободно общайтесь с книгой, добавленной в вашу библиотеку.",
-  "grid.library.label": "Моя библиотека",
+  "grid.library.label": "Моя и общая библиотека",
   "grid.library.desc": "Соберите часто используемые материалы в одном месте и обращайтесь к ним в любой момент.",
   "grid.lectureChat.label": "Чат по лекции",
   "grid.lectureChat.desc": "Начните с одной ссылки на лекцию и продолжайте задавать любые вопросы.",
