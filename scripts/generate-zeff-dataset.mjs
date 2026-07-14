@@ -7,6 +7,9 @@ const OUT_RAG = resolve("/workspace/docs/datasets/zeff-ai-rag-source.md");
 const OUT_JSONL_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.jsonl");
 const OUT_CHAT_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.messages.jsonl");
 const OUT_RAG_EXTENDED = resolve("/workspace/docs/datasets/zeff-ai-rag-source-extended.md");
+const OUT_JSONL_100000 = resolve("/workspace/docs/datasets/zeff-ai-training-100000.jsonl");
+const OUT_CHAT_100000 = resolve("/workspace/docs/datasets/zeff-ai-training-100000.messages.jsonl");
+const OUT_SYSTEM_PROMPT = resolve("/workspace/docs/datasets/zeff-ai-system-prompt.txt");
 
 function fact(
   slug,
@@ -509,6 +512,32 @@ const queryFrames = [
   },
 ];
 
+const framePrefixes = [
+  "",
+  "현재 기준으로 ",
+  "실무적으로 ",
+  "운영 관점에서 ",
+  "비용 관점도 반영해서 ",
+  "ZEFF AI 제품 문맥에서 ",
+  "handoff 문서를 기준으로 ",
+  "Play Store 준비 흐름까지 고려해서 ",
+  "오해하지 않게 ",
+  "관리자 운영 문맥에서 ",
+];
+
+const frameSuffixes = [
+  "",
+  " 그리고 한 줄 요약도 붙여줘.",
+  " 그리고 다음 단계도 알려줘.",
+  " 그리고 주의할 점도 덧붙여줘.",
+  " 초보자도 이해하게 말해줘.",
+  " 비용을 아끼는 방향으로 설명해줘.",
+  " 실제 운영자가 바로 판단할 수 있게 정리해줘.",
+  " 잘못 이해하기 쉬운 부분도 같이 짚어줘.",
+  " 답변을 짧고 정확하게 유지해줘.",
+  " 이미 정해진 방향은 다시 설득하지 않는 기준으로 설명해줘.",
+];
+
 const handoffNarrative = [
   "## Chat Handoff 요약",
   "- ZEFF AI는 https://zeffai.com 중심의 개인 AI 워크스페이스 웹앱입니다.",
@@ -546,6 +575,20 @@ const handoffNarrative = [
   "- SmartScreen 경고를 서명 없이 숨길 수 있다고 말하지 않습니다.",
   "- 없는 기능을 구현 완료처럼 말하지 않습니다.",
   "- 사용자가 비용을 중요하게 볼 때는 더 저렴하고 단순한 경로부터 제안합니다.",
+];
+
+const systemPromptLines = [
+  "당신은 ZEFF AI 운영 문맥을 따르는 한국어 도우미입니다.",
+  "공식 도메인은 https://zeffai.com 입니다.",
+  "ZEFF AI는 웹앱 중심 서비스이며, 데스크톱과 모바일은 웹앱을 여는 셸 앱으로 설명합니다.",
+  "사용자가 이미 결정한 방향은 다시 설득하지 않고 다음 실행 단계로 이어갑니다.",
+  "비용 민감도를 우선 반영하고, 더 싸고 단순한 방법부터 제안합니다.",
+  "Groq는 현재 프로젝트에서 추론 제공자로 설명하고 학습 플랫폼처럼 단정하지 않습니다.",
+  "Windows unsigned .exe가 SmartScreen 경고 없이 설치된다고 말하지 않습니다.",
+  "Play Store 등록이 끝나지 않았다면 공개 완료처럼 말하지 않습니다.",
+  "Prisma 7.8에서는 prisma db push --skip-generate 를 다시 제안하지 않습니다.",
+  "확인되지 않은 사실은 단정하지 않고 현재 기준 또는 확인 필요 여부를 분명히 말합니다.",
+  "답변은 한국어로, 결론 먼저, 짧고 실무적으로 작성합니다.",
 ];
 
 function joinSentences(...parts) {
@@ -605,6 +648,26 @@ if (records10000.length !== 10000) {
   throw new Error(`Expected 10000 records but got ${records10000.length}`);
 }
 
+const records100000 = [];
+for (const row of records) {
+  for (const prefix of framePrefixes) {
+    for (const suffix of frameSuffixes) {
+      records100000.push({
+        id: `${row.id}-${sanitizeFramePart(prefix)}-${sanitizeFramePart(suffix)}`,
+        language: row.language,
+        category: row.category,
+        tags: [...row.tags, sanitizeFramePart(prefix), sanitizeFramePart(suffix)],
+        instruction: `${prefix}${row.instruction}${suffix}`.trim(),
+        output: row.output,
+      });
+    }
+  }
+}
+
+if (records100000.length !== 100000) {
+  throw new Error(`Expected 100000 records but got ${records100000.length}`);
+}
+
 mkdirSync(dirname(OUT_JSONL), { recursive: true });
 
 writeFileSync(OUT_JSONL, `${records.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
@@ -641,6 +704,23 @@ const chatRows10000 = records10000.map((row) => ({
 
 writeFileSync(OUT_CHAT_10000, `${chatRows10000.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
 
+writeFileSync(OUT_JSONL_100000, `${records100000.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
+
+const chatRows100000 = records100000.map((row) => ({
+  id: row.id,
+  messages: [
+    {
+      role: "system",
+      content:
+        "당신은 ZEFF AI 운영 문맥을 따르는 한국어 도우미입니다. 공식 도메인은 https://zeffai.com 이며, 비용 효율과 실무적 정확성을 우선합니다. 데스크톱과 모바일은 웹앱을 여는 셸 앱으로 설명하고, 확인되지 않은 내용은 단정하지 않습니다.",
+    },
+    { role: "user", content: row.instruction },
+    { role: "assistant", content: row.output },
+  ],
+}));
+
+writeFileSync(OUT_CHAT_100000, `${chatRows100000.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
+
 const ragDoc = [
   "# ZEFF AI RAG Source",
   "",
@@ -664,6 +744,7 @@ const extendedRagDoc = [
 ].join("\n");
 
 writeFileSync(OUT_RAG_EXTENDED, `${extendedRagDoc}\n`, "utf8");
+writeFileSync(OUT_SYSTEM_PROMPT, `${systemPromptLines.join("\n")}\n`, "utf8");
 
 console.log(`generated records: ${records.length}`);
 console.log(`jsonl: ${OUT_JSONL}`);
@@ -673,3 +754,16 @@ console.log(`generated records extended: ${records10000.length}`);
 console.log(`jsonl extended: ${OUT_JSONL_10000}`);
 console.log(`chat extended: ${OUT_CHAT_10000}`);
 console.log(`rag extended: ${OUT_RAG_EXTENDED}`);
+console.log(`generated records 100k: ${records100000.length}`);
+console.log(`jsonl 100k: ${OUT_JSONL_100000}`);
+console.log(`chat 100k: ${OUT_CHAT_100000}`);
+console.log(`system prompt: ${OUT_SYSTEM_PROMPT}`);
+
+function sanitizeFramePart(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "");
+  return normalized || "plain";
+}
