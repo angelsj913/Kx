@@ -1,10 +1,11 @@
-﻿import type ko from "./ko";
+import type ko from "./ko";
 
 const ja: Record<keyof typeof ko, string> = {
   "nav.about": "会社紹介",
   "nav.potential": "将来性",
   "nav.prototype": "開発中のプロトタイプ",
   "nav.download": "ダウンロード",
+  "nav.support": "サポート",
 
   "header.support": "サポート",
   "header.login": "ログイン",
@@ -307,7 +308,9 @@ const ja: Record<keyof typeof ko, string> = {
   "company.prototype.item3": "自動復習スケジューラー — ライブラリに保存した資料をもとに最適な復習タイミングを提案",
   "company.prototype.item4": "企業向けデータコネクタ — 社内文書ストレージと連携し、組織の知識を横断検索",
 
+  "footer.terms": "利用規約",
   "footer.privacy": "プライバシーポリシー",
+  "footer.inquiry": "お問い合わせ",
   "footer.brand": "ZEFF AI",
   "footer.contact": "お問い合わせ",
   "footer.ceo": "代表",

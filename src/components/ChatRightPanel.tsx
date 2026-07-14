@@ -15,6 +15,7 @@ import {
   Circle,
   Loader2,
   Paperclip,
+  Eye,
 } from "lucide-react";
 
 export type PanelTab = "files" | "plan" | "terminal";
@@ -212,18 +213,28 @@ export default function ChatRightPanel({
                           </span>
                         </span>
                       </button>
-                      {a.url && (
-                        <a
-                          href={a.url}
-                          download={a.fileName ?? undefined}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectArtifact?.(a)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                         >
-                          <Download className="h-3 w-3" />
-                          다운로드
-                        </a>
-                      )}
+                          <Eye className="h-3 w-3" />
+                          열기
+                        </button>
+                        {a.url && (
+                          <a
+                            href={a.url}
+                            download={a.fileName ?? undefined}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
+                          >
+                            <Download className="h-3 w-3" />
+                            다운로드
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </li>
                 );

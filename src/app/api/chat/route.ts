@@ -66,7 +66,29 @@ export async function POST(request: Request) {
     quickToolId = autoDetectedTool;
   }
 
+  // 전역 AI 킬스위치 · 사용자 차단 · 쿼터 · 설정 병렬
+  const { isAiGloballyEnabled } = await import("@/lib/aiControl");
+  const { touchUserActivity } = await import("@/lib/activity");
+  let modelTier: "standard" | "priority" | "top" = "standard";
   try {
+    const [aiOn, settings] = await Promise.all([
+      isAiGloballyEnabled(),
+      prisma.userSettings.findUnique({ where: { userId } }),
+      touchUserActivity(userId),
+    ]);
+    if (!aiOn) {
+      return NextResponse.json(
+        { error: "AI 기능이 일시적으로 비활성화되어 있습니다. 잠시 후 다시 시도해 주세요." },
+        { status: 503 },
+      );
+    }
+    if (settings?.aiDisabled) {
+      return NextResponse.json(
+        { error: "이 계정은 AI 이용이 제한되어 있습니다. 지원 센터로 문의해 주세요." },
+        { status: 403 },
+      );
+    }
+    modelTier = getPlanOrFree(settings?.plan).modelTier;
     await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
     });
@@ -76,10 +98,6 @@ export async function POST(request: Request) {
     }
     throw err;
   }
-
-  // 요금제 → 모델 티어 (free=standard, pro=priority, professional=top)
-  const settings = await prisma.userSettings.findUnique({ where: { userId } });
-  const modelTier = getPlanOrFree(settings?.plan).modelTier;
 
   let chatSession;
   if (sessionId) {
@@ -106,19 +124,28 @@ export async function POST(request: Request) {
   }
   const resolvedSessionId = chatSession.id;
 
-  const storedAttachments: StoredAttachment[] = [];
-  const inlineFiles: { data: string; mimeType: string }[] = [];
-  for (const file of uploads) {
-    const buf = Buffer.from(await file.arrayBuffer());
-    const mimeType = file.type || "application/octet-stream";
-    const blob = await put(
-      `chat/${userId}/${resolvedSessionId}/${Date.now()}-${file.name}`,
-      buf,
-      { access: "public", contentType: mimeType }
-    );
-    storedAttachments.push({ url: blob.url, filename: file.name, mimeType });
-    inlineFiles.push({ data: buf.toString("base64"), mimeType });
-  }
+  // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
+  const uploaded = await Promise.all(
+    uploads.map(async (file, i) => {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const mimeType = file.type || "application/octet-stream";
+      const blob = await put(
+        `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
+        buf,
+        { access: "public", contentType: mimeType },
+      );
+      return {
+        stored: {
+          url: blob.url,
+          filename: file.name,
+          mimeType,
+        } satisfies StoredAttachment,
+        inline: { data: buf.toString("base64"), mimeType },
+      };
+    }),
+  );
+  const storedAttachments = uploaded.map((u) => u.stored);
+  const inlineFiles = uploaded.map((u) => u.inline);
 
   await prisma.chatHistory.create({
     data: {
@@ -278,10 +305,15 @@ export async function POST(request: Request) {
             detail: modelTier,
           });
 
+          // 최근 N턴만 로드 — 토큰 증가 없이 컨텍스트 윈도우·DB I/O 축소
+          const HISTORY_LIMIT = 24;
           const history = await prisma.chatHistory.findMany({
             where: { sessionId: resolvedSessionId },
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "desc" },
+            take: HISTORY_LIMIT,
+            select: { role: true, text: true, createdAt: true },
           });
+          history.reverse();
           const messages: ChatMessage[] = history.map((m, i) => ({
             role: m.role === "model" ? "model" : "user",
             text: m.text,

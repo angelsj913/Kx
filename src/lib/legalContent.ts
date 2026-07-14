@@ -15,7 +15,7 @@ export const COMPANY_INFO = {
   privacyOfficerContact: "zeff@zeffai.com",
   contactEmail: "zeff@zeffai.com",
   effectiveDate: "2026년 7월 11일",
-  lastUpdated: "2026년 7월 11일",
+  lastUpdated: "2026년 7월 14일",
 };
 
 export const TERMS: LegalArticle[] = [
@@ -181,6 +181,14 @@ export const TERMS: LegalArticle[] = [
     id: "t20",
     title: "제20조 (연락 및 통지)",
     body: `회사는 이용자에 대한 통지를 이용자가 등록한 이메일, 서비스 내 알림 또는 공지사항 게시 등의 방법으로 할 수 있습니다. 서비스 및 약관에 관한 문의는 ${COMPANY_INFO.contactEmail} 또는 1:1 문의를 통하여 접수할 수 있습니다.`,
+  },
+  {
+    id: "t21",
+    title: "제21조 (휴면 계정 및 서재 데이터)",
+    body:
+      "① 회원이 장기간 로그인을 하지 않거나 계정을 방치해두는 경우, 회사는 서비스 운영 정책에 따라 해당 계정을 휴면 상태로 전환할 수 있으며, 전환 사실을 회원이 등록한 이메일 등으로 통지할 수 있습니다.\n" +
+      "② 장기간 로그인을 하지 않거나 계정을 방치해두는 경우에는 서버 최적화를 위하여 관리자가 서재 데이터를 무단 파기할 수 있습니다.\n" +
+      "③ 휴면 전환 이후에도 회원은 로그인 등 본인 확인 절차를 통해 계정을 활성 상태로 복구할 수 있습니다. 다만 이미 파기된 서재 데이터는 복구되지 않을 수 있습니다.",
   },
 ];
 

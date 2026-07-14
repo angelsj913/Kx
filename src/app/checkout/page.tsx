@@ -8,6 +8,7 @@ import { Loader2, CreditCard, AlertCircle, Check } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
+import { getCheckoutT, readCheckoutLanguage } from "@/lib/checkoutI18n";
 
 function CheckoutInner() {
   const params = useSearchParams();
@@ -15,11 +16,12 @@ function CheckoutInner() {
   const planId = params.get("plan") ?? "";
   const canceled = params.get("canceled") === "1";
   const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
+  const ct = getCheckoutT(readCheckoutLanguage());
 
   const [state, setState] = useState<"init" | "loading" | "stub" | "error">(
     !plan ? "error" : canceled ? "init" : "loading"
   );
-  const [error, setError] = useState(!plan ? "알 수 없는 요금제입니다." : "");
+  const [error, setError] = useState(!plan ? ct.unknownPlan : "");
   const [merchantUid, setMerchantUid] = useState("");
   const [paying, setPaying] = useState(false);
 
@@ -41,7 +43,7 @@ function CheckoutInner() {
           );
           return;
         }
-        if (!res.ok) throw new Error(data?.error ?? "결제 준비에 실패했습니다.");
+        if (!res.ok) throw new Error(data?.error ?? ct.prepareFail);
         if (data.url) {
           window.location.href = data.url; // Stripe 결제창
           return;
@@ -87,15 +89,15 @@ function CheckoutInner() {
             <CreditCard className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h1 className="mt-4 text-lg font-bold">
-            ZEFF AI {plan?.label ?? ""} {plan ? "구독" : ""}
+            ZEFF AI {plan?.label ?? ""} {plan ? ct.subscribe : ""}
           </h1>
-          {plan && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{amount} / 월</p>}
+          {plan && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{amount} {ct.perMonth}</p>}
 
           <div className="mt-6">
             {state === "loading" && (
               <div className="flex flex-col items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
-                결제창을 준비하는 중...
+                {ct.preparing}
               </div>
             )}
 
@@ -103,7 +105,7 @@ function CheckoutInner() {
               <div className="space-y-4 text-left">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    주문 요약
+                    {ct.orderSummary}
                   </p>
                   <div className="mt-2 flex justify-between text-sm">
                     <span>{plan.name} 플랜</span>
@@ -120,9 +122,7 @@ function CheckoutInner() {
                 </div>
 
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  결제 플랫폼(Stripe 등) 연동 전입니다. 아래 버튼으로{" "}
-                  <strong>결제 완료를 시뮬레이션</strong>하면 선택한 요금제 권한이
-                  계정에 자동 부여됩니다. 키 등록 후에는 실제 결제창이 열립니다.
+                  {ct.stubNote}
                 </p>
 
                 {merchantUid && (
@@ -140,10 +140,10 @@ function CheckoutInner() {
                   {paying ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      이동 중…
+                      {ct.moving}
                     </>
                   ) : (
-                    "결제 완료 처리하기"
+                    ct.completeSim
                   )}
                 </button>
               </div>
@@ -153,7 +153,7 @@ function CheckoutInner() {
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <AlertCircle className="h-4 w-4 text-slate-400" />
-                  {canceled ? "결제가 취소되었습니다." : error}
+                  {canceled ? ct.canceled : error}
                 </div>
                 {plan && (
                   <button
@@ -161,7 +161,7 @@ function CheckoutInner() {
                     onClick={() => window.location.reload()}
                     className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
                   >
-                    다시 시도
+                    {ct.retry}
                   </button>
                 )}
               </div>

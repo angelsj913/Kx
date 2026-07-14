@@ -1,8 +1,9 @@
-﻿const ko = {
+const ko = {
   "nav.about": "소개",
   "nav.potential": "발전 가능성",
   "nav.prototype": "개발중인 프로토타입",
   "nav.download": "다운로드",
+  "nav.support": "지원",
 
   "header.support": "지원",
   "header.login": "로그인",
@@ -66,11 +67,11 @@
   "lecture.highlight3": "복습 포인트 자동 추출",
 
   "grid.title": "ZEFF AI 기능 모음",
-  "grid.subtitle": "로그인 후 워크스페이스에서 바로 사용할 수 있는 기능들입니다.",
+  "grid.subtitle": "채팅, 파일 생성·미리보기, 공유 서재, 다국어 워크스페이스까지 — 로그인 후 바로 사용하세요.",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "내 서재에 올려둔 책과 자유롭게 대화하세요.",
-  "grid.library.label": "내 서재",
-  "grid.library.desc": "자주 보는 자료를 한 곳에 모아두고 언제든 다시 꺼내보세요.",
+  "grid.library.label": "내 서재 · 공유 서재",
+  "grid.library.desc": "개인 문서와 팀 워크스페이스 공유 서재를 한곳에서 관리하세요.",
   "grid.lectureChat.label": "강의 채팅",
   "grid.lectureChat.desc": "강의 영상 링크 하나로 시작해, 궁금한 점을 계속 물어보세요.",
   "grid.examAnalysis.label": "시험지 분석",
@@ -313,7 +314,9 @@
   "company.prototype.item3": "자동 복습 스케줄러 — 서재에 저장한 자료를 기반으로 최적의 복습 시점을 제안",
   "company.prototype.item4": "기업용 데이터 커넥터 — 사내 문서 저장소와 연동해 조직 지식을 함께 검색",
 
+  "footer.terms": "이용약관",
   "footer.privacy": "개인정보 처리방침",
+  "footer.inquiry": "1:1 문의",
   "footer.brand": "ZEFF AI",
   "footer.contact": "문의",
   "footer.ceo": "대표",

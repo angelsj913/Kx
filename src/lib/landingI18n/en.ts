@@ -1,10 +1,11 @@
-﻿import type ko from "./ko";
+import type ko from "./ko";
 
 const en: Record<keyof typeof ko, string> = {
   "nav.about": "About",
   "nav.potential": "Potential",
   "nav.prototype": "Prototypes in Development",
   "nav.download": "Download",
+  "nav.support": "Support",
 
   "header.support": "Support",
   "header.login": "Log in",
@@ -74,8 +75,8 @@ const en: Record<keyof typeof ko, string> = {
   "grid.subtitle": "Everything below is ready to use in your workspace the moment you log in.",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "Talk freely with any book you've added to your library.",
-  "grid.library.label": "My Library",
-  "grid.library.desc": "Keep the material you return to often in one place, ready whenever you need it.",
+  "grid.library.label": "My & Shared Library",
+  "grid.library.desc": "Manage personal documents and team workspace libraries in one place.",
   "grid.lectureChat.label": "Lecture Chat",
   "grid.lectureChat.desc": "Start with a single lecture link, then keep asking whatever comes to mind.",
   "grid.examAnalysis.label": "Exam Analysis",
@@ -318,7 +319,9 @@ const en: Record<keyof typeof ko, string> = {
   "company.prototype.item3": "Automatic review scheduler — suggests the optimal time to revisit material saved in your library",
   "company.prototype.item4": "Enterprise data connector — search organizational knowledge alongside internal document storage",
 
+  "footer.terms": "Terms of Service",
   "footer.privacy": "Privacy Policy",
+  "footer.inquiry": "Contact support",
   "footer.brand": "ZEFF AI",
   "footer.contact": "Contact",
   "footer.ceo": "CEO",

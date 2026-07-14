@@ -6,7 +6,7 @@ import { useLandingT } from "@/lib/landingI18n";
 export default function FeatureGrid() {
   const t = useLandingT();
 
-  // 6개로 정예화해 3열 x 2행 완전 대칭. 현실적으로 확실히 제공되는 기능만 노출.
+  // 실제 제공 기능 중심 — 공유 서재·파일 미리보기·팀 협업 반영
   const items = [
     { icon: BookOpen, label: t("grid.bookChat.label"), desc: t("grid.bookChat.desc") },
     { icon: LibraryBig, label: t("grid.library.label"), desc: t("grid.library.desc") },

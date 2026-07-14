@@ -1,10 +1,11 @@
-﻿import type ko from "./ko";
+import type ko from "./ko";
 
 const zh: Record<keyof typeof ko, string> = {
   "nav.about": "公司介绍",
   "nav.potential": "发展潜力",
   "nav.prototype": "开发中的原型",
   "nav.download": "下载",
+  "nav.support": "支持",
 
   "header.support": "支持",
   "header.login": "登录",
@@ -301,7 +302,9 @@ const zh: Record<keyof typeof ko, string> = {
   "company.prototype.item3": "自动复习提醒 — 根据书房中保存的资料，建议最佳复习时机",
   "company.prototype.item4": "企业数据连接器 — 与企业内部文档存储对接，实现组织知识的联合检索",
 
+  "footer.terms": "服务条款",
   "footer.privacy": "隐私政策",
+  "footer.inquiry": "联系客服",
   "footer.brand": "ZEFF AI",
   "footer.contact": "联系我们",
   "footer.ceo": "代表",

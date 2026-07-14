@@ -18,13 +18,15 @@ import {
   PanelRight,
   Download,
   Printer,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   downloadMarkdown,
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
-import { useT } from "@/lib/i18n";
+import { useT, toolUiLabel, featureGroupLabel } from "@/lib/i18n";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
@@ -267,6 +269,7 @@ export default function ChatWorkspace({
   const [mobileSheet, setMobileSheet] = useState(false);
   const [panelWidth, setPanelWidth] = useState(() => readStoredWidth());
   const [panelTab, setPanelTab] = useState<PanelTab>("files");
+  const [previewArtifact, setPreviewArtifact] = useState<ChatArtifact | null>(null);
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const dragging = useRef(false);
 
@@ -543,6 +546,12 @@ export default function ChatWorkspace({
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
+  function openArtifact(a: ChatArtifact) {
+    setPreviewArtifact(a);
+    // 채팅 메시지로도 스크롤
+    if (a.messageId) scrollToMessage(a.messageId);
+  }
+
   return (
     <div ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
@@ -662,7 +671,22 @@ export default function ChatWorkspace({
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
                       <ReactMarkdown>{m.text}</ReactMarkdown>
                     </div>
-                    {/* 노트·요약·시험지 등 긴 마크다운: 파일 다운로드 */}
+                    {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
+                    {m.text && m.text.length > 0 && m.text.length <= 80 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(m.text).catch(() => {});
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.copy")}
+                        >
+                          <Copy className="h-3 w-3" />
+                          {t("chat.copy")}
+                        </button>
+                      </div>
+                    )}
                     {m.text && m.text.length > 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {m.fileUrl && m.fileName && (
@@ -677,6 +701,17 @@ export default function ChatWorkspace({
                             .md 저장
                           </a>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(m.text).catch(() => {});
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.copy")}
+                        >
+                          <Copy className="h-3 w-3" />
+                          {t("chat.copy")}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
@@ -868,7 +903,7 @@ export default function ChatWorkspace({
                     {featureGroups.map((g) => (
                       <QuickToolGroup
                         key={g.id}
-                        label={g.label}
+                        label={featureGroupLabel(g.id, g.label, t)}
                         tools={g.tools}
                         onSelect={(tool) => {
                           setActiveQuickTool(tool);
@@ -981,7 +1016,7 @@ export default function ChatWorkspace({
           planSteps={planSteps}
           terminalLines={terminalLines}
           loading={loading}
-          onSelectArtifact={(a) => scrollToMessage(a.messageId)}
+          onSelectArtifact={openArtifact}
         />
       </div>
 
@@ -1013,7 +1048,7 @@ export default function ChatWorkspace({
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {
-                  scrollToMessage(a.messageId);
+                  openArtifact(a);
                   setMobileSheet(false);
                 }}
               />
@@ -1021,9 +1056,148 @@ export default function ChatWorkspace({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 파일 미리보기 오버레이 */}
+      {previewArtifact && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setPreviewArtifact(null)} />
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
+                  {previewArtifact.title}
+                </p>
+                <p className="truncate text-[11px] text-slate-500">
+                  {previewArtifact.subtitle || previewArtifact.kind}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {previewArtifact.url && (
+                  <a
+                    href={previewArtifact.url}
+                    download={previewArtifact.fileName ?? undefined}
+                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    다운로드
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewArtifact(null)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <ArtifactPreview messages={messages} artifact={previewArtifact} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function ArtifactPreview({
+  messages,
+  artifact,
+}: {
+  messages: Msg[];
+  artifact: ChatArtifact;
+}) {
+  const msg = messages.find((m) => m.id === artifact.messageId);
+  if (artifact.kind === "attachment" && artifact.url) {
+    if (artifact.mimeType?.startsWith("image/")) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={artifact.url} alt={artifact.title} className="max-h-[70vh] w-full rounded-xl object-contain" />
+      );
+    }
+    return (
+      <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+        <p>첨부 파일 미리보기</p>
+        <a href={artifact.url} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+          새 탭에서 열기
+        </a>
+      </div>
+    );
+  }
+  if ((artifact.kind === "pptx" || artifact.kind === "xlsx") && msg?.resultData) {
+    try {
+      const data = JSON.parse(msg.resultData);
+      if (artifact.kind === "pptx") {
+        return (
+          <FileResultPanel
+            outputType="pptx"
+            deck={data}
+            file={
+              msg.fileUrl
+                ? {
+                    url: msg.fileUrl,
+                    filename: msg.fileName || "deck.pptx",
+                    mimeType: PPTX_MIME,
+                  }
+                : undefined
+            }
+          />
+        );
+      }
+      return (
+        <FileResultPanel
+          outputType="xlsx"
+          workbook={data}
+          file={
+            msg.fileUrl
+              ? {
+                  url: msg.fileUrl,
+                  filename: msg.fileName || "sheet.xlsx",
+                  mimeType: XLSX_MIME,
+                }
+              : undefined
+          }
+        />
+      );
+    } catch {
+      /* fallthrough */
+    }
+  }
+  if (artifact.kind === "structured" && msg?.resultData && msg.structuredKind) {
+    try {
+      const parsed = JSON.parse(msg.resultData);
+      // structuredKind 문자열 → 뷰 매핑 (런타임 안전)
+      return (
+        <StructuredResultView
+          id={msg.id}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {...({ kind: msg.structuredKind, data: parsed } as any)}
+        />
+      );
+    } catch {
+      return (
+        <pre className="overflow-x-auto rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-950">
+          {msg.resultData}
+        </pre>
+      );
+    }
+  }
+  if (msg?.text) {
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown>{msg.text}</ReactMarkdown>
+      </div>
+    );
+  }
+  if (artifact.url) {
+    return (
+      <iframe title={artifact.title} src={artifact.url} className="h-[70vh] w-full rounded-xl border border-slate-200 dark:border-slate-700" />
+    );
+  }
+  return <p className="text-sm text-slate-500">미리볼 수 있는 내용이 없습니다. 다운로드를 이용해 주세요.</p>;
+}
+
 
 function QuickToolGroup({
   label,
@@ -1051,7 +1225,7 @@ function QuickToolGroup({
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
           >
             <Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            {t(`quicktool.${tool.id}.label` as Parameters<typeof t>[0])}
+            {toolUiLabel(tool, t)}
           </button>
         );
       })}

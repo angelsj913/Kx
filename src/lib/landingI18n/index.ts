@@ -10,20 +10,14 @@ import de from "./de";
 import fr from "./fr";
 import es from "./es";
 
-export type LandingLanguage = "en" | "ko" | "ja" | "zh" | "ru" | "de" | "fr" | "es";
+import {
+  LANGUAGE_LABELS,
+  LANGUAGE_ORDER,
+  type AppLanguage,
+} from "../languages";
 
-export const LANGUAGE_LABELS: Record<LandingLanguage, string> = {
-  en: "English",
-  ko: "한국어",
-  ja: "日本語",
-  zh: "中文",
-  ru: "Русский",
-  de: "Deutsch",
-  fr: "Français",
-  es: "Español",
-};
-
-export const LANGUAGE_ORDER: LandingLanguage[] = ["en", "ko", "ja", "zh", "ru", "de", "fr", "es"];
+export type LandingLanguage = AppLanguage;
+export { LANGUAGE_LABELS, LANGUAGE_ORDER };
 
 const STORAGE_KEY = "zeff-landing-language";
 const DEFAULT_LANGUAGE: LandingLanguage = "ko";
