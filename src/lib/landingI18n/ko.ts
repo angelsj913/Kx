@@ -25,6 +25,8 @@ const ko = {
   "hero.modal.instruction": "내려받은 파일을 실행하고 화면 안내를 따라 설치하세요.",
   "hero.modal.confirm": "설치 파일 받기",
   "hero.modal.cancel": "취소",
+  "hero.modal.macComingSoon": "macOS 버전은 준비 중입니다. Windows 설치 파일을 먼저 이용해 주세요.",
+  "hero.download.soon": "준비 중",
 
   "workspace.title": "지연 없는 연산, 한계를 넘어서는 추론 엔진.",
   "workspace.subtitle": "ZEFF AI의 가동 성능을 직접 확인해 보세요.",
