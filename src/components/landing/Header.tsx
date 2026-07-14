@@ -4,7 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ChevronDown, Building2, TrendingUp, FlaskConical, Download, Wrench } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Building2,
+  TrendingUp,
+  FlaskConical,
+  Download,
+  Wrench,
+  LifeBuoy,
+} from "lucide-react";
 import {
   useLandingLanguage,
   useLandingT,
@@ -20,6 +30,7 @@ const MENU_LINKS = [
   { href: "/vision", icon: TrendingUp, labelKey: "nav.potential" as const },
   { href: "/prototype", icon: FlaskConical, labelKey: "nav.prototype" as const },
   { href: "/download", icon: Download, labelKey: "nav.download" as const },
+  { href: "/support", icon: LifeBuoy, labelKey: "nav.support" as const },
 ];
 
 export default function Header() {

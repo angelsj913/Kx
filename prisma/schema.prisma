@@ -20,6 +20,13 @@ model User {
   phone         String?
   phoneVerified DateTime?
 
+  /** 마지막 활동 시각 — 휴면 판정용 */
+  lastActiveAt       DateTime?
+  /** active | dormant */
+  accountStatus      String    @default("active")
+  dormantAt          DateTime?
+  dormantNotifiedAt  DateTime?
+
   accounts     Account[]
   sessions     Session[]
   historyItems HistoryItem[]
@@ -300,10 +307,19 @@ model UserSettings {
   language          String   @default("ko")
   enabledQuickTools String[] @default([])
   stripeCustomerId  String?
+  /** 관리자가 사용자 AI 를 개별 차단할 때 true */
+  aiDisabled        Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/** 전역 키-값 설정 (AI 킬스위치, 한도 등) */
+model SystemConfig {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
 }
 
 // Stripe 결제 주문. merchantUid로 조회하고 웹훅으로 상태를 갱신한다.

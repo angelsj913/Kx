@@ -18,8 +18,15 @@ import {
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
-import { useT, type AppLanguage } from "@/lib/i18n";
+import {
+  useT,
+  LANGUAGE_ORDER,
+  LANGUAGE_LABELS,
+  type AppLanguage,
+  type AppDictKey,
+} from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
+import { COMPANY_INFO } from "@/lib/legalContent";
 
 type Tab =
   | "general"
@@ -166,28 +173,33 @@ function GeneralPanel() {
   const t = useT();
   const { settings, updateLanguage, updatePlan } = useSettings();
   // 서버 설정이 진실 소스 (effect로 로컬 state 동기화하지 않음)
-  const lang: AppLanguage = settings?.language ?? "ko";
+  const lang: AppLanguage =
+    settings?.language && LANGUAGE_ORDER.includes(settings.language as AppLanguage)
+      ? (settings.language as AppLanguage)
+      : "ko";
 
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">언어</h3>
-        <p className="mt-1 text-xs text-slate-500">워크스페이스 UI 언어</p>
-        <div className="mt-3 flex gap-2">
-          {(["ko", "en"] as AppLanguage[]).map((l) => (
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          {t("settings.language.label")}
+        </h3>
+        <p className="mt-1 text-xs text-slate-500">{t("settings.language.hint")}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {LANGUAGE_ORDER.map((l) => (
             <button
               key={l}
               type="button"
               onClick={async () => {
                 await updateLanguage(l);
               }}
-              className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
                 lang === l
                   ? "border-blue-500 bg-blue-600/10 text-blue-700 dark:text-blue-300"
                   : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300"
               }`}
             >
-              {l === "ko" ? "한국어" : "English"}
+              {LANGUAGE_LABELS[l]}
             </button>
           ))}
         </div>
@@ -245,13 +257,23 @@ function PrivacyPanel() {
   );
 }
 
+type OrderRow = {
+  id: string;
+  merchantUid?: string;
+  plan: string;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+};
+
 function BillingPanel() {
+  const t = useT();
   const [methods, setMethods] = useState<
     { id: string; brand: string; last4: string; holder: string | null }[]
   >([]);
-  const [orders, setOrders] = useState<
-    { id: string; plan: string; amount: number; currency: string; status: string; createdAt: string }[]
-  >([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [brand, setBrand] = useState("visa");
   const [last4, setLast4] = useState("");
   const [holder, setHolder] = useState("");
@@ -430,7 +452,11 @@ function BillingPanel() {
                 </tr>
               )}
               {orders.map((o) => (
-                <tr key={o.id} className="border-t border-slate-100 dark:border-slate-800">
+                <tr
+                  key={o.id}
+                  className="cursor-pointer border-t border-slate-100 transition-colors hover:bg-blue-50/50 dark:border-slate-800 dark:hover:bg-blue-950/20"
+                  onClick={() => setSelectedOrder(o)}
+                >
                   <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                     {new Date(o.createdAt).toLocaleDateString("ko-KR")}
                   </td>
@@ -446,7 +472,126 @@ function BillingPanel() {
             </tbody>
           </table>
         </div>
+        <p className="mt-2 text-[11px] text-slate-400">
+          결제된 요금제 행을 선택하면 영수증·세부정보를 볼 수 있습니다.
+        </p>
       </section>
+
+      {selectedOrder && (
+        <ReceiptModal order={selectedOrder} onClose={() => setSelectedOrder(null)} t={t} />
+      )}
+    </div>
+  );
+}
+
+function ReceiptModal({
+  order,
+  onClose,
+  t,
+}: {
+  order: OrderRow;
+  onClose: () => void;
+  t: (k: AppDictKey) => string;
+}) {
+  const isPaid = order.status === "paid";
+  const title = isPaid ? t("billing.receipt") : t("billing.orderDetail");
+
+  function printReceipt() {
+    const w = window.open("", "_blank", "width=480,height=720");
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><title>${title}</title>
+<style>
+  body{font-family:system-ui,sans-serif;padding:32px;color:#0f172a}
+  h1{font-size:18px;margin:0 0 8px}
+  .meta{color:#64748b;font-size:12px;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:8px 0;border-bottom:1px solid #e2e8f0}
+  td:last-child{text-align:right;font-weight:600}
+  .footer{margin-top:28px;font-size:11px;color:#94a3b8}
+</style></head><body>
+  <h1>ZEFF AI · ${title}</h1>
+  <p class="meta">${COMPANY_INFO.serviceName} · ${COMPANY_INFO.contactEmail}</p>
+  <table>
+    <tr><td>${t("billing.merchantUid")}</td><td>${order.merchantUid || order.id}</td></tr>
+    <tr><td>${t("billing.plan")}</td><td>${order.plan}</td></tr>
+    <tr><td>${t("billing.amount")}</td><td>₩${order.amount.toLocaleString()} ${order.currency?.toUpperCase() || ""}</td></tr>
+    <tr><td>${t("billing.status")}</td><td>${order.status}</td></tr>
+    <tr><td>${t("billing.date")}</td><td>${new Date(order.createdAt).toLocaleString("ko-KR")}</td></tr>
+  </table>
+  <p class="footer">${COMPANY_INFO.companyName} · ${COMPANY_INFO.representative}<br/>${COMPANY_INFO.address}</p>
+</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">{title}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">{COMPANY_INFO.serviceName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <dl className="mt-4 space-y-2 text-sm">
+          <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">
+            <dt className="text-slate-500">{t("billing.merchantUid")}</dt>
+            <dd className="font-mono text-xs text-slate-800 dark:text-slate-100">
+              {order.merchantUid || order.id}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">
+            <dt className="text-slate-500">{t("billing.plan")}</dt>
+            <dd className="font-medium text-slate-800 dark:text-slate-100">{order.plan}</dd>
+          </div>
+          <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">
+            <dt className="text-slate-500">{t("billing.amount")}</dt>
+            <dd className="font-semibold text-slate-900 dark:text-slate-50">
+              ₩{order.amount.toLocaleString()}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">
+            <dt className="text-slate-500">{t("billing.status")}</dt>
+            <dd className="text-slate-700 dark:text-slate-200">{order.status}</dd>
+          </div>
+          <div className="flex justify-between gap-4 py-2">
+            <dt className="text-slate-500">{t("billing.date")}</dt>
+            <dd className="text-slate-700 dark:text-slate-200">
+              {new Date(order.createdAt).toLocaleString("ko-KR")}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+          {COMPANY_INFO.companyName} · {COMPANY_INFO.representative}
+          <br />
+          {COMPANY_INFO.contactEmail}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={printReceipt}
+            className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+          >
+            {t("billing.print")}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+          >
+            {t("billing.close")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Upload, Trash2, MessageCircle, FileText } from "lucide-react";
+import { BookOpen, Upload, Trash2, MessageCircle, FileText, Users } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useWorkspace, wsFetch } from "@/lib/workspaceClient";
 
@@ -15,13 +15,16 @@ interface LibraryItemSummary {
   createdAt: string;
 }
 
+type LibraryTab = "mine" | "shared";
+
 export default function LibraryView({
   onOpenBookChat,
 }: {
   onOpenBookChat: (sessionId: string) => void;
 }) {
   const t = useT();
-  const { activeId } = useWorkspace();
+  const { activeId, workspaces } = useWorkspace();
+  const [tab, setTab] = useState<LibraryTab>("mine");
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
   const [usage, setUsage] = useState<{ used: number; max: number; plan: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,23 +32,48 @@ export default function LibraryView({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  const hasTeamWorkspace = (workspaces?.length ?? 0) > 0;
+  const sharedReady = !!activeId && activeId !== "personal";
+
   async function refetch() {
+    setLoading(true);
     try {
-      const res = await wsFetch("/api/library");
+      // 내 서재: 항상 개인 스코프. 공유 서재: 활성 팀 워크스페이스.
+      const headers: HeadersInit = {};
+      if (tab === "mine") {
+        headers["X-Workspace-Id"] = "personal";
+      }
+      // shared: wsFetch가 활성 워크스페이스 헤더를 붙임
+      const res =
+        tab === "mine"
+          ? await fetch("/api/library?scope=personal", {
+              headers: { ...headers },
+            })
+          : await wsFetch("/api/library?scope=shared");
       const data = await res.json();
       if (res.ok) {
         setItems(data.items ?? []);
         if (data.usage) setUsage(data.usage);
+      } else {
+        setError(data?.error ?? "서재를 불러오지 못했습니다.");
+        setItems([]);
       }
     } finally {
       setLoading(false);
     }
   }
 
-  // 활성 워크스페이스가 바뀌면 해당 스코프의 서재로 다시 불러온다.
   useEffect(() => {
-    refetch();
-  }, [activeId]);
+    setError("");
+    if (tab === "shared" && !sharedReady) {
+      setItems([]);
+      setUsage(null);
+      setLoading(false);
+      return;
+    }
+    void refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, tab]);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -57,7 +85,14 @@ export default function LibraryView({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await wsFetch("/api/library", { method: "POST", body: form });
+      const res =
+        tab === "mine"
+          ? await fetch("/api/library?scope=personal", {
+              method: "POST",
+              body: form,
+              headers: { "X-Workspace-Id": "personal" },
+            })
+          : await wsFetch("/api/library?scope=shared", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "업로드에 실패했습니다.");
       setItems((prev) => [data.item, ...prev]);
@@ -72,25 +107,51 @@ export default function LibraryView({
   async function onDelete(id: string) {
     if (!confirm(t("library.deleteConfirm"))) return;
     setItems((prev) => prev.filter((i) => i.id !== id));
-    await wsFetch(`/api/library/${id}`, { method: "DELETE" });
+    if (tab === "mine") {
+      await fetch(`/api/library/${id}`, {
+        method: "DELETE",
+        headers: { "X-Workspace-Id": "personal" },
+      });
+    } else {
+      await wsFetch(`/api/library/${id}`, { method: "DELETE" });
+    }
   }
 
   async function onBookChat(id: string) {
-    const res = await wsFetch(`/api/library/${id}/chat`, { method: "POST" });
+    const res =
+      tab === "mine"
+        ? await fetch(`/api/library/${id}/chat`, {
+            method: "POST",
+            headers: { "X-Workspace-Id": "personal" },
+          })
+        : await wsFetch(`/api/library/${id}/chat`, { method: "POST" });
     const data = await res.json();
     if (res.ok && data.sessionId) onOpenBookChat(data.sessionId);
   }
+
+  const title = tab === "mine" ? t("library.title") : t("library.sharedTitle");
+  const subtitle = tab === "mine" ? t("library.subtitle") : t("library.sharedSubtitle");
+  const emptyText =
+    tab === "shared" && !sharedReady
+      ? t("library.needWorkspace")
+      : tab === "shared"
+        ? t("library.sharedEmpty")
+        : t("library.empty");
 
   return (
     <div className="mx-auto flex h-full max-w-5xl flex-col overflow-y-auto px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-50">
-            <BookOpen className="h-5 w-5 text-[var(--mode-accent)]" />
-            {t("library.title")}
+            {tab === "shared" ? (
+              <Users className="h-5 w-5 text-[var(--mode-accent)]" />
+            ) : (
+              <BookOpen className="h-5 w-5 text-[var(--mode-accent)]" />
+            )}
+            {title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("library.subtitle")}</p>
-          {usage && (
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+          {usage && tab === "mine" && (
             <p className="mt-1 text-xs text-slate-400">
               저장 {usage.used} / {usage.max}개
               {usage.used >= usage.max ? " · 한도 도달" : ""}
@@ -98,7 +159,31 @@ export default function LibraryView({
           )}
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-900/60">
+            <button
+              type="button"
+              onClick={() => setTab("mine")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                tab === "mine"
+                  ? "bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+              }`}
+            >
+              {t("library.tab.mine")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("shared")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                tab === "shared"
+                  ? "bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+              }`}
+            >
+              {t("library.tab.shared")}
+            </button>
+          </div>
           <input
             ref={fileRef}
             type="file"
@@ -109,7 +194,11 @@ export default function LibraryView({
           <motion.button
             type="button"
             onClick={() => fileRef.current?.click()}
-            disabled={uploading || (!!usage && usage.used >= usage.max)}
+            disabled={
+              uploading ||
+              (tab === "mine" && !!usage && usage.used >= usage.max) ||
+              (tab === "shared" && !sharedReady)
+            }
             whileTap={{ scale: 0.96 }}
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all disabled:opacity-60"
           >
@@ -118,6 +207,12 @@ export default function LibraryView({
           </motion.button>
         </div>
       </div>
+
+      {tab === "shared" && !sharedReady && hasTeamWorkspace && (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
+          {t("library.needWorkspace")}
+        </p>
+      )}
 
       {error && (
         <p className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:border-red-500/30 dark:bg-red-950/40 dark:text-red-300">
@@ -130,7 +225,7 @@ export default function LibraryView({
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 shadow-lg shadow-blue-600/30">
             <BookOpen className="h-7 w-7 text-white" />
           </div>
-          <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("library.empty")}</p>
+          <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{emptyText}</p>
         </div>
       )}
 

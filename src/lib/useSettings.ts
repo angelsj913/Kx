@@ -3,18 +3,31 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { setAppLanguage, type AppLanguage } from "./i18n";
+import { LANGUAGE_ORDER } from "./languages";
 
 export interface UserSettings {
   plan: "free" | "pro" | "professional";
   language: AppLanguage;
   enabledQuickTools: string[];
+  aiDisabled?: boolean;
+}
+
+function normalizeLanguage(raw: unknown): AppLanguage {
+  if (typeof raw === "string" && (LANGUAGE_ORDER as string[]).includes(raw)) {
+    return raw as AppLanguage;
+  }
+  return "ko";
 }
 
 async function fetchSettings(): Promise<UserSettings> {
   const res = await fetch("/api/settings");
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error ?? "설정을 불러오지 못했습니다.");
-  return data.settings;
+  const s = data.settings;
+  return {
+    ...s,
+    language: normalizeLanguage(s?.language),
+  } as UserSettings;
 }
 
 /**

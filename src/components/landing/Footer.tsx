@@ -29,12 +29,32 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
-        <Link
-          href="/support/legal#privacy"
-          className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
-        >
-          {t("footer.privacy")}
-        </Link>
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <Link
+            href="/support"
+            className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+          >
+            {t("nav.support")}
+          </Link>
+          <Link
+            href="/support/legal#terms"
+            className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+          >
+            {t("footer.terms")}
+          </Link>
+          <Link
+            href="/support/legal#privacy"
+            className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+          >
+            {t("footer.privacy")}
+          </Link>
+          <Link
+            href="/support/inquiry"
+            className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
+          >
+            {t("footer.inquiry")}
+          </Link>
+        </nav>
         {/* 브랜드 워드마크 (텍스트 'ZEFF AI' 대신 디자인 로고) */}
         <Logo size="md" />
         <p>

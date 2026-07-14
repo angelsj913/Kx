@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, MessageSquare, CreditCard, Users, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, MessageSquare, CreditCard, Users, ArrowLeft, Bot } from "lucide-react";
 import { auth } from "@/auth";
 import { isAdminEmail } from "@/lib/admin";
 import AdminAccessDenied from "@/components/admin/AdminAccessDenied";
@@ -9,6 +9,7 @@ export const metadata = { title: "개발자 관리 · ZEFF AI" };
 
 const NAV = [
   { href: "/admin", label: "대시보드", icon: LayoutDashboard },
+  { href: "/admin/ai", label: "AI 관리", icon: Bot },
   { href: "/admin/inquiries", label: "1:1 문의", icon: MessageSquare },
   { href: "/admin/orders", label: "주문·결제", icon: CreditCard },
   { href: "/admin/users", label: "회원", icon: Users },

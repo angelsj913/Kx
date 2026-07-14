@@ -98,4 +98,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+  events: {
+    // 로그인 시 1회 활동 갱신·휴면 복구 (세션 콜백 매 요청 부하 방지)
+    async signIn({ user }) {
+      if (user?.id) {
+        const { touchUserActivity } = await import("@/lib/activity");
+        await touchUserActivity(user.id);
+      }
+    },
+  },
 });

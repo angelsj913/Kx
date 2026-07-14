@@ -1,10 +1,11 @@
-﻿import type ko from "./ko";
+import type ko from "./ko";
 
 const ru: Record<keyof typeof ko, string> = {
   "nav.about": "О компании",
   "nav.potential": "Потенциал развития",
   "nav.prototype": "Прототипы в разработке",
   "nav.download": "Скачать",
+  "nav.support": "Поддержка",
 
   "header.support": "Поддержка",
   "header.login": "Войти",
@@ -312,7 +313,9 @@ const ru: Record<keyof typeof ko, string> = {
   "company.prototype.item3": "Автоматический планировщик повторения — подсказывает оптимальное время для повторения материалов, сохранённых в библиотеке",
   "company.prototype.item4": "Корпоративный коннектор данных — совместный поиск по внутренним документам компании и знаниям организации",
 
+  "footer.terms": "Условия использования",
   "footer.privacy": "Политика конфиденциальности",
+  "footer.inquiry": "Обращение в поддержку",
   "footer.brand": "ZEFF AI",
   "footer.contact": "Контакты",
   "footer.ceo": "Генеральный директор",

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const LANGUAGES = ["ko", "en"];
+const LANGUAGES = ["en", "ko", "ja", "zh", "ru", "de", "fr", "es"];
 
 export async function GET() {
   const session = await auth();
