@@ -196,12 +196,22 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         subtitle: "구조화 결과",
         messageId: m.id,
       });
-    } else if (m.text && m.text.length > 80) {
+    } else if (
+      m.outputType === "markdown" ||
+      (m.fileUrl && m.fileName) ||
+      (m.text && m.text.length > 40)
+    ) {
+      // 워드·시험지·노트 등 마크다운 산출물도 패널에서 열기/다운로드
+      const titleFromName = m.fileName?.replace(/\.[^.]+$/, "") || null;
+      const titleFromText =
+        m.text.slice(0, 48).replace(/\s+/g, " ") + (m.text.length > 48 ? "…" : "");
       list.push({
         id: `${m.id}-doc`,
         kind: "doc",
-        title: m.text.slice(0, 48).replace(/\s+/g, " ") + (m.text.length > 48 ? "…" : ""),
-        subtitle: "문서 응답",
+        title: titleFromName || titleFromText || "문서",
+        subtitle: m.fileName || (m.outputType === "markdown" ? "Markdown / Word" : "문서 응답"),
+        url: m.fileUrl,
+        fileName: m.fileName,
         messageId: m.id,
       });
     }
