@@ -27,6 +27,8 @@ const ru: Record<keyof typeof ko, string> = {
   "hero.modal.instruction": "Запустите скачанный файл и следуйте инструкциям на экране.",
   "hero.modal.confirm": "Получить установщик",
   "hero.modal.cancel": "Отмена",
+  "hero.modal.macComingSoon": "Версия для macOS скоро появится. Пока используйте установщик Windows.",
+  "hero.download.soon": "Скоро",
 
   "workspace.title": "Вычисления без задержек. Движок рассуждений, идущий за пределы возможного.",
   "workspace.subtitle": "Убедитесь в реальной производительности ZEFF AI сами.",
