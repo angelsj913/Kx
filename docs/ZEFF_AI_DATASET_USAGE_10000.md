@@ -150,6 +150,23 @@
 node scripts/generate-zeff-dataset.mjs
 ```
 
+### 자동화 스크립트로 바로 반영
+
+로그인 UI를 거치지 않고 서버 측에서 바로 `LibraryItem` 생성과 `DocumentChunk` 색인까지 끝내려면 아래 스크립트를 사용할 수 있습니다.
+
+```bash
+npm run rag:index:zeff -- --user-email you@example.com
+```
+
+공유 워크스페이스에 넣고 싶다면:
+
+```bash
+npm run rag:index:zeff -- --user-email you@example.com --workspace-id YOUR_WORKSPACE_ID
+```
+
+이 스크립트는 기본적으로 `docs/datasets/zeff-ai-rag-source-extended.md`를 읽어 같은 제목의 서재 항목을 만들거나 갱신하고, 기존 청크를 지운 뒤 다시 색인합니다.
+실행 전에는 최소한 `DATABASE_URL`이 설정되어 있어야 하며, 의존성이 설치된 환경이어야 합니다.
+
 ### 단계 2. 업로드할 파일 선택
 
 권장 파일:
