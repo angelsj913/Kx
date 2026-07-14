@@ -158,19 +158,21 @@ export async function runBackendRoute(args: {
   let verifyAttempts = 0;
 
   // ── 3. verify ──
-  // 토큰·지연 최소: 짧거나 충분히 구조화된 초안은 검증 스킵
-  // (추가 LLM 호출 없이 경로만 단축 → 체감 지연 대폭 감소)
+  // 토큰 비증가 + 지연 최소화: standard 무검증, priority/top 도 구조화·중간 길이 초안은 스킵
   const draftLen = draft.text.trim().length;
   const looksStructured =
     draft.text.includes("\n## ") ||
     draft.text.includes("\n- ") ||
     draft.text.includes("```") ||
-    (draft.text.match(/\n/g)?.length ?? 0) >= 6;
+    draft.text.includes("1.") ||
+    (draft.text.match(/\n/g)?.length ?? 0) >= 4;
+  // top 만 드물게 검증 (priority 는 기본 스킵) — LLM 호출 1회로 응답 지연 대폭 단축
   const shouldVerify =
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
-    ((tier === "top" && draftLen > 280 && !looksStructured) ||
-      (tier === "priority" && draftLen > 400 && !looksStructured));
+    tier === "top" &&
+    draftLen > 600 &&
+    !looksStructured;
 
   if (shouldVerify) {
     stages.push("verify");
