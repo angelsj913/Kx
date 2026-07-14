@@ -27,6 +27,8 @@ const ja: Record<keyof typeof ko, string> = {
   "hero.modal.instruction": "ダウンロードしたファイルを実行し、画面の案内に従ってインストールしてください。",
   "hero.modal.confirm": "インストーラーを取得",
   "hero.modal.cancel": "キャンセル",
+  "hero.modal.macComingSoon": "macOS版は準備中です。Windowsインストーラーをご利用ください。",
+  "hero.download.soon": "準備中",
 
   "workspace.title": "遅延のない演算、限界を超える推論エンジン。",
   "workspace.subtitle": "ZEFF AIの実力を、その目で確かめてください。",
