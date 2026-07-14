@@ -13,6 +13,7 @@ import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
+import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -324,11 +325,18 @@ export async function POST(request: Request) {
             files: i === history.length - 1 && inlineFiles.length ? inlineFiles : undefined,
           }));
 
+          const extraSystemInstruction = await buildZeffRuntimeInstruction({
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
+            query: text,
+          });
+
           const result = await runBackendRoute({
             text,
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
+            extraSystemInstruction,
             onStage: (e) => {
               send({
                 type: "status",

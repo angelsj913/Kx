@@ -99,6 +99,7 @@ export async function runBackendRoute(args: {
   hasFiles: boolean;
   messages: ChatMessage[];
   modelTier?: ModelTier;
+  extraSystemInstruction?: string;
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: AgentId; stage: RouteStage }) => void;
 }): Promise<BackendRouteResult> {
@@ -132,7 +133,12 @@ export async function runBackendRoute(args: {
 
   let draftAttempts = 0;
   const draft = await chatReplyWithFallback({
-    systemInstruction: systemFor(primary.id, tier, intentTool),
+    systemInstruction: [
+      systemFor(primary.id, tier, intentTool),
+      args.extraSystemInstruction?.trim() ? args.extraSystemInstruction.trim() : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     messages: args.messages,
     candidates,
     onAttempt: (info) => {
