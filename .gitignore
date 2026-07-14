@@ -58,3 +58,7 @@ android/*.keystore
 
 # prisma generated client
 /src/generated/prisma
+
+# local large dataset artifacts
+/docs/datasets/zeff-ai-training-100000.jsonl
+/docs/datasets/zeff-ai-training-100000.messages.jsonl
