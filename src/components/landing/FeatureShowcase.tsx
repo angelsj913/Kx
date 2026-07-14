@@ -27,7 +27,13 @@ const COPY: { ko: { title: string; subtitle: string; items: Item[] }; en: { titl
         no: "03",
         tag: "문서 · 발표자료",
         title: "핵심만 던지면, 초안이 완성됩니다",
-        desc: "필요한 내용만 알려 주면 워드 문서와 발표용 슬라이드 초안을 만들어 드립니다. 표와 서식까지 고려해, 받은 그대로 다듬어 쓰기 좋습니다.",
+        desc: "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열어 미리볼 수 있습니다. 표와 서식까지 고려해 받은 그대로 다듬어 쓰기 좋습니다.",
+      },
+      {
+        no: "04",
+        tag: "공유 서재",
+        title: "내 자료와 팀 자료를 한곳에서",
+        desc: "개인 서재와 팀 워크스페이스 공유 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
       },
     ],
   },
@@ -51,7 +57,13 @@ const COPY: { ko: { title: string; subtitle: string; items: Item[] }; en: { titl
         no: "03",
         tag: "Docs · Slides",
         title: "Give the gist, get a draft",
-        desc: "Tell it just what you need and get a draft of a Word document and a presentation deck — formatting and tables accounted for, ready to polish as-is.",
+        desc: "Tell it just what you need and get Word, PPT, or Excel drafts — then open them in the right-hand panel to preview. Formatting and tables included, ready to polish as-is.",
+      },
+      {
+        no: "04",
+        tag: "Shared Library",
+        title: "Personal and team materials, together",
+        desc: "Keep a personal library and a team workspace shared library, then chat with any document through Book Chat.",
       },
     ],
   },
@@ -138,7 +150,36 @@ function MockDocs() {
   );
 }
 
-const MOCKS = [MockSummary, MockLecture, MockDocs];
+function MockLibrary() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+      <div className="mb-2 flex gap-1.5">
+        <span className="rounded-md bg-blue-600/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+          내 서재
+        </span>
+        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          공유 서재
+        </span>
+      </div>
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="h-2 w-3/4 rounded bg-slate-300 dark:bg-slate-700" />
+              <div className="h-1.5 w-1/2 rounded bg-slate-200 dark:bg-slate-800" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const MOCKS = [MockSummary, MockLecture, MockDocs, MockLibrary];
 
 export default function FeatureShowcase() {
   const copy = useLocalCopy(COPY);

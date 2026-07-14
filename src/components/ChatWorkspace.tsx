@@ -671,7 +671,22 @@ export default function ChatWorkspace({
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
                       <ReactMarkdown>{m.text}</ReactMarkdown>
                     </div>
-                    {/* 노트·요약·시험지 등 긴 마크다운: 파일 다운로드 */}
+                    {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
+                    {m.text && m.text.length > 0 && m.text.length <= 80 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(m.text).catch(() => {});
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.copy")}
+                        >
+                          <Copy className="h-3 w-3" />
+                          {t("chat.copy")}
+                        </button>
+                      </div>
+                    )}
                     {m.text && m.text.length > 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {m.fileUrl && m.fileName && (
@@ -686,6 +701,17 @@ export default function ChatWorkspace({
                             .md 저장
                           </a>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(m.text).catch(() => {});
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.copy")}
+                        >
+                          <Copy className="h-3 w-3" />
+                          {t("chat.copy")}
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
