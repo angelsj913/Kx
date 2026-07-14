@@ -66,8 +66,8 @@ export async function POST(request: Request) {
     quickToolId = autoDetectedTool;
   }
 
-  // 전역 AI 킬스위치 · 사용자 차단 · 쿼터 · 설정 병렬
-  const { isAiGloballyEnabled } = await import("@/lib/aiControl");
+  // 전역 AI 킬스위치 · 일일 한도 · 사용자 차단 · 쿼터 · 설정 병렬
+  const { isAiGloballyEnabled, assertAiDailyCap } = await import("@/lib/aiControl");
   const { touchUserActivity } = await import("@/lib/activity");
   let modelTier: "standard" | "priority" | "top" = "standard";
   try {
@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       isAiGloballyEnabled(),
       prisma.userSettings.findUnique({ where: { userId } }),
       touchUserActivity(userId),
+      assertAiDailyCap(),
     ]);
     if (!aiOn) {
       return NextResponse.json(
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
   } catch (err) {
     if (err instanceof QuotaError) {
       return NextResponse.json({ error: err.message, code: "QUOTA" }, { status: 402 });
+    }
+    if (err instanceof Error && (err as Error & { code?: string }).code === "AI_DAILY_CAP") {
+      return NextResponse.json({ error: err.message, code: "AI_DAILY_CAP" }, { status: 429 });
     }
     throw err;
   }
@@ -306,7 +310,7 @@ export async function POST(request: Request) {
           });
 
           // 최근 N턴만 로드 — 토큰 증가 없이 컨텍스트 윈도우·DB I/O 축소
-          const HISTORY_LIMIT = 24;
+          const HISTORY_LIMIT = 16;
           const history = await prisma.chatHistory.findMany({
             where: { sessionId: resolvedSessionId },
             orderBy: { createdAt: "desc" },
