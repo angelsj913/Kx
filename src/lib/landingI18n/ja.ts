@@ -69,7 +69,7 @@ const ja: Record<keyof typeof ko, string> = {
   "grid.subtitle": "ログイン後、ワークスペースですぐに使える機能です。",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "自分の書庫に追加した本と自由に会話できます。",
-  "grid.library.label": "マイライブラリ",
+  "grid.library.label": "マイ・共有ライブラリ",
   "grid.library.desc": "よく見る資料を一箇所にまとめて、いつでも取り出せます。",
   "grid.lectureChat.label": "講義チャット",
   "grid.lectureChat.desc": "講義動画のリンク一つから始めて、気になることを聞き続けられます。",
