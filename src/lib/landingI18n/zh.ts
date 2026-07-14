@@ -67,7 +67,7 @@ const zh: Record<keyof typeof ko, string> = {
   "grid.subtitle": "登录后即可在工作空间中直接使用以下功能。",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "与你添加到书房中的书籍自由对话。",
-  "grid.library.label": "我的书房",
+  "grid.library.label": "我的与共享书库",
   "grid.library.desc": "把常用资料集中存放一处，随时取用。",
   "grid.lectureChat.label": "讲座聊天",
   "grid.lectureChat.desc": "只需一个讲座视频链接，即可持续追问你感兴趣的内容。",
