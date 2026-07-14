@@ -4,63 +4,54 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
-import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
+import { resolveScope, WorkspaceError } from "@/lib/workspace";
 import { getPlanOrFree } from "@/lib/plans";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * 서재 목록 필터
+ * - personal: 내 서재만 (workspaceId null)
+ * - shared: 활성 팀 워크스페이스 공유 서재만
+ * - (legacy) 헤더만 오면 resolveScope 결과 사용하되 personal은 null 스코프를 내 서재로 취급
+ */
+function libraryWhere(
+  userId: string,
+  workspaceId: string | null,
+  mode: "personal" | "shared" | "auto",
+): Prisma.LibraryItemWhereInput {
+  if (mode === "personal" || (mode === "auto" && !workspaceId)) {
+    return { userId, workspaceId: null };
+  }
+  if (mode === "shared" || workspaceId) {
+    if (!workspaceId) {
+      // 공유 탭인데 팀 WS 없음 → 빈 결과
+      return { id: "__none__" };
+    }
+    return { workspaceId };
+  }
+  return { userId, workspaceId: null };
+}
+
+function parseMode(request: Request): "personal" | "shared" | "auto" {
+  const url = new URL(request.url);
+  const scope = (url.searchParams.get("scope") ?? "").trim().toLowerCase();
+  if (scope === "personal" || scope === "mine") return "personal";
+  if (scope === "shared" || scope === "team") return "shared";
+  return "auto";
+}
 
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
-
-  let scope;
-  try {
-    scope = await resolveScope(request, session.user.id);
-  } catch (err) {
-    if (err instanceof WorkspaceError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    throw err;
-  }
-
-  const settings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
-  });
-  const plan = getPlanOrFree(settings?.plan);
-  const count = await prisma.libraryItem.count({
-    where: listWhere(scope, session.user.id),
-  });
-
-  const items = await prisma.libraryItem.findMany({
-    where: listWhere(scope, session.user.id),
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      fileUrl: true,
-      fileName: true,
-      mimeType: true,
-      createdAt: true,
-    },
-  });
-
-  return NextResponse.json({
-    items,
-    usage: { used: count, max: plan.libraryMax, plan: plan.id },
-  });
-}
-
-export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
   const userId = session.user.id;
+  const mode = parseMode(request);
 
-  let scope;
+  let scope: { workspaceId: string | null };
   try {
     scope = await resolveScope(request, userId);
   } catch (err) {
@@ -70,12 +61,81 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  // 요금제별 서재 용량 제한
+  // shared 요청인데 워크스페이스 미선택
+  if (mode === "shared" && !scope.workspaceId) {
+    return NextResponse.json({
+      items: [],
+      usage: null,
+      scope: "shared",
+      workspaceId: null,
+      needWorkspace: true,
+    });
+  }
+
+  const where = libraryWhere(userId, scope.workspaceId, mode);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId },
+  });
+  const plan = getPlanOrFree(settings?.plan);
+
+  const [count, items] = await Promise.all([
+    prisma.libraryItem.count({ where }),
+    prisma.libraryItem.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        fileUrl: true,
+        fileName: true,
+        mimeType: true,
+        createdAt: true,
+        workspaceId: true,
+      },
+    }),
+  ]);
+
+  return NextResponse.json({
+    items,
+    usage: { used: count, max: plan.libraryMax, plan: plan.id },
+    scope: mode === "auto" ? (scope.workspaceId ? "shared" : "personal") : mode,
+    workspaceId: scope.workspaceId,
+    needWorkspace: false,
+  });
+}
+
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  const userId = session.user.id;
+  const mode = parseMode(request);
+
+  let scope: { workspaceId: string | null };
+  try {
+    scope = await resolveScope(request, userId);
+  } catch (err) {
+    if (err instanceof WorkspaceError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
+
+  // 공유 업로드는 팀 WS 필수
+  const forcePersonal = mode === "personal";
+  const workspaceId = forcePersonal ? null : scope.workspaceId;
+  if (mode === "shared" && !workspaceId) {
+    return NextResponse.json(
+      { error: "공유 서재에 올리려면 팀 워크스페이스를 선택하세요.", code: "NEED_WORKSPACE" },
+      { status: 400 },
+    );
+  }
+
+  const where = libraryWhere(userId, workspaceId, forcePersonal ? "personal" : workspaceId ? "shared" : "personal");
   const settings = await prisma.userSettings.findUnique({ where: { userId } });
   const plan = getPlanOrFree(settings?.plan);
-  const currentCount = await prisma.libraryItem.count({
-    where: listWhere(scope, userId),
-  });
+  const currentCount = await prisma.libraryItem.count({ where });
   if (currentCount >= plan.libraryMax) {
     return NextResponse.json(
       {
@@ -108,19 +168,24 @@ export async function POST(request: Request) {
       contentType: mimeType,
     });
 
-    const { text: extractedText } = await runToolGeneration({
-      toolId: "library-extract",
-      userId,
-      modelTier: plan.modelTier,
-      images: [{ data: buf.toString("base64"), mimeType }],
-    }).then((result) => ({
-      text: result.outputType === "markdown" ? result.text : "",
-    }));
+    // 추출은 업로드 병목 — 실패해도 저장은 유지
+    let extractedText = "";
+    try {
+      const result = await runToolGeneration({
+        toolId: "library-extract",
+        userId,
+        modelTier: plan.modelTier,
+        images: [{ data: buf.toString("base64"), mimeType }],
+      });
+      extractedText = result.outputType === "markdown" ? result.text : "";
+    } catch (err) {
+      console.warn("library extract skipped:", err);
+    }
 
     const item = await prisma.libraryItem.create({
       data: {
         userId,
-        workspaceId: scope.workspaceId,
+        workspaceId,
         title: titleInput || file.name.replace(/\.[^.]+$/, ""),
         fileUrl: blob.url,
         fileName: file.name,
