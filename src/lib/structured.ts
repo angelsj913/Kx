@@ -2,7 +2,7 @@
 // pptx.ts/xlsx.ts와 동일한 패턴: extractJson으로 코드블록을 벗기고 JSON.parse.
 
 import { extractJson } from "./fileTypes";
-import { sample2D, sample3D } from "./mathGraph";
+import { sample2D, sample3D, generatePrimitive } from "./mathGraph";
 
 export type StructuredKind =
   | "meeting"
@@ -298,21 +298,43 @@ function toIndexTriple(v: unknown, vertexCount: number): [number, number, number
   return [a, b, c];
 }
 
+const SOLID_CAP = 20000;
+
 function parseSolid(raw: unknown): GraphSolid3D | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const label = typeof o?.label === "string" ? o.label : "";
   const color = typeof o?.color === "string" && o.color.trim() ? o.color : "gray";
+
+  // 표준 입체(정육면체/각뿔/각기둥/구/도넛)는 AI가 좌표를 직접 계산하지 않고
+  // 몇 개 숫자 파라미터만 주면 서버에서 정확한 메시를 만든다 — 훨씬 안정적이다.
+  if (o?.primitive && typeof o.primitive === "object") {
+    const p = o.primitive as Record<string, unknown>;
+    const mesh = generatePrimitive({
+      type: typeof p?.type === "string" ? p.type : "",
+      width: Number(p?.width),
+      depth: Number(p?.depth),
+      height: Number(p?.height),
+      radius: Number(p?.radius),
+      sides: Number(p?.sides),
+      segments: Number(p?.segments),
+      rings: Number(p?.rings),
+      tube: Number(p?.tube),
+    });
+    if (mesh) return { label, vertices: mesh.vertices, faces: mesh.faces, color };
+    // 인식 못 하는 primitive.type이면 커스텀 vertices/faces로 폴백.
+  }
+
   const vertices = Array.isArray(o?.vertices)
     ? (o.vertices as unknown[])
-        .slice(0, 500)
+        .slice(0, SOLID_CAP)
         .map(toVector3)
         .filter((v): v is [number, number, number] => v !== null)
     : [];
   if (vertices.length < 3) return null;
   const faces = Array.isArray(o?.faces)
     ? (o.faces as unknown[])
-        .slice(0, 500)
+        .slice(0, SOLID_CAP)
         .map((f) => toIndexTriple(f, vertices.length))
         .filter((f): f is [number, number, number] => f !== null)
     : [];

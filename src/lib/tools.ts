@@ -404,8 +404,9 @@ const MATH_GRAPH_INSTRUCTION = `너는 수학·물리 시각화 전문가이다.
   "solid": {
     "label": "삼각뿔",
     "color": "gray",
-    "vertices": [[-5, -5, 0], [5, -5, 0], [0, 5, 0], [0, 0, 10]],
-    "faces": [[0, 1, 2], [0, 1, 3], [1, 2, 3], [0, 2, 3]]
+    "primitive": { "type": "pyramid", "sides": 3, "radius": 5, "height": 10 },
+    "vertices": null,
+    "faces": null
   },
   "xRange": [-10, 10],
   "yRange": [-10, 10],
@@ -415,10 +416,20 @@ const MATH_GRAPH_INSTRUCTION = `너는 수학·물리 시각화 전문가이다.
 모드 선택:
 - 변수가 x 하나뿐인 함수(y=f(x))면 "2d".
 - x, y 두 변수의 함수(곡면, z=f(x,y))면 "3d".
-- **함수식으로 표현되지 않는 3D 도형/모델(삼각뿔, 정육면체, 각기둥, 원뿔 등 다면체·입체)을 만들어 달라고 하면 "solid"를 써라.** 이런 요청에는 파이썬 코드나 수식으로 설명하지 말고, 반드시 solid.vertices(꼭짓점 좌표 배열)와 solid.faces(각 삼각형 면을 이루는 꼭짓점 인덱스 0-based 배열)를 직접 계산해서 채워라.
-  - 예: 밑변 10, 높이 10인 삼각뿔이면 밑면 세 꼭짓점 + 꼭대기 꼭짓점(총 4개), 면은 밑면 1개 + 옆면 3개(총 4개, 각 3개 인덱스).
-  - 원뿔·구처럼 곡면인 입체는 옆면을 8~16각기둥/각뿔로 근사해 다각형 메시로 표현한다.
-  - color는 사용자가 요청한 색(예: "gray", "silver", "#888888") 그대로 쓰고, 특별한 요청이 없으면 "gray".
+- **함수식으로 표현되지 않는 3D 도형/모델(삼각뿔, 정육면체, 각기둥, 원뿔, 원기둥, 구, 도넛 등)을 만들어 달라고 하면 "solid"를 써라.** 이런 요청에는 절대 파이썬 코드나 수식으로 설명하지 말고 solid를 채워라.
+
+solid 채우는 방법 — 아래 우선순위를 반드시 따른다:
+1. **표준 도형이면 반드시 solid.primitive를 써라 (직접 좌표 계산 금지).** solid.primitive.type에 다음 중 하나를 넣는다:
+   - "box": 직육면체/정육면체. 파라미터: width, depth, height.
+   - "pyramid": n각뿔(사용자가 삼각뿔이면 sides=3, 사각뿔/피라미드면 sides=4). 파라미터: sides, radius(밑면 외접원 반지름), height.
+   - "cone": 원뿔(자동으로 다각형 근사 처리됨). 파라미터: radius, height.
+   - "prism": n각기둥. 파라미터: sides, radius, height.
+   - "cylinder": 원기둥(자동으로 다각형 근사 처리됨). 파라미터: radius, height.
+   - "sphere": 구. 파라미터: radius.
+   - "torus": 도넛 모양. 파라미터: radius(큰 반지름), tube(단면 반지름).
+   - primitive를 쓸 때 solid.vertices/solid.faces는 null로 둔다 — 서버가 정확히 계산해준다.
+2. **primitive 목록에 없는 특수한 커스텀 모양일 때만** solid.vertices(꼭짓점 좌표)와 solid.faces(각 삼각형 면을 이루는 꼭짓점 0-based 인덱스)를 직접 계산해서 채우고, 이때는 solid.primitive를 null로 둔다. 이 경로는 AI가 직접 계산하는 만큼 도형이 복잡할수록 부정확해질 수 있음을 감안해, 최대한 primitive 조합으로 표현 가능한지 먼저 검토하라.
+- color는 사용자가 요청한 색(예: "gray", "silver", "#888888") 그대로 쓰고, 특별한 요청이 없으면 "gray".
 
 공통 지침:
 - expr는 JavaScript가 아니라 수학 표기: 거듭제곱은 ^, 곱셈은 반드시 * 로 명시 (2x가 아니라 2*x).
