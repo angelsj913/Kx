@@ -143,7 +143,7 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
   return (
     <div
       id={`graph-${id}`}
-      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md"
+      className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md"
     >
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -184,7 +184,7 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
           </button>
         </div>
       </div>
-      <div ref={containerRef} className="h-80 min-h-0 flex-1 sm:h-96" />
+      <div ref={containerRef} className="h-80 w-full sm:h-96" />
     </div>
   );
 }
