@@ -57,7 +57,10 @@ export default function Logo({
             alt="ZEFF"
             fill
             priority
-            sizes="64px"
+            quality={90}
+            // 박스(48/64px)보다 2.1배 확대해서 보여주므로, 화질 저하 없이 확대되도록
+            // 실제 렌더 크기(박스 x 2.1)에 맞춰 더 큰 원본 해상도를 요청한다.
+            sizes="(min-width: 640px) 140px, 105px"
             className={`scale-[2.1] object-contain transition-[filter] duration-300 dark:invert ${
               spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
             }`}
