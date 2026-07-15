@@ -67,12 +67,18 @@ export function detectQuickToolFromText(text: string): string | null {
     return "exam-maker";
   }
 
-  // ── 수학 그래프 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
+  // ── 수학 그래프 / 3D 도형 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
   const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
+  const wants3DExplicit = /\b3d\b/i.test(t) || /입체/.test(t);
+  // 삼각뿔·정육면체 등은 함수식이 없어도 그 자체로 3D 입체 요청이 명확한 명사들.
+  const solidShapeNoun =
+    /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체/.test(t);
   const wantsGraph =
     /그래프|그려\s*줘|그려\s*주세요|그리기|시각화/.test(t) ||
     /\b(plot|graph)\b/i.test(t) ||
-    (hasEquationShape && /(그려|시각화|보여)/.test(t));
+    (hasEquationShape && /(그려|시각화|보여)/.test(t)) ||
+    wants3DExplicit ||
+    (solidShapeNoun && /(만들|그려|생성|보여)/.test(t));
   if (wantsGraph) return "math-graph";
 
   // ── 수학 ──

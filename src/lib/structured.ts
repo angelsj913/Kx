@@ -245,11 +245,20 @@ export interface GraphSurface3D {
   z: (number | null)[][];
 }
 
+/** 함수로 표현되지 않는 3D 도형(삼각뿔·정육면체 등 다면체) — 꼭짓점 + 삼각형 면. */
+export interface GraphSolid3D {
+  label: string;
+  vertices: [number, number, number][];
+  faces: [number, number, number][];
+  color: string;
+}
+
 export interface MathGraph {
-  mode: "2d" | "3d";
+  mode: "2d" | "3d" | "solid";
   title: string;
   functions: GraphFunction2D[];
   surface: GraphSurface3D | null;
+  solid: GraphSolid3D | null;
   xRange: [number, number];
   yRange: [number, number];
   zRange: [number, number] | null;
@@ -275,15 +284,51 @@ function autoFitRange(values: number[], fallback: [number, number]): [number, nu
   return [min - pad, max + pad];
 }
 
+function toVector3(v: unknown): [number, number, number] | null {
+  if (!Array.isArray(v) || v.length !== 3) return null;
+  const [a, b, c] = v.map(Number);
+  if (![a, b, c].every(Number.isFinite)) return null;
+  return [a, b, c];
+}
+
+function toIndexTriple(v: unknown, vertexCount: number): [number, number, number] | null {
+  if (!Array.isArray(v) || v.length !== 3) return null;
+  const [a, b, c] = v.map((x) => Math.trunc(Number(x)));
+  if (![a, b, c].every((n) => Number.isInteger(n) && n >= 0 && n < vertexCount)) return null;
+  return [a, b, c];
+}
+
+function parseSolid(raw: unknown): GraphSolid3D | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const label = typeof o?.label === "string" ? o.label : "";
+  const color = typeof o?.color === "string" && o.color.trim() ? o.color : "gray";
+  const vertices = Array.isArray(o?.vertices)
+    ? (o.vertices as unknown[])
+        .slice(0, 500)
+        .map(toVector3)
+        .filter((v): v is [number, number, number] => v !== null)
+    : [];
+  if (vertices.length < 3) return null;
+  const faces = Array.isArray(o?.faces)
+    ? (o.faces as unknown[])
+        .slice(0, 500)
+        .map((f) => toIndexTriple(f, vertices.length))
+        .filter((f): f is [number, number, number] => f !== null)
+    : [];
+  if (!faces.length) return null;
+  return { label, vertices, faces, color };
+}
+
 export function parseMathGraph(raw: string): MathGraph {
   const obj = JSON.parse(extractJson(raw));
-  const mode: "2d" | "3d" = obj?.mode === "3d" ? "3d" : "2d";
+  const mode: "2d" | "3d" | "solid" =
+    obj?.mode === "solid" ? "solid" : obj?.mode === "3d" ? "3d" : "2d";
   const title = typeof obj?.title === "string" ? obj.title : "";
-  const xRange = toRangePair(obj?.xRange, [-10, 10]);
+  let xRange = toRangePair(obj?.xRange, [-10, 10]);
   // yRange는 3D에서는 y 변수의 정의역으로도 쓰이므로 AI 제안값을 그대로 둔다.
   let yRange = toRangePair(obj?.yRange, [-10, 10]);
-  const zRange =
-    obj?.zRange == null ? null : toRangePair(obj?.zRange, [-10, 10]);
+  let zRange = obj?.zRange == null ? null : toRangePair(obj?.zRange, [-10, 10]);
 
   const functions: GraphFunction2D[] =
     mode === "2d" && Array.isArray(obj?.functions)
@@ -317,7 +362,18 @@ export function parseMathGraph(raw: string): MathGraph {
     }
   }
 
-  return { mode, title, functions, surface, xRange, yRange, zRange };
+  let solid: GraphSolid3D | null = null;
+  if (mode === "solid") {
+    solid = parseSolid(obj?.solid);
+    if (solid) {
+      // 꼭짓점 좌표 범위에서 자동으로 프레임을 계산해 도형 전체가 항상 화면에 들어오게 한다.
+      xRange = autoFitRange(solid.vertices.map((v) => v[0]), xRange);
+      yRange = autoFitRange(solid.vertices.map((v) => v[1]), yRange);
+      zRange = autoFitRange(solid.vertices.map((v) => v[2]), zRange ?? [-10, 10]);
+    }
+  }
+
+  return { mode, title, functions, surface, solid, xRange, yRange, zRange };
 }
 
 export type StructuredData =

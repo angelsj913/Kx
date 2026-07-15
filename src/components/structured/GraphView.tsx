@@ -37,7 +37,41 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
     const gridColor = dark ? "#1e293b" : "#e2e8f0";
     const axisStyle = { color: axisColor, gridcolor: gridColor, zerolinecolor: gridColor };
 
-    if (initial.mode === "3d" && initial.surface) {
+    if (initial.mode === "solid" && initial.solid) {
+      const { vertices, faces, color } = initial.solid;
+      // @types/plotly.js의 PlotData 유니온에는 mesh3d 전용 필드(color 등)가
+      // 온전히 반영돼 있지 않아 캐스트가 필요하다.
+      const trace = {
+        type: "mesh3d",
+        x: vertices.map((v) => v[0]),
+        y: vertices.map((v) => v[1]),
+        z: vertices.map((v) => v[2]),
+        i: new Uint32Array(faces.map((f) => f[0])),
+        j: new Uint32Array(faces.map((f) => f[1])),
+        k: new Uint32Array(faces.map((f) => f[2])),
+        color,
+        flatshading: true,
+        opacity: 1,
+      } as unknown as Partial<Plotly.PlotData>;
+      const layout: Partial<Plotly.Layout> = {
+        autosize: true,
+        margin: { l: 0, r: 0, t: 10, b: 0 },
+        paper_bgcolor: "transparent",
+        scene: {
+          dragmode: "turntable",
+          camera: { eye: { x: 1.4, y: 1.4, z: 1.1 } },
+          xaxis: { title: { text: "x" }, range: initial.xRange, ...axisStyle },
+          yaxis: { title: { text: "y" }, range: initial.yRange, ...axisStyle },
+          zaxis: { title: { text: "z" }, range: initial.zRange ?? undefined, ...axisStyle },
+          aspectmode: "data",
+        },
+      };
+      try {
+        void Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true });
+      } catch (err) {
+        console.error("[GraphView] solid newPlot failed", err);
+      }
+    } else if (initial.mode === "3d" && initial.surface) {
       const trace: Partial<Plotly.PlotData> = {
         type: "surface",
         x: initial.surface.x,
