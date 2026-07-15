@@ -7,6 +7,7 @@ import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
 import { parseStructured, type StructuredKind } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
+import { stripHanja } from "./textSanitize";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -80,7 +81,7 @@ export async function runToolGeneration(
     throw new Error("요청할 내용을 입력해 주세요.");
   }
 
-  const { text: raw, provider, model, attempts } = await generateWithFallback({
+  const { text: rawText, provider, model, attempts } = await generateWithFallback({
     tool,
     text: input.text,
     audio: input.audio,
@@ -88,7 +89,9 @@ export async function runToolGeneration(
     modelTier: input.modelTier,
     onAttempt: input.onAttempt,
   });
-  if (!raw) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
+  if (!rawText) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
+  // 프롬프트로 한자 금지를 지시해도 종종 새어나와, 파싱 전에 결정적으로 제거한다.
+  const raw = stripHanja(rawText);
   const meta: Meta = { provider, model, attempts };
 
   if (tool.outputType === "structured" && tool.structuredKind) {

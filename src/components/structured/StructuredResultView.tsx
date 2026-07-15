@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import GraphErrorBoundary from "./GraphErrorBoundary";
 import MeetingMinutesView from "./MeetingMinutesView";
 import WeeklyReportView from "./WeeklyReportView";
 import LectureNotesView from "./LectureNotesView";
@@ -50,6 +51,10 @@ export default function StructuredResultView(props: Props) {
     case "practiceSet":
       return <PracticeSetView id={props.id} initial={props.data} />;
     case "mathGraph":
-      return <GraphView id={props.id} initial={props.data} />;
+      return (
+        <GraphErrorBoundary>
+          <GraphView id={props.id} initial={props.data} />
+        </GraphErrorBoundary>
+      );
   }
 }

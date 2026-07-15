@@ -51,15 +51,21 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
         margin: { l: 0, r: 0, t: 10, b: 0 },
         paper_bgcolor: "transparent",
         scene: {
-          // 마우스 드래그로 회전만 가능하도록 — 확대/이동 등 다른 조작은 노출하지 않는다.
-          dragmode: "orbit",
+          // "orbit"은 특정 각도에서 카메라 행렬이 특이(degenerate)해져 WebGL 크래시를
+          // 일으킨 적이 있어, 더 안정적인 기본값인 turntable로 고정한다. 여전히 마우스
+          // 드래그로 자유롭게 돌려볼 수 있다.
+          dragmode: "turntable",
           camera: { eye: { x: 1.4, y: 1.4, z: 1.1 } },
           xaxis: { title: { text: "x" }, ...axisStyle },
           yaxis: { title: { text: "y" }, ...axisStyle },
           zaxis: { title: { text: "z" }, ...axisStyle },
         },
       };
-      void Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true });
+      try {
+        void Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true });
+      } catch (err) {
+        console.error("[GraphView] 3D newPlot failed", err);
+      }
     } else {
       // y 범위는 AI가 제안한 값이 아니라 실제 샘플링된 값의 최소/최대에서 계산돼(structured.ts)
       // 항상 그래프 전체 모양(꼭짓점·근 등)이 한 화면에 들어온다.
@@ -83,21 +89,34 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
         yaxis: { range: initial.yRange, fixedrange: true, ...axisStyle },
       };
       // 2D는 완전히 정적 — 확대/축소/이동/편집 없이 그래프만 보여준다.
-      void Plotly.newPlot(el, traces, layout, {
-        displayModeBar: false,
-        staticPlot: true,
-        responsive: true,
-      });
+      try {
+        void Plotly.newPlot(el, traces, layout, {
+          displayModeBar: false,
+          staticPlot: true,
+          responsive: true,
+        });
+      } catch (err) {
+        console.error("[GraphView] 2D newPlot failed", err);
+      }
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      if (containerRef.current) void Plotly.Plots.resize(containerRef.current);
+      if (!containerRef.current) return;
+      try {
+        void Plotly.Plots.resize(containerRef.current);
+      } catch (err) {
+        console.error("[GraphView] resize failed", err);
+      }
     });
     resizeObserver.observe(el);
 
     return () => {
       resizeObserver.disconnect();
-      Plotly.purge(el);
+      try {
+        Plotly.purge(el);
+      } catch {
+        /* 이미 정리된 경우 무시 */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

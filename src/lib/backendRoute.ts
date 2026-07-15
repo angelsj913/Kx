@@ -7,6 +7,7 @@
  * 4. complete  — 최종 메타
  */
 import { chatReplyWithFallback, type AttemptInfo } from "./ai";
+import { stripHanja } from "./textSanitize";
 import { AGENTS, pickAgent, type AgentId } from "./agents";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {
@@ -253,7 +254,7 @@ export async function runBackendRoute(args: {
   });
 
   return {
-    text: finalText,
+    text: stripHanja(finalText),
     agentId: primary.id,
     modelTier: tier,
     provider: finalProvider,
