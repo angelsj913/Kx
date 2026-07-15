@@ -264,12 +264,24 @@ function toRangePair(v: unknown, fallback: [number, number]): [number, number] {
   return fallback;
 }
 
+/** 유한한 값들의 최소/최대에 여백을 둔 범위 — 없으면 fallback. */
+function autoFitRange(values: number[], fallback: [number, number]): [number, number] {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (!finite.length) return fallback;
+  const min = Math.min(...finite);
+  const max = Math.max(...finite);
+  if (min === max) return [min - 1, max + 1];
+  const pad = (max - min) * 0.1;
+  return [min - pad, max + pad];
+}
+
 export function parseMathGraph(raw: string): MathGraph {
   const obj = JSON.parse(extractJson(raw));
   const mode: "2d" | "3d" = obj?.mode === "3d" ? "3d" : "2d";
   const title = typeof obj?.title === "string" ? obj.title : "";
   const xRange = toRangePair(obj?.xRange, [-10, 10]);
-  const yRange = toRangePair(obj?.yRange, [-10, 10]);
+  // yRange는 3D에서는 y 변수의 정의역으로도 쓰이므로 AI 제안값을 그대로 둔다.
+  let yRange = toRangePair(obj?.yRange, [-10, 10]);
   const zRange =
     obj?.zRange == null ? null : toRangePair(obj?.zRange, [-10, 10]);
 
@@ -286,6 +298,13 @@ export function parseMathGraph(raw: string): MathGraph {
           })
           .filter((f) => f.expr)
       : [];
+
+  // 2D 표시 범위는 AI가 추측한 값 대신, 실제로 샘플링된 y값의 최소/최대로 자동 계산한다.
+  // 이렇게 해야 꼭짓점·근 등 그래프 전체 모양이 항상 한 화면에 들어온다.
+  if (mode === "2d" && functions.length) {
+    const allY = functions.flatMap((f) => f.y).filter((v): v is number => v != null);
+    yRange = autoFitRange(allY, yRange);
+  }
 
   let surface: GraphSurface3D | null = null;
   if (mode === "3d" && obj?.surface && typeof obj.surface === "object") {
