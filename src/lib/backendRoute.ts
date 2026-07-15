@@ -6,7 +6,7 @@
  * 3. verify    — priority/top 에서 생성과 **다른 제공자** 우선 검수
  * 4. complete  — 최종 메타
  */
-import { chatReplyWithFallback, hasProviderKey, type AttemptInfo } from "./ai";
+import { chatReplyWithFallback, type AttemptInfo } from "./ai";
 import { AGENTS, pickAgent, type AgentId } from "./agents";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {

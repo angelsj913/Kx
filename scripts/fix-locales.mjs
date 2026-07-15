@@ -64,19 +64,6 @@ const pricingPatches = {
   },
 };
 
-function setKey(content, key, value) {
-  const re = new RegExp(`("${key.replace(/\./g, "\\.")}":\\s*)"[^"]*"`);
-  if (!re.test(content)) {
-    console.warn("missing key", key);
-    return content;
-  }
-  return content.replace(re, `$1${JSON.stringify(value).slice(1, -1).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`.replace(
-    // simpler:
-    "",
-  ));
-}
-
-// simpler setKey
 function setKey2(content, key, value) {
   const re = new RegExp(`("${key.replace(/\./g, "\\.")}":\\s*")([^"]*)(")`);
   if (!re.test(content)) {
@@ -134,7 +121,7 @@ for (const lang of Object.keys(prefixes)) {
   if (!pricingPatches[lang]) {
     c = setKey2(c, "pricing.free.name", "free");
     // replace 150 with 100 in badges
-    c = c.replace(/150/g, (m, offset) => {
+    c = c.replace(/150/g, (m) => {
       // only in professional quota strings - crude
       return m;
     });

@@ -19,7 +19,6 @@ import {
   Download,
   Printer,
   Copy,
-  Check,
 } from "lucide-react";
 import {
   downloadMarkdown,
@@ -1136,8 +1135,14 @@ function ArtifactPreview({
     );
   }
   if ((artifact.kind === "pptx" || artifact.kind === "xlsx") && msg?.resultData) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any = null;
     try {
-      const data = JSON.parse(msg.resultData);
+      data = JSON.parse(msg.resultData);
+    } catch {
+      data = null;
+    }
+    if (data) {
       if (artifact.kind === "pptx") {
         return (
           <FileResultPanel
@@ -1170,28 +1175,32 @@ function ArtifactPreview({
           }
         />
       );
-    } catch {
-      /* fallthrough */
     }
   }
   if (artifact.kind === "structured" && msg?.resultData && msg.structuredKind) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let parsed: any = null;
+    let parseFailed = false;
     try {
-      const parsed = JSON.parse(msg.resultData);
-      // structuredKind 문자열 → 뷰 매핑 (런타임 안전)
-      return (
-        <StructuredResultView
-          id={msg.id}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          {...({ kind: msg.structuredKind, data: parsed } as any)}
-        />
-      );
+      parsed = JSON.parse(msg.resultData);
     } catch {
+      parseFailed = true;
+    }
+    if (parseFailed) {
       return (
         <pre className="overflow-x-auto rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-950">
           {msg.resultData}
         </pre>
       );
     }
+    // structuredKind 문자열 → 뷰 매핑 (런타임 안전)
+    return (
+      <StructuredResultView
+        id={msg.id}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        {...({ kind: msg.structuredKind, data: parsed } as any)}
+      />
+    );
   }
   if (msg?.text) {
     return (

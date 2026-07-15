@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isAdminSession } from "@/lib/admin";
@@ -13,7 +13,19 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_TITLE = "ZEFF AI RAG Source Extended";
 const DEFAULT_FILE_NAME = "zeff-ai-rag-source-extended.md";
-const DEFAULT_SOURCE_PATH = resolve(process.cwd(), "docs/datasets/zeff-ai-rag-source-extended.md");
+const DATASETS_DIR = resolve(process.cwd(), "docs/datasets");
+const DEFAULT_SOURCE_PATH = resolve(DATASETS_DIR, "zeff-ai-rag-source-extended.md");
+
+// sourcePath는 요청 입력값이라 docs/datasets 밖(예: ../../.env)을 가리키지 못하도록 반드시 이 안에서만 해석한다.
+function resolveSourcePath(candidate?: string): string {
+  if (!candidate) return DEFAULT_SOURCE_PATH;
+  const resolved = resolve(DATASETS_DIR, candidate);
+  const rel = relative(DATASETS_DIR, resolved);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error("sourcePath는 docs/datasets 디렉터리 내부 파일만 지정할 수 있습니다.");
+  }
+  return resolved;
+}
 
 function hasSecretAccess(request: Request): boolean {
   if (request.headers.get("x-vercel-cron") === "1") return true;
@@ -102,7 +114,7 @@ async function upsertAndIndexZeffRag(args: {
 }) {
   const title = args.title?.trim() || DEFAULT_TITLE;
   const fileName = args.fileName?.trim() || DEFAULT_FILE_NAME;
-  const sourcePath = args.sourcePath?.trim() || DEFAULT_SOURCE_PATH;
+  const sourcePath = resolveSourcePath(args.sourcePath?.trim());
   const extractedText = (await readFile(sourcePath, "utf8")).trim();
 
   if (!extractedText) {
