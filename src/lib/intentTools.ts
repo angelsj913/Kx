@@ -67,6 +67,14 @@ export function detectQuickToolFromText(text: string): string | null {
     return "exam-maker";
   }
 
+  // ── 수학 그래프 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
+  const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
+  const wantsGraph =
+    /그래프|그려\s*줘|그려\s*주세요|그리기|시각화/.test(t) ||
+    /\b(plot|graph)\b/i.test(t) ||
+    (hasEquationShape && /(그려|시각화|보여)/.test(t));
+  if (wantsGraph) return "math-graph";
+
   // ── 수학 ──
   if (/수학\s*풀이|문제\s*풀어|방정식\s*풀/i.test(t)) {
     return "math-solve";
@@ -86,6 +94,7 @@ export function toolIntentLabel(toolId: string): string {
     "note-a4": "A4 노트",
     "exam-maker": "시험지",
     "math-solve": "수학 풀이",
+    "math-graph": "그래프 생성",
   };
   return map[toolId] ?? toolId;
 }

@@ -19,6 +19,7 @@ export const FEATURE_GROUPS: {
       "lecture",
       "lecture-notes",
       "math-solve",
+      "math-graph",
       "exam-analysis",
       "exam-similarity",
       "similar-problems",

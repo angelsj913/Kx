@@ -17,6 +17,7 @@ import {
   Shuffle,
   MessageCircle,
   LibraryBig,
+  LineChart,
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
@@ -379,6 +380,7 @@ const MATH_SOLVE_INSTRUCTION = `너는 오류가 없는 수학 1타 강사이다
 ## 3. 단계별 풀이
 - 단계마다 (식) + (이유 한 줄)
 - 분수·제곱근·절댓값 기호를 명확히
+- 모든 수식은 LaTeX로 표기: 인라인은 $...$, 독립된 식은 $$...$$
 ## 4. 최종 답
 - **답:** 으로 한 줄 강조
 ## 5. 검산
@@ -386,6 +388,31 @@ const MATH_SOLVE_INSTRUCTION = `너는 오류가 없는 수학 1타 강사이다
 
 판독 불가 구간은 [판독 불가]로 표시하고 추측 금지.
 한국어.`;
+
+const MATH_GRAPH_INSTRUCTION = `너는 수학·물리 시각화 전문가이다. 사용자의 요청에서 그래프로 그릴 함수(들)를 파악해 JSON으로 설계해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "mode": "2d 또는 3d — 변수가 x 하나면 2d, x와 y 두 변수의 함수(예: 곡면, z=f(x,y))면 3d",
+  "title": "그래프 제목 (예: y = 2x·cos(x²))",
+  "functions": [
+    { "expr": "2*x*cos(x^2)", "label": "y = 2x cos(x²)" }
+  ],
+  "surface": { "expr": "sin(x)*cos(y)", "label": "z = sin(x)cos(y)" },
+  "xRange": [-10, 10],
+  "yRange": [-10, 10],
+  "zRange": null
+}
+
+지침:
+- expr는 JavaScript가 아니라 수학 표기: 거듭제곱은 ^, 곱셈은 반드시 * 로 명시 (2x가 아니라 2*x).
+- 사용 가능 함수: sin, cos, tan, sqrt, abs, exp, log, log10, ln. 상수: pi, e.
+- mode가 "2d"면 functions에 1~3개까지 넣을 수 있고 surface는 null로 둔다.
+- mode가 "3d"면 surface 하나만 채우고 functions는 빈 배열로 둔다. 변수는 반드시 x, y 두 개만 사용한다.
+- xRange/yRange는 그래프의 특징(극값·주기·교점 등)이 잘 보이는 범위로 정하라. 특별한 이유가 없으면 [-10, 10].
+- zRange는 특별히 클램프가 필요할 때만 [min, max]로, 아니면 null.
+- title 외의 모든 설명은 이 JSON 밖의 채팅 답변(별도 텍스트)으로 하고, 이 JSON 안에는 넣지 마라.`;
 
 const EXAM_MAKER_INSTRUCTION = `너는 학교·학원 모의고사 출제위원이다. 기출 범위에 맞는 모의 시험지를 만든다.
 
@@ -777,6 +804,22 @@ export const TOOLS: ToolDef[] = [
     submitLabel: "풀이하기",
     fileBaseName: "math-solution",
     acceptFiles: "image/*",
+  },
+  {
+    id: "math-graph",
+    appMode: "student",
+    label: "수학 그래프",
+    short: "그래프",
+    title: "수학 그래프 그리기",
+    description: "함수식이나 방정식을 입력하면 2D 함수 그래프 또는 3D 곡면 그래프를 그려줍니다.",
+    icon: LineChart,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "mathGraph",
+    systemInstruction: MATH_GRAPH_INSTRUCTION,
+    placeholder: "예) y = 2x·cos(x²) 그래프 그려줘 / 포물선 운동 사거리를 각도와 초기속도에 대해 3D로 그려줘",
+    submitLabel: "그래프 그리기",
+    fileBaseName: "math-graph",
   },
   {
     id: "exam-maker",

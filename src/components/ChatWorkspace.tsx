@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -188,10 +190,16 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         messageId: m.id,
       });
     } else if (m.outputType === "structured" && m.structuredKind) {
+      let title: string = m.structuredKind;
+      try {
+        if (m.resultData) title = JSON.parse(m.resultData)?.title || title;
+      } catch {
+        /* ignore */
+      }
       list.push({
         id: `${m.id}-struct`,
         kind: "structured",
-        title: m.structuredKind,
+        title,
         subtitle: "구조화 결과",
         messageId: m.id,
       });
@@ -260,6 +268,9 @@ export default function ChatWorkspace({
   const t = useT();
   const { settings } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
+  // 세션 히스토리 로딩 여부 — 로딩 중엔 messages.length===0이어도 "빈 대화"로 취급하지 않는다
+  // (그렇지 않으면 메시지가 많은 기존 대화를 열 때도 순간적으로 "빈 대화" 레이아웃이 깜빡인다).
+  const [historyLoaded, setHistoryLoaded] = useState(!sessionId);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -316,6 +327,7 @@ export default function ChatWorkspace({
     setMessages([]);
     setError("");
     setStatusKey(null);
+    setHistoryLoaded(!sessionId);
     if (!sessionId) return;
     let ignore = false;
     (async () => {
@@ -327,6 +339,8 @@ export default function ChatWorkspace({
         }
       } catch {
         // 무시
+      } finally {
+        if (!ignore) setHistoryLoaded(true);
       }
     })();
     return () => {
@@ -561,6 +575,11 @@ export default function ChatWorkspace({
     if (a.messageId) scrollToMessage(a.messageId);
   }
 
+  // 빈 대화일 때는 입력창이 위, 첫 메시지를 보내는 순간 입력창이 아래로 내려간다.
+  // historyLoaded가 false인 동안(기존 대화 히스토리 로딩 중)은 빈 대화로 취급하지 않아
+  // 메시지가 많은 대화를 열 때 레이아웃이 깜빡이지 않는다.
+  const isEmpty = historyLoaded && messages.length === 0 && !loading;
+
   return (
     <div ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
@@ -576,8 +595,11 @@ export default function ChatWorkspace({
           </button>
         </div>
 
-        <div
+        <motion.div
           ref={scrollRef}
+          layout
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          style={{ order: isEmpty ? 2 : 1 }}
           className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md sm:p-5"
         >
           {messages.length === 0 && !loading && (
@@ -678,7 +700,9 @@ export default function ChatWorkspace({
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <ReactMarkdown>{m.text}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {m.text}
+                      </ReactMarkdown>
                     </div>
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
                     {m.text && m.text.length > 0 && m.text.length <= 80 && (
@@ -789,10 +813,13 @@ export default function ChatWorkspace({
               {error}
             </p>
           )}
-        </div>
+        </motion.div>
 
-        <form
+        <motion.form
           onSubmit={send}
+          layout
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          style={{ order: isEmpty ? 1 : 2 }}
           className="relative mt-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md"
         >
           <div className="mb-1.5 flex h-4 items-center px-1">
@@ -994,7 +1021,7 @@ export default function ChatWorkspace({
               <Send className="h-5 w-5" />
             </motion.button>
           </div>
-        </form>
+        </motion.form>
       </div>
 
       {/* 드래그 리사이즈 핸들 */}
@@ -1205,7 +1232,9 @@ function ArtifactPreview({
   if (msg?.text) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown>{msg.text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+          {msg.text}
+        </ReactMarkdown>
       </div>
     );
   }

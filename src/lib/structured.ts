@@ -2,6 +2,7 @@
 // pptx.ts/xlsx.ts와 동일한 패턴: extractJson으로 코드블록을 벗기고 JSON.parse.
 
 import { extractJson } from "./fileTypes";
+import { sample2D, sample3D } from "./mathGraph";
 
 export type StructuredKind =
   | "meeting"
@@ -9,7 +10,8 @@ export type StructuredKind =
   | "lectureNotes"
   | "researchDraft"
   | "examAnalysis"
-  | "practiceSet";
+  | "practiceSet"
+  | "mathGraph";
 
 // ── 회의록 ──
 
@@ -226,13 +228,87 @@ export function parsePracticeSet(raw: string): PracticeSet {
   };
 }
 
+// ── 수학 그래프 (2D 함수 / 3D 곡면) ──
+
+export interface GraphFunction2D {
+  expr: string;
+  label: string;
+  x: number[];
+  y: (number | null)[];
+}
+
+export interface GraphSurface3D {
+  expr: string;
+  label: string;
+  x: number[];
+  y: number[];
+  z: (number | null)[][];
+}
+
+export interface MathGraph {
+  mode: "2d" | "3d";
+  title: string;
+  functions: GraphFunction2D[];
+  surface: GraphSurface3D | null;
+  xRange: [number, number];
+  yRange: [number, number];
+  zRange: [number, number] | null;
+}
+
+function toRangePair(v: unknown, fallback: [number, number]): [number, number] {
+  if (Array.isArray(v) && v.length === 2) {
+    const a = Number(v[0]);
+    const b = Number(v[1]);
+    if (Number.isFinite(a) && Number.isFinite(b) && a < b) return [a, b];
+  }
+  return fallback;
+}
+
+export function parseMathGraph(raw: string): MathGraph {
+  const obj = JSON.parse(extractJson(raw));
+  const mode: "2d" | "3d" = obj?.mode === "3d" ? "3d" : "2d";
+  const title = typeof obj?.title === "string" ? obj.title : "";
+  const xRange = toRangePair(obj?.xRange, [-10, 10]);
+  const yRange = toRangePair(obj?.yRange, [-10, 10]);
+  const zRange =
+    obj?.zRange == null ? null : toRangePair(obj?.zRange, [-10, 10]);
+
+  const functions: GraphFunction2D[] =
+    mode === "2d" && Array.isArray(obj?.functions)
+      ? (obj.functions as unknown[])
+          .slice(0, 5)
+          .map((f) => {
+            const o = f as Record<string, unknown>;
+            const expr = typeof o?.expr === "string" ? o.expr : "";
+            const label = typeof o?.label === "string" ? o.label : expr;
+            const { x, y } = sample2D(expr, xRange);
+            return { expr, label, x, y };
+          })
+          .filter((f) => f.expr)
+      : [];
+
+  let surface: GraphSurface3D | null = null;
+  if (mode === "3d" && obj?.surface && typeof obj.surface === "object") {
+    const o = obj.surface as Record<string, unknown>;
+    const expr = typeof o?.expr === "string" ? o.expr : "";
+    const label = typeof o?.label === "string" ? o.label : expr;
+    if (expr) {
+      const { x, y, z } = sample3D(expr, xRange, yRange);
+      surface = { expr, label, x, y, z };
+    }
+  }
+
+  return { mode, title, functions, surface, xRange, yRange, zRange };
+}
+
 export type StructuredData =
   | { kind: "meeting"; data: MeetingMinutes }
   | { kind: "weeklyReport"; data: WeeklyReport }
   | { kind: "lectureNotes"; data: LectureNotes }
   | { kind: "researchDraft"; data: ResearchDraft }
   | { kind: "examAnalysis"; data: ExamAnalysis }
-  | { kind: "practiceSet"; data: PracticeSet };
+  | { kind: "practiceSet"; data: PracticeSet }
+  | { kind: "mathGraph"; data: MathGraph };
 
 export function parseStructured(kind: StructuredKind, raw: string): StructuredData {
   switch (kind) {
@@ -248,5 +324,7 @@ export function parseStructured(kind: StructuredKind, raw: string): StructuredDa
       return { kind, data: parseExamAnalysis(raw) };
     case "practiceSet":
       return { kind, data: parsePracticeSet(raw) };
+    case "mathGraph":
+      return { kind, data: parseMathGraph(raw) };
   }
 }
