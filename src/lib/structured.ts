@@ -298,6 +298,28 @@ function toIndexTriple(v: unknown, vertexCount: number): [number, number, number
   return [a, b, c];
 }
 
+/**
+ * 구는 z=f(x,y) 형태의 단일 곡면으로 표현할 수 없어(위쪽 절반만 나오는 반구가 되고,
+ * 정의역 경계에서 톱니 모양이 생김) AI가 실수로 3D 곡면 모드로 만드는 경우가 있다.
+ * x²+y²+z²가 표본 전체에서 거의 일정하고 z≥0이면 반구로 보고 반지름을 구해 돌려준다.
+ */
+function detectHemisphereRadius(x: number[], y: number[], z: (number | null)[][]): number | null {
+  const r2Samples: number[] = [];
+  for (let yi = 0; yi < z.length; yi++) {
+    for (let xi = 0; xi < z[yi].length; xi++) {
+      const zi = z[yi][xi];
+      if (zi == null) continue;
+      if (zi < -1e-6) return null;
+      r2Samples.push(x[xi] * x[xi] + y[yi] * y[yi] + zi * zi);
+    }
+  }
+  if (r2Samples.length < 20) return null;
+  const mean = r2Samples.reduce((a, b) => a + b, 0) / r2Samples.length;
+  if (mean <= 0) return null;
+  const maxDeviation = Math.max(...r2Samples.map((s) => Math.abs(s - mean) / mean));
+  return maxDeviation <= 0.03 ? Math.sqrt(mean) : null;
+}
+
 const SOLID_CAP = 20000;
 
 function parseSolid(raw: unknown): GraphSolid3D | null {
@@ -344,7 +366,7 @@ function parseSolid(raw: unknown): GraphSolid3D | null {
 
 export function parseMathGraph(raw: string): MathGraph {
   const obj = JSON.parse(extractJson(raw));
-  const mode: "2d" | "3d" | "solid" =
+  let mode: "2d" | "3d" | "solid" =
     obj?.mode === "solid" ? "solid" : obj?.mode === "3d" ? "3d" : "2d";
   const title = typeof obj?.title === "string" ? obj.title : "";
   let xRange = toRangePair(obj?.xRange, [-10, 10]);
@@ -374,25 +396,33 @@ export function parseMathGraph(raw: string): MathGraph {
   }
 
   let surface: GraphSurface3D | null = null;
+  let solid: GraphSolid3D | null = null;
   if (mode === "3d" && obj?.surface && typeof obj.surface === "object") {
     const o = obj.surface as Record<string, unknown>;
     const expr = typeof o?.expr === "string" ? o.expr : "";
     const label = typeof o?.label === "string" ? o.label : expr;
     if (expr) {
       const { x, y, z } = sample3D(expr, xRange, yRange);
-      surface = { expr, label, x, y, z };
+      const sphereRadius = detectHemisphereRadius(x, y, z);
+      const sphereMesh =
+        sphereRadius != null ? generatePrimitive({ type: "sphere", radius: sphereRadius }) : null;
+      if (sphereMesh) {
+        mode = "solid";
+        solid = { label: label || "구", vertices: sphereMesh.vertices, faces: sphereMesh.faces, color: "gray" };
+      } else {
+        surface = { expr, label, x, y, z };
+      }
     }
   }
 
-  let solid: GraphSolid3D | null = null;
-  if (mode === "solid") {
+  if (mode === "solid" && !solid) {
     solid = parseSolid(obj?.solid);
-    if (solid) {
-      // 꼭짓점 좌표 범위에서 자동으로 프레임을 계산해 도형 전체가 항상 화면에 들어오게 한다.
-      xRange = autoFitRange(solid.vertices.map((v) => v[0]), xRange);
-      yRange = autoFitRange(solid.vertices.map((v) => v[1]), yRange);
-      zRange = autoFitRange(solid.vertices.map((v) => v[2]), zRange ?? [-10, 10]);
-    }
+  }
+  if (solid) {
+    // 꼭짓점 좌표 범위에서 자동으로 프레임을 계산해 도형 전체가 항상 화면에 들어오게 한다.
+    xRange = autoFitRange(solid.vertices.map((v) => v[0]), xRange);
+    yRange = autoFitRange(solid.vertices.map((v) => v[1]), yRange);
+    zRange = autoFitRange(solid.vertices.map((v) => v[2]), zRange ?? [-10, 10]);
   }
 
   return { mode, title, functions, surface, solid, xRange, yRange, zRange };
