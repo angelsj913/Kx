@@ -1,15 +1,15 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-const OUT_JSONL = resolve("/workspace/docs/datasets/zeff-ai-training-1000.jsonl");
-const OUT_CHAT = resolve("/workspace/docs/datasets/zeff-ai-training-1000.messages.jsonl");
-const OUT_RAG = resolve("/workspace/docs/datasets/zeff-ai-rag-source.md");
-const OUT_JSONL_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.jsonl");
-const OUT_CHAT_10000 = resolve("/workspace/docs/datasets/zeff-ai-training-10000.messages.jsonl");
-const OUT_RAG_EXTENDED = resolve("/workspace/docs/datasets/zeff-ai-rag-source-extended.md");
-const OUT_JSONL_100000 = resolve("/workspace/docs/datasets/zeff-ai-training-100000.jsonl");
-const OUT_CHAT_100000 = resolve("/workspace/docs/datasets/zeff-ai-training-100000.messages.jsonl");
-const OUT_SYSTEM_PROMPT = resolve("/workspace/docs/datasets/zeff-ai-system-prompt.txt");
+const OUT_JSONL = resolve(process.cwd(), "docs/datasets/zeff-ai-training-1000.jsonl");
+const OUT_CHAT = resolve(process.cwd(), "docs/datasets/zeff-ai-training-1000.messages.jsonl");
+const OUT_RAG = resolve(process.cwd(), "docs/datasets/zeff-ai-rag-source.md");
+const OUT_JSONL_10000 = resolve(process.cwd(), "docs/datasets/zeff-ai-training-10000.jsonl");
+const OUT_CHAT_10000 = resolve(process.cwd(), "docs/datasets/zeff-ai-training-10000.messages.jsonl");
+const OUT_RAG_EXTENDED = resolve(process.cwd(), "docs/datasets/zeff-ai-rag-source-extended.md");
+const OUT_JSONL_100000 = resolve(process.cwd(), "docs/datasets/zeff-ai-training-100000.jsonl");
+const OUT_CHAT_100000 = resolve(process.cwd(), "docs/datasets/zeff-ai-training-100000.messages.jsonl");
+const OUT_SYSTEM_PROMPT = resolve(process.cwd(), "docs/datasets/zeff-ai-system-prompt.txt");
 
 function fact(
   slug,

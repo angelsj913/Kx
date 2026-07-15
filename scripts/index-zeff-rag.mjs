@@ -17,7 +17,7 @@ function loadDotenvFile(filePath) {
 }
 
 for (const envName of [".env.local", ".env"]) {
-  loadDotenvFile(resolve("/workspace", envName));
+  loadDotenvFile(resolve(process.cwd(), envName));
 }
 
 if (!process.env.DATABASE_URL) {
@@ -186,7 +186,7 @@ async function resolveWorkspace(prisma, userId, args) {
 
 const args = parseArgs(process.argv.slice(2));
 const filePath = resolve(
-  "/workspace",
+  process.cwd(),
   args.file ?? "docs/datasets/zeff-ai-rag-source-extended.md",
 );
 const title = args.title ?? "ZEFF AI RAG Source Extended";
