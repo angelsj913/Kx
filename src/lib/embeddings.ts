@@ -1,9 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
-// RAG용 텍스트 임베딩. GEMINI_API_KEY가 있으면 Gemini(text-embedding-004)를 쓰고,
+// RAG용 텍스트 임베딩. GEMINI_API_KEY가 있으면 Gemini(gemini-embedding-2)를 쓰고,
 // 없으면 결정론적 로컬 임베딩으로 폴백한다(키 없이도 검색이 동작하도록).
+// text-embedding-004는 더 이상 embedContent를 지원하지 않아 404가 난다(models.list로 확인).
 
-const EMBED_MODEL = "text-embedding-004";
+const EMBED_MODEL = "gemini-embedding-2";
 export const LOCAL_DIM = 256;
 
 export type EmbedProvider = "gemini" | "local";
