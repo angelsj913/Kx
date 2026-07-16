@@ -47,16 +47,37 @@ export default function Logo({
   const px = MARK_PX[size];
   return (
     <span className={`inline-flex items-center ${GAP_CLS[size]} ${className}`}>
-      <Image
-        src="/logo-zeff.png"
-        alt="ZEFF"
-        width={px}
-        height={px}
-        priority
-        className={`shrink-0 rounded-md object-contain transition-[filter] duration-300 dark:invert ${
-          size === "hero" ? "h-12 w-12 sm:h-16 sm:w-16" : ""
-        } ${spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""}`}
-      />
+      {size === "hero" ? (
+        // 원본 PNG는 마크 주위 여백이 커서(가시 영역 ~1024px 중 세로 48%) 그대로 넣으면
+        // 옆 워드마크 글자 크기 대비 마크가 작아 보인다. 박스를 고정하고 이미지를 확대해
+        // 투명 여백을 잘라내 마크만 박스를 채우도록 한다.
+        <span className="relative inline-block h-12 w-12 shrink-0 overflow-hidden rounded-md sm:h-16 sm:w-16">
+          <Image
+            src="/logo-zeff.png"
+            alt="ZEFF"
+            fill
+            priority
+            quality={90}
+            // 박스(48/64px)보다 2.1배 확대해서 보여주므로, 화질 저하 없이 확대되도록
+            // 실제 렌더 크기(박스 x 2.1)에 맞춰 더 큰 원본 해상도를 요청한다.
+            sizes="(min-width: 640px) 140px, 105px"
+            className={`scale-[2.1] object-contain transition-[filter] duration-300 dark:invert ${
+              spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
+            }`}
+          />
+        </span>
+      ) : (
+        <Image
+          src="/logo-zeff.png"
+          alt="ZEFF"
+          width={px}
+          height={px}
+          priority
+          className={`shrink-0 rounded-md object-contain transition-[filter] duration-300 dark:invert ${
+            spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
+          }`}
+        />
+      )}
       {withWordmark && (
         <span
           className={`inline-flex items-baseline font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-50 ${TEXT_CLS[size]}`}

@@ -17,6 +17,7 @@ import {
   Shuffle,
   MessageCircle,
   LibraryBig,
+  LineChart,
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
@@ -379,13 +380,76 @@ const MATH_SOLVE_INSTRUCTION = `너는 오류가 없는 수학 1타 강사이다
 ## 3. 단계별 풀이
 - 단계마다 (식) + (이유 한 줄)
 - 분수·제곱근·절댓값 기호를 명확히
+- 모든 수식은 LaTeX로 표기: 인라인은 $...$, 독립된 식은 $$...$$
 ## 4. 최종 답
 - **답:** 으로 한 줄 강조
 ## 5. 검산
 - 답을 대입하거나 역산을 한 줄 이상
 
+## 검산 데이터 (사용자에게 보이지 않음 — 자동 채점용, 반드시 포함)
+서술한 검산을 서버가 실제로 재계산해 확인할 수 있도록, 마지막에 다음 형식의 코드블록을 추가하라:
+\`\`\`verify
+{"checks": [{"expr": "2*x+3", "variables": {"x": 2}, "expected": 7}]}
+\`\`\`
+- expr는 수학 표기(거듭제곱 ^, 곱셈은 반드시 *), variables에 최종 답의 실제 숫자값을 대입해 expr를 계산하면 expected가 나와야 한다.
+- 최종 답을 원래 문제(또는 방정식)에 대입해서 성립하는지 확인하는 식으로 만들어라. 방정식/부등식 문제면 반드시 1개 이상 포함.
+- 이차방정식처럼 답이 여러 개면 각 답마다 하나씩, checks 배열에 여러 개 넣어라.
+- 증명형·개념 설명형처럼 수치로 검산할 수 없는 문제면 "checks": [] 로 빈 배열을 넣어라. 검산 불가능한데 억지로 숫자를 지어내지 마라.
+
+한자(漢字)를 절대 섞지 마라. 한자어 단어도 반드시 한글로만 표기한다.
 판독 불가 구간은 [판독 불가]로 표시하고 추측 금지.
 한국어.`;
+
+const MATH_GRAPH_INSTRUCTION = `너는 수학·물리 시각화 전문가이다. 사용자의 요청을 2D 함수 그래프, 3D 곡면, 또는 3D 입체 도형(다면체) 중 하나로 표현해 JSON으로 설계해야 한다.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "mode": "2d 또는 3d 또는 solid",
+  "title": "그래프/도형 제목 (예: y = 2x·cos(x²), 삼각뿔)",
+  "functions": [
+    { "expr": "2*x*cos(x^2)", "label": "y = 2x cos(x²)" }
+  ],
+  "surface": { "expr": "sin(x)*cos(y)", "label": "z = sin(x)cos(y)" },
+  "solid": {
+    "label": "삼각뿔",
+    "color": "gray",
+    "primitive": { "type": "pyramid", "sides": 3, "radius": 5, "height": 10 },
+    "vertices": null,
+    "faces": null
+  },
+  "xRange": [-10, 10],
+  "yRange": [-10, 10],
+  "zRange": null
+}
+
+모드 선택:
+- 변수가 x 하나뿐인 함수(y=f(x))면 "2d".
+- x, y 두 변수의 진짜 수학 함수(곡면, z=f(x,y), 예: sin(x)*cos(y))면 "3d".
+- **함수식으로 표현되지 않는 3D 도형/모델(삼각뿔, 정육면체, 각기둥, 원뿔, 원기둥, 구, 도넛 등)을 만들어 달라고 하면 "solid"를 써라.** 이런 요청에는 절대 파이썬 코드나 수식으로 설명하지 말고 solid를 채워라.
+- **주의: 사용자 문장에 "3D로 그려줘/표현해줘/만들어줘"라는 말이 있어도, 그 대상이 구/정육면체/각뿔/원기둥 같은 입체 도형 이름이면 이는 mode="3d"가 아니라 mode="solid"를 의미한다.** mode="3d"는 z=f(x,y) 형태의 진짜 함수 곡면 전용이다. 예를 들어 "반지름이 5인 구를 3D로 표현해줘"를 mode="3d"의 surface(예: z=sqrt(25-x^2-y^2))로 표현하면 **위쪽 절반만 있는 반구가 되고, 정의역 경계에서 삐죽삐죽한 톱니 모양이 생겨 완전히 틀린 결과**가 된다. 반드시 mode="solid", solid.primitive={"type":"sphere","radius":5}로 답해야 한다.
+
+solid 채우는 방법 — 아래 우선순위를 반드시 따른다:
+1. **표준 도형이면 반드시 solid.primitive를 써라 (직접 좌표 계산 금지).** solid.primitive.type에 다음 중 하나를 넣는다:
+   - "box": 직육면체/정육면체. 파라미터: width, depth, height.
+   - "pyramid": n각뿔(사용자가 삼각뿔이면 sides=3, 사각뿔/피라미드면 sides=4). 파라미터: sides, radius(밑면 외접원 반지름), height.
+   - "cone": 원뿔(자동으로 다각형 근사 처리됨). 파라미터: radius, height.
+   - "prism": n각기둥. 파라미터: sides, radius, height.
+   - "cylinder": 원기둥(자동으로 다각형 근사 처리됨). 파라미터: radius, height.
+   - "sphere": 구. 파라미터: radius.
+   - "torus": 도넛 모양. 파라미터: radius(큰 반지름), tube(단면 반지름).
+   - primitive를 쓸 때 solid.vertices/solid.faces는 null로 둔다 — 서버가 정확히 계산해준다.
+2. **primitive 목록에 없는 특수한 커스텀 모양일 때만** solid.vertices(꼭짓점 좌표)와 solid.faces(각 삼각형 면을 이루는 꼭짓점 0-based 인덱스)를 직접 계산해서 채우고, 이때는 solid.primitive를 null로 둔다. 이 경로는 AI가 직접 계산하는 만큼 도형이 복잡할수록 부정확해질 수 있음을 감안해, 최대한 primitive 조합으로 표현 가능한지 먼저 검토하라.
+- color는 사용자가 요청한 색(예: "gray", "silver", "#888888") 그대로 쓰고, 특별한 요청이 없으면 "gray".
+
+공통 지침:
+- expr는 JavaScript가 아니라 수학 표기: 거듭제곱은 ^, 곱셈은 반드시 * 로 명시 (2x가 아니라 2*x).
+- 사용 가능 함수: sin, cos, tan, sqrt, abs, exp, log, log10, ln. 상수: pi, e.
+- mode가 "2d"면 functions에 1~3개까지, mode가 "3d"면 surface 하나만, mode가 "solid"면 solid 하나만 채우고 나머지는 각각 빈 배열/null로 둔다.
+- xRange/yRange는 그래프의 특징(극값·주기·교점 등)이 잘 보이는 범위로 정하라. 특별한 이유가 없으면 [-10, 10]. solid 모드에서는 자동으로 도형 크기에 맞춰지므로 대략적인 값이면 충분하다.
+- zRange는 특별히 클램프가 필요할 때만 [min, max]로, 아니면 null.
+- title 외의 모든 설명은 이 JSON 밖의 채팅 답변(별도 텍스트)으로 하고, 이 JSON 안에는 넣지 마라.
+- title/label에 한자(漢字)를 절대 섞지 마라. 한자어 단어도 반드시 한글로만 표기한다.`;
 
 const EXAM_MAKER_INSTRUCTION = `너는 학교·학원 모의고사 출제위원이다. 기출 범위에 맞는 모의 시험지를 만든다.
 
@@ -777,6 +841,22 @@ export const TOOLS: ToolDef[] = [
     submitLabel: "풀이하기",
     fileBaseName: "math-solution",
     acceptFiles: "image/*",
+  },
+  {
+    id: "math-graph",
+    appMode: "student",
+    label: "수학 그래프",
+    short: "그래프",
+    title: "수학 그래프 그리기",
+    description: "함수식이나 방정식을 입력하면 2D 함수 그래프 또는 3D 곡면 그래프를 그려줍니다.",
+    icon: LineChart,
+    inputType: "text",
+    outputType: "structured",
+    structuredKind: "mathGraph",
+    systemInstruction: MATH_GRAPH_INSTRUCTION,
+    placeholder: "예) y = 2x·cos(x²) 그래프 그려줘 / 포물선 운동 사거리를 각도와 초기속도에 대해 3D로 그려줘",
+    submitLabel: "그래프 그리기",
+    fileBaseName: "math-graph",
   },
   {
     id: "exam-maker",

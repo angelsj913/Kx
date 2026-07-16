@@ -2,6 +2,7 @@
 // pptx.ts/xlsx.ts와 동일한 패턴: extractJson으로 코드블록을 벗기고 JSON.parse.
 
 import { extractJson } from "./fileTypes";
+import { sample2D, sample3D, generatePrimitive } from "./mathGraph";
 
 export type StructuredKind =
   | "meeting"
@@ -9,7 +10,8 @@ export type StructuredKind =
   | "lectureNotes"
   | "researchDraft"
   | "examAnalysis"
-  | "practiceSet";
+  | "practiceSet"
+  | "mathGraph";
 
 // ── 회의록 ──
 
@@ -226,13 +228,214 @@ export function parsePracticeSet(raw: string): PracticeSet {
   };
 }
 
+// ── 수학 그래프 (2D 함수 / 3D 곡면) ──
+
+export interface GraphFunction2D {
+  expr: string;
+  label: string;
+  x: number[];
+  y: (number | null)[];
+}
+
+export interface GraphSurface3D {
+  expr: string;
+  label: string;
+  x: number[];
+  y: number[];
+  z: (number | null)[][];
+}
+
+/** 함수로 표현되지 않는 3D 도형(삼각뿔·정육면체 등 다면체) — 꼭짓점 + 삼각형 면. */
+export interface GraphSolid3D {
+  label: string;
+  vertices: [number, number, number][];
+  faces: [number, number, number][];
+  color: string;
+}
+
+export interface MathGraph {
+  mode: "2d" | "3d" | "solid";
+  title: string;
+  functions: GraphFunction2D[];
+  surface: GraphSurface3D | null;
+  solid: GraphSolid3D | null;
+  xRange: [number, number];
+  yRange: [number, number];
+  zRange: [number, number] | null;
+}
+
+function toRangePair(v: unknown, fallback: [number, number]): [number, number] {
+  if (Array.isArray(v) && v.length === 2) {
+    const a = Number(v[0]);
+    const b = Number(v[1]);
+    if (Number.isFinite(a) && Number.isFinite(b) && a < b) return [a, b];
+  }
+  return fallback;
+}
+
+/** 유한한 값들의 최소/최대에 여백을 둔 범위 — 없으면 fallback. */
+function autoFitRange(values: number[], fallback: [number, number]): [number, number] {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (!finite.length) return fallback;
+  const min = Math.min(...finite);
+  const max = Math.max(...finite);
+  if (min === max) return [min - 1, max + 1];
+  const pad = (max - min) * 0.1;
+  return [min - pad, max + pad];
+}
+
+function toVector3(v: unknown): [number, number, number] | null {
+  if (!Array.isArray(v) || v.length !== 3) return null;
+  const [a, b, c] = v.map(Number);
+  if (![a, b, c].every(Number.isFinite)) return null;
+  return [a, b, c];
+}
+
+function toIndexTriple(v: unknown, vertexCount: number): [number, number, number] | null {
+  if (!Array.isArray(v) || v.length !== 3) return null;
+  const [a, b, c] = v.map((x) => Math.trunc(Number(x)));
+  if (![a, b, c].every((n) => Number.isInteger(n) && n >= 0 && n < vertexCount)) return null;
+  return [a, b, c];
+}
+
+/**
+ * 구는 z=f(x,y) 형태의 단일 곡면으로 표현할 수 없어(위쪽 절반만 나오는 반구가 되고,
+ * 정의역 경계에서 톱니 모양이 생김) AI가 실수로 3D 곡면 모드로 만드는 경우가 있다.
+ * x²+y²+z²가 표본 전체에서 거의 일정하고 z≥0이면 반구로 보고 반지름을 구해 돌려준다.
+ */
+function detectHemisphereRadius(x: number[], y: number[], z: (number | null)[][]): number | null {
+  const r2Samples: number[] = [];
+  for (let yi = 0; yi < z.length; yi++) {
+    for (let xi = 0; xi < z[yi].length; xi++) {
+      const zi = z[yi][xi];
+      if (zi == null) continue;
+      if (zi < -1e-6) return null;
+      r2Samples.push(x[xi] * x[xi] + y[yi] * y[yi] + zi * zi);
+    }
+  }
+  if (r2Samples.length < 20) return null;
+  const mean = r2Samples.reduce((a, b) => a + b, 0) / r2Samples.length;
+  if (mean <= 0) return null;
+  const maxDeviation = Math.max(...r2Samples.map((s) => Math.abs(s - mean) / mean));
+  return maxDeviation <= 0.03 ? Math.sqrt(mean) : null;
+}
+
+const SOLID_CAP = 20000;
+
+function parseSolid(raw: unknown): GraphSolid3D | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const label = typeof o?.label === "string" ? o.label : "";
+  const color = typeof o?.color === "string" && o.color.trim() ? o.color : "gray";
+
+  // 표준 입체(정육면체/각뿔/각기둥/구/도넛)는 AI가 좌표를 직접 계산하지 않고
+  // 몇 개 숫자 파라미터만 주면 서버에서 정확한 메시를 만든다 — 훨씬 안정적이다.
+  if (o?.primitive && typeof o.primitive === "object") {
+    const p = o.primitive as Record<string, unknown>;
+    const mesh = generatePrimitive({
+      type: typeof p?.type === "string" ? p.type : "",
+      width: Number(p?.width),
+      depth: Number(p?.depth),
+      height: Number(p?.height),
+      radius: Number(p?.radius),
+      sides: Number(p?.sides),
+      segments: Number(p?.segments),
+      rings: Number(p?.rings),
+      tube: Number(p?.tube),
+    });
+    if (mesh) return { label, vertices: mesh.vertices, faces: mesh.faces, color };
+    // 인식 못 하는 primitive.type이면 커스텀 vertices/faces로 폴백.
+  }
+
+  const vertices = Array.isArray(o?.vertices)
+    ? (o.vertices as unknown[])
+        .slice(0, SOLID_CAP)
+        .map(toVector3)
+        .filter((v): v is [number, number, number] => v !== null)
+    : [];
+  if (vertices.length < 3) return null;
+  const faces = Array.isArray(o?.faces)
+    ? (o.faces as unknown[])
+        .slice(0, SOLID_CAP)
+        .map((f) => toIndexTriple(f, vertices.length))
+        .filter((f): f is [number, number, number] => f !== null)
+    : [];
+  if (!faces.length) return null;
+  return { label, vertices, faces, color };
+}
+
+export function parseMathGraph(raw: string): MathGraph {
+  const obj = JSON.parse(extractJson(raw));
+  let mode: "2d" | "3d" | "solid" =
+    obj?.mode === "solid" ? "solid" : obj?.mode === "3d" ? "3d" : "2d";
+  const title = typeof obj?.title === "string" ? obj.title : "";
+  let xRange = toRangePair(obj?.xRange, [-10, 10]);
+  // yRange는 3D에서는 y 변수의 정의역으로도 쓰이므로 AI 제안값을 그대로 둔다.
+  let yRange = toRangePair(obj?.yRange, [-10, 10]);
+  let zRange = obj?.zRange == null ? null : toRangePair(obj?.zRange, [-10, 10]);
+
+  const functions: GraphFunction2D[] =
+    mode === "2d" && Array.isArray(obj?.functions)
+      ? (obj.functions as unknown[])
+          .slice(0, 5)
+          .map((f) => {
+            const o = f as Record<string, unknown>;
+            const expr = typeof o?.expr === "string" ? o.expr : "";
+            const label = typeof o?.label === "string" ? o.label : expr;
+            const { x, y } = sample2D(expr, xRange);
+            return { expr, label, x, y };
+          })
+          .filter((f) => f.expr)
+      : [];
+
+  // 2D 표시 범위는 AI가 추측한 값 대신, 실제로 샘플링된 y값의 최소/최대로 자동 계산한다.
+  // 이렇게 해야 꼭짓점·근 등 그래프 전체 모양이 항상 한 화면에 들어온다.
+  if (mode === "2d" && functions.length) {
+    const allY = functions.flatMap((f) => f.y).filter((v): v is number => v != null);
+    yRange = autoFitRange(allY, yRange);
+  }
+
+  let surface: GraphSurface3D | null = null;
+  let solid: GraphSolid3D | null = null;
+  if (mode === "3d" && obj?.surface && typeof obj.surface === "object") {
+    const o = obj.surface as Record<string, unknown>;
+    const expr = typeof o?.expr === "string" ? o.expr : "";
+    const label = typeof o?.label === "string" ? o.label : expr;
+    if (expr) {
+      const { x, y, z } = sample3D(expr, xRange, yRange);
+      const sphereRadius = detectHemisphereRadius(x, y, z);
+      const sphereMesh =
+        sphereRadius != null ? generatePrimitive({ type: "sphere", radius: sphereRadius }) : null;
+      if (sphereMesh) {
+        mode = "solid";
+        solid = { label: label || "구", vertices: sphereMesh.vertices, faces: sphereMesh.faces, color: "gray" };
+      } else {
+        surface = { expr, label, x, y, z };
+      }
+    }
+  }
+
+  if (mode === "solid" && !solid) {
+    solid = parseSolid(obj?.solid);
+  }
+  if (solid) {
+    // 꼭짓점 좌표 범위에서 자동으로 프레임을 계산해 도형 전체가 항상 화면에 들어오게 한다.
+    xRange = autoFitRange(solid.vertices.map((v) => v[0]), xRange);
+    yRange = autoFitRange(solid.vertices.map((v) => v[1]), yRange);
+    zRange = autoFitRange(solid.vertices.map((v) => v[2]), zRange ?? [-10, 10]);
+  }
+
+  return { mode, title, functions, surface, solid, xRange, yRange, zRange };
+}
+
 export type StructuredData =
   | { kind: "meeting"; data: MeetingMinutes }
   | { kind: "weeklyReport"; data: WeeklyReport }
   | { kind: "lectureNotes"; data: LectureNotes }
   | { kind: "researchDraft"; data: ResearchDraft }
   | { kind: "examAnalysis"; data: ExamAnalysis }
-  | { kind: "practiceSet"; data: PracticeSet };
+  | { kind: "practiceSet"; data: PracticeSet }
+  | { kind: "mathGraph"; data: MathGraph };
 
 export function parseStructured(kind: StructuredKind, raw: string): StructuredData {
   switch (kind) {
@@ -248,5 +451,7 @@ export function parseStructured(kind: StructuredKind, raw: string): StructuredDa
       return { kind, data: parseExamAnalysis(raw) };
     case "practiceSet":
       return { kind, data: parsePracticeSet(raw) };
+    case "mathGraph":
+      return { kind, data: parseMathGraph(raw) };
   }
 }

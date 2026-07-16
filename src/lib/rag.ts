@@ -38,9 +38,15 @@ export function chunkText(text: string, size = 900, overlap = 150): Chunk[] {
   return chunks;
 }
 
-/** 코사인 유사도(정규화된 벡터면 내적과 동일하지만, 안전하게 정규화 포함). */
+/**
+ * 코사인 유사도(정규화된 벡터면 내적과 동일하지만, 안전하게 정규화 포함).
+ * 차원이 다르면(예: Gemini 임베딩 vs 로컬 해시 폴백 임베딩이 섞인 경우) 서로
+ * 비교 불가능한 벡터 공간이라 0을 반환한다 — 앞부분만 잘라 비교하면 무의미한
+ * 유사도 점수가 나와 검색 품질을 조용히 망가뜨릴 수 있다.
+ */
 export function cosine(a: number[], b: number[]): number {
-  const len = Math.min(a.length, b.length);
+  if (a.length !== b.length) return 0;
+  const len = a.length;
   let dot = 0;
   let na = 0;
   let nb = 0;

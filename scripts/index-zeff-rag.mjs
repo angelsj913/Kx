@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import process from "node:process";
 
 function loadDotenvFile(filePath) {
@@ -185,12 +185,16 @@ async function resolveWorkspace(prisma, userId, args) {
 }
 
 const args = parseArgs(process.argv.slice(2));
+const usingDefaultFile = !args.file;
 const filePath = resolve(
   process.cwd(),
   args.file ?? "docs/datasets/zeff-ai-rag-source-extended.md",
 );
-const title = args.title ?? "ZEFF AI RAG Source Extended";
-const fileName = args["file-name"] ?? "zeff-ai-rag-source-extended.md";
+// --file을 지정했는데 --title/--file-name을 안 주면, 기본값("Extended" 문서 제목)으로
+// 떨어져서 다른 문서를 그 문서 자리에 덮어써버리는 사고가 난다 — 파일명 기준으로
+// 새 제목을 만들어 서로 다른 문서면 서로 다른 LibraryItem이 되도록 한다.
+const fileName = args["file-name"] ?? (usingDefaultFile ? "zeff-ai-rag-source-extended.md" : basename(filePath));
+const title = args.title ?? (usingDefaultFile ? "ZEFF AI RAG Source Extended" : fileName);
 
 if (!existsSync(filePath)) {
   console.error(`RAG 원문 파일을 찾을 수 없습니다: ${filePath}`);

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  MessageSquare,
   CreditCard,
   Users,
   Clock,

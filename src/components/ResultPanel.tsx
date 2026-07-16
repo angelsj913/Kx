@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import {
   Sparkles,
   Copy,
@@ -151,7 +153,9 @@ export default function ResultPanel({
             className="prose-ai max-w-none"
             style={{ fontSize: `${FONT_STEPS[fontIdx]}rem` }}
           >
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {content}
+            </ReactMarkdown>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
