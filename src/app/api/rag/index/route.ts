@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { itemAccessWhere } from "@/lib/workspace";
-import { chunkText } from "@/lib/rag";
-import { embedTexts } from "@/lib/embeddings";
+import { indexLibraryItem } from "@/lib/ragIndexing";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -29,35 +28,15 @@ export async function POST(request: Request) {
   if (!item) {
     return NextResponse.json({ error: "서재 항목을 찾을 수 없습니다." }, { status: 404 });
   }
-  const source = (item.extractedText ?? "").trim();
-  if (!source) {
-    return NextResponse.json(
-      { error: "이 자료에서 추출된 텍스트가 없어 색인할 수 없어요." },
-      { status: 400 },
-    );
-  }
-
   try {
-    const chunks = chunkText(source);
-    const { vectors, provider } = await embedTexts(chunks.map((c) => c.content));
-
-    // 재색인: 기존 청크 삭제 후 새로 삽입(원자적으로)
-    await prisma.$transaction([
-      prisma.documentChunk.deleteMany({ where: { libraryItemId: item.id } }),
-      prisma.documentChunk.createMany({
-        data: chunks.map((c, i) => ({
-          libraryItemId: item.id,
-          userId: item.userId,
-          workspaceId: item.workspaceId,
-          idx: c.idx,
-          content: c.content,
-          embedding: vectors[i] ?? [],
-          provider,
-        })),
-      }),
-    ]);
-
-    return NextResponse.json({ chunks: chunks.length, provider });
+    const result = await indexLibraryItem(item);
+    if (!result) {
+      return NextResponse.json(
+        { error: "이 자료에서 추출된 텍스트가 없어 색인할 수 없어요." },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(result);
   } catch (err) {
     console.error("rag index error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });

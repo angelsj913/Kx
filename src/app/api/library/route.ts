@@ -6,6 +6,7 @@ import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
 import { resolveScope, WorkspaceError } from "@/lib/workspace";
 import { getPlanOrFree } from "@/lib/plans";
+import { indexLibraryItem } from "@/lib/ragIndexing";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -91,6 +92,7 @@ export async function GET(request: Request) {
         mimeType: true,
         createdAt: true,
         workspaceId: true,
+        _count: { select: { chunks: true } },
       },
     }),
   ]);
@@ -194,8 +196,18 @@ export async function POST(request: Request) {
       },
     });
 
+    // 검색 가능하게 즉시 색인 — 실패해도 서재 저장 자체는 이미 유효하니 무시한다.
+    let indexed = false;
+    try {
+      const indexResult = await indexLibraryItem(item);
+      indexed = !!indexResult;
+    } catch (err) {
+      console.warn("library auto-index skipped:", err);
+    }
+
     return NextResponse.json({
       item,
+      indexed,
       usage: { used: currentCount + 1, max: plan.libraryMax, plan: plan.id },
     });
   } catch (err) {
