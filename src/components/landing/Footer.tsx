@@ -25,7 +25,15 @@ export default function Footer() {
         aria-hidden
         width={320}
         height={320}
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06] dark:opacity-[0.09] dark:invert"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06] dark:hidden"
+      />
+      <Image
+        src="/logo-zeff-dark.png"
+        alt=""
+        aria-hidden
+        width={320}
+        height={320}
+        className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-[0.09] dark:block"
       />
 
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400">

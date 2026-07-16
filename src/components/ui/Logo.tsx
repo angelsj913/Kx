@@ -29,7 +29,10 @@ const GAP_CLS: Record<LogoSize, string> = {
 
 /**
  * ZEFF 브랜드 마크 + 워드마크.
- * - 로고 이미지는 검정 마크 + 투명 배경 → 다크모드 `dark:invert`
+ * - 로고는 검정 마크(라이트)/흰 마크(다크) 두 이미지를 따로 두고 dark:에 따라 보이는
+ *   쪽만 교체한다. CSS filter(invert)로 한 장을 반전시키는 대신 이렇게 하는 이유는,
+ *   일부 모바일 브라우저(삼성 인터넷 등)에서 filter: invert()가 이미지에 제대로
+ *   적용되지 않아 다크모드에서 로고가 배경에 묻히는 문제가 있었기 때문이다.
  * - 워드마크: Z 악센트 + AI 위첨자
  */
 export default function Logo({
@@ -45,6 +48,7 @@ export default function Logo({
   spin?: boolean;
 }) {
   const px = MARK_PX[size];
+  const spinCls = spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : "";
   return (
     <span className={`inline-flex items-center ${GAP_CLS[size]} ${className}`}>
       {size === "hero" ? (
@@ -61,22 +65,37 @@ export default function Logo({
             // 박스(48/64px)보다 2.1배 확대해서 보여주므로, 화질 저하 없이 확대되도록
             // 실제 렌더 크기(박스 x 2.1)에 맞춰 더 큰 원본 해상도를 요청한다.
             sizes="(min-width: 640px) 140px, 105px"
-            className={`scale-[2.1] object-contain transition-[filter] duration-300 dark:invert ${
-              spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
-            }`}
+            className={`scale-[2.1] object-contain dark:hidden ${spinCls}`}
+          />
+          <Image
+            src="/logo-zeff-dark.png"
+            alt="ZEFF"
+            fill
+            priority
+            quality={90}
+            sizes="(min-width: 640px) 140px, 105px"
+            className={`hidden scale-[2.1] object-contain dark:block ${spinCls}`}
           />
         </span>
       ) : (
-        <Image
-          src="/logo-zeff.png"
-          alt="ZEFF"
-          width={px}
-          height={px}
-          priority
-          className={`shrink-0 rounded-md object-contain transition-[filter] duration-300 dark:invert ${
-            spin ? "animate-[zeff-spin_1.1s_linear_infinite]" : ""
-          }`}
-        />
+        <>
+          <Image
+            src="/logo-zeff.png"
+            alt="ZEFF"
+            width={px}
+            height={px}
+            priority
+            className={`shrink-0 rounded-md object-contain dark:hidden ${spinCls}`}
+          />
+          <Image
+            src="/logo-zeff-dark.png"
+            alt="ZEFF"
+            width={px}
+            height={px}
+            priority
+            className={`hidden shrink-0 rounded-md object-contain dark:block ${spinCls}`}
+          />
+        </>
       )}
       {withWordmark && (
         <span
