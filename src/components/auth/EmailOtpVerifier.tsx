@@ -37,7 +37,7 @@ export default function EmailOtpVerifier({
     setError("");
     setInfo("");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("올바른 이메일 주소를 입력해 주세요.");
+      setError(t("auth.errors.invalidEmail"));
       return;
     }
     setLoading(true);
@@ -48,13 +48,13 @@ export default function EmailOtpVerifier({
         body: JSON.stringify({ action: "send", identifier: email, channel: "email", purpose }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "발송에 실패했습니다.");
+      if (!res.ok) throw new Error(data?.error ?? t("auth.errors.sendFailed"));
       setSent(true);
       setOtp("");
       setSecondsLeft(180);
-      if (data.devCode) setInfo(`(개발용) 인증번호: ${data.devCode}`);
+      if (data.devCode) setInfo(`${t("auth.otp.devCodePrefix")}${data.devCode}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }
@@ -70,10 +70,10 @@ export default function EmailOtpVerifier({
         body: JSON.stringify({ action: "check", identifier: email, purpose, code: otp }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "인증에 실패했습니다.");
+      if (!res.ok) throw new Error(data?.error ?? t("auth.errors.verifyFailed"));
       onVerified(email.trim().toLowerCase(), { username: data?.username ?? null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }

@@ -3,10 +3,12 @@
 import { motion } from "framer-motion";
 import { FileText, ListChecks, Lightbulb, StickyNote, Play, Presentation } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
+import type { LandingLanguage } from "@/lib/landingI18n";
 
 type Item = { no: string; tag: string; title: string; desc: string };
+type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
 
-const COPY: { ko: { title: string; subtitle: string; items: Item[] }; en: { title: string; subtitle: string; items: Item[] } } = {
+const COPY: Record<LandingLanguage, ShowcaseCopy> = {
   ko: {
     title: "이럴 때, Zeff",
     subtitle: "화면 안에서 실제로 매일 쓰이는 기능만 골라 담았습니다.",
@@ -64,6 +66,186 @@ const COPY: { ko: { title: string; subtitle: string; items: Item[] }; en: { titl
         tag: "Shared Library",
         title: "Personal and team materials, together",
         desc: "Keep a personal library and a team workspace shared library, then chat with any document through Book Chat.",
+      },
+    ],
+  },
+  ja: {
+    title: "こんな時、Zeff",
+    subtitle: "画面の中で実際に毎日使われる機能だけを厳選しました。",
+    items: [
+      {
+        no: "01",
+        tag: "AI要約",
+        title: "資料を入れると、要点だけが残ります",
+        desc: "授業資料やPDFをアップロードすると、テストに出そうな要点をまとめた要約を返します。要約の横のクイズ・概念・メモタブで復習まで自然につながります。",
+      },
+      {
+        no: "02",
+        tag: "講義分析",
+        title: "映像と音声を、一枚のノートに",
+        desc: "講義動画のリンク一つで十分です。画面上の板書と話し声を一緒に読み取り、一つの整理されたノートにまとめます。",
+      },
+      {
+        no: "03",
+        tag: "文書・発表資料",
+        title: "要点を伝えるだけで、下書きが完成します",
+        desc: "必要な内容だけ伝えれば、Word・PPT・Excelの下書きを作成し、右側パネルですぐに開いてプレビューできます。表や書式まで考慮されているので、そのまま仕上げて使いやすいです。",
+      },
+      {
+        no: "04",
+        tag: "共有ライブラリ",
+        title: "自分の資料とチームの資料を一か所で",
+        desc: "個人ライブラリとチームワークスペースの共有ライブラリを分けて管理し、Book Chatで文書とすぐに対話できます。",
+      },
+    ],
+  },
+  zh: {
+    title: "这些场景，交给 Zeff",
+    subtitle: "只挑选了大家在屏幕中每天真正会用到的功能。",
+    items: [
+      {
+        no: "01",
+        tag: "AI摘要",
+        title: "放入资料，只留下重点",
+        desc: "上传课堂资料或PDF，即可获得整理好的、可能出现在考试中的重点摘要。摘要旁的测验·概念·笔记标签，让复习自然衔接。",
+      },
+      {
+        no: "02",
+        tag: "讲座分析",
+        title: "把视频和音频，整理成一份笔记",
+        desc: "只需一个讲座视频链接即可。Zeff 会同时读取画面中的板书和讲话内容，整理成一份条理清晰的笔记。",
+      },
+      {
+        no: "03",
+        tag: "文档·演示文稿",
+        title: "只需说出重点，草稿即可完成",
+        desc: "只要告诉它你需要的内容，就能生成 Word·PPT·Excel 草稿，并可在右侧面板中直接打开预览。表格和格式也一并处理好，拿到手即可直接修改使用。",
+      },
+      {
+        no: "04",
+        tag: "共享资料库",
+        title: "把个人资料和团队资料放在一处",
+        desc: "分别管理个人资料库与团队工作区共享资料库，并可通过 Book Chat 直接与文档对话。",
+      },
+    ],
+  },
+  ru: {
+    title: "Вот для чего Zeff",
+    subtitle: "Мы отобрали только те функции, которыми реально пользуются каждый день.",
+    items: [
+      {
+        no: "01",
+        tag: "ИИ-конспект",
+        title: "Загрузите материал — останется только суть",
+        desc: "Загрузите конспект лекции или PDF и получите сводку ключевых моментов, которые могут встретиться на экзамене. Рядом со сводкой — вкладки викторины, понятий и заметок, так что повторение продолжается естественным образом.",
+      },
+      {
+        no: "02",
+        tag: "Анализ лекций",
+        title: "Видео и звук — в единый конспект",
+        desc: "Достаточно одной ссылки на видео лекции. Zeff считывает запись на экране и произнесённые слова вместе и объединяет их в один структурированный конспект.",
+      },
+      {
+        no: "03",
+        tag: "Документы и презентации",
+        title: "Опишите суть — получите черновик",
+        desc: "Просто скажите, что нужно, и получите черновик в Word, PPT или Excel — затем откройте его в панели справа для предпросмотра. Форматирование и таблицы уже учтены, можно сразу дорабатывать.",
+      },
+      {
+        no: "04",
+        tag: "Общая библиотека",
+        title: "Личные и командные материалы — вместе",
+        desc: "Ведите отдельно личную библиотеку и общую библиотеку командного рабочего пространства, а через Book Chat общайтесь с любым документом напрямую.",
+      },
+    ],
+  },
+  de: {
+    title: "Genau dafür ist Zeff da",
+    subtitle: "Wir haben nur die Funktionen ausgewählt, die im Alltag wirklich genutzt werden.",
+    items: [
+      {
+        no: "01",
+        tag: "KI-Zusammenfassung",
+        title: "Material rein, nur das Wesentliche bleibt",
+        desc: "Laden Sie Vorlesungsunterlagen oder ein PDF hoch und erhalten Sie eine Zusammenfassung der Punkte, die wahrscheinlich in einer Prüfung drankommen. Direkt daneben helfen Quiz-, Konzept- und Notiz-Tabs beim Wiederholen.",
+      },
+      {
+        no: "02",
+        tag: "Vorlesungsanalyse",
+        title: "Video und Ton, in einer einzigen Notiz",
+        desc: "Ein Link zur Vorlesung genügt. Zeff liest Tafelbild und gesprochenes Wort gemeinsam und fasst beides in einer strukturierten Notiz zusammen.",
+      },
+      {
+        no: "03",
+        tag: "Dokumente · Präsentationen",
+        title: "Nur das Wesentliche nennen, der Entwurf ist fertig",
+        desc: "Sagen Sie einfach, was Sie brauchen, und erhalten Sie Entwürfe für Word, PPT oder Excel — direkt im rechten Panel zur Vorschau geöffnet. Tabellen und Formatierung sind schon berücksichtigt, bereit zum direkten Weiterbearbeiten.",
+      },
+      {
+        no: "04",
+        tag: "Geteilte Bibliothek",
+        title: "Eigene und Team-Materialien an einem Ort",
+        desc: "Verwalten Sie eine persönliche Bibliothek getrennt von der geteilten Bibliothek des Team-Workspace und sprechen Sie über Book Chat direkt mit jedem Dokument.",
+      },
+    ],
+  },
+  fr: {
+    title: "C'est là que Zeff intervient",
+    subtitle: "Nous n'avons retenu que les fonctions réellement utilisées au quotidien.",
+    items: [
+      {
+        no: "01",
+        tag: "Résumé IA",
+        title: "Déposez le contenu, ne gardez que l'essentiel",
+        desc: "Importez des notes de cours ou un PDF et recevez un résumé des points les plus susceptibles de tomber à l'examen. Les onglets quiz, concepts et notes juste à côté prolongent naturellement la révision.",
+      },
+      {
+        no: "02",
+        tag: "Analyse de cours",
+        title: "Vidéo et audio réunis en une seule note",
+        desc: "Un simple lien vers la vidéo du cours suffit. Zeff lit ensemble ce qui est écrit à l'écran et ce qui est dit, puis réunit le tout en une note organisée.",
+      },
+      {
+        no: "03",
+        tag: "Documents · Présentations",
+        title: "Donnez l'essentiel, obtenez un brouillon",
+        desc: "Indiquez simplement ce dont vous avez besoin pour obtenir des brouillons Word, PPT ou Excel, à ouvrir directement dans le panneau de droite pour les prévisualiser. Mise en forme et tableaux inclus, prêts à être peaufinés tels quels.",
+      },
+      {
+        no: "04",
+        tag: "Bibliothèque partagée",
+        title: "Vos documents et ceux de l'équipe, au même endroit",
+        desc: "Gérez séparément une bibliothèque personnelle et la bibliothèque partagée de l'espace de travail d'équipe, et discutez directement avec n'importe quel document via Book Chat.",
+      },
+    ],
+  },
+  es: {
+    title: "Para esto está Zeff",
+    subtitle: "Elegimos solo las funciones que realmente se usan todos los días.",
+    items: [
+      {
+        no: "01",
+        tag: "Resumen con IA",
+        title: "Sube el material, quédate solo con lo esencial",
+        desc: "Sube apuntes de clase o un PDF y recibe un resumen de los puntos con más probabilidad de aparecer en un examen. Las pestañas de cuestionario, conceptos y notas justo al lado hacen que el repaso fluya de forma natural.",
+      },
+      {
+        no: "02",
+        tag: "Análisis de clases",
+        title: "Video y audio, en una sola nota",
+        desc: "Basta con un enlace al video de la clase. Zeff lee lo escrito en pantalla y lo hablado en conjunto, y lo une en una nota organizada.",
+      },
+      {
+        no: "03",
+        tag: "Documentos · Presentaciones",
+        title: "Indica lo esencial y obtén un borrador",
+        desc: "Dile solo lo que necesitas y obtén borradores en Word, PPT o Excel, listos para abrir y previsualizar en el panel derecho. Incluye tablas y formato, listos para pulir tal cual.",
+      },
+      {
+        no: "04",
+        tag: "Biblioteca compartida",
+        title: "Tu material y el del equipo, en un solo lugar",
+        desc: "Gestiona por separado tu biblioteca personal y la biblioteca compartida del espacio de equipo, y conversa directamente con cualquier documento mediante Book Chat.",
       },
     ],
   },

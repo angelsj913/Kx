@@ -101,7 +101,10 @@ export default function Logo({
         <span
           className={`inline-flex items-baseline font-extrabold leading-none tracking-tight text-slate-900 dark:text-slate-50 ${TEXT_CLS[size]}`}
         >
-          <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent dark:from-blue-400 dark:via-indigo-300 dark:to-blue-400">
+          <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent dark:hidden">
+            Z
+          </span>
+          <span className="hidden bg-gradient-to-br from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent dark:inline">
             Z
           </span>
           <span>eff</span>

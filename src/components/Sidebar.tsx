@@ -119,19 +119,19 @@ export default function Sidebar({
           active={activeView === "board"}
           collapsed={isCollapsed}
           onClick={onOpenBoard}
-          title="워크보드"
+          title={t("sidebar.workboard")}
           icon={<Kanban size={ICON} className="shrink-0" />}
         >
-          워크보드
+          {t("sidebar.workboard")}
         </NavItem>
         <NavItem
           active={activeView === "rag"}
           collapsed={isCollapsed}
           onClick={onOpenRag}
-          title="지식 검색"
+          title={t("sidebar.knowledgeSearch")}
           icon={<Database size={ICON} className="shrink-0" />}
         >
-          지식 검색
+          {t("sidebar.knowledgeSearch")}
         </NavItem>
       </div>
 

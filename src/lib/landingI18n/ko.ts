@@ -327,6 +327,34 @@ const ko = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "문의",
   "footer.ceo": "대표",
+
+  "common.back": "뒤로가기",
+  "header.adminPanel": "관리자 패널",
+  "header.admin": "관리자",
+  "header.profile": "프로필",
+  "header.logout": "로그아웃",
+  "header.startWeb": "웹에서 시작하기",
+  "common.close": "닫기",
+  "common.unknownError": "알 수 없는 오류가 발생했습니다.",
+  "adminDenied.body":
+    "관리자 패널에 들어갈 수 없습니다. zeff@zeffai.com 으로 로그인했는지 확인한 뒤, 주소창에 /admin 을 직접 입력해 보세요.",
+  "auth.errors.invalidEmail": "올바른 이메일 주소를 입력해 주세요.",
+  "auth.errors.sendFailed": "발송에 실패했습니다.",
+  "auth.errors.verifyFailed": "인증에 실패했습니다.",
+  "auth.otp.devCodePrefix": "(개발용) 인증번호: ",
+  "support.inquiry.errors.submitFailed": "접수에 실패했습니다.",
+
+  "legal.disclaimer": "이 문서는 법적 효력을 위해 한국어 원문을 기준으로 합니다. 아래 내용은 참고용입니다.",
+  "legal.effectiveDate": "시행일:",
+  "legal.lastUpdated": "최종 개정일:",
+  "legal.bizInfo.title": "사업자 정보",
+  "legal.bizInfo.name": "서비스명 · 상호:",
+  "legal.bizInfo.rep": "대표자:",
+  "legal.bizInfo.address": "소재지:",
+  "legal.bizInfo.bizNo": "사업자등록번호:",
+  "legal.bizInfo.mailOrderNo": "통신판매업 신고번호:",
+  "legal.bizInfo.privacyOfficer": "개인정보 보호책임자:",
+  "legal.bizInfo.contact": "문의:",
 } as const;
 
 export default ko;

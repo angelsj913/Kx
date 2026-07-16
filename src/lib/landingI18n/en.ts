@@ -14,7 +14,7 @@ const en: Record<keyof typeof ko, string> = {
   "hero.badge": "Next-generation AI workspace",
   "hero.title.line1": "AI that works at the",
   "hero.title.line2": "",
-  "hero.title.line2Prefix": "speed of thought —",
+  "hero.title.line2Prefix": "speed of thought,",
   "hero.subtitle":
     "ZEFF AI is a personal AI workspace built to finish complex work the fastest way possible. Download it now and experience it yourself.",
   "hero.download.windows": "Download for Windows",
@@ -332,6 +332,34 @@ const en: Record<keyof typeof ko, string> = {
   "footer.brand": "ZEFF AI",
   "footer.contact": "Contact",
   "footer.ceo": "CEO",
+
+  "common.back": "Back",
+  "header.adminPanel": "Admin panel",
+  "header.admin": "Admin",
+  "header.profile": "Profile",
+  "header.logout": "Log out",
+  "header.startWeb": "Start on web",
+  "common.close": "Close",
+  "common.unknownError": "An unknown error occurred.",
+  "adminDenied.body":
+    "You don't have access to the admin panel. Make sure you're signed in as zeff@zeffai.com, then enter /admin directly in the address bar.",
+  "auth.errors.invalidEmail": "Please enter a valid email address.",
+  "auth.errors.sendFailed": "Failed to send.",
+  "auth.errors.verifyFailed": "Verification failed.",
+  "auth.otp.devCodePrefix": "(dev) verification code: ",
+  "support.inquiry.errors.submitFailed": "Failed to submit your inquiry.",
+
+  "legal.disclaimer": "This document is legally governed by the original Korean text. The content below is provided for reference only.",
+  "legal.effectiveDate": "Effective date:",
+  "legal.lastUpdated": "Last updated:",
+  "legal.bizInfo.title": "Business information",
+  "legal.bizInfo.name": "Service name / company:",
+  "legal.bizInfo.rep": "Representative:",
+  "legal.bizInfo.address": "Address:",
+  "legal.bizInfo.bizNo": "Business registration no.:",
+  "legal.bizInfo.mailOrderNo": "Mail-order business no.:",
+  "legal.bizInfo.privacyOfficer": "Privacy officer:",
+  "legal.bizInfo.contact": "Contact:",
 };
 
 export default en;

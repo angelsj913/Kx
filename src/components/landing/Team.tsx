@@ -4,14 +4,13 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Compass, HeartHandshake, Rocket } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
-import { useLandingLanguage } from "@/lib/landingI18n";
+import { useLandingLanguage, type LandingLanguage } from "@/lib/landingI18n";
 
 type Value = { title: string; desc: string };
 
-const COPY: {
-  ko: { title: string; subtitle: string; role: string; bio: string; valuesTitle: string; values: Value[] };
-  en: { title: string; subtitle: string; role: string; bio: string; valuesTitle: string; values: Value[] };
-} = {
+type TeamCopy = { title: string; subtitle: string; role: string; bio: string; valuesTitle: string; values: Value[] };
+
+const COPY: Record<LandingLanguage, TeamCopy> = {
   ko: {
     title: "만드는 사람들",
     subtitle: "작지만, 제품을 매일 직접 쓰는 사람들이 만듭니다.",
@@ -34,6 +33,78 @@ const COPY: {
       { title: "Prove it through results", desc: "We show it through use, not talk. We only promise what actually works on screen." },
       { title: "Fix it beside our users", desc: "We review feedback weekly, meet the rough edges first, and smooth them out the week after." },
       { title: "Keep moving forward", desc: "Without rushing, we take steady steps toward the picture we're drawing." },
+    ],
+  },
+  ja: {
+    title: "作る人たち",
+    subtitle: "小さなチームですが、製品を毎日自分たちで使う人たちが作っています。",
+    role: "代表 · Founder",
+    bio: "「複雑なことを最もシンプルに」という一つの思いからZeffを始めました。毎週ユーザーの声を直接読み、翌週の製品に反映することを最も大切にしています。",
+    valuesTitle: "仕事の原則",
+    values: [
+      { title: "結果で証明します", desc: "言葉より使われ方で示します。画面の中で実際に動くものだけをお約束します。" },
+      { title: "ユーザーのそばで直します", desc: "毎週フィードバックを確認し、不便な点に真っ先に向き合い、翌週改善します。" },
+      { title: "止まらず前進します", desc: "焦らずに、描いた方向へ着実に一歩ずつ進みます。" },
+    ],
+  },
+  zh: {
+    title: "打造团队",
+    subtitle: "虽然是小团队，但产品是由每天亲自使用它的人打造的。",
+    role: "创始人 · Founder",
+    bio: "Zeff 源于一个简单的想法：把复杂的事情变得最简单。我们最看重的是每周亲自阅读用户的反馈，并将其体现在下一周的产品中。",
+    valuesTitle: "工作原则",
+    values: [
+      { title: "用结果证明", desc: "用实际效果说话，而非空谈。我们只承诺屏幕上真正可用的功能。" },
+      { title: "在用户身边持续改进", desc: "每周审阅反馈，率先直面不便之处，并在下周加以完善。" },
+      { title: "不停步，稳步前行", desc: "不急躁，朝着既定方向稳步前进。" },
+    ],
+  },
+  ru: {
+    title: "Команда",
+    subtitle: "Небольшая команда — и её создают те, кто пользуется продуктом каждый день.",
+    role: "Основатель · Founder",
+    bio: "Zeff начался с одной идеи: сделать сложные задачи максимально простыми. Мы читаем отзывы пользователей каждую неделю и учитываем их в продукте на следующей неделе — это для нас важнее всего.",
+    valuesTitle: "Принципы работы",
+    values: [
+      { title: "Доказываем результатом", desc: "Мы показываем не словами, а делом. Обещаем только то, что реально работает на экране." },
+      { title: "Исправляем рядом с пользователями", desc: "Еженедельно рассматриваем отзывы, в первую очередь беремся за неудобные места и дорабатываем их на следующей неделе." },
+      { title: "Двигаемся вперёд без остановок", desc: "Не спеша, но уверенно продвигаемся шаг за шагом в выбранном направлении." },
+    ],
+  },
+  de: {
+    title: "Die Menschen dahinter",
+    subtitle: "Ein kleines Team — und die Menschen, die es bauen, nutzen es jeden Tag selbst.",
+    role: "Gründer · Founder",
+    bio: "Zeff entstand aus einer einzigen Idee: komplexe Arbeit so einfach wie möglich zu machen. Jede Woche echtes Nutzerfeedback zu lesen und es ins Produkt der nächsten Woche einfließen zu lassen, ist uns am wichtigsten.",
+    valuesTitle: "Wie wir arbeiten",
+    values: [
+      { title: "Wir beweisen es durch Ergebnisse", desc: "Wir zeigen es durch Nutzung, nicht durch Worte. Wir versprechen nur, was auf dem Bildschirm tatsächlich funktioniert." },
+      { title: "Wir verbessern direkt an der Seite unserer Nutzer", desc: "Wir prüfen wöchentlich Feedback, gehen unangenehme Stellen zuerst an und glätten sie in der folgenden Woche." },
+      { title: "Wir bewegen uns stetig vorwärts", desc: "Ohne zu hetzen, gehen wir Schritt für Schritt in die Richtung, die wir uns vorgenommen haben." },
+    ],
+  },
+  fr: {
+    title: "Les personnes derrière",
+    subtitle: "Une petite équipe — et les personnes qui la construisent l'utilisent elles-mêmes chaque jour.",
+    role: "Fondateur · Founder",
+    bio: "Zeff est né d'une seule idée : rendre le travail complexe aussi simple que possible. Lire les retours réels des utilisateurs chaque semaine et les intégrer au produit de la semaine suivante est ce qui compte le plus pour nous.",
+    valuesTitle: "Comment nous travaillons",
+    values: [
+      { title: "Nous le prouvons par les résultats", desc: "Nous le montrons par l'usage, pas par les mots. Nous ne promettons que ce qui fonctionne réellement à l'écran." },
+      { title: "Nous corrigeons aux côtés de nos utilisateurs", desc: "Nous examinons les retours chaque semaine, affrontons d'abord les points gênants et les corrigeons la semaine suivante." },
+      { title: "Nous avançons sans nous arrêter", desc: "Sans précipitation, nous avançons pas à pas, de façon constante, vers la direction que nous avons tracée." },
+    ],
+  },
+  es: {
+    title: "Las personas detrás",
+    subtitle: "Un equipo pequeño, y las personas que lo construyen lo usan ellas mismas todos los días.",
+    role: "Fundador · Founder",
+    bio: "Zeff nació de una sola idea: hacer que el trabajo complejo sea lo más simple posible. Leer los comentarios reales de los usuarios cada semana e incorporarlos al producto de la semana siguiente es lo que más nos importa.",
+    valuesTitle: "Cómo trabajamos",
+    values: [
+      { title: "Lo demostramos con resultados", desc: "Lo mostramos con el uso, no con palabras. Solo prometemos lo que realmente funciona en la pantalla." },
+      { title: "Lo arreglamos junto a nuestros usuarios", desc: "Revisamos los comentarios cada semana, enfrentamos primero los puntos incómodos y los pulimos la semana siguiente." },
+      { title: "Avanzamos sin detenernos", desc: "Sin apresurarnos, avanzamos paso a paso de forma constante hacia el rumbo que trazamos." },
     ],
   },
 };

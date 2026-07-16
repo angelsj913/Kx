@@ -71,6 +71,7 @@ export async function POST(request: Request) {
   const { isAiGloballyEnabled, assertAiDailyCap } = await import("@/lib/aiControl");
   const { touchUserActivity } = await import("@/lib/activity");
   let modelTier: "standard" | "priority" | "top" = "standard";
+  let userLanguage: string | null = null;
   try {
     const [aiOn, settings] = await Promise.all([
       isAiGloballyEnabled(),
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
       );
     }
     modelTier = getPlanOrFree(settings?.plan).modelTier;
+    userLanguage = settings?.language ?? null;
     await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
     });
@@ -329,6 +331,7 @@ export async function POST(request: Request) {
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
+            language: userLanguage,
           });
 
           const result = await runBackendRoute({

@@ -722,7 +722,10 @@ function AboutPanel() {
     <div className="flex flex-col items-center py-8 text-center">
       <Logo size="lg" />
       <p className="mt-6 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-        <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent dark:hidden">
+          Z
+        </span>
+        <span className="hidden bg-gradient-to-br from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent dark:inline">
           Z
         </span>
         eff{" "}

@@ -74,6 +74,8 @@ const KO = {
   "sidebar.sharedLibrary": "공유 서재",
   "sidebar.library": "라이브러리",
   "sidebar.libraryEmpty": "아직 대화가 없어요.",
+  "sidebar.workboard": "워크보드",
+  "sidebar.knowledgeSearch": "지식 검색",
 
   "library.title": "내 서재",
   "library.sharedTitle": "공유 서재",
@@ -184,6 +186,8 @@ const EN: Record<keyof typeof KO, string> = {
   "sidebar.sharedLibrary": "Shared Library",
   "sidebar.library": "Library",
   "sidebar.libraryEmpty": "No conversations yet.",
+  "sidebar.workboard": "Workboard",
+  "sidebar.knowledgeSearch": "Knowledge Search",
 
   "library.title": "My Library",
   "library.sharedTitle": "Shared Library",

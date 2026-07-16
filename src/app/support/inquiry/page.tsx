@@ -33,10 +33,10 @@ export default function InquiryPage() {
       if (file) form.set("file", file);
       const res = await fetch("/api/support/inquiry", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error ?? "접수에 실패했습니다.");
+      if (!res.ok) throw new Error(data?.error ?? t("support.inquiry.errors.submitFailed"));
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }

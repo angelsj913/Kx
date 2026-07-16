@@ -47,7 +47,7 @@ function LoginCard() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
+    <div className="relative flex min-h-dvh flex-col items-center justify-start overflow-hidden bg-slate-50 px-6 pb-10 pt-24 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100 sm:justify-center sm:pt-6">
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4">
