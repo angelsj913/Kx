@@ -56,7 +56,8 @@ function LoginCard() {
       </div>
 
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900">
-        <Image src="/logo-zeff.png" alt="ZEFF AI" width={48} height={48} priority className="mx-auto rounded-xl dark:invert" />
+        <Image src="/logo-zeff.png" alt="ZEFF AI" width={48} height={48} priority className="mx-auto rounded-xl dark:hidden" />
+        <Image src="/logo-zeff-dark.png" alt="ZEFF AI" width={48} height={48} priority className="mx-auto hidden rounded-xl dark:block" />
         <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-slate-50">{t("login.title")}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("login.subtitle")}</p>
 

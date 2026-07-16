@@ -114,7 +114,14 @@ function CheckoutInner() {
             alt="ZEFF AI"
             width={24}
             height={24}
-            className="rounded-md dark:invert"
+            className="rounded-md dark:hidden"
+          />
+          <Image
+            src="/logo-zeff-dark.png"
+            alt="ZEFF AI"
+            width={24}
+            height={24}
+            className="hidden rounded-md dark:block"
           />
           <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
         </Link>

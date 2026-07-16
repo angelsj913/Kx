@@ -26,7 +26,8 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3.5">
           <BackButton fallbackHref="/support/notices" />
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:invert" />
+            <Image src="/logo-zeff.png" alt="ZEFF AI" width={24} height={24} className="rounded-md dark:hidden" />
+            <Image src="/logo-zeff-dark.png" alt="ZEFF AI" width={24} height={24} className="hidden rounded-md dark:block" />
             <span className="text-sm font-bold tracking-tight">ZEFF AI</span>
           </Link>
           <ThemeToggle />

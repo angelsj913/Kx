@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, newMerchantUid } from "@/lib/plans";
-import { getStripe, getBaseUrl } from "@/lib/stripe";
+import { getStripe, getBaseUrl, isStubCheckoutAllowed } from "@/lib/stripe";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -45,7 +45,15 @@ export async function POST(request: Request) {
     });
 
     // Stripe 키가 없으면 스텁 모드 — 완료 페이지에서 결제 확인 후 권한 부여
+    // (개발/프리뷰 전용. 프로덕션에서는 실제 결제 없이 요금제가 부여되지 않도록 차단)
     if (!stripe) {
+      if (!isStubCheckoutAllowed()) {
+        console.error("checkout error: STRIPE_SECRET_KEY missing in production");
+        return NextResponse.json(
+          { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
+          { status: 503 }
+        );
+      }
       return NextResponse.json({
         ok: true,
         stub: true,
