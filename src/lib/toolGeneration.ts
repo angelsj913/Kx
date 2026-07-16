@@ -8,6 +8,7 @@ import { parseStructured, type StructuredKind } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
+import { verifyMathSolve, stripVerifyBlock } from "./mathVerify";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -58,6 +59,63 @@ export type ToolGenerationResult =
 
 const MD_EXPORT_TOOLS = new Set(["note-a4", "video-summary", "exam-maker", "word-doc", "math-solve"]);
 
+/**
+ * math-solve 응답을 AI의 "검산" 서술만 믿지 않고 expr-eval로 실제 재계산해 확인한다.
+ * 실패하면 원인을 알려주며 딱 한 번만 재생성하고, 그래도 안 맞으면 원본을 보여주되
+ * 눈에 띄는 경고를 붙인다 — 틀린 답을 조용히 맞는 것처럼 보여주지 않기 위함이다.
+ */
+async function verifyAndAnnotateMathSolve(
+  raw: string,
+  meta: Meta,
+  tool: ToolDef,
+  input: ToolGenerationInput,
+): Promise<{ text: string; meta: Meta }> {
+  let finalRaw = raw;
+  let finalMeta = meta;
+  let verify = verifyMathSolve(finalRaw);
+
+  if (verify && verify.failed.length > 0) {
+    try {
+      const retryNote = [
+        "[자동 검산 실패 - 아래 계산이 문제와 안 맞으니 처음부터 다시 정확히 풀어라]",
+        ...verify.failed.map(
+          (f) =>
+            `- ${f.expr} 는 ${f.expected}가 나와야 하는데 실제로는 ${f.actual ?? "계산 불가"}로 계산됐다.`,
+        ),
+      ].join("\n");
+      const retry = await generateWithFallback({
+        tool,
+        text: [input.text ?? "", retryNote].filter(Boolean).join("\n\n"),
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+      });
+      const retryRaw = stripHanja(retry.text);
+      const retryVerify = verifyMathSolve(retryRaw);
+      if (!retryVerify || retryVerify.failed.length === 0) {
+        finalRaw = retryRaw;
+        verify = retryVerify;
+        finalMeta = { provider: retry.provider, model: retry.model, attempts: meta.attempts + retry.attempts };
+      }
+    } catch (err) {
+      console.warn("[toolGeneration] math-solve 검산 재시도 실패", err);
+    }
+  }
+
+  const text = stripVerifyBlock(finalRaw);
+  if (verify && verify.failed.length > 0) {
+    return {
+      text: [
+        "> ⚠️ 자동 검산에서 값이 맞지 않는 부분을 발견했어요. 아래 풀이를 참고하되 직접 한 번 더 확인해 주세요.",
+        "",
+        text,
+      ].join("\n"),
+      meta: finalMeta,
+    };
+  }
+  return { text, meta: finalMeta };
+}
+
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */
 export async function runToolGeneration(
   input: ToolGenerationInput
@@ -91,8 +149,14 @@ export async function runToolGeneration(
   });
   if (!rawText) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
   // 프롬프트로 한자 금지를 지시해도 종종 새어나와, 파싱 전에 결정적으로 제거한다.
-  const raw = stripHanja(rawText);
-  const meta: Meta = { provider, model, attempts };
+  let raw = stripHanja(rawText);
+  let meta: Meta = { provider, model, attempts };
+
+  if (tool.id === "math-solve") {
+    const verified = await verifyAndAnnotateMathSolve(raw, meta, tool, input);
+    raw = verified.text;
+    meta = verified.meta;
+  }
 
   if (tool.outputType === "structured" && tool.structuredKind) {
     const structured = parseStructured(tool.structuredKind, raw);
