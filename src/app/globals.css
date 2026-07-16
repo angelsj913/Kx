@@ -29,7 +29,10 @@ body {
   --landing-ui-scale: 1;
 }
 .dark body {
-  background: #020617;
+  /* #020617(slate-950)는 카드(주로 slate-900)보다도 훨씬 어두워 배경만 유독
+     짙어 보였다 — slate-900과 slate-950 사이 톤으로 완화해 카드와의 명암
+     위계는 유지하면서 배경 자체는 덜 어둡게 한다. */
+  background: #0a1120;
   color: #f8fafc;
 }
 

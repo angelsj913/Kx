@@ -74,14 +74,22 @@ export default function Team() {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           className="mx-auto mt-12 flex max-w-2xl flex-col items-center gap-5 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:flex-row sm:text-left dark:border-slate-800 dark:bg-slate-900"
         >
-          {/* 브랜드 로고: 라이트=검정, 다크=흰색(invert) */}
+          {/* 브랜드 로고: 라이트=검정 이미지, 다크=흰색 이미지 (filter 대신 실제 교체 —
+              일부 브라우저에서 filter: invert()가 이미지에 안 먹는 문제 회피) */}
           <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
             <Image
               src="/logo-zeff.png"
               alt="ZEFF"
               width={56}
               height={56}
-              className="h-14 w-14 object-contain dark:invert"
+              className="h-14 w-14 object-contain dark:hidden"
+            />
+            <Image
+              src="/logo-zeff-dark.png"
+              alt="ZEFF"
+              width={56}
+              height={56}
+              className="hidden h-14 w-14 object-contain dark:block"
             />
           </div>
           <div>
