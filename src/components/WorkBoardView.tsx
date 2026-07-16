@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, Kanban, Loader2 } from "lucide-react";
 import { wsFetch } from "@/lib/workspaceClient";
+import { useT, type AppDictKey } from "@/lib/i18n";
 
 type Status = "todo" | "doing" | "done";
 
@@ -15,13 +16,14 @@ interface Task {
   dueAt: string | null;
 }
 
-const COLUMNS: { id: Status; label: string; hint: string }[] = [
-  { id: "todo", label: "할 일", hint: "대기" },
-  { id: "doing", label: "진행 중", hint: "작업 중" },
-  { id: "done", label: "완료", hint: "끝남" },
+const COLUMNS: { id: Status; labelKey: AppDictKey; hintKey: AppDictKey }[] = [
+  { id: "todo", labelKey: "workboard.column.todo", hintKey: "workboard.column.todoHint" },
+  { id: "doing", labelKey: "workboard.column.doing", hintKey: "workboard.column.doingHint" },
+  { id: "done", labelKey: "workboard.column.done", hintKey: "workboard.column.doneHint" },
 ];
 
 export default function WorkBoardView() {
+  const t = useT();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -84,10 +86,10 @@ export default function WorkBoardView() {
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-[var(--workspace-text)]">
             <Kanban className="h-5 w-5 text-blue-600" />
-            워크보드
+            {t("sidebar.workboard")}
           </h1>
           <p className="mt-1 text-sm text-[var(--workspace-text-secondary)]">
-            할 일·마감을 칸반으로 관리하세요. (복습 스케줄러를 대체한 협업 보드)
+            {t("workboard.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -95,7 +97,7 @@ export default function WorkBoardView() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addTask()}
-            placeholder="새 작업 제목"
+            placeholder={t("workboard.newTaskPlaceholder")}
             className="min-w-0 flex-1 rounded-xl border border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-3 py-2 text-sm outline-none focus:border-blue-500 sm:w-56"
           />
           <button
@@ -104,7 +106,7 @@ export default function WorkBoardView() {
             disabled={busy}
             className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-md"
           >
-            <Plus className="h-4 w-4" /> 추가
+            <Plus className="h-4 w-4" /> {t("common.add")}
           </button>
         </div>
       </div>
@@ -116,7 +118,7 @@ export default function WorkBoardView() {
       ) : (
         <div className="grid min-h-0 flex-1 gap-3 overflow-x-auto pb-2 md:grid-cols-3">
           {COLUMNS.map((col) => {
-            const items = tasks.filter((t) => t.status === col.id);
+            const items = tasks.filter((task) => task.status === col.id);
             return (
               <div
                 key={col.id}
@@ -124,7 +126,7 @@ export default function WorkBoardView() {
               >
                 <div className="flex items-center justify-between border-b border-[var(--workspace-border)] px-3 py-2.5">
                   <span className="text-sm font-semibold text-[var(--workspace-text)]">
-                    {col.label}
+                    {t(col.labelKey)}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">
                     {items.length}
@@ -152,7 +154,7 @@ export default function WorkBoardView() {
                             onClick={() => void move(task.id, c.id)}
                             className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600"
                           >
-                            → {c.label}
+                            → {t(c.labelKey)}
                           </button>
                         ))}
                         <button
@@ -166,7 +168,7 @@ export default function WorkBoardView() {
                     </li>
                   ))}
                   {items.length === 0 && (
-                    <li className="py-8 text-center text-xs text-slate-400">{col.hint}</li>
+                    <li className="py-8 text-center text-xs text-slate-400">{t(col.hintKey)}</li>
                   )}
                 </ul>
               </div>

@@ -27,7 +27,7 @@ import {
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
-import { useT, toolUiLabel, featureGroupLabel } from "@/lib/i18n";
+import { useT, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
@@ -63,22 +63,22 @@ const CHAT_MIN = 320;
 const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
   {
     id: "select",
-    label: "에이전트 선택 · 요청 분석",
+    label: "status.pipeline.select",
     keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
   },
   {
     id: "research",
-    label: "자료 수집 · 컨텍스트 준비",
+    label: "status.pipeline.research",
     keys: ["status.researching", "status.context", "status.reading"],
   },
   {
     id: "generate",
-    label: "콘텐츠 · 파일 생성",
+    label: "status.pipeline.generate",
     keys: ["status.generating", "status.writing", "status.tool", "status.building"],
   },
   {
     id: "finalize",
-    label: "결과 정리 · 응답 완성",
+    label: "status.pipeline.finalize",
     keys: ["status.finalizing", "status.saving", "status.done"],
   },
 ];
@@ -138,7 +138,7 @@ function readStoredOpen(): boolean {
   return v !== "0";
 }
 
-function buildArtifacts(messages: Msg[]): ChatArtifact[] {
+function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
   const list: ChatArtifact[] = [];
   for (const m of messages) {
     if (m.role === "user" && m.attachments?.length) {
@@ -158,7 +158,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
     }
     if (m.role !== "model") continue;
     if (m.outputType === "pptx") {
-      let title = m.fileName || "프레젠테이션";
+      let title = m.fileName || t("artifact.presentation");
       try {
         if (m.resultData) title = JSON.parse(m.resultData)?.title || title;
       } catch {
@@ -174,7 +174,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         messageId: m.id,
       });
     } else if (m.outputType === "xlsx") {
-      let title = m.fileName || "스프레드시트";
+      let title = m.fileName || t("artifact.spreadsheet");
       try {
         if (m.resultData) title = JSON.parse(m.resultData)?.title || title;
       } catch {
@@ -200,7 +200,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         id: `${m.id}-struct`,
         kind: "structured",
         title,
-        subtitle: "구조화 결과",
+        subtitle: t("artifact.structuredResult"),
         messageId: m.id,
       });
     } else if (
@@ -215,8 +215,8 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
       list.push({
         id: `${m.id}-doc`,
         kind: "doc",
-        title: titleFromName || titleFromText || "문서",
-        subtitle: m.fileName || (m.outputType === "markdown" ? "Markdown / Word" : "문서 응답"),
+        title: titleFromName || titleFromText || t("artifact.document"),
+        subtitle: m.fileName || (m.outputType === "markdown" ? "Markdown / Word" : t("artifact.documentResponse")),
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
@@ -226,12 +226,16 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
   return list.reverse();
 }
 
-function buildPlanSteps(loading: boolean, statusKey: string | null): PlanStep[] {
+function buildPlanSteps(
+  loading: boolean,
+  statusKey: string | null,
+  t: (key: AppDictKey) => string,
+): PlanStep[] {
   if (!loading && !statusKey) {
     // 유휴: 파이프라인 미리보기
     return PLAN_PIPELINE.map((p) => ({
       id: p.id,
-      label: p.label,
+      label: t(p.label as AppDictKey),
       status: "pending" as const,
     }));
   }
@@ -245,7 +249,7 @@ function buildPlanSteps(loading: boolean, statusKey: string | null): PlanStep[] 
 
   return PLAN_PIPELINE.map((p, i) => ({
     id: p.id,
-    label: p.label,
+    label: t(p.label as AppDictKey),
     status: !loading && i <= activeIdx
       ? ("done" as const)
       : i < activeIdx
@@ -394,7 +398,7 @@ export default function ChatWorkspace({
     const added: PendingFile[] = [];
     for (const f of files) {
       if (f.size > 12 * 1024 * 1024) {
-        setError(`${f.name}: 파일이 너무 큽니다 (최대 12MB).`);
+        setError(`${f.name}: ${t("chat.fileTooLarge")}`);
         continue;
       }
       added.push({ file: f, previewUrl: URL.createObjectURL(f) });
@@ -410,8 +414,8 @@ export default function ChatWorkspace({
     // A4 노트 출력 형식 힌트를 본문에 주입
     if (!spokenTurn && activeQuickTool?.id === "note-a4") {
       text = text
-        ? `${text}\n\n형식: ${noteFormat}`
-        : `형식: ${noteFormat}\n첨부/입력 내용을 A4 노트로 정리해 주세요.`;
+        ? `${text}\n\n${t("chat.noteFormatLabel")} ${noteFormat}`
+        : `${t("chat.noteFormatLabel")} ${noteFormat}\n${t("chat.noteFormatInstruction")}`;
     }
     const requiresAttachment =
       !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
@@ -462,7 +466,7 @@ export default function ChatWorkspace({
       const res = await wsFetch("/api/chat", { method: "POST", body: form });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error ?? "요청에 실패했습니다.");
+        throw new Error(data?.error ?? t("chat.errors.requestFailed"));
       }
 
       const reader = res.body.getReader();
@@ -524,7 +528,7 @@ export default function ChatWorkspace({
       }
       onTurnSaved();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.";
+      const msg = err instanceof Error ? err.message : t("common.unknownError");
       setError(msg);
       pushTerminal(`error ✗ ${msg}`, "error");
     } finally {
@@ -551,10 +555,10 @@ export default function ChatWorkspace({
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
   const featureGroups = groupedQuickTools(enabledQuickTools);
 
-  const artifacts = useMemo(() => buildArtifacts(messages), [messages]);
+  const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
   const planSteps = useMemo(
-    () => buildPlanSteps(loading, statusKey),
-    [loading, statusKey],
+    () => buildPlanSteps(loading, statusKey, t),
+    [loading, statusKey, t],
   );
 
   function scrollToMessage(id?: string) {
@@ -580,7 +584,7 @@ export default function ChatWorkspace({
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
           >
             <PanelRight className="h-3.5 w-3.5" />
-            작업 패널
+            {t("chat.workPanel")}
           </button>
         </div>
 
@@ -595,7 +599,7 @@ export default function ChatWorkspace({
               </div>
               <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("chat.empty")}</p>
               <p className="max-w-sm text-xs text-slate-400 dark:text-slate-500">
-                생성된 PPT · 엑셀 · 문서와 작업 계획·터미널은 오른쪽 패널에서 확인할 수 있습니다.
+                {t("chat.emptyHint")}
               </p>
             </div>
           )}
@@ -717,7 +721,7 @@ export default function ChatWorkspace({
                             className="inline-flex items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300"
                           >
                             <Download className="h-3 w-3" />
-                            .md 저장
+                            {t("chat.saveMd")}
                           </a>
                         )}
                         <button
@@ -759,13 +763,13 @@ export default function ChatWorkspace({
                         <button
                           type="button"
                           onClick={() =>
-                            openPrintableHtml(m.fileName ?? "ZEFF 문서", m.text)
+                            openPrintableHtml(m.fileName ?? t("chat.zeffDocument"), m.text)
                           }
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title="인쇄 대화상자에서 PDF로 저장"
+                          title={t("chat.printToPdfTitle")}
                         >
                           <Printer className="h-3 w-3" />
-                          PDF 인쇄
+                          {t("chat.printPdf")}
                         </button>
                       </div>
                     )}
@@ -788,7 +792,7 @@ export default function ChatWorkspace({
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {statusKey
                     ? t(statusKey as Parameters<typeof t>[0])
-                    : "ZEFF가 작업을 처리하고 있습니다…"}
+                    : t("chat.processing")}
                 </p>
               </div>
             </div>
@@ -847,17 +851,17 @@ export default function ChatWorkspace({
                         : "border-slate-300 text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:text-slate-300"
                     }`}
                   >
-                    {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? "PDF용" : "이미지용"}
+                    {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? t("chat.formatPdf") : t("chat.formatImage")}
                   </button>
                 ))}
               {activeQuickTool.id === "video-summary" && (
                 <span className="text-[11px] text-slate-500">
-                  URL 입력 또는 대본·오디오·캡처 첨부
+                  {t("quicktool.videoSummary.placeholder")}
                 </span>
               )}
               {activeQuickTool.id === "exam-maker" && (
                 <span className="text-[11px] text-slate-500">
-                  과목·범위·키워드 → 20문항 + 해설
+                  {t("quicktool.examMaker.placeholder")}
                 </span>
               )}
             </div>
@@ -893,7 +897,7 @@ export default function ChatWorkspace({
               <span
                 className={`flex h-2 w-2 rounded-full ${listening ? "animate-pulse bg-red-400" : "bg-blue-400"}`}
               />
-              {listening ? (interim ? `“${interim}”` : "듣고 있어요…") : "답변을 읽는 중…"}
+              {listening ? (interim ? `“${interim}”` : t("chat.listening")) : t("chat.readingReply")}
             </div>
           )}
 
@@ -975,7 +979,7 @@ export default function ChatWorkspace({
                   else startListening();
                 }}
                 disabled={loading && !listening && !speaking}
-                title={listening ? "듣기 중지" : speaking ? "읽기 중지" : "음성으로 말하기"}
+                title={listening ? t("chat.stopListening") : speaking ? t("chat.stopReading") : t("chat.speak")}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                   listening
                     ? "animate-pulse border-red-500/50 bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300"
@@ -1012,7 +1016,7 @@ export default function ChatWorkspace({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="채팅 영역 크기 조절"
+          aria-label={t("chat.resizeArea")}
           onMouseDown={startResize}
           className="group relative z-20 w-1.5 shrink-0 cursor-col-resize bg-transparent"
         >
@@ -1098,7 +1102,7 @@ export default function ChatWorkspace({
                     className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    다운로드
+                    {t("chat.download")}
                   </a>
                 )}
                 <button
@@ -1127,6 +1131,7 @@ function ArtifactPreview({
   messages: Msg[];
   artifact: ChatArtifact;
 }) {
+  const t = useT();
   const msg = messages.find((m) => m.id === artifact.messageId);
   if (artifact.kind === "attachment" && artifact.url) {
     if (artifact.mimeType?.startsWith("image/")) {
@@ -1137,9 +1142,9 @@ function ArtifactPreview({
     }
     return (
       <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-        <p>첨부 파일 미리보기</p>
+        <p>{t("chat.attachmentPreview")}</p>
         <a href={artifact.url} target="_blank" rel="noreferrer" className="text-blue-600 underline">
-          새 탭에서 열기
+          {t("chat.openNewTab")}
         </a>
       </div>
     );
@@ -1226,7 +1231,7 @@ function ArtifactPreview({
       <iframe title={artifact.title} src={artifact.url} className="h-[70vh] w-full rounded-xl border border-slate-200 dark:border-slate-700" />
     );
   }
-  return <p className="text-sm text-slate-500">미리볼 수 있는 내용이 없습니다. 다운로드를 이용해 주세요.</p>;
+  return <p className="text-sm text-slate-500">{t("chat.noPreview")}</p>;
 }
 
 

@@ -10,6 +10,8 @@ const ru: Record<keyof typeof ko, string> = {
   "header.support": "Поддержка",
   "header.login": "Войти",
   "header.language": "Язык",
+  "header.homeAria": "ZEFF AI Главная",
+  "header.menuAria": "Меню",
 
   "hero.badge": "ИИ-рабочее пространство нового поколения",
   "hero.title.line1": "ИИ, который работает",

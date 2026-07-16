@@ -10,6 +10,8 @@ const ja: Record<keyof typeof ko, string> = {
   "header.support": "サポート",
   "header.login": "ログイン",
   "header.language": "言語",
+  "header.homeAria": "ZEFF AI ホーム",
+  "header.menuAria": "メニュー",
 
   "hero.badge": "次世代AIワークスペース",
   "hero.title.line1": "思考の速さで",

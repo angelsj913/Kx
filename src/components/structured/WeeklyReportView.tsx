@@ -5,6 +5,7 @@ import { Plus, Trash2, BarChart3 } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
 import type { WeeklyReport, WeeklyReportItem } from "@/lib/structured";
+import { useT } from "@/lib/i18n";
 
 function Column({
   title,
@@ -15,6 +16,7 @@ function Column({
   items: WeeklyReportItem[];
   onChange: (items: WeeklyReportItem[]) => void;
 }) {
+  const t = useT();
   function update(i: number, patch: Partial<WeeklyReportItem>) {
     onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
@@ -34,13 +36,13 @@ function Column({
           onClick={add}
           className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
         >
-          <Plus className="h-3.5 w-3.5" /> 추가
+          <Plus className="h-3.5 w-3.5" /> {t("common.add")}
         </button>
       </div>
 
       {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 py-6 text-center text-xs text-slate-500">
-          항목이 없습니다.
+          {t("structured.weeklyReport.emptyItems")}
         </p>
       ) : (
         <div className="space-y-3">
@@ -51,13 +53,13 @@ function Column({
                   type="text"
                   value={it.item}
                   onChange={(e) => update(i, { item: e.target.value })}
-                  placeholder="업무 항목"
+                  placeholder={t("structured.weeklyReport.itemPlaceholder")}
                   className="w-full flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                 />
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  aria-label="항목 삭제"
+                  aria-label={t("structured.weeklyReport.removeItemAria")}
                   className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -97,6 +99,7 @@ export default function WeeklyReportView({
   id: string;
   initial: WeeklyReport;
 }) {
+  const t = useT();
   const [data, setData] = useState(initial);
   const status = useAutosave(id, data);
 
@@ -105,19 +108,19 @@ export default function WeeklyReportView({
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <BarChart3 className="h-4 w-4 text-[var(--mode-accent)]" />
-          주간 업무 보고
+          {t("structured.weeklyReport.title")}
         </h2>
         <SaveIndicator status={status} />
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 sm:grid-cols-2 sm:p-5">
         <Column
-          title="이번 주 진행 사항"
+          title={t("structured.weeklyReport.thisWeek")}
           items={data.thisWeek}
           onChange={(items) => setData((d) => ({ ...d, thisWeek: items }))}
         />
         <Column
-          title="다음 주 계획"
+          title={t("structured.weeklyReport.nextWeek")}
           items={data.nextWeek}
           onChange={(items) => setData((d) => ({ ...d, nextWeek: items }))}
         />

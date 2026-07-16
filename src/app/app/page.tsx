@@ -9,10 +9,12 @@ import WorkBoardView from "@/components/WorkBoardView";
 import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
 import { workspaceAccentCssVars } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 
 export type AppView = "chat" | "library" | "board" | "rag";
 
 export default function AppWorkspace() {
+  const t = useT();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [view, setView] = useState<AppView>("chat");
   const [mobileNav, setMobileNav] = useState(false);
@@ -27,12 +29,12 @@ export default function AppWorkspace() {
     setView("chat");
     setMobileNav(false);
     try {
-      const s = await createSession("새 대화");
+      const s = await createSession(t("session.defaultTitle"));
       setActiveSessionId(s.id);
     } catch {
       setActiveSessionId(null);
     }
-  }, [createSession]);
+  }, [createSession, t]);
 
   /**
    * 입장 시:
@@ -68,7 +70,7 @@ export default function AppWorkspace() {
       {mobileNav && (
         <button
           type="button"
-          aria-label="메뉴 닫기"
+          aria-label={t("nav.closeMenu")}
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setMobileNav(false)}
         />
@@ -122,7 +124,7 @@ export default function AppWorkspace() {
             type="button"
             onClick={() => setMobileNav(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
-            aria-label="메뉴"
+            aria-label={t("nav.menu")}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -137,7 +139,7 @@ export default function AppWorkspace() {
                 setActiveSessionId(id);
                 upsertSession({
                   id,
-                  title: "새 대화",
+                  title: t("session.defaultTitle"),
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                   messageCount: 1,

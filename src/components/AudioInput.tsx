@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Upload, Trash2, AudioLines } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -18,6 +19,7 @@ export default function AudioInput({
   onChange: (f: File | null) => void;
   disabled?: boolean;
 }) {
+  const t = useT();
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -61,7 +63,7 @@ export default function AudioInput({
       setElapsed(0);
       timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     } catch {
-      setError("마이크에 접근할 수 없습니다. 권한을 확인하거나 파일을 업로드해 주세요.");
+      setError(t("audio.micError"));
     }
   }
 
@@ -91,7 +93,7 @@ export default function AudioInput({
               {file.name}
             </p>
             <p className="mt-0.5 text-xs text-slate-500">
-              {(file.size / 1024 / 1024).toFixed(2)} MB · 준비 완료
+              {(file.size / 1024 / 1024).toFixed(2)} MB {t("audio.readySuffix")}
             </p>
           </div>
           <button
@@ -101,7 +103,7 @@ export default function AudioInput({
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-500 transition-colors hover:border-red-500/40 hover:text-red-500 disabled:opacity-50 dark:border-slate-700 dark:text-slate-400 dark:hover:text-red-400"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            다시 선택
+            {t("audio.reselect")}
           </button>
         </div>
       ) : (
@@ -121,7 +123,7 @@ export default function AudioInput({
           {recording ? (
             <>
               <p className="text-sm font-medium tabular-nums text-red-300">
-                녹음 중 · {formatTime(elapsed)}
+                {t("audio.recordingPrefix")}{formatTime(elapsed)}
               </p>
               <button
                 type="button"
@@ -129,13 +131,13 @@ export default function AudioInput({
                 className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
               >
                 <Square className="h-4 w-4" />
-                녹음 중지
+                {t("audio.stopRecording")}
               </button>
             </>
           ) : (
             <>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                수업을 바로 녹음하거나, 저장된 오디오 파일을 올려주세요.
+                {t("audio.hint")}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
@@ -145,7 +147,7 @@ export default function AudioInput({
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
                   <Mic className="h-4 w-4" />
-                  녹음 시작
+                  {t("audio.startRecording")}
                 </button>
                 <button
                   type="button"
@@ -154,7 +156,7 @@ export default function AudioInput({
                   className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-500/50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200"
                 >
                   <Upload className="h-4 w-4" />
-                  파일 업로드
+                  {t("audio.uploadFile")}
                 </button>
               </div>
             </>

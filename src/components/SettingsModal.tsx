@@ -36,27 +36,25 @@ type Tab =
   | "plan"
   | "about";
 
-const TABS: { id: Tab; label: string; icon: typeof Settings2 }[] = [
-  { id: "general", label: "일반", icon: Settings2 },
-  { id: "privacy", label: "개인정보·보안", icon: Shield },
-  { id: "billing", label: "결제", icon: CreditCard },
-  { id: "data", label: "데이터", icon: Database },
-  { id: "plan", label: "요금제", icon: Sparkles },
-  { id: "about", label: "앱 정보", icon: Info },
+const TABS: { id: Tab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
+  { id: "general", labelKey: "settings.tab.general", icon: Settings2 },
+  { id: "privacy", labelKey: "settings.tab.privacy", icon: Shield },
+  { id: "billing", labelKey: "settings.tab.billing", icon: CreditCard },
+  { id: "data", labelKey: "settings.tab.data", icon: Database },
+  { id: "plan", labelKey: "settings.tab.plan", icon: Sparkles },
+  { id: "about", labelKey: "settings.tab.about", icon: Info },
 ];
 
-const LEGAL_LINKS = [
-  { label: "이용약관", href: "/support/legal#terms" },
-  { label: "개인정보 수집 이용 동의서", href: "/support/legal#consent" },
-  { label: "개인정보처리방침", href: "/support/legal#privacy" },
+const LEGAL_LINKS: { labelKey: AppDictKey; href: string }[] = [
+  { labelKey: "settings.legal.terms", href: "/support/legal#terms" },
+  { labelKey: "settings.legal.consent", href: "/support/legal#consent" },
+  { labelKey: "settings.legal.privacy", href: "/support/legal#privacy" },
 ];
 
 const BRAND_LABEL: Record<string, string> = {
   visa: "Visa",
   mastercard: "Mastercard",
   amex: "American Express",
-  local: "국내카드",
-  card: "카드",
 };
 
 export default function SettingsModal({
@@ -66,6 +64,7 @@ export default function SettingsModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("general");
   // SSR/포털용 마운트 여부 — effect setState 대신 useSyncExternalStore
   const mounted = useSyncExternalStore(
@@ -98,7 +97,7 @@ export default function SettingsModal({
         className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6"
         role="dialog"
         aria-modal="true"
-        aria-label="설정"
+        aria-label={t("settings.title")}
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -119,13 +118,13 @@ export default function SettingsModal({
           {/* 좌측 탭 — 모바일에서는 상단 스크롤 */}
           <nav className="flex w-14 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-200 bg-slate-50 p-2 sm:w-48 sm:p-3 dark:border-slate-800 dark:bg-slate-950/50">
             <p className="mb-2 hidden px-2 text-xs font-semibold uppercase tracking-wide text-slate-400 sm:block">
-              설정
+              {t("settings.title")}
             </p>
-            {TABS.map(({ id, label, icon: Icon }) => (
+            {TABS.map(({ id, labelKey, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
-                title={label}
+                title={t(labelKey)}
                 onClick={() => setTab(id)}
                 className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-sm transition-colors sm:px-3 ${
                   tab === id
@@ -134,7 +133,7 @@ export default function SettingsModal({
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">{label}</span>
+                <span className="hidden sm:inline">{t(labelKey)}</span>
               </button>
             ))}
           </nav>
@@ -142,7 +141,7 @@ export default function SettingsModal({
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6 dark:border-slate-800">
               <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                {TABS.find((t) => t.id === tab)?.label ?? "설정"}
+                {t(TABS.find((tb) => tb.id === tab)?.labelKey ?? "settings.title")}
               </h2>
               <button
                 type="button"
@@ -212,7 +211,7 @@ function GeneralPanel() {
           {settings?.plan ? PLANS[isPlanId(settings.plan) ? settings.plan : "free"].name : "…"}
         </p>
         <p className="mt-2 text-xs text-slate-400">
-          요금제 변경은 왼쪽 「요금제」 탭에서 할 수 있습니다.
+          {t("settings.plan.changeHint")}
         </p>
         {/* 개발/테스트용 빠른 전환 */}
         <div className="mt-3 flex flex-wrap gap-2">
@@ -223,7 +222,7 @@ function GeneralPanel() {
               onClick={() => updatePlan(id)}
               className="rounded-lg border border-dashed border-slate-300 px-2.5 py-1 text-[11px] text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600"
             >
-              테스트: {PLANS[id].name}
+              {t("settings.plan.testPrefix")}{PLANS[id].name}
             </button>
           ))}
         </div>
@@ -233,10 +232,11 @@ function GeneralPanel() {
 }
 
 function PrivacyPanel() {
+  const t = useT();
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        홈페이지 지원 센터의 약관을 새 탭에서 확인할 수 있습니다.
+        {t("settings.privacy.intro")}
       </p>
       <ul className="space-y-2">
         {LEGAL_LINKS.map((link) => (
@@ -247,7 +247,7 @@ function PrivacyPanel() {
               rel="noopener noreferrer"
               className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 transition-colors hover:border-blue-400/50 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-100 dark:hover:border-blue-500/40"
             >
-              {link.label}
+              {t(link.labelKey)}
               <ExternalLink className="h-4 w-4 text-slate-400" />
             </a>
           </li>
@@ -320,12 +320,12 @@ function BillingPanel() {
         body: JSON.stringify({ brand, last4, holder }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "추가 실패");
+      if (!res.ok) throw new Error(data?.error ?? t("billing.addFailed"));
       setLast4("");
       setHolder("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "오류");
+      setError(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -340,7 +340,7 @@ function BillingPanel() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "해지 실패");
+      setError(data?.error ?? t("billing.removeFailed"));
       return;
     }
     await load();
@@ -349,14 +349,14 @@ function BillingPanel() {
   return (
     <div className="space-y-8">
       <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">결제수단</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.methodsTitle")}</h3>
         <p className="mt-1 text-xs text-slate-500">
-          자체 저장 UI입니다. 실제 결제 플랫폼은 추후 연동됩니다.
+          {t("billing.methodsHint")}
         </p>
         <ul className="mt-3 space-y-2">
           {methods.length === 0 && (
             <li className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-600">
-              등록된 결제수단이 없습니다
+              {t("billing.methodsEmpty")}
             </li>
           )}
           {methods.map((m) => (
@@ -376,7 +376,9 @@ function BillingPanel() {
                 </span>
                 <div>
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {BRAND_LABEL[m.brand] ?? m.brand} ···· {m.last4}
+                    {BRAND_LABEL[m.brand] ??
+                      (m.brand === "local" ? t("billing.cardLocal") : t("billing.cardGeneric"))}{" "}
+                    ···· {m.last4}
                   </p>
                   {m.holder && (
                     <p className="text-[11px] text-slate-500">{m.holder}</p>
@@ -387,7 +389,7 @@ function BillingPanel() {
                 type="button"
                 onClick={() => removeMethod(m.id)}
                 disabled={methods.length <= 1}
-                title={methods.length <= 1 ? "결제수단이 1개일 때는 해지할 수 없습니다" : "해지"}
+                title={methods.length <= 1 ? t("billing.cannotRemoveLast") : t("billing.remove")}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40"
               >
                 <Trash2 className="h-4 w-4" />
@@ -405,18 +407,18 @@ function BillingPanel() {
             <option value="visa">Visa</option>
             <option value="mastercard">Mastercard</option>
             <option value="amex">Amex</option>
-            <option value="local">국내카드</option>
+            <option value="local">{t("billing.cardLocal")}</option>
           </select>
           <input
             value={last4}
             onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder="끝 4자리"
+            placeholder={t("billing.last4Placeholder")}
             className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
           />
           <input
             value={holder}
             onChange={(e) => setHolder(e.target.value)}
-            placeholder="소유자명(선택)"
+            placeholder={t("billing.holderPlaceholder")}
             className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
           />
           <button
@@ -425,29 +427,29 @@ function BillingPanel() {
             onClick={() => void addMethod()}
             className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" /> 추가
+            <Plus className="h-4 w-4" /> {t("common.add")}
           </button>
         </div>
         {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">결제내역</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.historyTitle")}</h3>
         <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/60">
               <tr>
-                <th className="px-3 py-2 font-medium">결제일</th>
-                <th className="px-3 py-2 font-medium">금액</th>
-                <th className="px-3 py-2 font-medium">정보</th>
-                <th className="px-3 py-2 font-medium">상태</th>
+                <th className="px-3 py-2 font-medium">{t("billing.date")}</th>
+                <th className="px-3 py-2 font-medium">{t("billing.amount")}</th>
+                <th className="px-3 py-2 font-medium">{t("billing.plan")}</th>
+                <th className="px-3 py-2 font-medium">{t("billing.status")}</th>
               </tr>
             </thead>
             <tbody>
               {orders.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-3 py-8 text-center text-slate-400">
-                    결제 내역이 없습니다
+                    {t("billing.historyEmpty")}
                   </td>
                 </tr>
               )}
@@ -464,7 +466,7 @@ function BillingPanel() {
                     ₩{o.amount.toLocaleString()}
                   </td>
                   <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                    {o.plan} 플랜
+                    {o.plan} {t("billing.planSuffix")}
                   </td>
                   <td className="px-3 py-2 text-slate-500">{o.status}</td>
                 </tr>
@@ -473,7 +475,7 @@ function BillingPanel() {
           </table>
         </div>
         <p className="mt-2 text-[11px] text-slate-400">
-          결제된 요금제 행을 선택하면 영수증·세부정보를 볼 수 있습니다.
+          {t("billing.historyHint")}
         </p>
       </section>
 
@@ -597,6 +599,7 @@ function ReceiptModal({
 }
 
 function DataPanel() {
+  const t = useT();
   const [usage, setUsage] = useState<{
     planId: string;
     usage: Record<string, { used: number; max: number | null; period?: string }>;
@@ -612,28 +615,28 @@ function DataPanel() {
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">데이터 관리</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("settings.data.title")}</h3>
         <p className="mt-1 text-xs text-slate-500">
-          채팅 기록·서재 파일은 워크스페이스와 내 서재에서 관리합니다.
+          {t("settings.data.hint")}
         </p>
         <ul className="mt-3 space-y-2 text-sm">
           <li className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-            <p className="font-medium text-slate-800 dark:text-slate-100">채팅 기록</p>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{t("settings.data.chatHistory")}</p>
             <p className="mt-0.5 text-xs text-slate-500">
-              사이드바 세션 목록에서 개별 삭제할 수 있습니다.
+              {t("settings.data.chatHistoryHint")}
             </p>
           </li>
           <li className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-            <p className="font-medium text-slate-800 dark:text-slate-100">파일 · 서재</p>
+            <p className="font-medium text-slate-800 dark:text-slate-100">{t("settings.data.filesLibrary")}</p>
             <p className="mt-0.5 text-xs text-slate-500">
-              「내 서재」에서 업로드·삭제합니다. 팀 워크스페이스 설정에서도 파일 수를 확인할 수 있습니다.
+              {t("settings.data.filesLibraryHint")}
             </p>
           </li>
         </ul>
       </section>
       {usage && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">사용량</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("settings.data.usage")}</h3>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {Object.entries(usage.usage).map(([key, v]) => (
               <div
@@ -656,13 +659,14 @@ function DataPanel() {
 }
 
 function PlanPanel() {
+  const t = useT();
   const { settings } = useSettings();
   const current = isPlanId(settings?.plan) ? settings!.plan : "free";
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        홈페이지 요금제와 동일한 구성입니다. 결제 완료 시 해당 요금제 권한이 계정에 자동 적용됩니다.
+        {t("settings.plan.sameAsHome")}
       </p>
       <div className="grid gap-4 lg:grid-cols-3">
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
@@ -697,7 +701,7 @@ function PlanPanel() {
                   disabled
                   className="mt-5 w-full cursor-not-allowed rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-500 dark:bg-slate-700"
                 >
-                  이용 중
+                  {t("settings.plan.inUse")}
                 </button>
               ) : (
                 <a
@@ -706,7 +710,7 @@ function PlanPanel() {
                   rel="noopener noreferrer"
                   className="mt-5 block w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-blue-600/20"
                 >
-                  결제하기
+                  {t("settings.plan.subscribe")}
                 </a>
               )}
             </div>
@@ -718,6 +722,7 @@ function PlanPanel() {
 }
 
 function AboutPanel() {
+  const t = useT();
   return (
     <div className="flex flex-col items-center py-8 text-center">
       <Logo size="lg" />
@@ -732,10 +737,10 @@ function AboutPanel() {
         <span className="text-blue-600 dark:text-blue-400">AI</span>
       </p>
       <p className="mt-2 max-w-sm text-sm text-slate-500">
-        생각의 속도로 일하는 개인·팀 AI 워크스페이스
+        {t("settings.about.tagline")}
       </p>
       <p className="mt-8 rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
-        앱 버전 v1.0
+        {t("settings.about.versionLabel")} v1.0
       </p>
     </div>
   );

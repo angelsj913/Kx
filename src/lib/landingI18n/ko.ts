@@ -8,6 +8,8 @@ const ko = {
   "header.support": "지원",
   "header.login": "로그인",
   "header.language": "언어",
+  "header.homeAria": "ZEFF AI 홈",
+  "header.menuAria": "메뉴",
 
   "hero.badge": "차세대 AI 워크스페이스",
   "hero.title.line1": "생각의 속도로",

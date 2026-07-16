@@ -19,19 +19,22 @@ const PLAN_LABEL_KEY = {
 
 const ICON = "h-4 w-4 shrink-0";
 
-function displayName(user: {
-  name?: string | null;
-  username?: string | null;
-  email?: string | null;
-} | undefined): string {
-  if (!user) return "사용자";
+function displayName(
+  user: {
+    name?: string | null;
+    username?: string | null;
+    email?: string | null;
+  } | undefined,
+  fallback: string,
+): string {
+  if (!user) return fallback;
   const name = user.name?.trim();
   if (name) return name;
   const username = user.username?.trim();
   if (username) return username;
   const email = user.email?.trim();
   if (email) return email.split("@")[0] || email;
-  return "사용자";
+  return fallback;
 }
 
 export default function ProfileMenu({
@@ -78,7 +81,7 @@ export default function ProfileMenu({
     !!(user as { isAdmin?: boolean } | undefined)?.isAdmin ||
     sessionEmail === "zeff@zeffai.com" ||
     sessionEmail === "kxeung9@gmail.com";
-  const label = displayName(user);
+  const label = displayName(user, t("profile.defaultUser"));
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -169,7 +172,7 @@ export default function ProfileMenu({
                 className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 {isDark ? <Sun className={ICON} /> : <Moon className={ICON} />}
-                {isDark ? "라이트 모드" : "다크 모드"}
+                {isDark ? t("profile.lightMode") : t("profile.darkMode")}
               </button>
             )}
 
@@ -193,7 +196,7 @@ export default function ProfileMenu({
               className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <Home className={ICON} />
-              홈페이지로 나가기
+              {t("profile.goHome")}
             </Link>
 
             {isAdmin && (
@@ -204,7 +207,7 @@ export default function ProfileMenu({
                 className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40"
               >
                 <Wrench className={ICON} />
-                관리자 패널
+                {t("profile.adminPanel")}
               </a>
             )}
 
@@ -216,7 +219,7 @@ export default function ProfileMenu({
               className="flex w-full items-center gap-2.5 border-t border-slate-100 px-3.5 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-slate-800 dark:text-red-400 dark:hover:bg-red-950/40"
             >
               <LogOut className={ICON} />
-              {loggingOut ? "로그아웃 중…" : t("profile.logout")}
+              {loggingOut ? t("profile.loggingOut") : t("profile.logout")}
             </button>
           </motion.div>
         )}

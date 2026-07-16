@@ -78,10 +78,10 @@ export default function Header() {
       }`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <button type="button" aria-label="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
+            <button type="button" aria-label={t("header.menuAria")} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link href="/" className="flex items-center" aria-label="ZEFF AI 홈">
+            <Link href="/" className="flex items-center" aria-label={t("header.homeAria")}>
               <Logo size="lg" />
             </Link>
           </div>

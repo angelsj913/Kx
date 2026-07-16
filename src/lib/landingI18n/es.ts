@@ -10,6 +10,8 @@ const es: Record<keyof typeof ko, string> = {
   "header.support": "Soporte",
   "header.login": "Iniciar sesión",
   "header.language": "Idioma",
+  "header.homeAria": "ZEFF AI Inicio",
+  "header.menuAria": "Menú",
 
   "hero.badge": "Espacio de trabajo de IA de nueva generación",
   "hero.title.line1": "Una IA que trabaja",

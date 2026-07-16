@@ -5,6 +5,7 @@ import { LineChart } from "lucide-react";
 import katex from "katex";
 import * as Plotly from "plotly.js-dist-min";
 import type { MathGraph } from "@/lib/structured";
+import { useT } from "@/lib/i18n";
 
 const PALETTE = ["#2563eb", "#7c3aed", "#0891b2", "#db2777", "#16a34a"];
 
@@ -26,6 +27,7 @@ function isDarkMode(): boolean {
  * 조작도 없다(2D는 완전히 정적, 3D는 마우스 드래그로 회전만 가능한 Plotly 기본 동작).
  */
 export default function GraphView({ id, initial }: { id: string; initial: MathGraph }) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function GraphView({ id, initial }: { id: string; initial: MathGr
           {titleHtml ? (
             <span dangerouslySetInnerHTML={{ __html: titleHtml }} />
           ) : (
-            <span>{initial.title || "수학 그래프"}</span>
+            <span>{initial.title || t("structured.mathGraph.defaultTitle")}</span>
           )}
         </h2>
       </div>

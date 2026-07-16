@@ -11,6 +11,7 @@ import {
   Download,
   AlertTriangle,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 function LoadingSkeleton() {
   return (
@@ -39,6 +40,7 @@ export default function ResultPanel({
   error?: string;
   fileBaseName?: string;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [fontIdx, setFontIdx] = useState(1);
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,14 +81,14 @@ export default function ResultPanel({
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <Sparkles className="h-4 w-4 text-[var(--mode-accent)]" />
-          결과
+          {t("fileResult.defaultTitle")}
         </h2>
         {hasResult && (
           <div className="flex items-center gap-1.5">
             <div className="mr-1 flex items-center overflow-hidden rounded-lg border border-slate-300 dark:border-slate-700">
               <button
                 type="button"
-                aria-label="글자 작게"
+                aria-label={t("resultPanel.fontSmaller")}
                 onClick={() => setFontIdx((i) => Math.max(0, i - 1))}
                 disabled={fontIdx === 0}
                 className="px-2 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700/50"
@@ -94,11 +96,11 @@ export default function ResultPanel({
                 A-
               </button>
               <span className="border-x border-slate-300 dark:border-slate-700 px-2 py-1.5 text-[11px] font-medium text-slate-500">
-                가
+                {t("resultPanel.fontSample")}
               </span>
               <button
                 type="button"
-                aria-label="글자 크게"
+                aria-label={t("resultPanel.fontLarger")}
                 onClick={() =>
                   setFontIdx((i) => Math.min(FONT_STEPS.length - 1, i + 1))
                 }
@@ -116,12 +118,12 @@ export default function ResultPanel({
               {copied ? (
                 <>
                   <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  복사됨
+                  {t("chat.copied")}
                 </>
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5" />
-                  복사
+                  {t("chat.copy")}
                 </>
               )}
             </button>
@@ -131,7 +133,7 @@ export default function ResultPanel({
               className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 dark:bg-slate-900/60 dark:text-slate-300 transition-all duration-300 hover:border-[var(--mode-accent)]/50 hover:text-[var(--mode-accent)]"
             >
               <Download className="h-3.5 w-3.5" />
-              TXT 저장
+              {t("resultPanel.saveTxt")}
             </button>
           </div>
         )}
@@ -163,9 +165,9 @@ export default function ResultPanel({
               <Sparkles className="h-7 w-7 text-slate-400 dark:text-slate-600" />
             </div>
             <p className="text-sm text-slate-500">
-              텍스트를 입력하고 실행하면
+              {t("resultPanel.emptyLine1")}
               <br />
-              결과가 여기에 표시됩니다.
+              {t("fileResult.emptyResult")}
             </p>
           </div>
         )}
