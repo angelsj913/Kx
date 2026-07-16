@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, PLANS } from "@/lib/plans";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isStubCheckoutAllowed } from "@/lib/stripe";
 import { fulfillPaidOrder, orderBelongsToUser } from "@/lib/billing";
 import { friendlyError } from "@/lib/errors";
 
@@ -96,7 +96,15 @@ export async function POST(request: Request) {
     }
 
     // 스텁 모드 (결제 플랫폼 미연동): 테스트 결제 완료로 처리
+    // (개발/프리뷰 전용. 프로덕션에서는 실제 결제 검증 없이 요금제가 부여되지 않도록 차단)
     if (!stripe) {
+      if (!isStubCheckoutAllowed()) {
+        console.error("checkout confirm error: STRIPE_SECRET_KEY missing in production");
+        return NextResponse.json(
+          { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
+          { status: 503 }
+        );
+      }
       const result = await fulfillPaidOrder({
         merchantUid,
         userId,
