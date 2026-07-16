@@ -178,6 +178,9 @@ export async function generateWithFallback(args: {
   audio?: { data: string; mimeType: string };
   images?: { data: string; mimeType: string }[];
   modelTier?: ModelTier;
+  /** 이 제공자들은 후보에서 제외한다 — 독립적인 2차 의견(교차 검증)이 필요할 때, 1차와 같은
+   * 제공자가 같은 계열 실수를 반복하지 않도록 다른 제공자를 강제한다. */
+  excludeProviders?: Provider[];
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
@@ -190,8 +193,12 @@ export async function generateWithFallback(args: {
     );
   }
 
+  const candidates = modelsForTier(tier, { multimodal: multi }).filter(
+    (m) => !args.excludeProviders?.includes(m.provider),
+  );
+
   return runWithFallback(
-    modelsForTier(tier, { multimodal: multi }),
+    candidates,
     (m) =>
       invokeModel(m, {
         mode: "tool",

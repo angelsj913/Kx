@@ -8,7 +8,7 @@ import { parseStructured, type StructuredKind } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
-import { verifyMathSolve, stripVerifyBlock } from "./mathVerify";
+import { verifyMathSolve, stripVerifyBlock, extractFinalAnswer } from "./mathVerify";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -102,18 +102,50 @@ async function verifyAndAnnotateMathSolve(
     }
   }
 
-  const text = stripVerifyBlock(finalRaw);
   if (verify && verify.failed.length > 0) {
     return {
       text: [
         "> ⚠️ 자동 검산에서 값이 맞지 않는 부분을 발견했어요. 아래 풀이를 참고하되 직접 한 번 더 확인해 주세요.",
         "",
-        text,
+        stripVerifyBlock(finalRaw),
       ].join("\n"),
       meta: finalMeta,
     };
   }
-  return { text, meta: finalMeta };
+
+  // 산수 검산 자체가 불가능한 문제(증명·기하 등)는, 같은 AI의 자기 검산으로는 개념
+  // 자체를 잘못 세운 오류를 못 잡는다 — 다른 제공자로 독립적으로 한 번 더 풀게 해서
+  // 최종 답이 같은지 대조한다.
+  if (verify === null) {
+    try {
+      const crossCheck = await generateWithFallback({
+        tool,
+        text: input.text,
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+        excludeProviders: [finalMeta.provider],
+      });
+      const crossRaw = stripHanja(crossCheck.text);
+      const primaryAnswer = extractFinalAnswer(finalRaw);
+      const crossAnswer = extractFinalAnswer(crossRaw);
+      if (primaryAnswer && crossAnswer && primaryAnswer !== crossAnswer) {
+        return {
+          text: [
+            "> ℹ️ 이 문제는 자동 계산 검증이 불가능해 다른 AI로 한 번 더 독립적으로 풀어봤는데, 최종 답이 다르게 나왔어요. 아래 풀이와 비교해서 확인해 주세요.",
+            `> 다른 AI가 낸 답: ${crossAnswer}`,
+            "",
+            stripVerifyBlock(finalRaw),
+          ].join("\n"),
+          meta: finalMeta,
+        };
+      }
+    } catch (err) {
+      console.warn("[toolGeneration] math-solve 교차 검증 실패", err);
+    }
+  }
+
+  return { text: stripVerifyBlock(finalRaw), meta: finalMeta };
 }
 
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */

@@ -58,6 +58,25 @@ export function stripVerifyBlock(raw: string): string {
   return raw.replace(VERIFY_BLOCK_RE, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+const FINAL_ANSWER_RE = /\*\*\s*답\s*:\s*\*\*\s*(.+)/;
+
+/**
+ * "**답:** ..." 줄을 뽑아 비교 가능하도록 정규화한다(공백·달러 기호·마침표 차이는
+ * 무시) — 산수 검산이 불가능한 문제(증명·기하 등)에서 독립적인 2차 풀이와 최종 답이
+ * 같은지 대조할 때 쓴다.
+ */
+export function extractFinalAnswer(text: string): string | null {
+  const match = text.match(FINAL_ANSWER_RE);
+  if (!match) return null;
+  const normalized = match[1]
+    .trim()
+    .replace(/\$+/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[.,]+$/g, "")
+    .toLowerCase();
+  return normalized || null;
+}
+
 const TOLERANCE = 1e-4;
 
 /**
