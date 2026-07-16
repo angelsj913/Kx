@@ -82,7 +82,6 @@ function systemFor(agentId: AgentId, tier: ModelTier, intentTool: string | null)
 
   return `${ZEFF_BASE}
 
-[전문 모드: ${agent.label}]
 ${agent.systemInstruction}
 
 [품질 · ${tier}]
@@ -111,7 +110,7 @@ export async function runBackendRoute(args: {
 
   // ── 1. classify ──
   stages.push("classify");
-  const primary = pickAgent(args.text, args.hasFiles);
+  const primary = pickAgent();
   const intentTool = detectQuickToolFromText(args.text);
   const pool = availableProviderSummary() || "none";
 
@@ -174,11 +173,12 @@ export async function runBackendRoute(args: {
     draft.text.includes("```") ||
     draft.text.includes("1.") ||
     (draft.text.match(/\n/g)?.length ?? 0) >= 4;
-  // top 만 드물게 검증 (priority 는 기본 스킵) — LLM 호출 1회로 응답 지연 대폭 단축
+  // top/priority(결제 플랜)만 검증 — standard는 지연 최소화를 위해 스킵.
+  // top은 엄격 검수(VERIFY_DEEP), priority는 가벼운 교정(VERIFY_LIGHT)만 받는다.
   const shouldVerify =
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
-    tier === "top" &&
+    (tier === "top" || tier === "priority") &&
     draftLen > 600 &&
     !looksStructured;
 

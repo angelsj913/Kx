@@ -13,6 +13,7 @@ const FAQ_KEYS: [LandingDictKey, LandingDictKey][] = [
   ["support.faq.q6", "support.faq.a6"],
   ["support.faq.q7", "support.faq.a7"],
   ["support.faq.q8", "support.faq.a8"],
+  ["support.faq.q9", "support.faq.a9"],
 ];
 
 export default function SupportFaqPage() {

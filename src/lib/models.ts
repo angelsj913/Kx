@@ -108,6 +108,11 @@ export function interleaveByProvider(groups: ModelDef[][]): ModelDef[] {
   return out;
 }
 
+/**
+ * 요금제별 후보 순서 — "먼저 성공하는 모델"이 아니라 "결제한 티어만큼 실제로
+ * 다른 모델이 먼저 시도되도록" 차등화한다. 무료 소형 모델 풀은 어느 티어에서도
+ * 완전히 제거하지 않고 안전망(실제 에러 시 폴백)으로 유지한다.
+ */
 function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standard"): ModelDef[] {
   const freeGroups = [
     GROQ_FREE,
@@ -121,7 +126,16 @@ function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standa
   const premium: ModelDef[] =
     tier === "top" || tier === "priority" ? [DS_PRO, G_PRO] : [G_PRO, DS_PRO];
 
-  return [...freeInterleaved, ...mid, ...premium];
+  // standard(무료): 비용 우선 — 무료 풀을 먼저 시도, 프리미엄은 최후 수단
+  if (tier === "standard") {
+    return [...freeInterleaved, ...mid, ...premium];
+  }
+  // priority(Pro): 중간 등급 모델을 먼저 시도 — 무료 풀은 실패 시 안전망으로 이동
+  if (tier === "priority") {
+    return [...mid, ...premium, ...freeInterleaved];
+  }
+  // top(Professional): 프리미엄 모델을 첫 시도로 — 무료 풀은 프리미엄이 에러날 때만
+  return [...premium, ...mid, ...freeInterleaved];
 }
 
 /** 검증 전용: 생성에 쓴 제공자와 다른 쪽 우선 */
