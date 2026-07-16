@@ -59,9 +59,11 @@ export type ToolGenerationResult =
 
 const MD_EXPORT_TOOLS = new Set(["note-a4", "video-summary", "exam-maker", "word-doc", "math-solve"]);
 
+const MATH_SOLVE_MAX_RETRIES = 2;
+
 /**
  * math-solve 응답을 AI의 "검산" 서술만 믿지 않고 expr-eval로 실제 재계산해 확인한다.
- * 실패하면 원인을 알려주며 딱 한 번만 재생성하고, 그래도 안 맞으면 원본을 보여주되
+ * 실패하면 원인을 알려주며 최대 2번까지 재생성하고, 그래도 안 맞으면 원본을 보여주되
  * 눈에 띄는 경고를 붙인다 — 틀린 답을 조용히 맞는 것처럼 보여주지 않기 위함이다.
  */
 async function verifyAndAnnotateMathSolve(
@@ -74,7 +76,7 @@ async function verifyAndAnnotateMathSolve(
   let finalMeta = meta;
   let verify = verifyMathSolve(finalRaw);
 
-  if (verify && verify.failed.length > 0) {
+  for (let attempt = 0; verify && verify.failed.length > 0 && attempt < MATH_SOLVE_MAX_RETRIES; attempt++) {
     try {
       const retryNote = [
         "[자동 검산 실패 - 아래 계산이 문제와 안 맞으니 처음부터 다시 정확히 풀어라]",
@@ -90,15 +92,16 @@ async function verifyAndAnnotateMathSolve(
         images: input.images,
         modelTier: input.modelTier,
       });
-      const retryRaw = stripHanja(retry.text);
-      const retryVerify = verifyMathSolve(retryRaw);
-      if (!retryVerify || retryVerify.failed.length === 0) {
-        finalRaw = retryRaw;
-        verify = retryVerify;
-        finalMeta = { provider: retry.provider, model: retry.model, attempts: meta.attempts + retry.attempts };
-      }
+      finalRaw = stripHanja(retry.text);
+      verify = verifyMathSolve(finalRaw);
+      finalMeta = {
+        provider: retry.provider,
+        model: retry.model,
+        attempts: finalMeta.attempts + retry.attempts,
+      };
     } catch (err) {
       console.warn("[toolGeneration] math-solve 검산 재시도 실패", err);
+      break;
     }
   }
 
@@ -115,7 +118,7 @@ async function verifyAndAnnotateMathSolve(
 
   // 산수 검산 자체가 불가능한 문제(증명·기하 등)는, 같은 AI의 자기 검산으로는 개념
   // 자체를 잘못 세운 오류를 못 잡는다 — 다른 제공자로 독립적으로 한 번 더 풀게 해서
-  // 최종 답이 같은지 대조한다.
+  // 최종 답이 같은지 대조한다. 둘이 갈리면 세 번째 제공자로 동점을 깬다.
   if (verify === null) {
     try {
       const crossCheck = await generateWithFallback({
@@ -129,16 +132,59 @@ async function verifyAndAnnotateMathSolve(
       const crossRaw = stripHanja(crossCheck.text);
       const primaryAnswer = extractFinalAnswer(finalRaw);
       const crossAnswer = extractFinalAnswer(crossRaw);
+
       if (primaryAnswer && crossAnswer && primaryAnswer !== crossAnswer) {
-        return {
-          text: [
-            "> ℹ️ 이 문제는 자동 계산 검증이 불가능해 다른 AI로 한 번 더 독립적으로 풀어봤는데, 최종 답이 다르게 나왔어요. 아래 풀이와 비교해서 확인해 주세요.",
-            `> 다른 AI가 낸 답: ${crossAnswer}`,
-            "",
-            stripVerifyBlock(finalRaw),
-          ].join("\n"),
-          meta: finalMeta,
-        };
+        try {
+          const tieBreak = await generateWithFallback({
+            tool,
+            text: input.text,
+            audio: input.audio,
+            images: input.images,
+            modelTier: input.modelTier,
+            excludeProviders: [finalMeta.provider, crossCheck.provider],
+          });
+          const tieRaw = stripHanja(tieBreak.text);
+          const tieAnswer = extractFinalAnswer(tieRaw);
+
+          if (tieAnswer && tieAnswer === crossAnswer) {
+            // 2:1로 교차검증 쪽이 이겼다 — 그쪽을 최종 답으로 채택.
+            return {
+              text: stripVerifyBlock(crossRaw),
+              meta: {
+                provider: crossCheck.provider,
+                model: crossCheck.model,
+                attempts: finalMeta.attempts + crossCheck.attempts + tieBreak.attempts,
+              },
+            };
+          }
+          if (tieAnswer && tieAnswer === primaryAnswer) {
+            // 2:1로 원래 답이 이겼다 — 경고 없이 그대로 채택.
+            return { text: stripVerifyBlock(finalRaw), meta: finalMeta };
+          }
+          // 셋 다 다르면 하나를 고를 근거가 없으니 전부 보여주고 직접 확인하게 한다.
+          return {
+            text: [
+              "> ⚠️ 이 문제는 자동 계산 검증이 불가능해 서로 다른 AI 3개로 독립적으로 풀어봤는데, 답이 모두 다르게 나왔어요. 아래 풀이를 참고하되 직접 꼭 확인해 주세요.",
+              `> 1번째 AI 답: ${primaryAnswer}`,
+              `> 2번째 AI 답: ${crossAnswer}`,
+              `> 3번째 AI 답: ${tieAnswer ?? "(답 추출 실패)"}`,
+              "",
+              stripVerifyBlock(finalRaw),
+            ].join("\n"),
+            meta: finalMeta,
+          };
+        } catch (err) {
+          console.warn("[toolGeneration] math-solve 동점 깨기 실패", err);
+          return {
+            text: [
+              "> ℹ️ 이 문제는 자동 계산 검증이 불가능해 다른 AI로 한 번 더 독립적으로 풀어봤는데, 최종 답이 다르게 나왔어요. 아래 풀이와 비교해서 확인해 주세요.",
+              `> 다른 AI가 낸 답: ${crossAnswer}`,
+              "",
+              stripVerifyBlock(finalRaw),
+            ].join("\n"),
+            meta: finalMeta,
+          };
+        }
       }
     } catch (err) {
       console.warn("[toolGeneration] math-solve 교차 검증 실패", err);

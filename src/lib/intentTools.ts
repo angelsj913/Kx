@@ -81,8 +81,21 @@ export function detectQuickToolFromText(text: string): string | null {
     (solidShapeNoun && /(만들|그려|생성|보여)/.test(t));
   if (wantsGraph) return "math-graph";
 
-  // ── 수학 ──
-  if (/수학\s*풀이|문제\s*풀어|방정식\s*풀/i.test(t)) {
+  // ── 수학 풀이 (검산·교차검증이 붙는 전용 도구라, 자연스러운 표현도 최대한 걸리게 한다) ──
+  // 뺄셈(-)은 날짜·전화번호·점수 표기와 겹쳐 오탐이 잦아 산술 패턴에서는 제외한다.
+  // "=" 앞뒤에 변수 계수(2x+3=7)처럼 붙어 있으면 hasEquationShape(변수= 형태)에 안
+  // 걸리니, "=이 있고 문자·숫자가 둘 다 있으면 방정식"이라는 더 넓은 신호를 추가한다.
+  const hasArithmeticShape =
+    hasEquationShape ||
+    (/=/.test(t) && /[a-zA-Z]/.test(t) && /\d/.test(t)) ||
+    /\d+\s*[+*×÷/]\s*\d+/.test(t) ||
+    /[a-zA-Z]\s*\^\s*\d/.test(t);
+  const wantsSolveVerb =
+    /풀어|풀이|구해|계산해|답\s*(은|이)?\s*(뭐|무엇)|얼마|몇\s*(이|인가|이야|야)/.test(t);
+  if (
+    /수학\s*풀이|문제\s*풀어|방정식\s*풀/i.test(t) ||
+    (hasArithmeticShape && wantsSolveVerb)
+  ) {
     return "math-solve";
   }
 
