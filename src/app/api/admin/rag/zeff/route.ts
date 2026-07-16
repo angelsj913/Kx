@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { basename, isAbsolute, relative, resolve } from "node:path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isAdminSession } from "@/lib/admin";
@@ -112,9 +112,15 @@ async function upsertAndIndexZeffRag(args: {
   fileName?: string;
   sourcePath?: string;
 }) {
-  const title = args.title?.trim() || DEFAULT_TITLE;
-  const fileName = args.fileName?.trim() || DEFAULT_FILE_NAME;
   const sourcePath = resolveSourcePath(args.sourcePath?.trim());
+  // sourcePath를 다른 문서로 지정했는데 title/fileName을 안 주면 기본값("Extended"
+  // 문서 제목)으로 떨어져서 그 문서 자리를 덮어써버리는 사고가 난다 — 기본 파일
+  // 그대로일 때만 기존 기본값을 쓰고, 다른 파일이면 파일명 기준으로 새 제목을 만든다.
+  const usingDefaultSource = sourcePath === DEFAULT_SOURCE_PATH;
+  const derivedFileName = basename(sourcePath);
+  const fileName =
+    args.fileName?.trim() || (usingDefaultSource ? DEFAULT_FILE_NAME : derivedFileName);
+  const title = args.title?.trim() || (usingDefaultSource ? DEFAULT_TITLE : derivedFileName);
   const extractedText = (await readFile(sourcePath, "utf8")).trim();
 
   if (!extractedText) {
