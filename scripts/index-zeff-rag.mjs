@@ -29,11 +29,11 @@ const { GoogleGenAI } = await import("@google/genai");
 const { neonConfig } = await import("@neondatabase/serverless");
 const { PrismaNeon } = await import("@prisma/adapter-neon");
 const ws = (await import("ws")).default;
-const { PrismaClient } = await import("../src/generated/prisma/client/index.js");
+const { PrismaClient } = await import("../src/generated/prisma/client.ts");
 
 neonConfig.webSocketConstructor = ws;
 
-const EMBED_MODEL = "text-embedding-004";
+const EMBED_MODEL = "gemini-embedding-2";
 const LOCAL_DIM = 256;
 
 function parseArgs(argv) {
