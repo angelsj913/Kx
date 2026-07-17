@@ -215,10 +215,19 @@ export async function POST(request: Request) {
   }
 
   const encoder = new TextEncoder();
+  let streamCancelled = false;
   const stream = new ReadableStream({
     async start(controller) {
+      // 클라이언트가 연결을 끊은(중단 버튼 등) 뒤에도 이후 이벤트가 계속 enqueue될 수
+      // 있는데, 그때 controller는 이미 닫힌 상태라 예외가 난다 — 조용히 무시한다
+      // (아무도 안 듣고 있으니 실패해도 상관없다). 실제 취소 전파는 request.signal이 한다.
       function send(event: StreamEvent) {
-        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        if (streamCancelled) return;
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        } catch {
+          /* 클라이언트가 이미 연결을 끊음 */
+        }
       }
 
       try {
@@ -429,8 +438,17 @@ export async function POST(request: Request) {
         await releaseReservations();
         send({ type: "error", sessionId: resolvedSessionId, message: friendlyError(err) });
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          /* 이미 취소되어 닫혀 있음 */
+        }
       }
+    },
+    cancel() {
+      // 클라이언트가 연결을 끊음(중단 버튼 등) — request.signal이 하위 fetch/SDK 호출까지
+      // 전파해 실제 생성을 멈춘다. 여기서는 이후 enqueue를 막기만 하면 된다.
+      streamCancelled = true;
     },
   });
 

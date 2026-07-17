@@ -293,6 +293,7 @@ export default function ChatWorkspace({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const abortRef = useRef<AbortController | null>(null);
 
   // 우측 패널 (데스크톱) / 모바일 시트 — localStorage는 lazy init (effect setState 금지)
   const [panelOpen, setPanelOpen] = useState(() => readStoredOpen());
@@ -465,6 +466,10 @@ export default function ChatWorkspace({
       setActiveQuickTool(null);
     }
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let streamMsgId: string | null = null;
+
     try {
       const form = new FormData();
       form.append("text", text);
@@ -472,7 +477,11 @@ export default function ChatWorkspace({
       if (quickToolId) form.append("quickToolId", quickToolId);
       for (const f of filesToUpload) form.append("files", f);
 
-      const res = await wsFetch("/api/chat", { method: "POST", body: form });
+      const res = await wsFetch("/api/chat", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? t("chat.errors.requestFailed"));
@@ -485,7 +494,6 @@ export default function ChatWorkspace({
       let doneMessage: Msg | null = null;
       let doneInterrupted = false;
       let errorMessage: string | null = null;
-      let streamMsgId: string | null = null;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -568,15 +576,30 @@ export default function ChatWorkspace({
       }
       onTurnSaved();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t("common.unknownError");
-      setError(msg);
-      pushTerminal(`error ✗ ${msg}`, "error");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, streaming: false, interrupted: true } : m)),
+          );
+        }
+        pushTerminal("stopped › user requested cancel", "info");
+      } else {
+        const msg = err instanceof Error ? err.message : t("common.unknownError");
+        setError(msg);
+        pushTerminal(`error ✗ ${msg}`, "error");
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
       setStatusKey(null);
       setStreamingId(null);
       setRefining(false);
     }
+  }
+
+  function stopGeneration() {
+    abortRef.current?.abort();
   }
 
   useEffect(() => {
@@ -1058,13 +1081,18 @@ export default function ChatWorkspace({
             )}
 
             <motion.button
-              type="submit"
+              type={loading ? "button" : "submit"}
+              onClick={loading ? stopGeneration : undefined}
               whileTap={{ scale: 0.95 }}
-              disabled={!canSend}
-              title={t("chat.send")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-600/30 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={loading ? false : !canSend}
+              title={loading ? t("chat.stop") : t("chat.send")}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                loading
+                  ? "bg-gradient-to-r from-red-600 to-rose-500 shadow-red-600/30"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-500 shadow-blue-600/30"
+              }`}
             >
-              <Send className="h-5 w-5" />
+              {loading ? <Square className="h-4 w-4" /> : <Send className="h-5 w-5" />}
             </motion.button>
           </div>
         </form>
