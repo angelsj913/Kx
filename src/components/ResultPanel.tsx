@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { markdownCodeComponents } from "@/components/CodeBlockPre";
 
 function LoadingSkeleton() {
   return (
@@ -155,7 +156,11 @@ export default function ResultPanel({
             className="prose-ai max-w-none"
             style={{ fontSize: `${FONT_STEPS[fontIdx]}rem` }}
           >
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={markdownCodeComponents}
+            >
               {content}
             </ReactMarkdown>
           </div>

@@ -41,6 +41,7 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
+import { markdownCodeComponents } from "@/components/CodeBlockPre";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
@@ -690,7 +691,11 @@ export default function ChatWorkspace({
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={markdownCodeComponents}
+                      >
                         {m.text}
                       </ReactMarkdown>
                     </div>
@@ -1220,7 +1225,11 @@ function ArtifactPreview({
   if (msg?.text) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={markdownCodeComponents}
+        >
           {msg.text}
         </ReactMarkdown>
       </div>
