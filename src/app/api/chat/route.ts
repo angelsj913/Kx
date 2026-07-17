@@ -41,6 +41,8 @@ export async function POST(request: Request) {
   let sessionId: string | null = null;
   let text = "";
   let quickToolId: string | null = null;
+  let regenerate = false;
+  let editMessageId: string | null = null;
   const uploads: File[] = [];
 
   if (contentType.includes("multipart/form-data")) {
@@ -48,6 +50,8 @@ export async function POST(request: Request) {
     text = String(form.get("text") ?? "").trim();
     sessionId = (form.get("sessionId") as string) || null;
     quickToolId = (form.get("quickToolId") as string) || null;
+    regenerate = form.get("regenerate") === "1";
+    editMessageId = (form.get("editMessageId") as string) || null;
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
     }
@@ -56,10 +60,20 @@ export async function POST(request: Request) {
     text = typeof body?.text === "string" ? body.text.trim() : "";
     sessionId = typeof body?.sessionId === "string" ? body.sessionId : null;
     quickToolId = typeof body?.quickToolId === "string" ? body.quickToolId : null;
+    regenerate = body?.regenerate === true;
+    editMessageId = typeof body?.editMessageId === "string" ? body.editMessageId : null;
   }
 
-  if (!text && uploads.length === 0) {
+  // 재생성: 새 텍스트 없이 세션의 마지막 사용자 메시지를 그대로 재사용한다(아래에서 채움).
+  // 편집: 수정된 텍스트가 반드시 있어야 한다.
+  if (!regenerate && !editMessageId && !text && uploads.length === 0) {
     return NextResponse.json({ error: "메시지를 입력해 주세요." }, { status: 400 });
+  }
+  if (editMessageId && !text) {
+    return NextResponse.json({ error: "수정할 내용을 입력해 주세요." }, { status: 400 });
+  }
+  if ((regenerate || editMessageId) && !sessionId) {
+    return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
   }
 
   // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
@@ -162,49 +176,92 @@ export async function POST(request: Request) {
   let storedAttachments: StoredAttachment[] = [];
   let inlineFiles: { data: string; mimeType: string }[] = [];
   try {
-    // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
-    const uploaded = await Promise.all(
-      uploads.map(async (file, i) => {
-        const buf = Buffer.from(await file.arrayBuffer());
-        const mimeType = file.type || "application/octet-stream";
-        const blob = await put(
-          `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
-          buf,
-          { access: "public", contentType: mimeType },
-        );
-        return {
-          stored: {
-            url: blob.url,
-            filename: file.name,
-            mimeType,
-          } satisfies StoredAttachment,
-          inline: { data: buf.toString("base64"), mimeType },
-        };
-      }),
-    );
-    storedAttachments = uploaded.map((u) => u.stored);
-    inlineFiles = uploaded.map((u) => u.inline);
+    if (regenerate) {
+      // 재생성: 새 사용자 메시지 없이, 마지막 사용자 메시지를 그대로 재사용해
+      // 마지막 assistant 응답만 지우고 다시 생성한다.
+      const lastUser = await prisma.chatHistory.findFirst({
+        where: { sessionId: resolvedSessionId, role: "user" },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!lastUser) {
+        await releaseReservations();
+        return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
+      }
+      text = lastUser.text;
+      const lastAssistant = await prisma.chatHistory.findFirst({
+        where: { sessionId: resolvedSessionId, role: "model" },
+        orderBy: { createdAt: "desc" },
+      });
+      if (lastAssistant) {
+        await prisma.chatHistory.delete({ where: { id: lastAssistant.id } });
+      }
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionId },
+        data: { updatedAt: new Date() },
+      });
+    } else if (editMessageId) {
+      // 편집: 해당 사용자 메시지 이후 생긴 모든 기록을 지우고, 그 메시지 자체를
+      // 수정된 텍스트로 교체한다 — 이후 대화는 이 지점부터 새로 갈라져 나간다.
+      const target = await prisma.chatHistory.findFirst({
+        where: { id: editMessageId, sessionId: resolvedSessionId, role: "user" },
+      });
+      if (!target) {
+        await releaseReservations();
+        return NextResponse.json({ error: "수정할 메시지를 찾을 수 없습니다." }, { status: 404 });
+      }
+      await prisma.chatHistory.deleteMany({
+        where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
+      });
+      await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionId },
+        data: { updatedAt: new Date() },
+      });
+    } else {
+      // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
+      const uploaded = await Promise.all(
+        uploads.map(async (file, i) => {
+          const buf = Buffer.from(await file.arrayBuffer());
+          const mimeType = file.type || "application/octet-stream";
+          const blob = await put(
+            `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
+            buf,
+            { access: "public", contentType: mimeType },
+          );
+          return {
+            stored: {
+              url: blob.url,
+              filename: file.name,
+              mimeType,
+            } satisfies StoredAttachment,
+            inline: { data: buf.toString("base64"), mimeType },
+          };
+        }),
+      );
+      storedAttachments = uploaded.map((u) => u.stored);
+      inlineFiles = uploaded.map((u) => u.inline);
 
-    await prisma.chatHistory.create({
-      data: {
-        sessionId: resolvedSessionId,
-        role: "user",
-        text,
-        attachments: storedAttachments.length
-          ? (storedAttachments as unknown as Prisma.InputJsonValue)
-          : undefined,
-      },
-    });
-    await prisma.chatSession.update({
-      where: { id: resolvedSessionId },
-      data: {
-        updatedAt: new Date(),
-        // 빈 제목은 첫 메시지로 갱신한다. 번역된 placeholder 문자열(예: "New chat")을
-        // 데이터로 저장하지 않으므로 언어에 상관없이 항상 정확히 동작한다 —
-        // 사이드바는 이미 title이 비어 있으면 t("sidebar.newChat")으로 표시한다.
-        ...(!chatSession.title ? { title: text.slice(0, 40) || null } : {}),
-      },
-    });
+      await prisma.chatHistory.create({
+        data: {
+          sessionId: resolvedSessionId,
+          role: "user",
+          text,
+          attachments: storedAttachments.length
+            ? (storedAttachments as unknown as Prisma.InputJsonValue)
+            : undefined,
+        },
+      });
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionId },
+        data: {
+          updatedAt: new Date(),
+          // 빈 제목은 첫 메시지로 갱신한다. 번역된 placeholder 문자열(예: "New chat")을
+          // 데이터로 저장하지 않으므로 언어에 상관없이 항상 정확히 동작한다 —
+          // 사이드바는 이미 title이 비어 있으면 t("sidebar.newChat")으로 표시한다.
+          ...(!chatSession.title ? { title: text.slice(0, 40) || null } : {}),
+        },
+      });
+    }
   } catch (err) {
     await releaseReservations();
     if (isNewSession) {

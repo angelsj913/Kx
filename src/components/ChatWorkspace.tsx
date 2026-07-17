@@ -21,6 +21,9 @@ import {
   Download,
   Printer,
   Copy,
+  Pencil,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import {
   downloadMarkdown,
@@ -285,6 +288,8 @@ export default function ChatWorkspace({
   const [statusKey, setStatusKey] = useState<string | null>(null);
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [refining, setRefining] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const [error, setError] = useState("");
   const [activeQuickTool, setActiveQuickTool] = useState<ToolDef | null>(null);
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
@@ -294,6 +299,7 @@ export default function ChatWorkspace({
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const abortRef = useRef<AbortController | null>(null);
+  const streamIdSeq = useRef(0);
 
   // 우측 패널 (데스크톱) / 모바일 시트 — localStorage는 lazy init (effect setState 금지)
   const [panelOpen, setPanelOpen] = useState(() => readStoredOpen());
@@ -417,66 +423,19 @@ export default function ChatWorkspace({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function send(e?: React.FormEvent, spoken?: string) {
-    e?.preventDefault();
-    const spokenTurn = spoken !== undefined;
-    let text = (spoken ?? draft).trim();
-    // A4 노트 출력 형식 힌트를 본문에 주입
-    if (!spokenTurn && activeQuickTool?.id === "note-a4") {
-      text = text
-        ? `${text}\n\n${t("chat.noteFormatLabel")} ${noteFormat}`
-        : `${t("chat.noteFormatLabel")} ${noteFormat}\n${t("chat.noteFormatInstruction")}`;
-    }
-    const requiresAttachment =
-      !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
-    if (spokenTurn && !text) return;
-    if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
-    if (requiresAttachment && pending.length === 0) return;
-    // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
-
+  async function runGeneration(buildForm: () => FormData, opts: { spokenTurn?: boolean } = {}) {
+    const spokenTurn = !!opts.spokenTurn;
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
     setPanelTab((tab) => (tab === "files" ? "plan" : tab));
-    pushTerminal(`$ zeff run — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
-    pushTerminal("agent: selecting pipeline…", "info");
-
-    const optimisticFiles: StoredAttachment[] = spokenTurn
-      ? []
-      : pending.map((p) => ({
-          url: p.previewUrl,
-          filename: p.file.name,
-          mimeType: p.file.type || "application/octet-stream",
-        }));
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `local-${Date.now()}`,
-        role: "user",
-        text,
-        attachments: optimisticFiles.length ? optimisticFiles : undefined,
-      },
-    ]);
-
-    const filesToUpload = spokenTurn ? [] : pending.map((p) => p.file);
-    const quickToolId = spokenTurn ? null : activeQuickTool?.id ?? null;
-    if (!spokenTurn) {
-      setDraft("");
-      setPending([]);
-      setActiveQuickTool(null);
-    }
 
     const controller = new AbortController();
     abortRef.current = controller;
     let streamMsgId: string | null = null;
 
     try {
-      const form = new FormData();
-      form.append("text", text);
-      if (sessionId) form.append("sessionId", sessionId);
-      if (quickToolId) form.append("quickToolId", quickToolId);
-      for (const f of filesToUpload) form.append("files", f);
-
+      const form = buildForm();
       const res = await wsFetch("/api/chat", {
         method: "POST",
         body: form,
@@ -523,7 +482,8 @@ export default function ChatWorkspace({
           } else if (event.type === "delta") {
             const delta = event.text ?? "";
             if (!streamMsgId) {
-              streamMsgId = `stream-${Date.now()}`;
+              streamIdSeq.current += 1;
+              streamMsgId = `stream-${streamIdSeq.current}`;
               setStreamingId(streamMsgId);
               const id = streamMsgId;
               setMessages((prev) => [...prev, { id, role: "model", text: delta, streaming: true }]);
@@ -598,6 +558,100 @@ export default function ChatWorkspace({
     }
   }
 
+  async function send(e?: React.FormEvent, spoken?: string) {
+    e?.preventDefault();
+    const spokenTurn = spoken !== undefined;
+    let text = (spoken ?? draft).trim();
+    // A4 노트 출력 형식 힌트를 본문에 주입
+    if (!spokenTurn && activeQuickTool?.id === "note-a4") {
+      text = text
+        ? `${text}\n\n${t("chat.noteFormatLabel")} ${noteFormat}`
+        : `${t("chat.noteFormatLabel")} ${noteFormat}\n${t("chat.noteFormatInstruction")}`;
+    }
+    const requiresAttachment =
+      !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
+    if (spokenTurn && !text) return;
+    if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
+    if (requiresAttachment && pending.length === 0) return;
+    // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
+
+    pushTerminal(`$ zeff run — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
+    pushTerminal("agent: selecting pipeline…", "info");
+
+    const optimisticFiles: StoredAttachment[] = spokenTurn
+      ? []
+      : pending.map((p) => ({
+          url: p.previewUrl,
+          filename: p.file.name,
+          mimeType: p.file.type || "application/octet-stream",
+        }));
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}`,
+        role: "user",
+        text,
+        attachments: optimisticFiles.length ? optimisticFiles : undefined,
+      },
+    ]);
+
+    const filesToUpload = spokenTurn ? [] : pending.map((p) => p.file);
+    const quickToolId = spokenTurn ? null : activeQuickTool?.id ?? null;
+    if (!spokenTurn) {
+      setDraft("");
+      setPending([]);
+      setActiveQuickTool(null);
+    }
+
+    await runGeneration(
+      () => {
+        const form = new FormData();
+        form.append("text", text);
+        if (sessionId) form.append("sessionId", sessionId);
+        if (quickToolId) form.append("quickToolId", quickToolId);
+        for (const f of filesToUpload) form.append("files", f);
+        return form;
+      },
+      { spokenTurn },
+    );
+  }
+
+  /** 사용자 메시지 편집 — 그 메시지 이후 기록을 잘라내고 수정된 텍스트로 다시 생성한다. */
+  async function submitEdit(id: string, newText: string) {
+    const text = newText.trim();
+    if (!text || loading || !sessionId) return;
+    setEditingId(null);
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === id);
+      if (idx === -1) return prev;
+      return [...prev.slice(0, idx), { ...prev[idx], text }];
+    });
+    pushTerminal(`$ zeff edit — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
+    await runGeneration(() => {
+      const form = new FormData();
+      form.append("text", text);
+      form.append("sessionId", sessionId);
+      form.append("editMessageId", id);
+      return form;
+    });
+  }
+
+  /** 마지막 assistant 응답 재생성 — 그 응답만 지우고 같은 질문으로 다시 생성한다. */
+  async function regenerateLast() {
+    if (loading || !sessionId) return;
+    const idx = [...messages].reverse().findIndex((m) => m.role === "model");
+    if (idx === -1) return;
+    const cutAt = messages.length - 1 - idx;
+    setMessages((prev) => prev.slice(0, cutAt));
+    pushTerminal("$ zeff regenerate", "info");
+    await runGeneration(() => {
+      const form = new FormData();
+      form.append("regenerate", "1");
+      form.append("sessionId", sessionId);
+      return form;
+    });
+  }
+
   function stopGeneration() {
     abortRef.current?.abort();
   }
@@ -619,6 +673,13 @@ export default function ChatWorkspace({
 
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
   const featureGroups = groupedQuickTools(enabledQuickTools);
+
+  const lastModelMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "model") return messages[i].id;
+    }
+    return null;
+  }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
   const planSteps = useMemo(
@@ -676,31 +737,85 @@ export default function ChatWorkspace({
                 ref={(el) => {
                   messageRefs.current[m.id] = el;
                 }}
-                className="flex justify-end gap-2.5"
+                className="group flex justify-end gap-2.5"
               >
-                <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm text-white shadow-lg shadow-blue-600/30">
-                  {m.attachments && m.attachments.length > 0 && (
-                    <div className="mb-1.5 flex flex-wrap gap-1.5">
-                      {m.attachments.map((f, j) => (
-                        <a
-                          key={j}
-                          href={f.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[11px] hover:bg-white/25"
-                        >
-                          {f.mimeType.startsWith("image/") ? (
-                            <ImageIcon className="h-3 w-3" />
-                          ) : (
-                            <FileText className="h-3 w-3" />
-                          )}
-                          {f.filename}
-                        </a>
-                      ))}
+                {editingId === m.id ? (
+                  <div className="max-w-[80%] flex-1 rounded-2xl rounded-tr-sm border border-blue-400 bg-white p-2 shadow-lg dark:border-blue-500 dark:bg-slate-900">
+                    <textarea
+                      autoFocus
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          void submitEdit(m.id, editDraft);
+                        } else if (e.key === "Escape") {
+                          setEditingId(null);
+                        }
+                      }}
+                      rows={Math.min(8, Math.max(2, editDraft.split("\n").length))}
+                      className="w-full resize-none bg-transparent p-1 text-sm text-slate-800 outline-none dark:text-slate-100"
+                    />
+                    <div className="flex justify-end gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        <X className="h-3 w-3" />
+                        {t("chat.editCancel")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void submitEdit(m.id, editDraft)}
+                        disabled={!editDraft.trim() || loading}
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" />
+                        {t("chat.editSave")}
+                      </button>
                     </div>
-                  )}
-                  {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    {!loading && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(m.id);
+                          setEditDraft(m.text);
+                        }}
+                        title={t("chat.editMessage")}
+                        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm text-white shadow-lg shadow-blue-600/30">
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className="mb-1.5 flex flex-wrap gap-1.5">
+                          {m.attachments.map((f, j) => (
+                            <a
+                              key={j}
+                              href={f.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[11px] hover:bg-white/25"
+                            >
+                              {f.mimeType.startsWith("image/") ? (
+                                <ImageIcon className="h-3 w-3" />
+                              ) : (
+                                <FileText className="h-3 w-3" />
+                              )}
+                              {f.filename}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
+                    </div>
+                  </>
+                )}
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/60">
                   <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                 </div>
@@ -790,6 +905,19 @@ export default function ChatWorkspace({
                           <Copy className="h-3 w-3" />
                           {t("chat.copy")}
                         </button>
+                        {m.id === lastModelMessageId &&
+                          (m.outputType === "chat" || !m.outputType) &&
+                          !loading && (
+                            <button
+                              type="button"
+                              onClick={() => void regenerateLast()}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              title={t("chat.regenerate")}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              {t("chat.regenerate")}
+                            </button>
+                          )}
                       </div>
                     )}
                     {!m.streaming && m.text && m.text.length > 80 && (
@@ -853,6 +981,19 @@ export default function ChatWorkspace({
                           <Printer className="h-3 w-3" />
                           {t("chat.printPdf")}
                         </button>
+                        {m.id === lastModelMessageId &&
+                          (m.outputType === "chat" || !m.outputType) &&
+                          !loading && (
+                            <button
+                              type="button"
+                              onClick={() => void regenerateLast()}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              title={t("chat.regenerate")}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              {t("chat.regenerate")}
+                            </button>
+                          )}
                       </div>
                     )}
                   </div>
