@@ -123,6 +123,80 @@ async function callCompat(
   return "";
 }
 
+/** SSE 스트리밍 버전 — 델타가 올 때마다 onDelta로 중계하고, 누적된 전체 텍스트를 반환한다. */
+async function callCompatStream(
+  cfg: CompatProviderConfig,
+  model: string,
+  messages: OAIMessage[],
+  onDelta: (delta: string) => void,
+  apiKey?: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const key = requireKey(cfg, apiKey);
+  const res = await fetch(cfg.baseUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({ model, messages, stream: true }),
+    signal,
+  });
+
+  if (!res.ok || !res.body) {
+    let msg = `${cfg.provider} 오류 (${res.status})`;
+    try {
+      const err = await res.json();
+      const detail =
+        err?.error?.message ||
+        err?.message ||
+        (typeof err?.error === "string" ? err.error : null);
+      if (detail) msg = String(detail);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let full = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+
+      let json: unknown;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      const chunk = json as {
+        error?: { message?: string };
+        choices?: { delta?: { content?: string } }[];
+      };
+      if (chunk?.error?.message) throw new Error(String(chunk.error.message));
+      const delta = chunk?.choices?.[0]?.delta?.content;
+      if (typeof delta === "string" && delta) {
+        full += delta;
+        onDelta(delta);
+      }
+    }
+  }
+  return full;
+}
+
 export async function compatGenerateForTool(opts: {
   provider: Exclude<Provider, "gemini">;
   tool: ToolDef;
@@ -167,6 +241,32 @@ export async function compatChatReply(opts: {
     ],
     false,
     opts.apiKey,
+  );
+}
+
+export async function compatChatReplyStream(opts: {
+  provider: Exclude<Provider, "gemini">;
+  systemInstruction: string;
+  messages: ChatMessage[];
+  onDelta: (delta: string) => void;
+  model?: string;
+  apiKey?: string;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const cfg = PROVIDER_CONFIG[opts.provider];
+  return callCompatStream(
+    cfg,
+    opts.model || cfg.defaultModel,
+    [
+      { role: "system", content: opts.systemInstruction },
+      ...opts.messages.map((m) => ({
+        role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
+        content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
+      })),
+    ],
+    opts.onDelta,
+    opts.apiKey,
+    opts.signal,
   );
 }
 

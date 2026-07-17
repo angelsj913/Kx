@@ -6,7 +6,7 @@
  * 3. verify    — priority/top 에서 생성과 **다른 제공자** 우선 검수
  * 4. complete  — 최종 메타
  */
-import { chatReplyWithFallback, type AttemptInfo } from "./ai";
+import { chatReplyWithFallback, chatReplyWithFallbackStream, type AttemptInfo } from "./ai";
 import { stripHanja } from "./textSanitize";
 import { AGENTS, pickAgent, type AgentId } from "./agents";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
@@ -43,6 +43,8 @@ export interface BackendRouteResult {
   routeLabel: string;
   intentTool?: string | null;
   providersTried?: string[];
+  /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 (스트리밍 전용) */
+  interrupted?: boolean;
 }
 
 const VERIFY_LIGHT = `너는 답변 품질을 가볍게 검수하는 에디터다.
@@ -103,6 +105,9 @@ export async function runBackendRoute(args: {
   extraSystemInstruction?: string;
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: AgentId; stage: RouteStage }) => void;
+  /** 자유 채팅 초안 생성 델타를 실시간 중계한다(퀵툴 경로는 호출하지 않음). */
+  onDelta?: (text: string) => void;
+  signal?: AbortSignal;
 }): Promise<BackendRouteResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
   const stages: RouteStage[] = [];
@@ -133,7 +138,7 @@ export async function runBackendRoute(args: {
   });
 
   let draftAttempts = 0;
-  const draft = await chatReplyWithFallback({
+  const draft = await chatReplyWithFallbackStream({
     systemInstruction: [
       systemFor(primary.id, tier, intentTool),
       args.extraSystemInstruction?.trim() ? args.extraSystemInstruction.trim() : "",
@@ -142,6 +147,10 @@ export async function runBackendRoute(args: {
       .join("\n\n"),
     messages: args.messages,
     candidates,
+    signal: args.signal,
+    // 스트리밍 중계도 최종본과 동일하게 한자 제거를 적용해, 실시간으로 보여준 내용과
+    // done 이벤트로 저장되는 최종 텍스트가 어긋나지 않게 한다.
+    onDelta: (delta) => args.onDelta?.(stripHanja(delta)),
     onAttempt: (info) => {
       draftAttempts = info.attemptNumber;
       providersTried.add(info.provider);
@@ -175,9 +184,11 @@ export async function runBackendRoute(args: {
     (draft.text.match(/\n/g)?.length ?? 0) >= 4;
   // top/priority(결제 플랜)만 검증 — standard는 지연 최소화를 위해 스킵.
   // top은 엄격 검수(VERIFY_DEEP), priority는 가벼운 교정(VERIFY_LIGHT)만 받는다.
+  // 중단된(interrupted) 초안은 이미 불완전하므로 검증하지 않고 그대로 마무리한다.
   const shouldVerify =
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
+    !draft.interrupted &&
     (tier === "top" || tier === "priority") &&
     draftLen > 600 &&
     !looksStructured;
@@ -265,5 +276,6 @@ export async function runBackendRoute(args: {
     routeLabel: tierRouteLabel(tier),
     intentTool,
     providersTried: [...providersTried],
+    interrupted: draft.interrupted,
   };
 }

@@ -105,14 +105,20 @@ interface Msg {
   resultData?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  /** 클라이언트 전용 — 실시간 스트리밍 중인 임시 말풍선인지 (DB에는 저장되지 않음) */
+  streaming?: boolean;
+  /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
+  interrupted?: boolean;
 }
 
 interface StreamEvent {
-  type: "status" | "done" | "error";
+  type: "status" | "delta" | "done" | "error";
   sessionId: string;
   key?: string;
   detail?: string;
+  text?: string;
   message?: Msg | string;
+  interrupted?: boolean;
 }
 
 function nowTime() {
@@ -277,6 +283,8 @@ export default function ChatWorkspace({
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusKey, setStatusKey] = useState<string | null>(null);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [refining, setRefining] = useState(false);
   const [error, setError] = useState("");
   const [activeQuickTool, setActiveQuickTool] = useState<ToolDef | null>(null);
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
@@ -475,7 +483,9 @@ export default function ChatWorkspace({
       let buf = "";
       let newSessionId: string | null = null;
       let doneMessage: Msg | null = null;
+      let doneInterrupted = false;
       let errorMessage: string | null = null;
+      let streamMsgId: string | null = null;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -491,6 +501,7 @@ export default function ChatWorkspace({
           if (event.type === "status") {
             const key = event.key ?? null;
             setStatusKey(key);
+            if (key?.startsWith("status.route.verify")) setRefining(true);
             if (key) {
               let label = key;
               try {
@@ -501,20 +512,48 @@ export default function ChatWorkspace({
               const extra = event.detail ? ` · ${event.detail}` : "";
               pushTerminal(`route › ${label}${extra}`, "info");
             }
+          } else if (event.type === "delta") {
+            const delta = event.text ?? "";
+            if (!streamMsgId) {
+              streamMsgId = `stream-${Date.now()}`;
+              setStreamingId(streamMsgId);
+              const id = streamMsgId;
+              setMessages((prev) => [...prev, { id, role: "model", text: delta, streaming: true }]);
+            } else {
+              const id = streamMsgId;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === id ? { ...m, text: m.text + delta } : m)),
+              );
+            }
           } else if (event.type === "done") {
             doneMessage = event.message as Msg;
+            doneInterrupted = !!event.interrupted;
           } else if (event.type === "error") {
             errorMessage = event.message as string;
           }
         }
       }
 
-      if (errorMessage) throw new Error(errorMessage);
+      if (errorMessage) {
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, streaming: false, interrupted: true } : m)),
+          );
+        }
+        throw new Error(errorMessage);
+      }
       if (!sessionId && newSessionId) onSessionCreated(newSessionId);
       if (doneMessage) {
-        setMessages((prev) => [...prev, doneMessage as Msg]);
+        const finalMessage: Msg = { ...doneMessage, interrupted: doneInterrupted };
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) => prev.map((m) => (m.id === id ? finalMessage : m)));
+        } else {
+          setMessages((prev) => [...prev, finalMessage]);
+        }
         if (spokenTurn && doneMessage.text) speak(doneMessage.text);
-        pushTerminal("done ✓ response ready", "ok");
+        pushTerminal(doneInterrupted ? "done ✱ interrupted" : "done ✓ response ready", "ok");
         if (
           doneMessage.outputType === "pptx" ||
           doneMessage.outputType === "xlsx" ||
@@ -535,6 +574,8 @@ export default function ChatWorkspace({
     } finally {
       setLoading(false);
       setStatusKey(null);
+      setStreamingId(null);
+      setRefining(false);
     }
   }
 
@@ -698,9 +739,22 @@ export default function ChatWorkspace({
                       >
                         {m.text}
                       </ReactMarkdown>
+                      {m.streaming && (
+                        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-slate-400 align-middle dark:bg-slate-500" />
+                      )}
                     </div>
+                    {m.streaming && m.id === streamingId && refining && (
+                      <p className="mt-1.5 text-[11px] text-blue-600 dark:text-blue-300">
+                        {t("chat.refining")}
+                      </p>
+                    )}
+                    {m.interrupted && !m.streaming && (
+                      <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                        {t("chat.interrupted")}
+                      </p>
+                    )}
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
-                    {m.text && m.text.length > 0 && m.text.length <= 80 && (
+                    {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <button
                           type="button"
@@ -715,7 +769,7 @@ export default function ChatWorkspace({
                         </button>
                       </div>
                     )}
-                    {m.text && m.text.length > 80 && (
+                    {!m.streaming && m.text && m.text.length > 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {m.fileUrl && m.fileName && (
                           <a
@@ -784,8 +838,8 @@ export default function ChatWorkspace({
             ),
           )}
 
-          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 */}
-          {loading && (
+          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 (스트리밍 말풍선이 뜬 뒤엔 중복 표시 안 함) */}
+          {loading && !streamingId && (
             <div className="flex gap-2.5">
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-white shadow-sm dark:border-blue-400/20 dark:bg-slate-900">
                 <Logo size="sm" withWordmark={false} spin />

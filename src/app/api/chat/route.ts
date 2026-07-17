@@ -26,7 +26,8 @@ interface StoredAttachment {
 
 type StreamEvent =
   | { type: "status"; key: string; sessionId: string; detail?: string }
-  | { type: "done"; sessionId: string; message: Record<string, unknown> }
+  | { type: "delta"; sessionId: string; text: string }
+  | { type: "done"; sessionId: string; message: Record<string, unknown>; interrupted?: boolean }
   | { type: "error"; sessionId: string; message: string };
 
 export async function POST(request: Request) {
@@ -378,6 +379,10 @@ export async function POST(request: Request) {
             messages,
             modelTier,
             extraSystemInstruction,
+            signal: request.signal,
+            onDelta: (delta) => {
+              send({ type: "delta", sessionId: resolvedSessionId, text: delta });
+            },
             onStage: (e) => {
               send({
                 type: "status",
@@ -412,7 +417,12 @@ export async function POST(request: Request) {
             data: { updatedAt: new Date() },
           });
 
-          send({ type: "done", sessionId: resolvedSessionId, message: assistantRow });
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: assistantRow,
+            interrupted: result.interrupted,
+          });
         }
       } catch (err) {
         console.error("chat stream error:", err);

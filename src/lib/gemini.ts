@@ -125,3 +125,43 @@ export async function geminiChatReply(opts: {
 
   return response.text ?? "";
 }
+
+export async function geminiChatReplyStream(opts: {
+  model?: string;
+  apiKey?: string;
+  systemInstruction: string;
+  messages: ChatMessage[];
+  onDelta: (delta: string) => void;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const ai = client(opts.apiKey);
+
+  const contents: Content[] = opts.messages.map((m) => ({
+    role: m.role,
+    parts: [
+      ...(m.files ?? []).map((f) => ({
+        inlineData: { data: f.data, mimeType: f.mimeType },
+      })),
+      ...(m.text ? [{ text: m.text }] : []),
+    ],
+  }));
+
+  const stream = await ai.models.generateContentStream({
+    model: opts.model || DEFAULT_GEMINI_MODEL,
+    contents,
+    config: {
+      systemInstruction: opts.systemInstruction,
+      ...(opts.signal ? { abortSignal: opts.signal } : {}),
+    },
+  });
+
+  let full = "";
+  for await (const chunk of stream) {
+    const delta = chunk.text ?? "";
+    if (delta) {
+      full += delta;
+      opts.onDelta(delta);
+    }
+  }
+  return full;
+}
