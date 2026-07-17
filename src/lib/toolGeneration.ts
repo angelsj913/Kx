@@ -4,7 +4,14 @@ import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
-import { parseStructured, parsePracticeSet, type StructuredKind, type PracticeSet } from "./structured";
+import {
+  parseStructured,
+  parsePracticeSet,
+  isEmptyMathGraph,
+  type StructuredKind,
+  type PracticeSet,
+  type MathGraph,
+} from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
@@ -125,6 +132,21 @@ async function verifyAndAnnotateMathSolve(
   // 자체를 잘못 세운 오류를 못 잡는다 — 다른 제공자로 독립적으로 한 번 더 풀게 해서
   // 최종 답이 같은지 대조한다. 둘이 갈리면 세 번째 제공자로 동점을 깬다.
   if (verify === null) {
+    const hasBinaryInput = !!input.audio || !!(input.images && input.images.length > 0);
+    if (hasBinaryInput) {
+      // 이미지·오디오 입력은 멀티모달 후보가 사실상 Gemini 하나뿐이라, 그 제공자를
+      // 제외하는 순간 교차검증 후보가 0개가 되어 매번 조용히 실패한다(console.warn만
+      // 남고 사용자는 아무것도 모른 채 "검증됨"으로 보이는 결과를 받는다). 아예
+      // 시도하지 않고 상태를 명확히 알린다.
+      return {
+        text: [
+          "> ℹ️ 이 문제는 사진으로 입력돼 있어 독립적인 교차검증은 하지 않았어요. 계산 과정을 직접 한 번 더 확인해 주세요.",
+          "",
+          stripVerifyBlock(finalRaw),
+        ].join("\n"),
+        meta: finalMeta,
+      };
+    }
     try {
       const crossCheck = await generateWithFallback({
         tool,
@@ -215,8 +237,9 @@ async function verifyAndAnnotatePracticeSet(
   tool: ToolDef,
   input: ToolGenerationInput,
 ): Promise<{ data: PracticeSet; meta: Meta }> {
-  let finalMeta = meta;
-  let data = parsePracticeSet(raw);
+  const parsed = await parseStructuredWithRetry(parsePracticeSet, raw, meta, tool, input);
+  let finalMeta = parsed.meta;
+  let data = parsed.data;
   let failed = verifyPracticeSetProblems(data.problems);
 
   for (let attempt = 0; failed.length > 0 && attempt < PRACTICE_SET_MAX_RETRIES; attempt++) {
@@ -260,6 +283,64 @@ async function verifyAndAnnotatePracticeSet(
           : p,
       ),
     };
+  }
+
+  return { data, meta: finalMeta };
+}
+
+const STRUCTURED_RETRY_NOTE =
+  "[이전 응답이 유효한 JSON 형식이 아니었다. 설명이나 코드펜스 없이 순수 JSON 객체 하나만 다시 정확히 출력하라.]";
+
+/**
+ * 구조화 툴(JSON 출력) 파싱을 시도하고, 실패하면(또는 isEmpty가 참이면) 교정 지시를
+ * 붙여 1회만 재생성 후 다시 파싱한다. 그래도 실패하면 pptx/xlsx와 같은 스타일의 명확한
+ * 에러로 던진다 — 지금까지는 파싱 실패가 처리되지 않은 SyntaxError로 그대로 올라가
+ * 사용자에게 의미 없는 일반 에러 문구만 보였다.
+ */
+async function parseStructuredWithRetry<T>(
+  parse: (raw: string) => T,
+  raw: string,
+  meta: Meta,
+  tool: ToolDef,
+  input: ToolGenerationInput,
+  isEmpty?: (data: T) => boolean,
+): Promise<{ data: T; meta: Meta }> {
+  function tryParse(candidate: string): T | null {
+    try {
+      const data = parse(candidate);
+      if (isEmpty?.(data)) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  let data = tryParse(raw);
+  let finalMeta = meta;
+
+  if (data === null) {
+    try {
+      const retry = await generateWithFallback({
+        tool,
+        text: [input.text ?? "", STRUCTURED_RETRY_NOTE].filter(Boolean).join("\n\n"),
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+      });
+      const retryRaw = stripHanja(retry.text);
+      data = tryParse(retryRaw);
+      finalMeta = {
+        provider: retry.provider,
+        model: retry.model,
+        attempts: finalMeta.attempts + retry.attempts,
+      };
+    } catch (err) {
+      console.warn(`[toolGeneration] ${tool.id} 구조화 파싱 재시도 실패`, err);
+    }
+  }
+
+  if (data === null) {
+    throw new Error("AI가 예상한 형식으로 응답하지 않았어요. 다시 시도해 주세요.");
   }
 
   return { data, meta: finalMeta };
@@ -320,14 +401,24 @@ export async function runToolGeneration(
   }
 
   if (tool.outputType === "structured" && tool.structuredKind) {
-    const structured = parseStructured(tool.structuredKind, raw);
+    const kind = tool.structuredKind;
+    const isEmpty =
+      kind === "mathGraph" ? (data: unknown) => isEmptyMathGraph(data as MathGraph) : undefined;
+    const parsed = await parseStructuredWithRetry(
+      (r) => parseStructured(kind, r).data,
+      raw,
+      meta,
+      tool,
+      input,
+      isEmpty,
+    );
     return {
       tool,
       outputType: "structured",
-      structuredKind: tool.structuredKind,
-      data: structured.data,
-      resultData: JSON.stringify(structured.data),
-      meta,
+      structuredKind: kind,
+      data: parsed.data,
+      resultData: JSON.stringify(parsed.data),
+      meta: parsed.meta,
     };
   }
 
@@ -376,7 +467,13 @@ export async function runToolGeneration(
       throw new Error("엑셀 시트가 비어 있습니다. 요청을 더 구체적으로 적어 주세요.");
     }
     input.onUploadStart?.();
-    const base64 = await buildXlsxBase64(wb);
+    let base64: string;
+    try {
+      base64 = await buildXlsxBase64(wb);
+    } catch (err) {
+      console.error("[toolGeneration] xlsx build", err);
+      throw new Error("엑셀 파일 생성에 실패했습니다. 다시 시도해 주세요.");
+    }
     const safeName = (wb.title || tool.fileBaseName)
       .replace(/[\\/:*?"<>|]+/g, "")
       .slice(0, 40) || tool.fileBaseName;

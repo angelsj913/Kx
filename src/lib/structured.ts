@@ -453,6 +453,18 @@ export function parseMathGraph(raw: string): MathGraph {
   return { mode, title, functions, surface, solid, xRange, yRange, zRange };
 }
 
+/**
+ * mode에 맞는 실제 표시 데이터(2D 함수·3D 곡면·입체 도형)가 하나도 없는 "빈 그래프"인지
+ * 판정한다. AI가 expr을 빈 문자열로 주거나 파싱이 실패하면 parseMathGraph는 조용히
+ * null/빈 배열을 반환하는데, 그대로 두면 트레이스 0개짜리 빈 차트가 "성공"으로
+ * 저장된다 — 호출부에서 이 판정으로 실패를 감지해 재시도/에러 처리할 수 있게 한다.
+ */
+export function isEmptyMathGraph(data: MathGraph): boolean {
+  if (data.mode === "2d") return data.functions.length === 0;
+  if (data.mode === "3d") return !data.surface;
+  return !data.solid;
+}
+
 export type StructuredData =
   | { kind: "meeting"; data: MeetingMinutes }
   | { kind: "weeklyReport"; data: WeeklyReport }

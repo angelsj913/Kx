@@ -24,17 +24,19 @@ export default function AppWorkspace() {
   /** 워크스페이스/목록 로딩 사이클마다 한 번만 활성 세션 결정 */
   const selectedForLoad = useRef(false);
 
-  /** 새 대화 — 사용자가 버튼 누를 때만 */
+  /** 새 대화 — 사용자가 버튼 누를 때만. 제목은 비워둔다: 사이드바가 title 없음을
+   * 알아서 t("sidebar.newChat")으로 보여주므로, 번역된 placeholder 문자열을 데이터로
+   * 저장할 필요가 없다(언어별로 다른 문자열이 저장되면 이후 "제목 없음" 판정이 깨진다). */
   const handleNewChat = useCallback(async () => {
     setView("chat");
     setMobileNav(false);
     try {
-      const s = await createSession(t("session.defaultTitle"));
+      const s = await createSession();
       setActiveSessionId(s.id);
     } catch {
       setActiveSessionId(null);
     }
-  }, [createSession, t]);
+  }, [createSession]);
 
   /**
    * 입장 시:
@@ -139,7 +141,7 @@ export default function AppWorkspace() {
                 setActiveSessionId(id);
                 upsertSession({
                   id,
-                  title: t("session.defaultTitle"),
+                  title: null,
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                   messageCount: 1,

@@ -8,7 +8,7 @@ import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
-import { assertAndConsumeQuota, QuotaError } from "@/lib/usage";
+import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption } from "@/lib/usage";
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
@@ -68,24 +68,47 @@ export async function POST(request: Request) {
   }
 
   // 전역 AI 킬스위치 · 일일 한도 · 사용자 차단 · 쿼터 · 설정 병렬
-  const { isAiGloballyEnabled, assertAiDailyCap } = await import("@/lib/aiControl");
+  const { isAiGloballyEnabled, reserveAiDailySlot, refundAiDailySlot } = await import(
+    "@/lib/aiControl"
+  );
   const { touchUserActivity } = await import("@/lib/activity");
   let modelTier: "standard" | "priority" | "top" = "standard";
   let userLanguage: string | null = null;
+  let quota: QuotaConsumption | null = null;
+  let dailySlot: { periodKey: string } | null = null;
+
+  // 생성이 시작되기 전에 예약해둔(쿼터·전역 일일 한도) 자리를 되돌린다 —
+  // 생성이 실패로 끝났거나, 예약만 하고 실제로 진행하지 못한 모든 경로에서 호출한다.
+  async function releaseReservations() {
+    if (quota?.consumed) {
+      await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey).catch((e) =>
+        console.warn("[chat route] quota refund failed:", e),
+      );
+    }
+    if (dailySlot) {
+      await refundAiDailySlot(dailySlot.periodKey).catch((e) =>
+        console.warn("[chat route] daily slot refund failed:", e),
+      );
+    }
+  }
+
   try {
-    const [aiOn, settings] = await Promise.all([
+    const [aiOn, settings, , reservedSlot] = await Promise.all([
       isAiGloballyEnabled(),
       prisma.userSettings.findUnique({ where: { userId } }),
       touchUserActivity(userId),
-      assertAiDailyCap(),
+      reserveAiDailySlot(),
     ]);
+    dailySlot = reservedSlot;
     if (!aiOn) {
+      await releaseReservations();
       return NextResponse.json(
         { error: "AI 기능이 일시적으로 비활성화되어 있습니다. 잠시 후 다시 시도해 주세요." },
         { status: 503 },
       );
     }
     if (settings?.aiDisabled) {
+      await releaseReservations();
       return NextResponse.json(
         { error: "이 계정은 AI 이용이 제한되어 있습니다. 지원 센터로 문의해 주세요." },
         { status: 403 },
@@ -93,10 +116,11 @@ export async function POST(request: Request) {
     }
     modelTier = getPlanOrFree(settings?.plan).modelTier;
     userLanguage = settings?.language ?? null;
-    await assertAndConsumeQuota(userId, quickToolId, {
+    quota = await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
     });
   } catch (err) {
+    await releaseReservations();
     if (err instanceof QuotaError) {
       return NextResponse.json({ error: err.message, code: "QUOTA" }, { status: 402 });
     }
@@ -106,6 +130,7 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  const isNewSession = !sessionId;
   let chatSession;
   if (sessionId) {
     // 공유 워크스페이스 세션이면 멤버 누구나 이어서 대화할 수 있다.
@@ -113,6 +138,7 @@ export async function POST(request: Request) {
       where: { id: sessionId, ...(await itemAccessWhere(userId)) },
     });
     if (!chatSession) {
+      await releaseReservations();
       return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
     }
   } else {
@@ -120,6 +146,7 @@ export async function POST(request: Request) {
     try {
       scope = await resolveScope(request, userId);
     } catch (err) {
+      await releaseReservations();
       if (err instanceof WorkspaceError) {
         return NextResponse.json({ error: err.message }, { status: err.status });
       }
@@ -131,49 +158,60 @@ export async function POST(request: Request) {
   }
   const resolvedSessionId = chatSession.id;
 
-  // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
-  const uploaded = await Promise.all(
-    uploads.map(async (file, i) => {
-      const buf = Buffer.from(await file.arrayBuffer());
-      const mimeType = file.type || "application/octet-stream";
-      const blob = await put(
-        `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
-        buf,
-        { access: "public", contentType: mimeType },
-      );
-      return {
-        stored: {
-          url: blob.url,
-          filename: file.name,
-          mimeType,
-        } satisfies StoredAttachment,
-        inline: { data: buf.toString("base64"), mimeType },
-      };
-    }),
-  );
-  const storedAttachments = uploaded.map((u) => u.stored);
-  const inlineFiles = uploaded.map((u) => u.inline);
+  let storedAttachments: StoredAttachment[] = [];
+  let inlineFiles: { data: string; mimeType: string }[] = [];
+  try {
+    // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
+    const uploaded = await Promise.all(
+      uploads.map(async (file, i) => {
+        const buf = Buffer.from(await file.arrayBuffer());
+        const mimeType = file.type || "application/octet-stream";
+        const blob = await put(
+          `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
+          buf,
+          { access: "public", contentType: mimeType },
+        );
+        return {
+          stored: {
+            url: blob.url,
+            filename: file.name,
+            mimeType,
+          } satisfies StoredAttachment,
+          inline: { data: buf.toString("base64"), mimeType },
+        };
+      }),
+    );
+    storedAttachments = uploaded.map((u) => u.stored);
+    inlineFiles = uploaded.map((u) => u.inline);
 
-  await prisma.chatHistory.create({
-    data: {
-      sessionId: resolvedSessionId,
-      role: "user",
-      text,
-      attachments: storedAttachments.length
-        ? (storedAttachments as unknown as Prisma.InputJsonValue)
-        : undefined,
-    },
-  });
-  await prisma.chatSession.update({
-    where: { id: resolvedSessionId },
-    data: {
-      updatedAt: new Date(),
-      // 빈 제목·기본 "새 대화" 는 첫 메시지로 제목 갱신
-      ...(!chatSession.title || chatSession.title === "새 대화"
-        ? { title: text.slice(0, 40) || "새 대화" }
-        : {}),
-    },
-  });
+    await prisma.chatHistory.create({
+      data: {
+        sessionId: resolvedSessionId,
+        role: "user",
+        text,
+        attachments: storedAttachments.length
+          ? (storedAttachments as unknown as Prisma.InputJsonValue)
+          : undefined,
+      },
+    });
+    await prisma.chatSession.update({
+      where: { id: resolvedSessionId },
+      data: {
+        updatedAt: new Date(),
+        // 빈 제목은 첫 메시지로 갱신한다. 번역된 placeholder 문자열(예: "New chat")을
+        // 데이터로 저장하지 않으므로 언어에 상관없이 항상 정확히 동작한다 —
+        // 사이드바는 이미 title이 비어 있으면 t("sidebar.newChat")으로 표시한다.
+        ...(!chatSession.title ? { title: text.slice(0, 40) || null } : {}),
+      },
+    });
+  } catch (err) {
+    await releaseReservations();
+    if (isNewSession) {
+      await prisma.chatSession.delete({ where: { id: resolvedSessionId } }).catch(() => {});
+    }
+    console.error("[chat route] pre-stream setup failed:", err);
+    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -378,6 +416,7 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("chat stream error:", err);
+        await releaseReservations();
         send({ type: "error", sessionId: resolvedSessionId, message: friendlyError(err) });
       } finally {
         controller.close();

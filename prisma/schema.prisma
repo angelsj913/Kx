@@ -323,6 +323,18 @@ model SystemConfig {
   updatedAt DateTime @updatedAt
 }
 
+/** 특정 사용자에 속하지 않는 전역 카운터(예: 전역 AI 일일 요청 상한). UsageCounter는
+ * userId에 FK 제약이 있어 이런 용도로 쓸 수 없다. */
+model GlobalCounter {
+  id        String   @id @default(cuid())
+  feature   String
+  periodKey String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([feature, periodKey])
+}
+
 // Stripe 결제 주문. merchantUid로 조회하고 웹훅으로 상태를 갱신한다.
 model Order {
   id            String   @id @default(cuid())
