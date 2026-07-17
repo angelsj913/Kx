@@ -168,6 +168,7 @@ export async function POST(request: Request) {
     const blob = await put(`library/${userId}/${Date.now()}-${file.name}`, buf, {
       access: "public",
       contentType: mimeType,
+      addRandomSuffix: true,
     });
 
     // 추출은 업로드 병목 — 실패해도 저장은 유지

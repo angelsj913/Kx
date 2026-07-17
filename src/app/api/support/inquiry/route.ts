@@ -60,7 +60,11 @@ export async function POST(request: Request) {
     const blob = await put(
       `inquiry/${userId ?? "guest"}/${Date.now()}-${file.name}`,
       buf,
-      { access: "public", contentType: file.type || "application/octet-stream" }
+      {
+        access: "public",
+        contentType: file.type || "application/octet-stream",
+        addRandomSuffix: true,
+      }
     );
     fileUrl = blob.url;
     fileName = file.name;

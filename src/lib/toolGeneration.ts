@@ -439,7 +439,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: PPTX_MIME },
+      { access: "public", contentType: PPTX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -480,7 +480,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: XLSX_MIME },
+      { access: "public", contentType: XLSX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -512,7 +512,7 @@ export async function runToolGeneration(
       const blob = await put(
         `exports/${input.userId}/${tool.fileBaseName}-${Date.now()}.md`,
         body,
-        { access: "public", contentType: "text/markdown; charset=utf-8" },
+        { access: "public", contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
       );
       return {
         tool,

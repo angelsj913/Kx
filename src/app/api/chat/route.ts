@@ -226,7 +226,7 @@ export async function POST(request: Request) {
           const blob = await put(
             `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
             buf,
-            { access: "public", contentType: mimeType },
+            { access: "public", contentType: mimeType, addRandomSuffix: true },
           );
           return {
             stored: {
