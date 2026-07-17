@@ -24,9 +24,9 @@ export function hasEmailProvider(): boolean {
 }
 
 export type IssueOtpResult = {
-  /** 실제 메일 발송 성공 여부 */
+  /** 실제 발송 성공 여부 */
   sent: boolean;
-  mode: "smtp" | "resend" | "dev-log" | "none";
+  mode: "smtp" | "resend" | "sms" | "dev-log" | "none";
   /** 개발 또는 메일 미설정/실패 시 화면에 보여줄 코드 (admin 폴백 포함) */
   devCode?: string;
   /** 발송 실패 사유 (있으면) */
@@ -51,8 +51,18 @@ export async function issueOtp(
   });
 
   if (channel === "sms") {
-    await sendSmsOtp(identifier, code);
-    return { sent: false, mode: "none", devCode: code };
+    const sms = await sendSmsOtp(identifier, code);
+    // 이메일 경로와 동일한 기준을 적용한다 — sms는 실제 발송이 구현돼 있지 않으므로
+    // (sendSmsOtp는 항상 sent:false) 운영 환경에서는 코드를 절대 인라인으로 돌려주지
+    // 않는다. 예전엔 이 분기만 게이트 없이 항상 devCode를 반환해서, 채널만
+    // "sms"로 바꿔 보내면 실제 코드를 그대로 받아갈 수 있었다(이메일 소유 증명 불필요).
+    const allowInlineCode = !sms.sent && process.env.NODE_ENV !== "production";
+    return {
+      sent: sms.sent,
+      mode: sms.mode,
+      mailError: sms.error,
+      devCode: allowInlineCode ? code : undefined,
+    };
   }
 
   const mail = await sendEmailOtp(identifier, code, purpose);
@@ -233,12 +243,19 @@ function friendlyResendError(msg: string): string {
   return `Resend 발송 실패: ${msg}`;
 }
 
-/** 국내 SMS 발송 핸들러 스터브 */
-async function sendSmsOtp(phone: string, code: string): Promise<void> {
+/**
+ * 국내 SMS 발송 핸들러 스텁 — 실제 발송 연동이 아직 없어 항상 sent:false를 반환한다.
+ * (예전엔 SMS_API_KEY가 있으면 아무 발송도 안 하면서 "성공"인 것처럼 코드를
+ * 인라인으로 돌려줘서, 전화번호 소유 증명 없이 인증을 통과할 수 있었다.)
+ */
+async function sendSmsOtp(phone: string, code: string): Promise<MailResult> {
   if (process.env.NODE_ENV !== "production") {
     console.log(`[OTP:sms:stub] ${phone} -> ${code}`);
+    return { sent: false, mode: "dev-log" };
   }
-  if (process.env.NODE_ENV === "production" && !process.env.SMS_API_KEY) {
-    throw new Error("문자 인증은 준비 중입니다. 이메일 인증을 이용해 주세요.");
-  }
+  return {
+    sent: false,
+    mode: "none",
+    error: "문자 인증은 아직 지원하지 않습니다. 이메일 인증을 이용해 주세요.",
+  };
 }

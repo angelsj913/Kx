@@ -187,10 +187,11 @@ curl -X POST "https://YOUR_DOMAIN/api/admin/rag/zeff" \
   -d '{"userEmail":"you@example.com","workspaceId":"YOUR_WORKSPACE_ID"}'
 ```
 
-브라우저에서 직접 실행하려면 관리자 로그인 상태에서 아래처럼 `GET`으로도 호출할 수 있습니다.
+브라우저에서 GET으로 직접 실행하려면(관리자 로그인만으로는 통과되지 않고, CSRF 방지를 위해
+쿼리에 시크릿을 명시해야 합니다) 아래처럼 호출하세요.
 
 ```text
-https://YOUR_DOMAIN/api/admin/rag/zeff?userEmail=you@example.com
+https://YOUR_DOMAIN/api/admin/rag/zeff?userEmail=you@example.com&secret=YOUR_ZEFF_RAG_INDEX_SECRET
 ```
 
 ### 단계 2. 업로드할 파일 선택

@@ -6,7 +6,10 @@ import { friendlyError } from "@/lib/errors";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CHANNELS: OtpChannel[] = ["email", "sms"];
+// SMS는 아직 실제 발송 연동이 없다(sendSmsOtp는 스텁) — "email"만 실제로 지원하는
+// 채널이다. sms를 허용해 두면 클라이언트가 채널만 바꿔 인증번호 자체 노출 경로를
+// 열 수 있어(운영 게이트가 이메일 경로에만 있었음) 아예 입구에서 막는다.
+const CHANNELS: OtpChannel[] = ["email"];
 const PURPOSES: OtpPurpose[] = ["signup", "find-id", "find-password"];
 
 export async function POST(request: Request) {
@@ -26,14 +29,14 @@ export async function POST(request: Request) {
 
     if (action === "send") {
       // 회원가입은 이미 가입된 이메일이면 차단
-      if (purpose === "signup" && channel === "email") {
+      if (purpose === "signup") {
         const existing = await prisma.user.findUnique({ where: { email: identifier } });
         if (existing) {
           return NextResponse.json({ error: "이미 가입된 이메일입니다." }, { status: 409 });
         }
       }
       // 아이디/비번 찾기는 가입된 이메일이어야 함
-      if ((purpose === "find-id" || purpose === "find-password") && channel === "email") {
+      if (purpose === "find-id" || purpose === "find-password") {
         const existing = await prisma.user.findUnique({ where: { email: identifier } });
         if (!existing) {
           return NextResponse.json({ error: "가입된 계정을 찾을 수 없습니다." }, { status: 404 });
