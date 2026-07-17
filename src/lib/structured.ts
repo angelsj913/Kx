@@ -196,16 +196,40 @@ export function parseExamAnalysis(raw: string): ExamAnalysis {
 
 // ── 전과목 유사문제 생성 ──
 
+/** 산술로 검산 가능한 문제에만 채워진다 — 서버가 expr-eval로 재계산해 정답을 확인한다. */
+export interface PracticeProblemVerify {
+  expr: string;
+  variables: Record<string, number>;
+  expected: number;
+}
+
 export interface PracticeProblem {
   question: string;
   choices: string[];
   answer: string;
   explanation: string;
+  verify: PracticeProblemVerify | null;
 }
 
 export interface PracticeSet {
   subject: string;
   problems: PracticeProblem[];
+}
+
+function parsePracticeVerify(raw: unknown): PracticeProblemVerify | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const expr = typeof o?.expr === "string" ? o.expr : "";
+  const expected = Number(o?.expected);
+  if (!expr || !Number.isFinite(expected)) return null;
+  const variables: Record<string, number> = {};
+  if (o?.variables && typeof o.variables === "object") {
+    for (const [k, v] of Object.entries(o.variables as Record<string, unknown>)) {
+      const n = Number(v);
+      if (Number.isFinite(n)) variables[k] = n;
+    }
+  }
+  return { expr, variables, expected };
 }
 
 export function parsePracticeSet(raw: string): PracticeSet {
@@ -222,6 +246,7 @@ export function parsePracticeSet(raw: string): PracticeSet {
               : [],
             answer: typeof o?.answer === "string" ? o.answer : "",
             explanation: typeof o?.explanation === "string" ? o.explanation : "",
+            verify: parsePracticeVerify(o?.verify),
           };
         })
       : [],

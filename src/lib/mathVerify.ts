@@ -105,3 +105,37 @@ export function verifyMathSolve(raw: string): VerifyResult | null {
   }
   return { checked: checks.length, failed };
 }
+
+export interface PracticeVerifyFailure {
+  index: number;
+  expr: string;
+  expected: number;
+  actual: number | null;
+}
+
+/**
+ * similar-problems(유사문제 생성) 문항별 verify 필드를 재계산해 확인한다.
+ * verifyMathSolve와 같은 expr-eval 계산 방식을 재사용하되, 입력이 코드블록 하나가
+ * 아니라 문항 배열에 흩어져 있다는 점만 다르다. verify가 없는 문항(산술 검산이
+ * 불가능한 과목)은 조용히 건너뛴다 — 실패가 아니라 "검증 대상 아님"으로 취급.
+ */
+export function verifyPracticeSetProblems(
+  problems: { verify: VerifyCheck | null }[],
+): PracticeVerifyFailure[] {
+  const failed: PracticeVerifyFailure[] = [];
+  problems.forEach((p, index) => {
+    if (!p.verify) return;
+    let actual: number | null = null;
+    try {
+      const value = parser.parse(p.verify.expr).evaluate(p.verify.variables);
+      actual = typeof value === "number" && Number.isFinite(value) ? value : null;
+    } catch {
+      actual = null;
+    }
+    const ok =
+      actual != null &&
+      Math.abs(actual - p.verify.expected) <= TOLERANCE * Math.max(1, Math.abs(p.verify.expected));
+    if (!ok) failed.push({ index, expr: p.verify.expr, expected: p.verify.expected, actual });
+  });
+  return failed;
+}

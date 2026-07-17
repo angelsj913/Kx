@@ -53,7 +53,10 @@ export default function PracticeSetView({
   function addProblem() {
     setData((d) => ({
       ...d,
-      problems: [...d.problems, { question: "", choices: ["", ""], answer: "", explanation: "" }],
+      problems: [
+        ...d.problems,
+        { question: "", choices: ["", ""], answer: "", explanation: "", verify: null },
+      ],
     }));
   }
 

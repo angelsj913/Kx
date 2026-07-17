@@ -4,11 +4,16 @@ import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
-import { parseStructured, type StructuredKind } from "./structured";
+import { parseStructured, parsePracticeSet, type StructuredKind, type PracticeSet } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
-import { verifyMathSolve, stripVerifyBlock, extractFinalAnswer } from "./mathVerify";
+import {
+  verifyMathSolve,
+  stripVerifyBlock,
+  extractFinalAnswer,
+  verifyPracticeSetProblems,
+} from "./mathVerify";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -194,6 +199,72 @@ async function verifyAndAnnotateMathSolve(
   return { text: stripVerifyBlock(finalRaw), meta: finalMeta };
 }
 
+const PRACTICE_SET_MAX_RETRIES = 1;
+
+/**
+ * similar-problems(유사문제 생성) 응답 중 산술 검산 가능한 문항(verify 필드가 채워진
+ * 것)만 expr-eval로 재계산해 확인한다. 실패 문항이 있으면 어떤 문항이 왜 틀렸는지
+ * 알려주며 세트 전체를 최대 1번 재생성한다(부분 문항만 다시 만들면 세트 전체의
+ * 난이도·구성 일관성이 깨지기 쉬워 세트 단위로 재생성). 그래도 안 맞으면 해당 문항의
+ * 해설 앞에 경고를 붙여 그대로 보여준다 — math-solve와 같은 "틀린 답을 조용히 맞는
+ * 것처럼 보여주지 않는다"는 원칙을 그대로 따른다.
+ */
+async function verifyAndAnnotatePracticeSet(
+  raw: string,
+  meta: Meta,
+  tool: ToolDef,
+  input: ToolGenerationInput,
+): Promise<{ data: PracticeSet; meta: Meta }> {
+  let finalMeta = meta;
+  let data = parsePracticeSet(raw);
+  let failed = verifyPracticeSetProblems(data.problems);
+
+  for (let attempt = 0; failed.length > 0 && attempt < PRACTICE_SET_MAX_RETRIES; attempt++) {
+    try {
+      const retryNote = [
+        "[자동 검산 실패 - 아래 문항의 정답 계산이 문제와 안 맞으니 세트 전체를 처음부터 다시 정확히 만들어라]",
+        ...failed.map(
+          (f) =>
+            `- 문항 ${f.index + 1}: ${f.expr} 는 ${f.expected}가 나와야 하는데 실제로는 ${f.actual ?? "계산 불가"}로 계산됐다.`,
+        ),
+      ].join("\n");
+      const retry = await generateWithFallback({
+        tool,
+        text: [input.text ?? "", retryNote].filter(Boolean).join("\n\n"),
+        modelTier: input.modelTier,
+      });
+      const retryRaw = stripHanja(retry.text);
+      data = parsePracticeSet(retryRaw);
+      failed = verifyPracticeSetProblems(data.problems);
+      finalMeta = {
+        provider: retry.provider,
+        model: retry.model,
+        attempts: finalMeta.attempts + retry.attempts,
+      };
+    } catch (err) {
+      console.warn("[toolGeneration] similar-problems 검산 재시도 실패", err);
+      break;
+    }
+  }
+
+  if (failed.length > 0) {
+    const failedIndices = new Set(failed.map((f) => f.index));
+    data = {
+      ...data,
+      problems: data.problems.map((p, i) =>
+        failedIndices.has(i)
+          ? {
+              ...p,
+              explanation: `⚠️ 자동 검산에서 이 문항의 계산이 맞지 않는 것으로 나왔어요. 직접 한 번 더 확인해 주세요.\n\n${p.explanation}`,
+            }
+          : p,
+      ),
+    };
+  }
+
+  return { data, meta: finalMeta };
+}
+
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */
 export async function runToolGeneration(
   input: ToolGenerationInput
@@ -234,6 +305,18 @@ export async function runToolGeneration(
     const verified = await verifyAndAnnotateMathSolve(raw, meta, tool, input);
     raw = verified.text;
     meta = verified.meta;
+  }
+
+  if (tool.id === "similar-problems") {
+    const verified = await verifyAndAnnotatePracticeSet(raw, meta, tool, input);
+    return {
+      tool,
+      outputType: "structured",
+      structuredKind: "practiceSet",
+      data: verified.data,
+      resultData: JSON.stringify(verified.data),
+      meta: verified.meta,
+    };
   }
 
   if (tool.outputType === "structured" && tool.structuredKind) {
