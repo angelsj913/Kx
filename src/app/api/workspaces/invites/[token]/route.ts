@@ -49,6 +49,14 @@ export async function POST(
   if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
     return NextResponse.json({ error: "유효하지 않거나 만료된 초대입니다." }, { status: 404 });
   }
+  // 초대 토큰은 특정 이메일 앞으로 발급된다 — 토큰만 손에 넣었다고(전달·공유·유출 등)
+  // 다른 계정으로 로그인해 그 워크스페이스에 들어갈 수 있으면 안 된다.
+  if (invite.email.toLowerCase() !== (session.user.email ?? "").toLowerCase()) {
+    return NextResponse.json(
+      { error: "이 초대는 다른 이메일 주소로 발급되었습니다. 초대받은 계정으로 로그인해 주세요." },
+      { status: 403 },
+    );
+  }
 
   // 이미 멤버면 초대만 소진하고 통과
   const existing = await prisma.workspaceMember.findUnique({
