@@ -379,6 +379,10 @@ export async function POST(request: Request) {
             resultData = result.resultData;
             fileUrl = result.file.url;
             fileName = result.file.filename;
+          } else if (result.outputType === "image") {
+            replyText = "이미지를 생성했어요. 아래에서 확인하고 다운로드할 수 있어요.";
+            fileUrl = result.file.url;
+            fileName = result.file.filename;
           } else {
             replyText = `${result.tool.short} 파일을 만들었어요. 아래에서 확인하고 다운로드하세요.`;
             resultData = result.resultData;

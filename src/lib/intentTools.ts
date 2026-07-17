@@ -93,6 +93,18 @@ export function detectQuickToolFromText(text: string): string | null {
     return "exam-maker";
   }
 
+  // ── 이미지 생성 (math-graph의 "그려줘"와 겹치지 않도록 그림/이미지/사진 등
+  // 명시적 명사가 있을 때만 매칭한다) ──
+  const hasImageNoun =
+    /그림|이미지|사진|삽화|일러스트(레이션)?|아이콘|로고|캐릭터/.test(t) ||
+    /\b(image|picture|photo|illustration|artwork|icon|logo)\b/i.test(t);
+  const wantsImageGen =
+    (hasImageNoun && /(그려|만들|생성|디자인)/.test(t)) ||
+    /\b(draw|generate|create|make)\b.*\b(image|picture|photo|illustration|artwork|icon|logo)\b/i.test(
+      t,
+    );
+  if (wantsImageGen) return "image-gen";
+
   // ── 수학 그래프 / 3D 도형 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
   const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
   const wants3DExplicit = /\b3d\b/i.test(t) || /입체/.test(t) || /\bsolid\s*shape\b/i.test(t);
@@ -148,6 +160,7 @@ export function toolIntentLabel(toolId: string): string {
     "exam-maker": "시험지",
     "math-solve": "수학 풀이",
     "math-graph": "그래프 생성",
+    "image-gen": "이미지 생성",
   };
   return map[toolId] ?? toolId;
 }

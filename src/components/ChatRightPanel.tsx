@@ -17,13 +17,14 @@ import {
   Loader2,
   Paperclip,
   Eye,
+  ImageIcon,
 } from "lucide-react";
 
 export type PanelTab = "files" | "plan" | "terminal";
 
 export interface ChatArtifact {
   id: string;
-  kind: "pptx" | "xlsx" | "doc" | "structured" | "attachment" | "text";
+  kind: "pptx" | "xlsx" | "doc" | "structured" | "attachment" | "text" | "image";
   title: string;
   subtitle?: string;
   url?: string | null;
@@ -64,6 +65,8 @@ function kindIcon(kind: ChatArtifact["kind"]) {
       return FileText;
     case "attachment":
       return Paperclip;
+    case "image":
+      return ImageIcon;
     default:
       return File;
   }
@@ -81,6 +84,8 @@ function kindLabel(kind: ChatArtifact["kind"], t: (key: AppDictKey) => string) {
       return t("panel.kind.structured");
     case "attachment":
       return t("panel.kind.attachment");
+    case "image":
+      return t("artifact.image");
     default:
       return t("panel.kind.text");
   }

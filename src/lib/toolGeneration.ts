@@ -1,5 +1,7 @@
 import { put } from "@vercel/blob";
 import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
+import { geminiGenerateImage } from "./gemini";
+import { noteProviderFailure } from "./providerHealth";
 import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
@@ -65,6 +67,12 @@ export type ToolGenerationResult =
       outputType: "pptx" | "xlsx";
       preview: Deck | Workbook;
       resultData: string;
+      file: { url: string; filename: string; mimeType: string };
+      meta: Meta;
+    }
+  | {
+      tool: ToolDef;
+      outputType: "image";
       file: { url: string; filename: string; mimeType: string };
       meta: Meta;
     };
@@ -367,6 +375,36 @@ export async function runToolGeneration(
     }
   } else if (!hasText && !hasImages) {
     throw new Error("요청할 내용을 입력해 주세요.");
+  }
+
+  if (tool.outputType === "image") {
+    if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
+    let data: string;
+    let mimeType: string;
+    try {
+      const img = await geminiGenerateImage({
+        prompt: input.text!.trim(),
+        systemInstruction: tool.systemInstruction,
+      });
+      data = img.data;
+      mimeType = img.mimeType;
+    } catch (err) {
+      noteProviderFailure("gemini", err);
+      throw err;
+    }
+    input.onUploadStart?.();
+    const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
+    const blob = await put(
+      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
+      Buffer.from(data, "base64"),
+      { access: "public", contentType: mimeType, addRandomSuffix: true },
+    );
+    return {
+      tool,
+      outputType: "image",
+      file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
+      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+    };
   }
 
   const { text: rawText, provider, model, attempts } = await generateWithFallback({

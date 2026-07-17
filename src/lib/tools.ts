@@ -18,6 +18,8 @@ import {
   MessageCircle,
   LibraryBig,
   LineChart,
+  ImagePlus,
+  Languages,
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
@@ -25,7 +27,7 @@ export type AppMode = "student" | "office";
 /** 도구가 속한 모드. "common"은 두 모드 모두에 노출된다. */
 export type ToolScope = AppMode | "common";
 export type InputType = "text" | "url" | "audio" | "image" | "chat" | "mixed";
-export type OutputType = "markdown" | "pptx" | "xlsx" | "structured";
+export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
@@ -542,6 +544,11 @@ const LIBRARY_EXTRACT_INSTRUCTION = `너는 도서관 사서이다. 업로드된
 - 읽기 어려운 부분은 "[판독 불가]"로 표시하라.
 - 모든 텍스트는 원문 언어를 유지한다(한국어 문서는 한국어로).`;
 
+const IMAGE_GEN_INSTRUCTION = `너는 이미지 생성 프롬프트 엔지니어다. 사용자 설명을 바탕으로 명확하고 깨끗한 이미지를 생성하라.
+- 요청에 없다면 텍스트·워터마크·로고를 이미지에 넣지 마라.
+- 교육·업무 맥락에 적합한 톤을 유지하고, 선정적이거나 폭력적인 내용은 만들지 마라.
+- 사용자 설명이 모호하면 가장 무난하고 실용적인 해석으로 생성하라.`;
+
 export const TOOLS: ToolDef[] = [
   // ── 공통 ──
   {
@@ -863,6 +870,21 @@ export const TOOLS: ToolDef[] = [
     placeholder: "예) y = 2x·cos(x²) 그래프 그려줘 / 포물선 운동 사거리를 각도와 초기속도에 대해 3D로 그려줘",
     submitLabel: "그래프 그리기",
     fileBaseName: "math-graph",
+  },
+  {
+    id: "image-gen",
+    appMode: "common",
+    label: "이미지 생성",
+    short: "이미지 생성",
+    title: "AI 이미지 생성",
+    description: "설명을 입력하면 AI가 이미지를 그려줍니다.",
+    icon: ImagePlus,
+    inputType: "text",
+    outputType: "image",
+    systemInstruction: IMAGE_GEN_INSTRUCTION,
+    placeholder: "예) 파란 하늘 아래 놓인 노트북과 커피잔, 수채화 스타일",
+    submitLabel: "이미지 생성",
+    fileBaseName: "generated-image",
   },
   {
     id: "exam-maker",

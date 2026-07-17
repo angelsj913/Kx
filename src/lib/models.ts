@@ -5,7 +5,8 @@ export type Provider =
   | "deepseek"
   | "cerebras"
   | "mistral"
-  | "github";
+  | "github"
+  | "sambanova";
 
 export interface ModelDef {
   provider: Provider;
@@ -56,6 +57,14 @@ export const MISTRAL_FREE: ModelDef[] = [
 export const GITHUB_FREE: ModelDef[] = [
   { provider: "github", model: "gpt-4o-mini", free: true },
   { provider: "github", model: "Meta-Llama-3.1-8B-Instruct", free: true },
+];
+
+// ── SambaNova Cloud (무료, 영구 무료 티어 — 모델별 분당 10~30회로 GitHub Models의
+// 일일 한도보다 빨리 회복된다. 그래서 Groq/Cerebras/Mistral과 같은 라운드로빈
+// 그룹에 바로 섞는다) ──
+export const SAMBANOVA_FREE: ModelDef[] = [
+  { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", free: true },
+  { provider: "sambanova", model: "DeepSeek-V3.1", free: true },
 ];
 
 // ── DeepSeek 초저가 ──
@@ -127,6 +136,7 @@ function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standa
     GROQ_FREE,
     CEREBRAS_FREE,
     MISTRAL_FREE,
+    SAMBANOVA_FREE,
     OPENROUTER_FREE_CHAT.slice(0, maxOrFree),
   ];
   const freeInterleaved = interleaveByProvider(freeGroups);
@@ -188,6 +198,7 @@ export function listFreeModelIds(): string[] {
     ...OPENROUTER_FREE_CHAT.map((m) => m.model),
     ...DEEPSEEK_MODELS.map((m) => `deepseek/${m.model}`),
     ...GITHUB_FREE.map((m) => `github/${m.model}`),
+    ...SAMBANOVA_FREE.map((m) => `sambanova/${m.model}`),
   ];
 }
 

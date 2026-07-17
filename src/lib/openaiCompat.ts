@@ -72,6 +72,16 @@ export const PROVIDER_CONFIG: Record<
     missingKeyMessage:
       "GitHub Models 토큰이 없습니다. models:read 권한의 GitHub PAT를 GITHUB_MODELS_TOKEN에 설정하세요 (github.com/settings/tokens 무료)",
   },
+  // SambaNova Cloud — 영구 무료 티어(카드 등록 불필요). Cohere의 무료 Trial 키는
+  // 상업적 이용을 명시적으로 금지해 후보에서 제외했다.
+  sambanova: {
+    provider: "sambanova",
+    envKey: "SAMBANOVA_API_KEY",
+    baseUrl: "https://api.sambanova.ai/v1/chat/completions",
+    defaultModel: "Meta-Llama-3.3-70B-Instruct",
+    missingKeyMessage:
+      "SambaNova API 키가 없습니다. SAMBANOVA_API_KEY 설정 (cloud.sambanova.ai 무료 티어)",
+  },
 };
 
 function requireKey(cfg: CompatProviderConfig, apiKey?: string): string {
@@ -316,6 +326,11 @@ export function listConfiguredProviders(): {
       provider: "github",
       envKey: "GITHUB_MODELS_TOKEN",
       set: !!process.env.GITHUB_MODELS_TOKEN?.trim(),
+    },
+    {
+      provider: "sambanova",
+      envKey: "SAMBANOVA_API_KEY",
+      set: !!process.env.SAMBANOVA_API_KEY?.trim(),
     },
   ];
 }

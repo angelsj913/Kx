@@ -199,6 +199,16 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         fileName: m.fileName,
         messageId: m.id,
       });
+    } else if (m.outputType === "image") {
+      list.push({
+        id: `${m.id}-image`,
+        kind: "image",
+        title: m.fileName || t("artifact.image"),
+        subtitle: "PNG",
+        url: m.fileUrl,
+        fileName: m.fileName,
+        messageId: m.id,
+      });
     } else if (m.outputType === "structured" && m.structuredKind) {
       let title: string = m.structuredKind;
       try {
@@ -525,7 +535,8 @@ export default function ChatWorkspace({
         if (
           doneMessage.outputType === "pptx" ||
           doneMessage.outputType === "xlsx" ||
-          doneMessage.outputType === "structured"
+          doneMessage.outputType === "structured" ||
+          doneMessage.outputType === "image"
         ) {
           setPanelTab("files");
           pushTerminal(
@@ -856,6 +867,26 @@ export default function ChatWorkspace({
                       }
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                  </div>
+                ) : m.outputType === "image" && m.fileUrl ? (
+                  <div className="min-w-0 max-w-[min(100%,28rem)] flex-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.fileUrl}
+                      alt={m.text || t("artifact.image")}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800"
+                    />
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                      <a
+                        href={m.fileUrl}
+                        download={m.fileName || "image.png"}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                      >
+                        <Download className="h-3 w-3" />
+                        {t("chat.download")}
+                      </a>
+                    </div>
                   </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
@@ -1375,6 +1406,12 @@ function ArtifactPreview({
           {t("chat.openNewTab")}
         </a>
       </div>
+    );
+  }
+  if (artifact.kind === "image" && artifact.url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={artifact.url} alt={artifact.title} className="max-h-[70vh] w-full rounded-xl object-contain" />
     );
   }
   if ((artifact.kind === "pptx" || artifact.kind === "xlsx") && msg?.resultData) {
