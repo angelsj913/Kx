@@ -620,7 +620,6 @@ export default function ChatWorkspace({
     if (!spokenTurn) {
       setDraft("");
       setPending([]);
-      setActiveQuickTool(null);
     }
 
     await runGeneration(
