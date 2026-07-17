@@ -3,12 +3,14 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { hasRecentVerifiedOtp } from "@/lib/otp";
 import { friendlyError } from "@/lib/errors";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await assertRateLimit("signup:ip", clientIp(request), { max: 8, windowSeconds: 3600 });
     const body = await request.json().catch(() => ({}));
     const email = String(body?.email ?? "").trim().toLowerCase();
     const username = String(body?.username ?? "").trim();
@@ -62,6 +64,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     console.error("signup error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

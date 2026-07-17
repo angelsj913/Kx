@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { issueOtp, verifyOtp, type OtpChannel, type OtpPurpose } from "@/lib/otp";
 import { friendlyError } from "@/lib/errors";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
     }
 
+    const ip = clientIp(request);
+
     if (action === "send") {
+      // 발송 스팸/대상 훑기 방지
+      await assertRateLimit("otp:send:ip", ip, { max: 10, windowSeconds: 600 });
+      await assertRateLimit(`otp:send:${purpose}`, identifier, { max: 4, windowSeconds: 600 });
+
       // 회원가입은 이미 가입된 이메일이면 차단
       if (purpose === "signup") {
         const existing = await prisma.user.findUnique({ where: { email: identifier } });
@@ -51,6 +58,12 @@ export async function POST(request: Request) {
       if (!/^\d{6}$/.test(code)) {
         return NextResponse.json({ error: "6자리 숫자를 입력해 주세요." }, { status: 400 });
       }
+      // 6자리(100만 가지) 무차별 대입 방어의 핵심 지점 — 코드 유효기간(3분) 안에
+      // 시도 가능한 횟수를 사람이 실제로 틀릴 수 있는 수준으로 강하게 제한한다.
+      // 대상(identifier+purpose) 기준과, 한 IP가 여러 대상을 훑는 것을 막는
+      // IP 기준을 동시에 건다.
+      await assertRateLimit(`otp:check:${purpose}`, identifier, { max: 8, windowSeconds: 180 });
+      await assertRateLimit("otp:check:ip", ip, { max: 30, windowSeconds: 300 });
       const ok = await verifyOtp(identifier, purpose, code);
       if (!ok) {
         return NextResponse.json({ error: "인증번호가 올바르지 않거나 만료되었습니다." }, { status: 400 });
@@ -68,6 +81,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "알 수 없는 요청입니다." }, { status: 400 });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     console.error("verify error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

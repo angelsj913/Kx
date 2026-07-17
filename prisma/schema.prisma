@@ -335,6 +335,19 @@ model GlobalCounter {
   @@unique([feature, periodKey])
 }
 
+/** 인증 관련 라우트(로그인·회원가입·인증번호·초대코드) 고정 윈도우 rate limit */
+model RateLimitHit {
+  id         String   @id @default(cuid())
+  scope      String
+  identifier String
+  windowKey  String
+  count      Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([scope, identifier, windowKey])
+  @@index([scope, windowKey])
+}
+
 // Stripe 결제 주문. merchantUid로 조회하고 웹훅으로 상태를 갱신한다.
 model Order {
   id            String   @id @default(cuid())
