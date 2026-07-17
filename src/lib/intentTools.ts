@@ -93,6 +93,12 @@ export function detectQuickToolFromText(text: string): string | null {
     return "exam-maker";
   }
 
+  // ── 문서/텍스트 번역 ──
+  const wantsTranslate =
+    /번역\s*(해\s*줘|해줘|좀|부탁)?/.test(t) ||
+    /\b(translate|translation)\b/i.test(t);
+  if (wantsTranslate) return "doc-translate";
+
   // ── 이미지 생성 (math-graph의 "그려줘"와 겹치지 않도록 그림/이미지/사진 등
   // 명시적 명사가 있을 때만 매칭한다) ──
   const hasImageNoun =
@@ -161,6 +167,7 @@ export function toolIntentLabel(toolId: string): string {
     "math-solve": "수학 풀이",
     "math-graph": "그래프 생성",
     "image-gen": "이미지 생성",
+    "doc-translate": "문서 번역",
   };
   return map[toolId] ?? toolId;
 }

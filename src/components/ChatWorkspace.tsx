@@ -31,6 +31,7 @@ import {
   openPrintableHtml,
 } from "@/lib/textExport";
 import { useT, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
+import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
@@ -303,6 +304,7 @@ export default function ChatWorkspace({
   const [error, setError] = useState("");
   const [activeQuickTool, setActiveQuickTool] = useState<ToolDef | null>(null);
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
+  const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -578,6 +580,13 @@ export default function ChatWorkspace({
       text = text
         ? `${text}\n\n${t("chat.noteFormatLabel")} ${noteFormat}`
         : `${t("chat.noteFormatLabel")} ${noteFormat}\n${t("chat.noteFormatInstruction")}`;
+    }
+    // 번역 대상 언어 힌트를 본문에 주입
+    if (!spokenTurn && activeQuickTool?.id === "doc-translate") {
+      const targetLabel = LANGUAGE_LABELS[translateTarget];
+      text = text
+        ? `${t("chat.translateTargetLabel")} ${targetLabel}\n\n${text}`
+        : `${t("chat.translateTargetLabel")} ${targetLabel}\n${t("chat.translateInstruction")}`;
     }
     const requiresAttachment =
       !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
@@ -1108,6 +1117,22 @@ export default function ChatWorkspace({
                     {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? t("chat.formatPdf") : t("chat.formatImage")}
                   </button>
                 ))}
+              {activeQuickTool.id === "doc-translate" && (
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  {t("chat.translateTargetLabel")}
+                  <select
+                    value={translateTarget}
+                    onChange={(e) => setTranslateTarget(e.target.value as AppLanguage)}
+                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    {LANGUAGE_ORDER.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {LANGUAGE_LABELS[lang]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {activeQuickTool.id === "video-summary" && (
                 <span className="text-[11px] text-slate-500">
                   {t("quicktool.videoSummary.placeholder")}

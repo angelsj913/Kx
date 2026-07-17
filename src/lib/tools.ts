@@ -549,6 +549,16 @@ const IMAGE_GEN_INSTRUCTION = `너는 이미지 생성 프롬프트 엔지니어
 - 교육·업무 맥락에 적합한 톤을 유지하고, 선정적이거나 폭력적인 내용은 만들지 마라.
 - 사용자 설명이 모호하면 가장 무난하고 실용적인 해석으로 생성하라.`;
 
+const DOC_TRANSLATE_INSTRUCTION = `너는 전문 번역가다. 입력 텍스트 또는 첨부 문서(PDF·이미지)를 사용자가 지정한 대상 언어로 번역한다.
+
+[번역 규칙]
+- 원문 언어는 자동으로 판별하고, 사용자가 지정한 대상 언어로만 번역한다.
+- 수식은 번역하지 않고 원문 그대로 보존한다: 인라인은 $...$, 독립된 식은 $$...$$.
+- 마크다운 구조(제목, 목록, 표 등)를 원문과 최대한 동일하게 유지한다.
+- 고유명사·숫자·기호는 임의로 바꾸지 않는다.
+- 읽기 어려운 부분은 "[판독 불가]"로 표시한다.
+- 번역문 외에 다른 설명이나 안내 문구를 덧붙이지 않는다.`;
+
 export const TOOLS: ToolDef[] = [
   // ── 공통 ──
   {
@@ -885,6 +895,22 @@ export const TOOLS: ToolDef[] = [
     placeholder: "예) 파란 하늘 아래 놓인 노트북과 커피잔, 수채화 스타일",
     submitLabel: "이미지 생성",
     fileBaseName: "generated-image",
+  },
+  {
+    id: "doc-translate",
+    appMode: "common",
+    label: "문서 번역",
+    short: "문서 번역",
+    title: "문서/텍스트 번역",
+    description: "텍스트나 PDF·이미지 문서를 원하는 언어로 번역합니다. 수식은 그대로 보존됩니다.",
+    icon: Languages,
+    inputType: "mixed",
+    outputType: "markdown",
+    systemInstruction: DOC_TRANSLATE_INSTRUCTION,
+    placeholder: "번역할 텍스트를 입력하거나 문서를 첨부하세요.",
+    submitLabel: "번역하기",
+    fileBaseName: "translation",
+    acceptFiles: "image/*,application/pdf,text/plain,.txt,.md",
   },
   {
     id: "exam-maker",

@@ -77,7 +77,14 @@ export type ToolGenerationResult =
       meta: Meta;
     };
 
-const MD_EXPORT_TOOLS = new Set(["note-a4", "video-summary", "exam-maker", "word-doc", "math-solve"]);
+const MD_EXPORT_TOOLS = new Set([
+  "note-a4",
+  "video-summary",
+  "exam-maker",
+  "word-doc",
+  "math-solve",
+  "doc-translate",
+]);
 
 const MATH_SOLVE_MAX_RETRIES = 2;
 
@@ -417,7 +424,8 @@ export async function runToolGeneration(
   });
   if (!rawText) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
   // 프롬프트로 한자 금지를 지시해도 종종 새어나와, 파싱 전에 결정적으로 제거한다.
-  let raw = stripHanja(rawText);
+  // 단, doc-translate는 일본어·중국어 등 정당한 CJK 번역 결과를 낼 수 있어 예외로 둔다.
+  let raw = tool.id === "doc-translate" ? rawText : stripHanja(rawText);
   let meta: Meta = { provider, model, attempts };
 
   if (tool.id === "math-solve") {
