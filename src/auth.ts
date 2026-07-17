@@ -1,8 +1,11 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // 커스텀 도메인(www.zeffai.com)에서 세션 쿠키/호스트 검증이 깨지지 않도록
@@ -17,6 +20,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           access_type: "online",
           response_type: "code",
         },
+      },
+    }),
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials, request) {
+        const email = String(credentials?.email ?? "").trim().toLowerCase();
+        const password = String(credentials?.password ?? "");
+        if (!email || !password) return null;
+
+        // 계정 하나를 노린 분산 대입과, 한 IP가 여러 계정을 훑는 대입 둘 다 막는다.
+        // bcrypt 비교 자체가 어느 정도 느리긴 하지만 시도 횟수 제한이 따로 필요하다.
+        const ip = clientIp(request);
+        const [ipOk, emailOk] = await Promise.all([
+          checkRateLimit("login:ip", ip, { max: 20, windowSeconds: 300 }),
+          checkRateLimit("login:email", email, { max: 6, windowSeconds: 300 }),
+        ]);
+        if (!ipOk || !emailOk) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user?.passwordHash) return null;
+
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        };
       },
     }),
   ],

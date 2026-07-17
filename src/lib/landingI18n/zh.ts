@@ -155,7 +155,7 @@ const zh: Record<keyof typeof ko, string> = {
   "auth.signup.submit": "完成注册",
   "auth.field.email": "邮箱",
   "auth.field.password": "密码",
-  "auth.field.passwordHint": "至少8个字符",
+  "auth.field.passwordHint": "至少10个字符，4种字符中至少3种",
   "auth.field.phone": "电话号码",
   "auth.field.phoneHint": "仅数字",
   "auth.otp.send": "发送验证码",

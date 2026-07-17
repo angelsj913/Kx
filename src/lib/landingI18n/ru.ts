@@ -163,7 +163,7 @@ const ru: Record<keyof typeof ko, string> = {
   "auth.signup.submit": "Завершить регистрацию",
   "auth.field.email": "E-mail",
   "auth.field.password": "Пароль",
-  "auth.field.passwordHint": "Не менее 8 символов",
+  "auth.field.passwordHint": "Не менее 10 символов, 3 из 4 типов символов",
   "auth.field.phone": "Номер телефона",
   "auth.field.phoneHint": "Только цифры",
   "auth.otp.send": "Отправить код",

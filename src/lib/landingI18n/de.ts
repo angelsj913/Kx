@@ -163,7 +163,7 @@ const de: Record<keyof typeof ko, string> = {
   "auth.signup.submit": "Registrierung abschließen",
   "auth.field.email": "E-Mail",
   "auth.field.password": "Passwort",
-  "auth.field.passwordHint": "Mindestens 8 Zeichen",
+  "auth.field.passwordHint": "Mind. 10 Zeichen, 3 von 4 Zeichentypen",
   "auth.field.phone": "Telefonnummer",
   "auth.field.phoneHint": "Nur Ziffern",
   "auth.otp.send": "Code senden",

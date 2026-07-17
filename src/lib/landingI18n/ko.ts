@@ -161,7 +161,7 @@ const ko = {
   "auth.field.username": "아이디",
   "auth.field.usernameHint": "영문·숫자 4자 이상 · 로그인과 아이디 찾기에 사용돼요",
   "auth.field.password": "비밀번호",
-  "auth.field.passwordHint": "8자 이상",
+  "auth.field.passwordHint": "10자 이상, 4종류 중 3종류 이상 조합",
   "auth.field.phone": "전화번호",
   "auth.field.phoneHint": "숫자만 입력",
   "auth.field.phoneNote": "계정 복구와 결제·보안 알림에만 쓰이는 선택 항목이에요.",

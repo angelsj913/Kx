@@ -166,7 +166,7 @@ const en: Record<keyof typeof ko, string> = {
   "auth.field.username": "Username",
   "auth.field.usernameHint": "4+ letters/numbers · used for login and ID recovery",
   "auth.field.password": "Password",
-  "auth.field.passwordHint": "At least 8 characters",
+  "auth.field.passwordHint": "At least 10 characters, 3 of 4 character types",
   "auth.field.phone": "Phone number",
   "auth.field.phoneHint": "Digits only",
   "auth.field.phoneNote": "An optional field, used only for account recovery and billing/security alerts.",

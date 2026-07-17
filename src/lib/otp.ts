@@ -2,9 +2,9 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
-// 로그인은 구글 OAuth만 쓴다(이메일+비밀번호 없음) — 이 OTP는 이제 이메일 전용
-// 2단계 확인 용도로만 쓰인다: 워크스페이스 삭제, 관리자의 회원 요금제 변경.
-export type OtpPurpose = "workspace-delete" | "admin-plan-change";
+// 이메일 전용(채널 개념 자체를 없앰) — 회원가입·비밀번호 재설정 이메일 인증과,
+// 워크스페이스 삭제·관리자 요금제 변경 2단계 확인에 쓰인다.
+export type OtpPurpose = "signup" | "find-password" | "workspace-delete" | "admin-plan-change";
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
@@ -75,6 +75,28 @@ export async function verifyOtp(
     data: { consumedAt: new Date() },
   });
   return true;
+}
+
+/**
+ * 최근(30분 이내) 인증에 성공(소비)한 기록이 있는지 — 회원가입 최종 처리·비밀번호
+ * 재설정 직전 재확인용. 이 함수가 false를 반환하는 이유는 "코드를 아예 발송한 적
+ * 없음"(가입 안 된 이메일로 비번 재설정 시도 등)과 "인증을 아직 안 함"을 구분하지
+ * 않는다 — 둘 다 같은 일반 메시지로 처리되게 해서, 계정 존재 여부가 이 단계에서
+ * 새어나가지 않게 한다.
+ */
+export async function hasRecentVerifiedOtp(
+  identifier: string,
+  purpose: OtpPurpose
+): Promise<boolean> {
+  const row = await prisma.verificationCode.findFirst({
+    where: {
+      identifier,
+      purpose,
+      consumedAt: { not: null, gte: new Date(Date.now() - 30 * 60 * 1000) },
+    },
+    orderBy: { consumedAt: "desc" },
+  });
+  return !!row;
 }
 
 type MailResult = {

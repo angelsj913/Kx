@@ -158,7 +158,7 @@ const ja: Record<keyof typeof ko, string> = {
   "auth.signup.submit": "登録を完了",
   "auth.field.email": "メール",
   "auth.field.password": "パスワード",
-  "auth.field.passwordHint": "8文字以上",
+  "auth.field.passwordHint": "10文字以上、4種類中3種類以上を組み合わせ",
   "auth.field.phone": "電話番号",
   "auth.field.phoneHint": "数字のみ",
   "auth.otp.send": "認証コードを送信",

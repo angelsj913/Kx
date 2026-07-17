@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -21,6 +22,29 @@ function GoogleIcon() {
 function LoginCard() {
   const t = useLandingT();
   const callbackUrl = "/"; // ← 변경: 로그인 후 홈으로 이동
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onCredentials(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await signIn("credentials", { email, password, redirect: false, callbackUrl });
+      if (res?.error) {
+        setError(t("login.error"));
+        setLoading(false);
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      window.location.href = res?.url || callbackUrl;
+    } catch {
+      setError(t("login.error"));
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-start overflow-hidden bg-slate-50 px-6 pb-10 pt-24 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100 sm:justify-center sm:pt-6">
@@ -54,6 +78,56 @@ function LoginCard() {
         >
           {t("login.apple")}
         </button>
+
+        <div className="mt-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t("login.or")}</span>
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+        </div>
+
+        <form className="mt-6 space-y-3 text-left" onSubmit={onCredentials}>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder={t("login.email")}
+            autoComplete="email"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder={t("login.password")}
+            autoComplete="current-password"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
+          />
+          {error && (
+            <p className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
+          >
+            {t("login.submit")}
+          </button>
+        </form>
+
+        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <Link href="/find-password" className="hover:text-blue-600 dark:hover:text-blue-400">{t("login.findPassword")}</Link>
+        </div>
+
+        <p className="mt-5 border-t border-slate-100 pt-5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          {t("login.signupPrompt")}{" "}
+          <Link href="/signup" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+            {t("login.signup")}
+          </Link>
+        </p>
       </div>
     </div>
   );
