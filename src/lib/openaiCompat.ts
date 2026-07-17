@@ -61,6 +61,17 @@ export const PROVIDER_CONFIG: Record<
     missingKeyMessage:
       "Mistral API 키가 없습니다. MISTRAL_API_KEY 설정 (console.mistral.ai Experiment 무료)",
   },
+  // GitHub Models — GitHub 계정만 있으면 무료(models:read 권한의 PAT 필요).
+  // 다만 무료 티어 요청 한도가 다른 무료 제공자보다 훨씬 낮아(모델별 10~15
+  // RPM·50~150 RPD, PAT 하나를 앱 전체가 공유) models.ts에서 최후 수단으로만 쓴다.
+  github: {
+    provider: "github",
+    envKey: "GITHUB_MODELS_TOKEN",
+    baseUrl: "https://models.github.ai/inference/chat/completions",
+    defaultModel: "gpt-4o-mini",
+    missingKeyMessage:
+      "GitHub Models 토큰이 없습니다. models:read 권한의 GitHub PAT를 GITHUB_MODELS_TOKEN에 설정하세요 (github.com/settings/tokens 무료)",
+  },
 };
 
 function requireKey(cfg: CompatProviderConfig, apiKey?: string): string {
@@ -300,6 +311,11 @@ export function listConfiguredProviders(): {
       provider: "deepseek",
       envKey: "DEEPSEEK_API_KEY",
       set: !!process.env.DEEPSEEK_API_KEY?.trim(),
+    },
+    {
+      provider: "github",
+      envKey: "GITHUB_MODELS_TOKEN",
+      set: !!process.env.GITHUB_MODELS_TOKEN?.trim(),
     },
   ];
 }

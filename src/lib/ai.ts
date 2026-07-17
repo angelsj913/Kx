@@ -58,13 +58,13 @@ export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDe
     const configured = listConfiguredProviders().filter((p) => p.set);
     if (configured.length === 0) {
       throw new MissingApiKeyError(
-        "AI API 키가 없습니다. Vercel에 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키 중 하나 이상을 설정하세요.",
+        "AI API 키가 없습니다. Vercel에 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / GEMINI 키 중 하나 이상을 설정하세요.",
       );
     }
     const relaxed = candidates.filter((m) => hasProviderKey(m.provider));
     if (relaxed.length === 0) {
       throw new MissingApiKeyError(
-        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ·CEREBRAS·MISTRAL·OPENROUTER·DEEPSEEK·GEMINI 키를 확인하세요.",
+        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ·CEREBRAS·MISTRAL·OPENROUTER·DEEPSEEK·GITHUB·GEMINI 키를 확인하세요.",
       );
     }
     return relaxed;
@@ -168,7 +168,7 @@ async function runWithFallback(
 
   if (attemptNumber === 0) {
     throw new MissingApiKeyError(
-      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
+      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / GEMINI 키를 확인하세요.",
     );
   }
   throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");
@@ -371,7 +371,7 @@ export async function chatReplyWithFallbackStream(args: {
 
   if (attemptNumber === 0) {
     throw new MissingApiKeyError(
-      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
+      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / GEMINI 키를 확인하세요.",
     );
   }
   throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");

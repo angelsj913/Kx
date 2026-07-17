@@ -4,7 +4,8 @@ export type Provider =
   | "groq"
   | "deepseek"
   | "cerebras"
-  | "mistral";
+  | "mistral"
+  | "github";
 
 export interface ModelDef {
   provider: Provider;
@@ -47,6 +48,14 @@ export const MISTRAL_FREE: ModelDef[] = [
   { provider: "mistral", model: "mistral-small-latest", free: true },
   { provider: "mistral", model: "open-mistral-nemo", free: true },
   { provider: "mistral", model: "ministral-8b-latest", free: true },
+];
+
+// ── GitHub Models (무료, PAT 하나를 앱 전체가 공유 — 모델별 10~15 RPM·50~150 RPD로
+// 다른 무료 제공자보다 한도가 훨씬 낮다. 그래서 라운드로빈에 안 섞고 무료 풀
+// 맨 뒤 최후 수단으로만 둔다) ──
+export const GITHUB_FREE: ModelDef[] = [
+  { provider: "github", model: "gpt-4o-mini", free: true },
+  { provider: "github", model: "Meta-Llama-3.1-8B-Instruct", free: true },
 ];
 
 // ── DeepSeek 초저가 ──
@@ -121,6 +130,8 @@ function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standa
     OPENROUTER_FREE_CHAT.slice(0, maxOrFree),
   ];
   const freeInterleaved = interleaveByProvider(freeGroups);
+  // GitHub Models는 라운드로빈에 안 섞고 무료 풀 맨 뒤에 최후 수단으로 붙인다.
+  const freePool = [...freeInterleaved, ...GITHUB_FREE];
 
   const mid: ModelDef[] = [DS_FLASH, DS_CHAT, G_FLASH, G_FLASH_LITE];
   const premium: ModelDef[] =
@@ -128,14 +139,14 @@ function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standa
 
   // standard(무료): 비용 우선 — 무료 풀을 먼저 시도, 프리미엄은 최후 수단
   if (tier === "standard") {
-    return [...freeInterleaved, ...mid, ...premium];
+    return [...freePool, ...mid, ...premium];
   }
   // priority(Pro): 중간 등급 모델을 먼저 시도 — 무료 풀은 실패 시 안전망으로 이동
   if (tier === "priority") {
-    return [...mid, ...premium, ...freeInterleaved];
+    return [...mid, ...premium, ...freePool];
   }
   // top(Professional): 프리미엄 모델을 첫 시도로 — 무료 풀은 프리미엄이 에러날 때만
-  return [...premium, ...mid, ...freeInterleaved];
+  return [...premium, ...mid, ...freePool];
 }
 
 /** 검증 전용: 생성에 쓴 제공자와 다른 쪽 우선 */
@@ -176,6 +187,7 @@ export function listFreeModelIds(): string[] {
     ...MISTRAL_FREE.map((m) => `mistral/${m.model}`),
     ...OPENROUTER_FREE_CHAT.map((m) => m.model),
     ...DEEPSEEK_MODELS.map((m) => `deepseek/${m.model}`),
+    ...GITHUB_FREE.map((m) => `github/${m.model}`),
   ];
 }
 
