@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+// 수식 렌더링 스타일 — 루트 레이아웃이 아니라 KaTeX를 실제로 쓰는 라우트에서만 로드
+import "katex/dist/katex.min.css";
 import {
   Sparkles,
   Copy,
