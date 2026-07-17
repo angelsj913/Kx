@@ -9,16 +9,14 @@ datasource db {
 
 // ── NextAuth (Auth.js) 필수 모델 — 필드명은 @auth/prisma-adapter가 그대로 사용 ──
 
+// 로그인은 구글 OAuth만 쓴다 — 비밀번호·아이디·전화번호 필드 없음(예전 이메일+비밀번호
+// 가입 방식의 흔적을 완전히 제거했다).
 model User {
   id            String    @id @default(cuid())
   name          String?
-  username      String?   @unique
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  passwordHash  String?
-  phone         String?
-  phoneVerified DateTime?
 
   /** 마지막 활동 시각 — 휴면 판정용 */
   lastActiveAt       DateTime?
@@ -213,15 +211,16 @@ model ReviewCard {
 }
 
 // 이메일/전화 6자리 OTP 임시 저장. 검증 성공 또는 만료 시 정리된다.
+/** 로그인은 구글 OAuth만 쓴다 — 이 코드는 이메일 2단계 확인 전용(워크스페이스 삭제,
+ * 관리자의 요금제 변경)이다. */
 model VerificationCode {
-  id         String   @id @default(cuid())
-  identifier String   // 이메일 주소 또는 전화번호
-  channel    String   // "email" | "sms"
-  purpose    String   @default("signup") // "signup" | "find-id" | "find-password"
-  code       String   // 6자리
+  id         String    @id @default(cuid())
+  identifier String    // 대상 이메일 주소
+  purpose    String    // "workspace-delete" | "admin-plan-change"
+  code       String    // 6자리
   expiresAt  DateTime
   consumedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([identifier, purpose])
 }

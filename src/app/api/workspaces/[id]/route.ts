@@ -171,7 +171,7 @@ export async function DELETE(
 
     if (!otpCode) {
       const { issueOtp } = await import("@/lib/otp");
-      const result = await issueOtp(ownerEmail, "email", "workspace-delete");
+      const result = await issueOtp(ownerEmail, "workspace-delete");
 
       return NextResponse.json({
         ok: true,

@@ -50,7 +50,6 @@ async function getStats() {
         id: true,
         name: true,
         email: true,
-        username: true,
         settings: { select: { plan: true } },
         _count: { select: { chatSessions: true } },
       },
@@ -252,7 +251,7 @@ export default async function AdminDashboard() {
               <li key={u.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {u.name || u.username || u.email || u.id.slice(0, 8)}
+                    {u.name || u.email || u.id.slice(0, 8)}
                   </p>
                   <p className="truncate text-[11px] text-slate-500">{u.email ?? "—"}</p>
                 </div>

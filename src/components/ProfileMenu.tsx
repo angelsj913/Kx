@@ -22,7 +22,6 @@ const ICON = "h-4 w-4 shrink-0";
 function displayName(
   user: {
     name?: string | null;
-    username?: string | null;
     email?: string | null;
   } | undefined,
   fallback: string,
@@ -30,8 +29,6 @@ function displayName(
   if (!user) return fallback;
   const name = user.name?.trim();
   if (name) return name;
-  const username = user.username?.trim();
-  if (username) return username;
   const email = user.email?.trim();
   if (email) return email.split("@")[0] || email;
   return fallback;
