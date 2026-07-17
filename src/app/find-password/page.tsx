@@ -7,7 +7,9 @@ import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import EmailOtpVerifier from "@/components/auth/EmailOtpVerifier";
+import PasswordStrengthHint from "@/components/auth/PasswordStrengthHint";
 import Logo from "@/components/ui/Logo";
+import { checkPasswordStrength } from "@/lib/password";
 
 export default function FindPasswordPage() {
   const t = useLandingT();
@@ -21,8 +23,9 @@ export default function FindPasswordPage() {
   async function onReset(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
+    const strength = checkPasswordStrength(password, { email });
+    if (!strength.ok) {
+      setError(strength.reason ?? "비밀번호 조건을 확인해 주세요.");
       return;
     }
     if (password !== confirm) {
@@ -90,6 +93,7 @@ export default function FindPasswordPage() {
                   placeholder={t("auth.field.passwordHint")}
                   className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
+                <PasswordStrengthHint password={password} context={{ email }} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">

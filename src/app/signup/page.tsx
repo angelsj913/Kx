@@ -8,7 +8,9 @@ import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import OtpInput from "@/components/auth/OtpInput";
+import PasswordStrengthHint from "@/components/auth/PasswordStrengthHint";
 import Logo from "@/components/ui/Logo";
+import { checkPasswordStrength } from "@/lib/password";
 
 const DIAL_CODES = [
   { code: "+82", label: "🇰🇷 +82" },
@@ -60,8 +62,9 @@ export default function SignupPage() {
       setError("올바른 이메일 주소를 입력해 주세요.");
       return;
     }
-    if (password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
+    const strength = checkPasswordStrength(password, { email, username });
+    if (!strength.ok) {
+      setError(strength.reason ?? "비밀번호 조건을 확인해 주세요.");
       return;
     }
     setLoading(true);
@@ -198,6 +201,7 @@ export default function SignupPage() {
               placeholder={t("auth.field.passwordHint")}
               className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
+            <PasswordStrengthHint password={password} context={{ email, username }} />
           </label>
 
           <div className="block">

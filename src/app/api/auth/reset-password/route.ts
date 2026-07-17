@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hasRecentVerifiedOtp } from "@/lib/otp";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
+import { checkPasswordStrength } from "@/lib/password";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +19,6 @@ export async function POST(request: Request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "올바른 이메일 주소를 입력해 주세요." }, { status: 400 });
     }
-    if (password.length < 8) {
-      return NextResponse.json({ error: "비밀번호는 8자 이상이어야 합니다." }, { status: 400 });
-    }
 
     const verified = await hasRecentVerifiedOtp(email, "find-password");
     if (!verified) {
@@ -30,6 +28,11 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json({ error: "가입된 계정을 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    const strength = checkPasswordStrength(password, { email, username: user.username });
+    if (!strength.ok) {
+      return NextResponse.json({ error: strength.reason }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);

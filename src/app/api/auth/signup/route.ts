@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hasRecentVerifiedOtp } from "@/lib/otp";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
+import { checkPasswordStrength } from "@/lib/password";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,8 +28,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (password.length < 8) {
-      return NextResponse.json({ error: "비밀번호는 8자 이상이어야 합니다." }, { status: 400 });
+    const strength = checkPasswordStrength(password, { email, username });
+    if (!strength.ok) {
+      return NextResponse.json({ error: strength.reason }, { status: 400 });
     }
 
     // 이메일 OTP 인증이 최근에 완료됐는지 재확인
