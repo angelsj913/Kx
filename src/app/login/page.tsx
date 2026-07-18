@@ -128,7 +128,7 @@ function LoginCard() {
 
         <p className="mt-5 border-t border-slate-100 pt-5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           {t("login.signupPrompt")}{" "}
-          <Link href="/signup" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+          <Link href="/signup" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
             {t("login.signup")}
           </Link>
         </p>

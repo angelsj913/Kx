@@ -161,6 +161,7 @@ const es: Record<keyof typeof ko, string> = {
   "auth.signup.title": "Crear cuenta",
   "auth.signup.subtitle": "Crea tu cuenta ZEFF AI con correo.",
   "auth.signup.submit": "Completar registro",
+  "auth.signup.consent": "Al completar el registro, aceptas nuestros Términos del servicio y la Política de privacidad.",
   "auth.field.email": "Correo",
   "auth.field.password": "Contraseña",
   "auth.field.passwordHint": "Al menos 10 caracteres, 3 de 4 tipos de caracteres",

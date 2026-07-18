@@ -157,6 +157,7 @@ const ko = {
   "auth.signup.title": "회원가입",
   "auth.signup.subtitle": "이메일로 ZEFF AI 통합 계정을 만드세요.",
   "auth.signup.submit": "가입 완료",
+  "auth.signup.consent": "가입을 완료하면 이용약관과 개인정보 처리방침에 동의하는 것으로 간주됩니다.",
   "auth.field.email": "이메일",
   "auth.field.username": "아이디",
   "auth.field.usernameHint": "영문·숫자 4자 이상 · 로그인과 아이디 찾기에 사용돼요",

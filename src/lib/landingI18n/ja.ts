@@ -156,6 +156,7 @@ const ja: Record<keyof typeof ko, string> = {
   "auth.signup.title": "新規登録",
   "auth.signup.subtitle": "メールでZEFF AIアカウントを作成します。",
   "auth.signup.submit": "登録を完了",
+  "auth.signup.consent": "登録を完了すると、利用規約とプライバシーポリシーに同意したものとみなされます。",
   "auth.field.email": "メール",
   "auth.field.password": "パスワード",
   "auth.field.passwordHint": "10文字以上、4種類中3種類以上を組み合わせ",

@@ -161,6 +161,7 @@ const de: Record<keyof typeof ko, string> = {
   "auth.signup.title": "Konto erstellen",
   "auth.signup.subtitle": "Erstellen Sie Ihr ZEFF AI-Konto per E-Mail.",
   "auth.signup.submit": "Registrierung abschließen",
+  "auth.signup.consent": "Mit Abschluss der Registrierung stimmen Sie den Nutzungsbedingungen und der Datenschutzerklärung zu.",
   "auth.field.email": "E-Mail",
   "auth.field.password": "Passwort",
   "auth.field.passwordHint": "Mind. 10 Zeichen, 3 von 4 Zeichentypen",

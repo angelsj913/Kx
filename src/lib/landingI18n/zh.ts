@@ -153,6 +153,7 @@ const zh: Record<keyof typeof ko, string> = {
   "auth.signup.title": "创建账户",
   "auth.signup.subtitle": "使用邮箱创建 ZEFF AI 账户。",
   "auth.signup.submit": "完成注册",
+  "auth.signup.consent": "完成注册即表示您同意我们的服务条款和隐私政策。",
   "auth.field.email": "邮箱",
   "auth.field.password": "密码",
   "auth.field.passwordHint": "至少10个字符，4种字符中至少3种",
