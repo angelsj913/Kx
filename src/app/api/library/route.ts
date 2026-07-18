@@ -7,6 +7,7 @@ import { friendlyError } from "@/lib/errors";
 import { resolveScope, WorkspaceError } from "@/lib/workspace";
 import { getPlanOrFree } from "@/lib/plans";
 import { indexLibraryItem } from "@/lib/ragIndexing";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/constants";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -157,8 +158,11 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "파일을 첨부해 주세요." }, { status: 400 });
   }
-  if (file.size > 20 * 1024 * 1024) {
-    return NextResponse.json({ error: "파일이 너무 큽니다 (최대 20MB)." }, { status: 400 });
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json(
+      { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB).` },
+      { status: 400 },
+    );
   }
 
   try {

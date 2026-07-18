@@ -13,6 +13,7 @@ import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
 import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
 
 export const runtime = "nodejs";
@@ -54,6 +55,19 @@ export async function POST(request: Request) {
     editMessageId = (form.get("editMessageId") as string) || null;
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
+    }
+    if (uploads.length > MAX_CHAT_FILES) {
+      return NextResponse.json(
+        { error: `첨부는 한 번에 최대 ${MAX_CHAT_FILES}개까지 가능합니다.` },
+        { status: 400 },
+      );
+    }
+    const oversized = uploads.find((f) => f.size > MAX_UPLOAD_BYTES);
+    if (oversized) {
+      return NextResponse.json(
+        { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB): ${oversized.name}` },
+        { status: 400 },
+      );
     }
   } else {
     const body = await request.json().catch(() => ({}));
