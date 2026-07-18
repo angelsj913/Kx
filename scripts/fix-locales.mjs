@@ -65,7 +65,7 @@ const pricingPatches = {
 };
 
 function setKey2(content, key, value) {
-  const re = new RegExp(`("${key.replace(/\./g, "\\.")}":\\s*")([^"]*)(")`);
+  const re = new RegExp(`("${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}":\\s*")([^"]*)(")`);
   if (!re.test(content)) {
     console.warn("missing", key);
     return content;
