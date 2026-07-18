@@ -8,7 +8,6 @@
  */
 import { chatReplyWithFallback, chatReplyWithFallbackStream, type AttemptInfo } from "./ai";
 import { stripHanja } from "./textSanitize";
-import { AGENTS, pickAgent, type AgentId } from "./agents";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {
   modelsForTier,
@@ -26,14 +25,14 @@ export interface RouteStageEvent {
   stage: RouteStage;
   key: string;
   detail?: string;
-  agentId?: AgentId;
+  agentId?: string;
   provider?: string;
   model?: string;
 }
 
 export interface BackendRouteResult {
   text: string;
-  agentId: AgentId;
+  agentId: string;
   modelTier: ModelTier;
   provider: string;
   model: string;
@@ -63,14 +62,33 @@ const ZEFF_BASE = `너는 ZEFF 워크스페이스 AI 어시스턴트다.
 - 불확실하면 한계를 말한다.
 - 바로 쓸 수 있게 구조화한다.`;
 
+/**
+ * 자유 채팅 시스템 프롬프트.
+ *
+ * 예전에는 논리·리서치·글쓰기·일반 4개 페르소나 중 하나를 키워드로 배타적으로
+ * 골랐다. 문제: 질문이 "논리이면서 글쓰기이기도" 한 경우를 표현할 수 없고,
+ * 키워드가 안 걸리면(특히 비한국어 입력) 가장 부실한 "일반" 페르소나로
+ * 떨어져 "AI 성능이 특정 기능에만 집중돼 있다"는 인상을 만들었다.
+ * 지금은 배타적 분류를 없애고, 상황별 지침을 전부 담은 단일 범용 프롬프트를
+ * 항상 사용한다 — 모델이 질문 성격에 맞는 지침을 스스로 골라 적용한다.
+ */
+const AGENT_ID = "general";
+const AGENT_SYSTEM_INSTRUCTION = [
+  "다재다능한 어시스턴트다. 폭넓은 일반 지식·코딩·수학·글쓰기·자료 조사·잡담까지 무엇이든 자연스럽게 도와라.",
+  "질문 성격에 맞춰 아래 지침을 스스로 적용하되, 실제로 해당하는 것만 적용하고 불필요한 형식을 억지로 넣지 마라.",
+  "- 논리·코드·수학 질문이면: 단계적으로 검증하며 식·근거를 생략하지 말고 정확하고 꼼꼼하게 답하라.",
+  "- 자료 조사·요약·비교 질문이면: 핵심 근거를 밝히고 불확실하면 한계를 명시하라.",
+  "- 글쓰기·문서 요청이면: 바로 쓸 수 있는 완성본을 제공하라. PPT/슬라이드 파일 요청이면 긴 텍스트 초안 대신 슬라이드 구성만 짧게(실제 파일은 전용 도구가 처리).",
+  "- 위 어디에도 딱 맞지 않는 일반 대화·잡담이면: 친절하고 자연스럽게, 필요할 때만 구조를 나눠 답하라.",
+].join("\n");
+
 function tierRouteLabel(tier: ModelTier): string {
   if (tier === "top") return "route:top · multi-provider+verify";
   if (tier === "priority") return "route:priority · multi-provider+light-verify";
   return "route:standard · multi-provider";
 }
 
-function systemFor(agentId: AgentId, tier: ModelTier, intentTool: string | null): string {
-  const agent = AGENTS[agentId];
+function systemFor(tier: ModelTier, intentTool: string | null): string {
   const tierHint =
     tier === "top"
       ? "깊게 추론하고 근거·단계를 분명히 하라."
@@ -84,7 +102,7 @@ function systemFor(agentId: AgentId, tier: ModelTier, intentTool: string | null)
 
   return `${ZEFF_BASE}
 
-${agent.systemInstruction}
+${AGENT_SYSTEM_INSTRUCTION}
 
 [품질 · ${tier}]
 ${tierHint}${intentHint}`;
@@ -104,7 +122,7 @@ export async function runBackendRoute(args: {
   modelTier?: ModelTier;
   extraSystemInstruction?: string;
   onStage?: (e: RouteStageEvent) => void;
-  onAttempt?: (info: AttemptInfo & { agentId: AgentId; stage: RouteStage }) => void;
+  onAttempt?: (info: AttemptInfo & { agentId: string; stage: RouteStage }) => void;
   /** 자유 채팅 초안 생성 델타를 실시간 중계한다(퀵툴 경로는 호출하지 않음). */
   onDelta?: (text: string) => void;
   signal?: AbortSignal;
@@ -115,15 +133,14 @@ export async function runBackendRoute(args: {
 
   // ── 1. classify ──
   stages.push("classify");
-  const primary = pickAgent();
   const intentTool = detectQuickToolFromText(args.text);
   const pool = availableProviderSummary() || "none";
 
   args.onStage?.({
     stage: "classify",
     key: "status.route.classify",
-    detail: `${primary.id}${intentTool ? ` · intent:${intentTool}` : ""} · keys:${pool}`,
-    agentId: primary.id,
+    detail: `${AGENT_ID}${intentTool ? ` · intent:${intentTool}` : ""} · keys:${pool}`,
+    agentId: AGENT_ID,
   });
 
   const candidates = modelsForTier(tier, { multimodal: args.hasFiles });
@@ -133,14 +150,14 @@ export async function runBackendRoute(args: {
   args.onStage?.({
     stage: "generate",
     key: "status.route.generate",
-    agentId: primary.id,
+    agentId: AGENT_ID,
     detail: `${tierRouteLabel(tier)} · ${candidates.length} candidates`,
   });
 
   let draftAttempts = 0;
   const draft = await chatReplyWithFallbackStream({
     systemInstruction: [
-      systemFor(primary.id, tier, intentTool),
+      systemFor(tier, intentTool),
       args.extraSystemInstruction?.trim() ? args.extraSystemInstruction.trim() : "",
     ]
       .filter(Boolean)
@@ -154,11 +171,11 @@ export async function runBackendRoute(args: {
     onAttempt: (info) => {
       draftAttempts = info.attemptNumber;
       providersTried.add(info.provider);
-      args.onAttempt?.({ ...info, agentId: primary.id, stage: "generate" });
+      args.onAttempt?.({ ...info, agentId: AGENT_ID, stage: "generate" });
       args.onStage?.({
         stage: "generate",
         key: "status.route.generate.try",
-        agentId: primary.id,
+        agentId: AGENT_ID,
         provider: info.provider,
         model: info.model,
         detail: `${info.provider}/${info.model} #${info.attemptNumber}`,
@@ -199,7 +216,7 @@ export async function runBackendRoute(args: {
     args.onStage?.({
       stage: "verify",
       key: deep ? "status.route.verify.deep" : "status.route.verify.light",
-      agentId: primary.id,
+      agentId: AGENT_ID,
       detail: `avoid:${draft.provider}`,
     });
 
@@ -231,7 +248,7 @@ export async function runBackendRoute(args: {
         onAttempt: (info) => {
           verifyAttempts = info.attemptNumber;
           providersTried.add(info.provider);
-          args.onAttempt?.({ ...info, agentId: primary.id, stage: "verify" });
+          args.onAttempt?.({ ...info, agentId: AGENT_ID, stage: "verify" });
           args.onStage?.({
             stage: "verify",
             key: "status.route.generate.try",
@@ -258,7 +275,7 @@ export async function runBackendRoute(args: {
   args.onStage?.({
     stage: "complete",
     key: refined ? "status.route.complete.refined" : "status.route.complete",
-    agentId: primary.id,
+    agentId: AGENT_ID,
     provider: finalProvider,
     model: finalModel,
     detail: `tried:${[...providersTried].join("+")}`,
@@ -266,7 +283,7 @@ export async function runBackendRoute(args: {
 
   return {
     text: stripHanja(finalText),
-    agentId: primary.id,
+    agentId: AGENT_ID,
     modelTier: tier,
     provider: finalProvider,
     model: finalModel,

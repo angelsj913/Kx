@@ -24,7 +24,6 @@ import {
   isProviderSkipped,
   markProviderHealthy,
   noteProviderFailure,
-  type ProviderId,
 } from "./providerHealth";
 import type { ToolDef } from "./tools";
 
@@ -50,7 +49,7 @@ export function isOpenRouterCreditsError(err: unknown): boolean {
 export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDef[] {
   const filtered = candidates.filter((m) => {
     if (!hasProviderKey(m.provider)) return false;
-    if (isProviderSkipped(m.provider as ProviderId)) return false;
+    if (isProviderSkipped(m.provider as Provider)) return false;
     return true;
   });
 
@@ -143,7 +142,7 @@ async function runWithFallback(
 
   for (const m of list) {
     if (skipPaidOpenRouter && m.provider === "openrouter" && !m.free) continue;
-    if (isProviderSkipped(m.provider as ProviderId)) continue;
+    if (isProviderSkipped(m.provider as Provider)) continue;
 
     attemptNumber += 1;
     onAttempt?.({ provider: m.provider, model: m.model, attemptNumber });
@@ -153,12 +152,12 @@ async function runWithFallback(
       if (!text || !String(text).trim()) {
         throw new Error("빈 응답 (empty model output)");
       }
-      markProviderHealthy(m.provider as ProviderId);
+      markProviderHealthy(m.provider as Provider);
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
       lastErr = err;
       console.warn(`[ai] fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
-      noteProviderFailure(m.provider as ProviderId, err);
+      noteProviderFailure(m.provider as Provider, err);
 
       if (m.provider === "openrouter" && isOpenRouterCreditsError(err) && !m.free) {
         skipPaidOpenRouter = true;
@@ -306,7 +305,7 @@ export async function chatReplyWithFallbackStream(args: {
   for (const m of list) {
     if (args.signal?.aborted) break;
     if (skipPaidOpenRouter && m.provider === "openrouter" && !m.free) continue;
-    if (isProviderSkipped(m.provider as ProviderId)) continue;
+    if (isProviderSkipped(m.provider as Provider)) continue;
 
     attemptNumber += 1;
     args.onAttempt?.({ provider: m.provider, model: m.model, attemptNumber });
@@ -337,7 +336,7 @@ export async function chatReplyWithFallbackStream(args: {
         }
         throw new Error("빈 응답 (empty model output)");
       }
-      markProviderHealthy(m.provider as ProviderId);
+      markProviderHealthy(m.provider as Provider);
       return {
         text: finalText,
         provider: m.provider,
@@ -361,7 +360,7 @@ export async function chatReplyWithFallbackStream(args: {
       }
       lastErr = err;
       console.warn(`[ai] stream fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
-      noteProviderFailure(m.provider as ProviderId, err);
+      noteProviderFailure(m.provider as Provider, err);
 
       if (m.provider === "openrouter" && isOpenRouterCreditsError(err) && !m.free) {
         skipPaidOpenRouter = true;

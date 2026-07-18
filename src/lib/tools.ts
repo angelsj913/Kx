@@ -24,16 +24,12 @@ import {
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
-export type AppMode = "student" | "office";
-/** 도구가 속한 모드. "common"은 두 모드 모두에 노출된다. */
-export type ToolScope = AppMode | "common";
 export type InputType = "text" | "url" | "audio" | "image" | "chat" | "mixed";
 export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
   id: string;
-  appMode: ToolScope;
   /** 사이드바 메뉴 라벨 */
   label: string;
   /** 히스토리 칩 등 짧은 라벨 */
@@ -55,16 +51,6 @@ export interface ToolDef {
   fileBaseName: string;
   /** 파일 input accept (없으면 기본 이미지/pdf) */
   acceptFiles?: string;
-}
-
-/** 텍스트 + 이미지/오디오 등 복합 입력 허용 여부 */
-export function toolAllowsAttachments(tool: ToolDef): boolean {
-  return (
-    tool.inputType === "image" ||
-    tool.inputType === "audio" ||
-    tool.inputType === "mixed" ||
-    tool.inputType === "url"
-  );
 }
 
 export function toolRequiresAttachment(tool: ToolDef): boolean {
@@ -569,7 +555,6 @@ export const TOOLS: ToolDef[] = [
   // ── 공통 ──
   {
     id: "chat",
-    appMode: "common",
     label: "AI 채팅",
     short: "AI 채팅",
     title: "AI 채팅",
@@ -586,7 +571,6 @@ export const TOOLS: ToolDef[] = [
   // ── 직장인 모드 ──
   {
     id: "bizdoc",
-    appMode: "office",
     label: "비즈니스 문서 작성",
     short: "비즈니스 문서",
     title: "비즈니스 문서·이메일 작성",
@@ -603,7 +587,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "ppt",
-    appMode: "office",
     label: "PPT 만들기",
     short: "PPT",
     title: "PPT 파일 만들기",
@@ -620,7 +603,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "excel",
-    appMode: "office",
     label: "엑셀 보고서 작성",
     short: "엑셀 보고서",
     title: "엑셀 보고서 작성",
@@ -637,7 +619,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "meeting",
-    appMode: "office",
     label: "회의록",
     short: "회의록",
     title: "회의록 작성",
@@ -655,7 +636,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "weekly-report",
-    appMode: "office",
     label: "주간 업무 보고",
     short: "주간 보고",
     title: "주간 업무 보고",
@@ -674,7 +654,6 @@ export const TOOLS: ToolDef[] = [
   // ── 학생 모드 ──
   {
     id: "lecture",
-    appMode: "student",
     label: "강의 영상 요약",
     short: "강의 요약",
     title: "강의 영상 요약",
@@ -690,7 +669,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "audio",
-    appMode: "student",
     label: "수업 음성 정리",
     short: "수업 정리",
     title: "수업 음성 정리",
@@ -706,7 +684,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "presentation",
-    appMode: "student",
     label: "발표문·과제 작성",
     short: "발표문",
     title: "발표문·과제 작성",
@@ -723,7 +700,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "lecture-notes",
-    appMode: "student",
     label: "강의 요약 노트",
     short: "강의 노트",
     title: "강의 요약 노트",
@@ -741,7 +717,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "research-draft",
-    appMode: "student",
     label: "레포트·논문 초안",
     short: "레포트 초안",
     title: "레포트 · 논문 초안",
@@ -759,7 +734,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "exam-analysis",
-    appMode: "student",
     label: "시험지 분석",
     short: "시험지 분석",
     title: "시험지 분석",
@@ -776,7 +750,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "exam-similarity",
-    appMode: "student",
     label: "시험지 유사도 분석",
     short: "유사도 분석",
     title: "시험지 유사도 분석",
@@ -792,7 +765,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "doc-convert",
-    appMode: "office",
     label: "문서 변환",
     short: "문서 변환",
     title: "문서 변환",
@@ -808,7 +780,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "video-summary",
-    appMode: "common",
     label: "영상 요약 정리",
     short: "영상 요약",
     title: "영상 요약 정리",
@@ -825,7 +796,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "note-a4",
-    appMode: "common",
     label: "A4 노트 정리",
     short: "A4 노트",
     title: "A4 노트 정리",
@@ -842,7 +812,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "word-doc",
-    appMode: "office",
     label: "워드 문서 작성",
     short: "워드",
     title: "워드 문서 작성",
@@ -857,7 +826,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "math-solve",
-    appMode: "student",
     label: "수학 문제 풀이",
     short: "수학 풀이",
     title: "수학 문제 풀이",
@@ -873,7 +841,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "math-graph",
-    appMode: "student",
     label: "수학 그래프",
     short: "그래프",
     title: "수학 그래프 그리기",
@@ -889,7 +856,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "image-gen",
-    appMode: "common",
     label: "이미지 생성",
     short: "이미지 생성",
     title: "AI 이미지 생성",
@@ -907,7 +873,6 @@ export const TOOLS: ToolDef[] = [
     // 도구 오케스트레이션 루프(runAgentRoute)로 보낸다. runToolGeneration에는
     // 도달하지 않으므로 systemInstruction/outputType은 칩 렌더링용 형식값이다.
     id: "agent",
-    appMode: "common",
     label: "에이전트",
     short: "에이전트",
     title: "AI 에이전트",
@@ -922,7 +887,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "doc-translate",
-    appMode: "common",
     label: "문서 번역",
     short: "문서 번역",
     title: "문서/텍스트 번역",
@@ -938,7 +902,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "exam-maker",
-    appMode: "student",
     label: "시험지 제작",
     short: "시험지 제작",
     title: "모의 시험지 제작",
@@ -953,7 +916,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "similar-problems",
-    appMode: "student",
     label: "전과목 유사문제 생성",
     short: "유사문제 생성",
     title: "전과목 유사문제 생성",
@@ -970,7 +932,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "lecture-chat",
-    appMode: "student",
     label: "강의 채팅",
     short: "강의 채팅",
     title: "강의 채팅",
@@ -986,7 +947,6 @@ export const TOOLS: ToolDef[] = [
   },
   {
     id: "library-extract",
-    appMode: "student",
     label: "서재 문서 추출",
     short: "서재 추출",
     title: "서재 문서 추출",
@@ -1000,10 +960,6 @@ export const TOOLS: ToolDef[] = [
     fileBaseName: "library-extract",
   },
 ];
-
-export function toolsForMode(mode: AppMode): ToolDef[] {
-  return TOOLS.filter((t) => t.appMode === mode || t.appMode === "common");
-}
 
 export function getTool(id: string): ToolDef | undefined {
   return TOOLS.find((t) => t.id === id);
