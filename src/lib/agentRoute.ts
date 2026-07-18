@@ -11,7 +11,7 @@ import {
   chatReplyWithFallbackStream,
   type AttemptInfo,
 } from "@/lib/ai";
-import { markProviderHealthy, noteProviderFailure, type ProviderId } from "@/lib/providerHealth";
+import { markProviderHealthy, noteProviderFailure } from "@/lib/providerHealth";
 import { stripHanja } from "@/lib/textSanitize";
 import {
   buildAgentTools,
@@ -84,11 +84,11 @@ async function agentTurnWithFallback(
         tools,
         signal,
       });
-      markProviderHealthy(m.provider as ProviderId);
+      markProviderHealthy(m.provider as Provider);
       return { ...result, attempts: attempt };
     } catch (err) {
       lastErr = err;
-      noteProviderFailure(m.provider as ProviderId, err);
+      noteProviderFailure(m.provider as Provider, err);
     }
   }
   throw lastErr ?? new Error("에이전트 모델 호출에 모두 실패했습니다.");

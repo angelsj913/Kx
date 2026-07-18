@@ -203,33 +203,3 @@ export function modelsForTier(
   return buildTextChain(6, "standard");
 }
 
-export function listFreeModelIds(): string[] {
-  return [
-    ...GROQ_FREE.map((m) => `groq/${m.model}`),
-    ...CEREBRAS_FREE.map((m) => `cerebras/${m.model}`),
-    ...MISTRAL_FREE.map((m) => `mistral/${m.model}`),
-    ...OPENROUTER_FREE_CHAT.map((m) => m.model),
-    ...DEEPSEEK_MODELS.map((m) => `deepseek/${m.model}`),
-    ...GITHUB_FREE.map((m) => `github/${m.model}`),
-    ...SAMBANOVA_FREE.map((m) => `sambanova/${m.model}`),
-  ];
-}
-
-export {
-  G_FLASH,
-  G_FLASH_LITE,
-  G_PRO,
-  DS_FLASH,
-  DS_CHAT,
-  DS_PRO,
-  OPENROUTER_FREE_CHAT as OR_FREE_POOL,
-};
-
-export const OR_FREE = OPENROUTER_FREE_CHAT[0]!;
-export const OR_FREE_ROUTER = OR_FREE;
-export const OR_LLAMA = orFree("meta-llama/llama-3.3-70b-instruct:free");
-export const OR_QWEN = orFree("qwen/qwen3-next-80b-a3b-instruct:free");
-export const OR_GEMMA4 = orFree("google/gemma-4-26b-a4b-it:free");
-export const OR_NEMOTRON = orFree("nvidia/nemotron-3-super-120b-a12b:free");
-export const OR_DEEPSEEK = DS_FLASH;
-export const GROQ_LLAMA70 = GROQ_FREE[0]!;

@@ -1,19 +1,11 @@
-export type ProviderId =
-  | "gemini"
-  | "openrouter"
-  | "groq"
-  | "deepseek"
-  | "cerebras"
-  | "mistral"
-  | "github"
-  | "sambanova";
+import type { Provider } from "./models";
 
 interface HealthState {
   skipUntil: number;
   reason: string;
 }
 
-const health: Record<ProviderId, HealthState> = {
+const health: Record<Provider, HealthState> = {
   gemini: { skipUntil: 0, reason: "" },
   openrouter: { skipUntil: 0, reason: "" },
   groq: { skipUntil: 0, reason: "" },
@@ -26,12 +18,12 @@ const health: Record<ProviderId, HealthState> = {
 
 const DEFAULT_SKIP_MS = 10 * 60 * 1000;
 
-export function isProviderSkipped(provider: ProviderId): boolean {
+export function isProviderSkipped(provider: Provider): boolean {
   return Date.now() < (health[provider]?.skipUntil ?? 0);
 }
 
 export function markProviderUnhealthy(
-  provider: ProviderId,
+  provider: Provider,
   reason: string,
   ms: number = DEFAULT_SKIP_MS,
 ): void {
@@ -41,11 +33,11 @@ export function markProviderUnhealthy(
   );
 }
 
-export function markProviderHealthy(provider: ProviderId): void {
+export function markProviderHealthy(provider: Provider): void {
   health[provider] = { skipUntil: 0, reason: "" };
 }
 
-export function noteProviderFailure(provider: ProviderId, err: unknown): void {
+export function noteProviderFailure(provider: Provider, err: unknown): void {
   const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
 
   if (provider === "gemini") {

@@ -19,8 +19,6 @@ export const ALL_RELEASES_URL = `${REPO}/releases`;
 export const OFFICIAL_SITE = "https://zeffai.com";
 export const LEGAL_TERMS_URL = `${OFFICIAL_SITE}/support/legal#terms`;
 export const LEGAL_PRIVACY_URL = `${OFFICIAL_SITE}/support/legal#privacy`;
-export const LEGAL_CONSENT_URL = `${OFFICIAL_SITE}/support/legal#consent`;
-export const CHECKOUT_BASE_URL = `${OFFICIAL_SITE}/checkout`;
 
 /**
  * Google Play 스토어 링크 — 심사 통과 후 실제 URL로 교체
