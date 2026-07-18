@@ -184,8 +184,19 @@ export function modelsForVerify(
   return [...preferred, ...rest].slice(0, 4);
 }
 
+// ── 비전(이미지 입력) 무료 폴백 ──
+// 멀티모달은 원래 Gemini 전용이라, Gemini 키가 크레딧 소진(429)되면 이미지 질문이 전부
+// 실패했다. Gemini 다음 순번으로 이미지 입력을 받는 무료/저가 비전 모델을 둬서, Gemini가
+// 죽어도 사진 질문이 폴백으로 처리되게 한다. 모델명은 공개 문서 기준 best-effort이며
+// 사용 불가 시 폴백 루프가 조용히 다음 후보로 넘어간다.
+export const VISION_FALLBACK: ModelDef[] = [
+  { provider: "groq", model: "meta-llama/llama-4-scout-17b-16e-instruct", free: true },
+  orFree("meta-llama/llama-3.2-11b-vision-instruct:free"),
+  orFree("qwen/qwen2.5-vl-72b-instruct:free"),
+];
+
 const TEXT_CHAIN = buildTextChain();
-const MULTI_CHAIN: ModelDef[] = [G_FLASH, G_FLASH_LITE, G_PRO];
+const MULTI_CHAIN: ModelDef[] = [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
 
 export const FALLBACK_MODELS: ModelDef[] = TEXT_CHAIN;
 export const MULTIMODAL_MODELS: ModelDef[] = MULTI_CHAIN;
@@ -195,8 +206,9 @@ export function modelsForTier(
   opts?: { multimodal?: boolean },
 ): ModelDef[] {
   if (opts?.multimodal) {
-    if (tier === "top") return [G_FLASH, G_PRO, G_FLASH_LITE];
-    return [G_FLASH, G_FLASH_LITE, G_PRO];
+    // Gemini 우선, 그다음 무료 비전 폴백(크레딧 소진 대비).
+    if (tier === "top") return [G_FLASH, G_PRO, G_FLASH_LITE, ...VISION_FALLBACK];
+    return [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
   }
   if (tier === "top") return buildTextChain(8, "top");
   if (tier === "priority") return buildTextChain(6, "priority");

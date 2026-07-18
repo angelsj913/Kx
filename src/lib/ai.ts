@@ -113,12 +113,13 @@ async function invokeModel(
     });
   }
 
-  // openrouter | groq | deepseek
+  // openrouter | groq | deepseek …
   if (opts.mode === "tool" && opts.tool) {
     return compatGenerateForTool({
       provider: m.provider,
       tool: opts.tool,
       text: opts.text ?? "",
+      images: opts.images,
       model: m.model,
     });
   }
@@ -185,18 +186,25 @@ export async function generateWithFallback(args: {
   onAttempt?: (info: AttemptInfo) => void;
 }): Promise<FallbackResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
-  const hasBinary = !!args.audio || !!(args.images && args.images.length > 0);
-  const multi = hasBinary;
+  const hasAudio = !!args.audio;
+  const hasImages = !!(args.images && args.images.length > 0);
+  const multi = hasAudio || hasImages;
 
-  if (multi && !hasProviderKey("gemini")) {
+  // 오디오는 무료 비전 폴백이 처리하지 못해 Gemini가 반드시 필요하다.
+  // 이미지는 Gemini가 없거나 크레딧이 소진돼도 무료 비전 폴백으로 시도한다(사용 가능한
+  // 키가 하나도 없으면 runWithFallback이 MissingApiKeyError로 알려준다).
+  if (hasAudio && !hasProviderKey("gemini")) {
     throw new MissingApiKeyError(
-      "이미지·오디오 분석에는 GEMINI_API_KEY가 필요합니다. URL·대본만으로 요청하려면 첨부를 빼고 다시 시도하세요.",
+      "오디오 분석에는 GEMINI_API_KEY가 필요합니다. 대본·URL만으로 요청하려면 첨부를 빼고 다시 시도하세요.",
     );
   }
 
-  const candidates = modelsForTier(tier, { multimodal: multi }).filter(
+  let candidates = modelsForTier(tier, { multimodal: multi }).filter(
     (m) => !args.excludeProviders?.includes(m.provider),
   );
+  // 오디오 입력은 Gemini만 실제로 들을 수 있다 — 비전 폴백에 오디오를 넘기면 소리를
+  // 못 듣고 텍스트만으로 지어낸 답을 내므로, 오디오일 때는 Gemini 후보만 남긴다.
+  if (hasAudio) candidates = candidates.filter((m) => m.provider === "gemini");
 
   return runWithFallback(
     candidates,
