@@ -12,6 +12,8 @@ import { LANGUAGE_ORDER, type AppLanguage } from "./languages";
  */
 
 const STORAGE_KEYS = ["zeff-app-language", "zeff-landing-language"] as const;
+/** 접속 국가로 정한 "기본" 언어(사용자가 직접 고른 값이 아님) — 미들웨어가 심는다. */
+const GEO_COOKIE = "zeff-geo-lang";
 export const LANGUAGE_DEFAULT: AppLanguage = "ko";
 
 let cache: AppLanguage | null = null;
@@ -21,9 +23,28 @@ function isAppLanguage(v: string | null): v is AppLanguage {
   return !!v && (LANGUAGE_ORDER as string[]).includes(v);
 }
 
+/** 사용자가 명시적으로 언어를 고른 적이 있는지(localStorage에 값이 있는지). */
+export function hasStoredLanguage(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return STORAGE_KEYS.some((key) => isAppLanguage(window.localStorage.getItem(key)));
+  } catch {
+    return false;
+  }
+}
+
+/** 접속 국가 기반 기본 언어(미들웨어가 심은 쿠키). 명시적 선택이 없을 때만 참고. */
+function readGeoDefault(): AppLanguage | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)zeff-geo-lang=([^;]+)/);
+  const v = m ? decodeURIComponent(m[1]) : null;
+  return isAppLanguage(v) ? v : null;
+}
+
 function readFromStorage(): AppLanguage {
   if (typeof window === "undefined") return LANGUAGE_DEFAULT;
   try {
+    // 1) 사용자가 직접 고른 값(가장 우선)
     for (const key of STORAGE_KEYS) {
       const v = window.localStorage.getItem(key);
       if (isAppLanguage(v)) return v;
@@ -31,8 +52,12 @@ function readFromStorage(): AppLanguage {
   } catch {
     /* ignore */
   }
-  return LANGUAGE_DEFAULT;
+  // 2) 명시적 선택이 없으면 접속 국가 기본값(#15), 그것도 없으면 한국어
+  return readGeoDefault() ?? LANGUAGE_DEFAULT;
 }
+
+/** GEO_COOKIE 를 참조하는 미들웨어와 이름을 공유하기 위한 export. */
+export { GEO_COOKIE };
 
 // 다른 탭에서 언어가 바뀌면 이 탭도 따라간다.
 if (typeof window !== "undefined") {

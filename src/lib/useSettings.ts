@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { setAppLanguage, type AppLanguage } from "./i18n";
+import { getLanguage, hasStoredLanguage } from "./languageStore";
 import { LANGUAGE_ORDER } from "./languages";
 
 export interface UserSettings {
@@ -42,6 +43,22 @@ export function useSettings(userId?: string | null) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(() => !!resolvedUserId);
 
+  const patch = useCallback(async (body: Partial<UserSettings>) => {
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error ?? "설정을 저장하지 못했습니다.");
+    const next = {
+      ...data.settings,
+      language: normalizeLanguage(data.settings?.language),
+    } as UserSettings;
+    setSettings(next);
+    return next;
+  }, []);
+
   useEffect(() => {
     let ignore = false;
 
@@ -62,7 +79,14 @@ export function useSettings(userId?: string | null) {
         const s = await fetchSettings();
         if (!ignore) {
           setSettings(s);
-          setAppLanguage(s.language);
+          // 언어 우선순위(#11): 사용자가 직접 고른 로컬 선택이 항상 이긴다.
+          // - 로컬에 명시적 선택이 없으면(신규 기기/최초 로그인) 서버 값을 적용.
+          // - 로컬 선택이 서버와 다르면 로컬을 유지하고 서버를 로컬에 맞춘다(재발 방지).
+          if (!hasStoredLanguage()) {
+            setAppLanguage(s.language);
+          } else if (getLanguage() !== s.language) {
+            void patch({ language: getLanguage() }).catch(() => {});
+          }
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -72,23 +96,7 @@ export function useSettings(userId?: string | null) {
     return () => {
       ignore = true;
     };
-  }, [resolvedUserId]);
-
-  const patch = useCallback(async (body: Partial<UserSettings>) => {
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error ?? "설정을 저장하지 못했습니다.");
-    const next = {
-      ...data.settings,
-      language: normalizeLanguage(data.settings?.language),
-    } as UserSettings;
-    setSettings(next);
-    return next;
-  }, []);
+  }, [resolvedUserId, patch]);
 
   const updateLanguage = useCallback(
     async (lang: AppLanguage) => {
