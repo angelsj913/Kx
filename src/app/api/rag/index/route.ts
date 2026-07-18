@@ -5,6 +5,7 @@ import { itemAccessWhere } from "@/lib/workspace";
 import { indexLibraryItem } from "@/lib/ragIndexing";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { getPlanOrFree } from "@/lib/plans";
+import { extractPdfText, hasUsableText } from "@/lib/pdfText";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -21,6 +22,14 @@ async function reextractFromFile(item: {
     if (!res.ok) return "";
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length > 20 * 1024 * 1024) return ""; // 20MB 초과는 스킵
+
+    // 1) PDF 텍스트 레이어 우선(AI·크레딧 무관, 즉시).
+    if (item.mimeType === "application/pdf") {
+      const layer = await extractPdfText(buf);
+      if (hasUsableText(layer)) return layer;
+    }
+
+    // 2) 스캔본·이미지는 멀티모달 OCR로 보강.
     const settings = await prisma.userSettings.findUnique({
       where: { userId: item.userId },
     });

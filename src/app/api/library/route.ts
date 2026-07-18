@@ -7,6 +7,7 @@ import { friendlyError } from "@/lib/errors";
 import { resolveScope, WorkspaceError } from "@/lib/workspace";
 import { getPlanOrFree } from "@/lib/plans";
 import { indexLibraryItem } from "@/lib/ragIndexing";
+import { extractPdfText, hasUsableText } from "@/lib/pdfText";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/constants";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -176,17 +177,26 @@ export async function POST(request: Request) {
     });
 
     // 추출은 업로드 병목 — 실패해도 저장은 유지
+    // 1) PDF에 텍스트 레이어가 있으면 AI 없이 즉시·무료로 추출한다(Gemini 크레딧 무관).
     let extractedText = "";
-    try {
-      const result = await runToolGeneration({
-        toolId: "library-extract",
-        userId,
-        modelTier: plan.modelTier,
-        images: [{ data: buf.toString("base64"), mimeType }],
-      });
-      extractedText = result.outputType === "markdown" ? result.text : "";
-    } catch (err) {
-      console.warn("library extract skipped:", err);
+    if (mimeType === "application/pdf") {
+      const layer = await extractPdfText(buf);
+      if (hasUsableText(layer)) extractedText = layer;
+    }
+    // 2) 텍스트가 부족하면(스캔 이미지 PDF·사진 등) 멀티모달 OCR로 보강한다.
+    if (!hasUsableText(extractedText)) {
+      try {
+        const result = await runToolGeneration({
+          toolId: "library-extract",
+          userId,
+          modelTier: plan.modelTier,
+          images: [{ data: buf.toString("base64"), mimeType }],
+        });
+        const ocr = result.outputType === "markdown" ? result.text : "";
+        if (ocr.trim().length > extractedText.trim().length) extractedText = ocr;
+      } catch (err) {
+        console.warn("library extract skipped:", err);
+      }
     }
 
     const item = await prisma.libraryItem.create({
