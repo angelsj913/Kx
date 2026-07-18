@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+// 수식 렌더링 스타일 — 루트 레이아웃이 아니라 KaTeX를 실제로 쓰는 라우트에서만 로드
+import "katex/dist/katex.min.css";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -21,13 +23,17 @@ import {
   Download,
   Printer,
   Copy,
+  Pencil,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import {
   downloadMarkdown,
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
-import { useT, toolUiLabel, featureGroupLabel } from "@/lib/i18n";
+import { useT, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
+import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
@@ -41,6 +47,7 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
+import { markdownCodeComponents } from "@/components/CodeBlockPre";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
@@ -63,22 +70,22 @@ const CHAT_MIN = 320;
 const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
   {
     id: "select",
-    label: "에이전트 선택 · 요청 분석",
+    label: "status.pipeline.select",
     keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
   },
   {
     id: "research",
-    label: "자료 수집 · 컨텍스트 준비",
+    label: "status.pipeline.research",
     keys: ["status.researching", "status.context", "status.reading"],
   },
   {
     id: "generate",
-    label: "콘텐츠 · 파일 생성",
+    label: "status.pipeline.generate",
     keys: ["status.generating", "status.writing", "status.tool", "status.building"],
   },
   {
     id: "finalize",
-    label: "결과 정리 · 응답 완성",
+    label: "status.pipeline.finalize",
     keys: ["status.finalizing", "status.saving", "status.done"],
   },
 ];
@@ -104,14 +111,20 @@ interface Msg {
   resultData?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  /** 클라이언트 전용 — 실시간 스트리밍 중인 임시 말풍선인지 (DB에는 저장되지 않음) */
+  streaming?: boolean;
+  /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
+  interrupted?: boolean;
 }
 
 interface StreamEvent {
-  type: "status" | "done" | "error";
+  type: "status" | "delta" | "done" | "error";
   sessionId: string;
   key?: string;
   detail?: string;
+  text?: string;
   message?: Msg | string;
+  interrupted?: boolean;
 }
 
 function nowTime() {
@@ -138,7 +151,7 @@ function readStoredOpen(): boolean {
   return v !== "0";
 }
 
-function buildArtifacts(messages: Msg[]): ChatArtifact[] {
+function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
   const list: ChatArtifact[] = [];
   for (const m of messages) {
     if (m.role === "user" && m.attachments?.length) {
@@ -158,7 +171,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
     }
     if (m.role !== "model") continue;
     if (m.outputType === "pptx") {
-      let title = m.fileName || "프레젠테이션";
+      let title = m.fileName || t("artifact.presentation");
       try {
         if (m.resultData) title = JSON.parse(m.resultData)?.title || title;
       } catch {
@@ -174,7 +187,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         messageId: m.id,
       });
     } else if (m.outputType === "xlsx") {
-      let title = m.fileName || "스프레드시트";
+      let title = m.fileName || t("artifact.spreadsheet");
       try {
         if (m.resultData) title = JSON.parse(m.resultData)?.title || title;
       } catch {
@@ -185,6 +198,16 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         kind: "xlsx",
         title,
         subtitle: m.fileName ?? "XLSX",
+        url: m.fileUrl,
+        fileName: m.fileName,
+        messageId: m.id,
+      });
+    } else if (m.outputType === "image") {
+      list.push({
+        id: `${m.id}-image`,
+        kind: "image",
+        title: m.fileName || t("artifact.image"),
+        subtitle: "PNG",
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
@@ -200,7 +223,7 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
         id: `${m.id}-struct`,
         kind: "structured",
         title,
-        subtitle: "구조화 결과",
+        subtitle: t("artifact.structuredResult"),
         messageId: m.id,
       });
     } else if (
@@ -215,8 +238,8 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
       list.push({
         id: `${m.id}-doc`,
         kind: "doc",
-        title: titleFromName || titleFromText || "문서",
-        subtitle: m.fileName || (m.outputType === "markdown" ? "Markdown / Word" : "문서 응답"),
+        title: titleFromName || titleFromText || t("artifact.document"),
+        subtitle: m.fileName || (m.outputType === "markdown" ? "Markdown / Word" : t("artifact.documentResponse")),
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
@@ -226,12 +249,16 @@ function buildArtifacts(messages: Msg[]): ChatArtifact[] {
   return list.reverse();
 }
 
-function buildPlanSteps(loading: boolean, statusKey: string | null): PlanStep[] {
+function buildPlanSteps(
+  loading: boolean,
+  statusKey: string | null,
+  t: (key: AppDictKey) => string,
+): PlanStep[] {
   if (!loading && !statusKey) {
     // 유휴: 파이프라인 미리보기
     return PLAN_PIPELINE.map((p) => ({
       id: p.id,
-      label: p.label,
+      label: t(p.label as AppDictKey),
       status: "pending" as const,
     }));
   }
@@ -245,7 +272,7 @@ function buildPlanSteps(loading: boolean, statusKey: string | null): PlanStep[] 
 
   return PLAN_PIPELINE.map((p, i) => ({
     id: p.id,
-    label: p.label,
+    label: t(p.label as AppDictKey),
     status: !loading && i <= activeIdx
       ? ("done" as const)
       : i < activeIdx
@@ -268,21 +295,25 @@ export default function ChatWorkspace({
   const t = useT();
   const { settings } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
-  // 세션 히스토리 로딩 여부 — 로딩 중엔 messages.length===0이어도 "빈 대화"로 취급하지 않는다
-  // (그렇지 않으면 메시지가 많은 기존 대화를 열 때도 순간적으로 "빈 대화" 레이아웃이 깜빡인다).
-  const [historyLoaded, setHistoryLoaded] = useState(!sessionId);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusKey, setStatusKey] = useState<string | null>(null);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [refining, setRefining] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const [error, setError] = useState("");
   const [activeQuickTool, setActiveQuickTool] = useState<ToolDef | null>(null);
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
+  const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const abortRef = useRef<AbortController | null>(null);
+  const streamIdSeq = useRef(0);
 
   // 우측 패널 (데스크톱) / 모바일 시트 — localStorage는 lazy init (effect setState 금지)
   const [panelOpen, setPanelOpen] = useState(() => readStoredOpen());
@@ -327,7 +358,6 @@ export default function ChatWorkspace({
     setMessages([]);
     setError("");
     setStatusKey(null);
-    setHistoryLoaded(!sessionId);
     if (!sessionId) return;
     let ignore = false;
     (async () => {
@@ -339,8 +369,6 @@ export default function ChatWorkspace({
         }
       } catch {
         // 무시
-      } finally {
-        if (!ignore) setHistoryLoaded(true);
       }
     })();
     return () => {
@@ -400,13 +428,149 @@ export default function ChatWorkspace({
     const added: PendingFile[] = [];
     for (const f of files) {
       if (f.size > 12 * 1024 * 1024) {
-        setError(`${f.name}: 파일이 너무 큽니다 (최대 12MB).`);
+        setError(`${f.name}: ${t("chat.fileTooLarge")}`);
         continue;
       }
       added.push({ file: f, previewUrl: URL.createObjectURL(f) });
     }
     setPending((p) => [...p, ...added]);
     if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function runGeneration(buildForm: () => FormData, opts: { spokenTurn?: boolean } = {}) {
+    const spokenTurn = !!opts.spokenTurn;
+    setError("");
+    setLoading(true);
+    setStatusKey("status.agent.selecting");
+    setPanelTab((tab) => (tab === "files" ? "plan" : tab));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let streamMsgId: string | null = null;
+
+    try {
+      const form = buildForm();
+      const res = await wsFetch("/api/chat", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? t("chat.errors.requestFailed"));
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let newSessionId: string | null = null;
+      let doneMessage: Msg | null = null;
+      let doneInterrupted = false;
+      let errorMessage: string | null = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as StreamEvent;
+          newSessionId = event.sessionId ?? newSessionId;
+          if (event.type === "status") {
+            const key = event.key ?? null;
+            setStatusKey(key);
+            if (key?.startsWith("status.route.verify")) setRefining(true);
+            if (key) {
+              let label = key;
+              try {
+                label = t(key as Parameters<typeof t>[0]);
+              } catch {
+                /* keep key */
+              }
+              const extra = event.detail ? ` · ${event.detail}` : "";
+              pushTerminal(`route › ${label}${extra}`, "info");
+            }
+          } else if (event.type === "delta") {
+            const delta = event.text ?? "";
+            if (!streamMsgId) {
+              streamIdSeq.current += 1;
+              streamMsgId = `stream-${streamIdSeq.current}`;
+              setStreamingId(streamMsgId);
+              const id = streamMsgId;
+              setMessages((prev) => [...prev, { id, role: "model", text: delta, streaming: true }]);
+            } else {
+              const id = streamMsgId;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === id ? { ...m, text: m.text + delta } : m)),
+              );
+            }
+          } else if (event.type === "done") {
+            doneMessage = event.message as Msg;
+            doneInterrupted = !!event.interrupted;
+          } else if (event.type === "error") {
+            errorMessage = event.message as string;
+          }
+        }
+      }
+
+      if (errorMessage) {
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, streaming: false, interrupted: true } : m)),
+          );
+        }
+        throw new Error(errorMessage);
+      }
+      if (!sessionId && newSessionId) onSessionCreated(newSessionId);
+      if (doneMessage) {
+        const finalMessage: Msg = { ...doneMessage, interrupted: doneInterrupted };
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) => prev.map((m) => (m.id === id ? finalMessage : m)));
+        } else {
+          setMessages((prev) => [...prev, finalMessage]);
+        }
+        if (spokenTurn && doneMessage.text) speak(doneMessage.text);
+        pushTerminal(doneInterrupted ? "done ✱ interrupted" : "done ✓ response ready", "ok");
+        if (
+          doneMessage.outputType === "pptx" ||
+          doneMessage.outputType === "xlsx" ||
+          doneMessage.outputType === "structured" ||
+          doneMessage.outputType === "image"
+        ) {
+          setPanelTab("files");
+          pushTerminal(
+            `artifact › ${doneMessage.outputType}${doneMessage.fileName ? ` (${doneMessage.fileName})` : ""}`,
+            "ok",
+          );
+        }
+      }
+      onTurnSaved();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        if (streamMsgId) {
+          const id = streamMsgId;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, streaming: false, interrupted: true } : m)),
+          );
+        }
+        pushTerminal("stopped › user requested cancel", "info");
+      } else {
+        const msg = err instanceof Error ? err.message : t("common.unknownError");
+        setError(msg);
+        pushTerminal(`error ✗ ${msg}`, "error");
+      }
+    } finally {
+      abortRef.current = null;
+      setLoading(false);
+      setStatusKey(null);
+      setStreamingId(null);
+      setRefining(false);
+    }
   }
 
   async function send(e?: React.FormEvent, spoken?: string) {
@@ -416,8 +580,15 @@ export default function ChatWorkspace({
     // A4 노트 출력 형식 힌트를 본문에 주입
     if (!spokenTurn && activeQuickTool?.id === "note-a4") {
       text = text
-        ? `${text}\n\n형식: ${noteFormat}`
-        : `형식: ${noteFormat}\n첨부/입력 내용을 A4 노트로 정리해 주세요.`;
+        ? `${text}\n\n${t("chat.noteFormatLabel")} ${noteFormat}`
+        : `${t("chat.noteFormatLabel")} ${noteFormat}\n${t("chat.noteFormatInstruction")}`;
+    }
+    // 번역 대상 언어 힌트를 본문에 주입
+    if (!spokenTurn && activeQuickTool?.id === "doc-translate") {
+      const targetLabel = LANGUAGE_LABELS[translateTarget];
+      text = text
+        ? `${t("chat.translateTargetLabel")} ${targetLabel}\n\n${text}`
+        : `${t("chat.translateTargetLabel")} ${targetLabel}\n${t("chat.translateInstruction")}`;
     }
     const requiresAttachment =
       !spokenTurn && activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
@@ -426,10 +597,6 @@ export default function ChatWorkspace({
     if (requiresAttachment && pending.length === 0) return;
     // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
 
-    setError("");
-    setLoading(true);
-    setStatusKey("status.agent.selecting");
-    setPanelTab((tab) => (tab === "files" ? "plan" : tab));
     pushTerminal(`$ zeff run — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
     pushTerminal("agent: selecting pipeline…", "info");
 
@@ -455,88 +622,59 @@ export default function ChatWorkspace({
     if (!spokenTurn) {
       setDraft("");
       setPending([]);
-      setActiveQuickTool(null);
     }
 
-    try {
+    await runGeneration(
+      () => {
+        const form = new FormData();
+        form.append("text", text);
+        if (sessionId) form.append("sessionId", sessionId);
+        if (quickToolId) form.append("quickToolId", quickToolId);
+        for (const f of filesToUpload) form.append("files", f);
+        return form;
+      },
+      { spokenTurn },
+    );
+  }
+
+  /** 사용자 메시지 편집 — 그 메시지 이후 기록을 잘라내고 수정된 텍스트로 다시 생성한다. */
+  async function submitEdit(id: string, newText: string) {
+    const text = newText.trim();
+    if (!text || loading || !sessionId) return;
+    setEditingId(null);
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === id);
+      if (idx === -1) return prev;
+      return [...prev.slice(0, idx), { ...prev[idx], text }];
+    });
+    pushTerminal(`$ zeff edit — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
+    await runGeneration(() => {
       const form = new FormData();
       form.append("text", text);
-      if (sessionId) form.append("sessionId", sessionId);
-      if (quickToolId) form.append("quickToolId", quickToolId);
-      for (const f of filesToUpload) form.append("files", f);
+      form.append("sessionId", sessionId);
+      form.append("editMessageId", id);
+      return form;
+    });
+  }
 
-      const res = await wsFetch("/api/chat", { method: "POST", body: form });
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error ?? "요청에 실패했습니다.");
-      }
+  /** 마지막 assistant 응답 재생성 — 그 응답만 지우고 같은 질문으로 다시 생성한다. */
+  async function regenerateLast() {
+    if (loading || !sessionId) return;
+    const idx = [...messages].reverse().findIndex((m) => m.role === "model");
+    if (idx === -1) return;
+    const cutAt = messages.length - 1 - idx;
+    setMessages((prev) => prev.slice(0, cutAt));
+    pushTerminal("$ zeff regenerate", "info");
+    await runGeneration(() => {
+      const form = new FormData();
+      form.append("regenerate", "1");
+      form.append("sessionId", sessionId);
+      return form;
+    });
+  }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let newSessionId: string | null = null;
-      let doneMessage: Msg | null = null;
-      let errorMessage: string | null = null;
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let idx: number;
-        while ((idx = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, idx);
-          buf = buf.slice(idx + 1);
-          if (!line.trim()) continue;
-          const event = JSON.parse(line) as StreamEvent;
-          newSessionId = event.sessionId ?? newSessionId;
-          if (event.type === "status") {
-            const key = event.key ?? null;
-            setStatusKey(key);
-            if (key) {
-              let label = key;
-              try {
-                label = t(key as Parameters<typeof t>[0]);
-              } catch {
-                /* keep key */
-              }
-              const extra = event.detail ? ` · ${event.detail}` : "";
-              pushTerminal(`route › ${label}${extra}`, "info");
-            }
-          } else if (event.type === "done") {
-            doneMessage = event.message as Msg;
-          } else if (event.type === "error") {
-            errorMessage = event.message as string;
-          }
-        }
-      }
-
-      if (errorMessage) throw new Error(errorMessage);
-      if (!sessionId && newSessionId) onSessionCreated(newSessionId);
-      if (doneMessage) {
-        setMessages((prev) => [...prev, doneMessage as Msg]);
-        if (spokenTurn && doneMessage.text) speak(doneMessage.text);
-        pushTerminal("done ✓ response ready", "ok");
-        if (
-          doneMessage.outputType === "pptx" ||
-          doneMessage.outputType === "xlsx" ||
-          doneMessage.outputType === "structured"
-        ) {
-          setPanelTab("files");
-          pushTerminal(
-            `artifact › ${doneMessage.outputType}${doneMessage.fileName ? ` (${doneMessage.fileName})` : ""}`,
-            "ok",
-          );
-        }
-      }
-      onTurnSaved();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.";
-      setError(msg);
-      pushTerminal(`error ✗ ${msg}`, "error");
-    } finally {
-      setLoading(false);
-      setStatusKey(null);
-    }
+  function stopGeneration() {
+    abortRef.current?.abort();
   }
 
   useEffect(() => {
@@ -557,10 +695,17 @@ export default function ChatWorkspace({
   const enabledQuickTools = settings?.enabledQuickTools ?? [];
   const featureGroups = groupedQuickTools(enabledQuickTools);
 
-  const artifacts = useMemo(() => buildArtifacts(messages), [messages]);
+  const lastModelMessageId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "model") return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
+  const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
   const planSteps = useMemo(
-    () => buildPlanSteps(loading, statusKey),
-    [loading, statusKey],
+    () => buildPlanSteps(loading, statusKey, t),
+    [loading, statusKey, t],
   );
 
   function scrollToMessage(id?: string) {
@@ -575,11 +720,6 @@ export default function ChatWorkspace({
     if (a.messageId) scrollToMessage(a.messageId);
   }
 
-  // 빈 대화일 때는 입력창이 위, 첫 메시지를 보내는 순간 입력창이 아래로 내려간다.
-  // historyLoaded가 false인 동안(기존 대화 히스토리 로딩 중)은 빈 대화로 취급하지 않아
-  // 메시지가 많은 대화를 열 때 레이아웃이 깜빡이지 않는다.
-  const isEmpty = historyLoaded && messages.length === 0 && !loading;
-
   return (
     <div ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
@@ -591,15 +731,12 @@ export default function ChatWorkspace({
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
           >
             <PanelRight className="h-3.5 w-3.5" />
-            작업 패널
+            {t("chat.workPanel")}
           </button>
         </div>
 
-        <motion.div
+        <div
           ref={scrollRef}
-          layout
-          transition={{ duration: 0.35, ease: "easeInOut" }}
-          style={{ order: isEmpty ? 2 : 1 }}
           className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md sm:p-5"
         >
           {messages.length === 0 && !loading && (
@@ -609,7 +746,7 @@ export default function ChatWorkspace({
               </div>
               <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("chat.empty")}</p>
               <p className="max-w-sm text-xs text-slate-400 dark:text-slate-500">
-                생성된 PPT · 엑셀 · 문서와 작업 계획·터미널은 오른쪽 패널에서 확인할 수 있습니다.
+                {t("chat.emptyHint")}
               </p>
             </div>
           )}
@@ -621,31 +758,85 @@ export default function ChatWorkspace({
                 ref={(el) => {
                   messageRefs.current[m.id] = el;
                 }}
-                className="flex justify-end gap-2.5"
+                className="group flex justify-end gap-2.5"
               >
-                <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm text-white shadow-lg shadow-blue-600/30">
-                  {m.attachments && m.attachments.length > 0 && (
-                    <div className="mb-1.5 flex flex-wrap gap-1.5">
-                      {m.attachments.map((f, j) => (
-                        <a
-                          key={j}
-                          href={f.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[11px] hover:bg-white/25"
-                        >
-                          {f.mimeType.startsWith("image/") ? (
-                            <ImageIcon className="h-3 w-3" />
-                          ) : (
-                            <FileText className="h-3 w-3" />
-                          )}
-                          {f.filename}
-                        </a>
-                      ))}
+                {editingId === m.id ? (
+                  <div className="max-w-[80%] flex-1 rounded-2xl rounded-tr-sm border border-blue-400 bg-white p-2 shadow-lg dark:border-blue-500 dark:bg-slate-900">
+                    <textarea
+                      autoFocus
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          void submitEdit(m.id, editDraft);
+                        } else if (e.key === "Escape") {
+                          setEditingId(null);
+                        }
+                      }}
+                      rows={Math.min(8, Math.max(2, editDraft.split("\n").length))}
+                      className="w-full resize-none bg-transparent p-1 text-sm text-slate-800 outline-none dark:text-slate-100"
+                    />
+                    <div className="flex justify-end gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        <X className="h-3 w-3" />
+                        {t("chat.editCancel")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void submitEdit(m.id, editDraft)}
+                        disabled={!editDraft.trim() || loading}
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" />
+                        {t("chat.editSave")}
+                      </button>
                     </div>
-                  )}
-                  {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    {!loading && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(m.id);
+                          setEditDraft(m.text);
+                        }}
+                        title={t("chat.editMessage")}
+                        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2.5 text-sm text-white shadow-lg shadow-blue-600/30">
+                      {m.attachments && m.attachments.length > 0 && (
+                        <div className="mb-1.5 flex flex-wrap gap-1.5">
+                          {m.attachments.map((f, j) => (
+                            <a
+                              key={j}
+                              href={f.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[11px] hover:bg-white/25"
+                            >
+                              {f.mimeType.startsWith("image/") ? (
+                                <ImageIcon className="h-3 w-3" />
+                              ) : (
+                                <FileText className="h-3 w-3" />
+                              )}
+                              {f.filename}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
+                    </div>
+                  </>
+                )}
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/60">
                   <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                 </div>
@@ -687,6 +878,26 @@ export default function ChatWorkspace({
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                   </div>
+                ) : m.outputType === "image" && m.fileUrl ? (
+                  <div className="min-w-0 max-w-[min(100%,28rem)] flex-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.fileUrl}
+                      alt={m.text || t("artifact.image")}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800"
+                    />
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                      <a
+                        href={m.fileUrl}
+                        download={m.fileName || "image.png"}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                      >
+                        <Download className="h-3 w-3" />
+                        {t("chat.download")}
+                      </a>
+                    </div>
+                  </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
                     <StructuredResultView
@@ -700,12 +911,29 @@ export default function ChatWorkspace({
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={markdownCodeComponents}
+                      >
                         {m.text}
                       </ReactMarkdown>
+                      {m.streaming && (
+                        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-slate-400 align-middle dark:bg-slate-500" />
+                      )}
                     </div>
+                    {m.streaming && m.id === streamingId && refining && (
+                      <p className="mt-1.5 text-[11px] text-blue-600 dark:text-blue-300">
+                        {t("chat.refining")}
+                      </p>
+                    )}
+                    {m.interrupted && !m.streaming && (
+                      <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                        {t("chat.interrupted")}
+                      </p>
+                    )}
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
-                    {m.text && m.text.length > 0 && m.text.length <= 80 && (
+                    {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <button
                           type="button"
@@ -718,9 +946,22 @@ export default function ChatWorkspace({
                           <Copy className="h-3 w-3" />
                           {t("chat.copy")}
                         </button>
+                        {m.id === lastModelMessageId &&
+                          (m.outputType === "chat" || !m.outputType) &&
+                          !loading && (
+                            <button
+                              type="button"
+                              onClick={() => void regenerateLast()}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              title={t("chat.regenerate")}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              {t("chat.regenerate")}
+                            </button>
+                          )}
                       </div>
                     )}
-                    {m.text && m.text.length > 80 && (
+                    {!m.streaming && m.text && m.text.length > 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {m.fileUrl && m.fileName && (
                           <a
@@ -731,7 +972,7 @@ export default function ChatWorkspace({
                             className="inline-flex items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300"
                           >
                             <Download className="h-3 w-3" />
-                            .md 저장
+                            {t("chat.saveMd")}
                           </a>
                         )}
                         <button
@@ -773,14 +1014,27 @@ export default function ChatWorkspace({
                         <button
                           type="button"
                           onClick={() =>
-                            openPrintableHtml(m.fileName ?? "ZEFF 문서", m.text)
+                            openPrintableHtml(m.fileName ?? t("chat.zeffDocument"), m.text)
                           }
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title="인쇄 대화상자에서 PDF로 저장"
+                          title={t("chat.printToPdfTitle")}
                         >
                           <Printer className="h-3 w-3" />
-                          PDF 인쇄
+                          {t("chat.printPdf")}
                         </button>
+                        {m.id === lastModelMessageId &&
+                          (m.outputType === "chat" || !m.outputType) &&
+                          !loading && (
+                            <button
+                              type="button"
+                              onClick={() => void regenerateLast()}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              title={t("chat.regenerate")}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              {t("chat.regenerate")}
+                            </button>
+                          )}
                       </div>
                     )}
                   </div>
@@ -789,8 +1043,8 @@ export default function ChatWorkspace({
             ),
           )}
 
-          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 */}
-          {loading && (
+          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 (스트리밍 말풍선이 뜬 뒤엔 중복 표시 안 함) */}
+          {loading && !streamingId && (
             <div className="flex gap-2.5">
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-white shadow-sm dark:border-blue-400/20 dark:bg-slate-900">
                 <Logo size="sm" withWordmark={false} spin />
@@ -802,7 +1056,7 @@ export default function ChatWorkspace({
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {statusKey
                     ? t(statusKey as Parameters<typeof t>[0])
-                    : "ZEFF가 작업을 처리하고 있습니다…"}
+                    : t("chat.processing")}
                 </p>
               </div>
             </div>
@@ -813,13 +1067,10 @@ export default function ChatWorkspace({
               {error}
             </p>
           )}
-        </motion.div>
+        </div>
 
-        <motion.form
+        <form
           onSubmit={send}
-          layout
-          transition={{ duration: 0.35, ease: "easeInOut" }}
-          style={{ order: isEmpty ? 1 : 2 }}
           className="relative mt-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-xl dark:shadow-black/30 dark:backdrop-blur-md"
         >
           <div className="mb-1.5 flex h-4 items-center px-1">
@@ -864,17 +1115,33 @@ export default function ChatWorkspace({
                         : "border-slate-300 text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:text-slate-300"
                     }`}
                   >
-                    {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? "PDF용" : "이미지용"}
+                    {fmt === "markdown" ? "Markdown" : fmt === "pdf" ? t("chat.formatPdf") : t("chat.formatImage")}
                   </button>
                 ))}
+              {activeQuickTool.id === "doc-translate" && (
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  {t("chat.translateTargetLabel")}
+                  <select
+                    value={translateTarget}
+                    onChange={(e) => setTranslateTarget(e.target.value as AppLanguage)}
+                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    {LANGUAGE_ORDER.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {LANGUAGE_LABELS[lang]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {activeQuickTool.id === "video-summary" && (
                 <span className="text-[11px] text-slate-500">
-                  URL 입력 또는 대본·오디오·캡처 첨부
+                  {t("quicktool.videoSummary.placeholder")}
                 </span>
               )}
               {activeQuickTool.id === "exam-maker" && (
                 <span className="text-[11px] text-slate-500">
-                  과목·범위·키워드 → 20문항 + 해설
+                  {t("quicktool.examMaker.placeholder")}
                 </span>
               )}
             </div>
@@ -910,7 +1177,7 @@ export default function ChatWorkspace({
               <span
                 className={`flex h-2 w-2 rounded-full ${listening ? "animate-pulse bg-red-400" : "bg-blue-400"}`}
               />
-              {listening ? (interim ? `“${interim}”` : "듣고 있어요…") : "답변을 읽는 중…"}
+              {listening ? (interim ? `“${interim}”` : t("chat.listening")) : t("chat.readingReply")}
             </div>
           )}
 
@@ -992,7 +1259,7 @@ export default function ChatWorkspace({
                   else startListening();
                 }}
                 disabled={loading && !listening && !speaking}
-                title={listening ? "듣기 중지" : speaking ? "읽기 중지" : "음성으로 말하기"}
+                title={listening ? t("chat.stopListening") : speaking ? t("chat.stopReading") : t("chat.speak")}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                   listening
                     ? "animate-pulse border-red-500/50 bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300"
@@ -1012,16 +1279,21 @@ export default function ChatWorkspace({
             )}
 
             <motion.button
-              type="submit"
+              type={loading ? "button" : "submit"}
+              onClick={loading ? stopGeneration : undefined}
               whileTap={{ scale: 0.95 }}
-              disabled={!canSend}
-              title={t("chat.send")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-600/30 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={loading ? false : !canSend}
+              title={loading ? t("chat.stop") : t("chat.send")}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                loading
+                  ? "bg-gradient-to-r from-red-600 to-rose-500 shadow-red-600/30"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-500 shadow-blue-600/30"
+              }`}
             >
-              <Send className="h-5 w-5" />
+              {loading ? <Square className="h-4 w-4" /> : <Send className="h-5 w-5" />}
             </motion.button>
           </div>
-        </motion.form>
+        </form>
       </div>
 
       {/* 드래그 리사이즈 핸들 */}
@@ -1029,7 +1301,7 @@ export default function ChatWorkspace({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="채팅 영역 크기 조절"
+          aria-label={t("chat.resizeArea")}
           onMouseDown={startResize}
           className="group relative z-20 w-1.5 shrink-0 cursor-col-resize bg-transparent"
         >
@@ -1115,7 +1387,7 @@ export default function ChatWorkspace({
                     className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    다운로드
+                    {t("chat.download")}
                   </a>
                 )}
                 <button
@@ -1144,6 +1416,7 @@ function ArtifactPreview({
   messages: Msg[];
   artifact: ChatArtifact;
 }) {
+  const t = useT();
   const msg = messages.find((m) => m.id === artifact.messageId);
   if (artifact.kind === "attachment" && artifact.url) {
     if (artifact.mimeType?.startsWith("image/")) {
@@ -1154,11 +1427,17 @@ function ArtifactPreview({
     }
     return (
       <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-        <p>첨부 파일 미리보기</p>
+        <p>{t("chat.attachmentPreview")}</p>
         <a href={artifact.url} target="_blank" rel="noreferrer" className="text-blue-600 underline">
-          새 탭에서 열기
+          {t("chat.openNewTab")}
         </a>
       </div>
+    );
+  }
+  if (artifact.kind === "image" && artifact.url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={artifact.url} alt={artifact.title} className="max-h-[70vh] w-full rounded-xl object-contain" />
     );
   }
   if ((artifact.kind === "pptx" || artifact.kind === "xlsx") && msg?.resultData) {
@@ -1232,7 +1511,11 @@ function ArtifactPreview({
   if (msg?.text) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={markdownCodeComponents}
+        >
           {msg.text}
         </ReactMarkdown>
       </div>
@@ -1243,7 +1526,7 @@ function ArtifactPreview({
       <iframe title={artifact.title} src={artifact.url} className="h-[70vh] w-full rounded-xl border border-slate-200 dark:border-slate-700" />
     );
   }
-  return <p className="text-sm text-slate-500">미리볼 수 있는 내용이 없습니다. 다운로드를 이용해 주세요.</p>;
+  return <p className="text-sm text-slate-500">{t("chat.noPreview")}</p>;
 }
 
 

@@ -1,14 +1,28 @@
 import { put } from "@vercel/blob";
 import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
+import { geminiGenerateImage } from "./gemini";
+import { noteProviderFailure } from "./providerHealth";
 import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
-import { parseStructured, type StructuredKind } from "./structured";
+import {
+  parseStructured,
+  parsePracticeSet,
+  isEmptyMathGraph,
+  type StructuredKind,
+  type PracticeSet,
+  type MathGraph,
+} from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
-import { verifyMathSolve, stripVerifyBlock, extractFinalAnswer } from "./mathVerify";
+import {
+  verifyMathSolve,
+  stripVerifyBlock,
+  extractFinalAnswer,
+  verifyPracticeSetProblems,
+} from "./mathVerify";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -55,9 +69,22 @@ export type ToolGenerationResult =
       resultData: string;
       file: { url: string; filename: string; mimeType: string };
       meta: Meta;
+    }
+  | {
+      tool: ToolDef;
+      outputType: "image";
+      file: { url: string; filename: string; mimeType: string };
+      meta: Meta;
     };
 
-const MD_EXPORT_TOOLS = new Set(["note-a4", "video-summary", "exam-maker", "word-doc", "math-solve"]);
+const MD_EXPORT_TOOLS = new Set([
+  "note-a4",
+  "video-summary",
+  "exam-maker",
+  "word-doc",
+  "math-solve",
+  "doc-translate",
+]);
 
 const MATH_SOLVE_MAX_RETRIES = 2;
 
@@ -120,6 +147,21 @@ async function verifyAndAnnotateMathSolve(
   // 자체를 잘못 세운 오류를 못 잡는다 — 다른 제공자로 독립적으로 한 번 더 풀게 해서
   // 최종 답이 같은지 대조한다. 둘이 갈리면 세 번째 제공자로 동점을 깬다.
   if (verify === null) {
+    const hasBinaryInput = !!input.audio || !!(input.images && input.images.length > 0);
+    if (hasBinaryInput) {
+      // 이미지·오디오 입력은 멀티모달 후보가 사실상 Gemini 하나뿐이라, 그 제공자를
+      // 제외하는 순간 교차검증 후보가 0개가 되어 매번 조용히 실패한다(console.warn만
+      // 남고 사용자는 아무것도 모른 채 "검증됨"으로 보이는 결과를 받는다). 아예
+      // 시도하지 않고 상태를 명확히 알린다.
+      return {
+        text: [
+          "> ℹ️ 이 문제는 사진으로 입력돼 있어 독립적인 교차검증은 하지 않았어요. 계산 과정을 직접 한 번 더 확인해 주세요.",
+          "",
+          stripVerifyBlock(finalRaw),
+        ].join("\n"),
+        meta: finalMeta,
+      };
+    }
     try {
       const crossCheck = await generateWithFallback({
         tool,
@@ -194,6 +236,131 @@ async function verifyAndAnnotateMathSolve(
   return { text: stripVerifyBlock(finalRaw), meta: finalMeta };
 }
 
+const PRACTICE_SET_MAX_RETRIES = 1;
+
+/**
+ * similar-problems(유사문제 생성) 응답 중 산술 검산 가능한 문항(verify 필드가 채워진
+ * 것)만 expr-eval로 재계산해 확인한다. 실패 문항이 있으면 어떤 문항이 왜 틀렸는지
+ * 알려주며 세트 전체를 최대 1번 재생성한다(부분 문항만 다시 만들면 세트 전체의
+ * 난이도·구성 일관성이 깨지기 쉬워 세트 단위로 재생성). 그래도 안 맞으면 해당 문항의
+ * 해설 앞에 경고를 붙여 그대로 보여준다 — math-solve와 같은 "틀린 답을 조용히 맞는
+ * 것처럼 보여주지 않는다"는 원칙을 그대로 따른다.
+ */
+async function verifyAndAnnotatePracticeSet(
+  raw: string,
+  meta: Meta,
+  tool: ToolDef,
+  input: ToolGenerationInput,
+): Promise<{ data: PracticeSet; meta: Meta }> {
+  const parsed = await parseStructuredWithRetry(parsePracticeSet, raw, meta, tool, input);
+  let finalMeta = parsed.meta;
+  let data = parsed.data;
+  let failed = verifyPracticeSetProblems(data.problems);
+
+  for (let attempt = 0; failed.length > 0 && attempt < PRACTICE_SET_MAX_RETRIES; attempt++) {
+    try {
+      const retryNote = [
+        "[자동 검산 실패 - 아래 문항의 정답 계산이 문제와 안 맞으니 세트 전체를 처음부터 다시 정확히 만들어라]",
+        ...failed.map(
+          (f) =>
+            `- 문항 ${f.index + 1}: ${f.expr} 는 ${f.expected}가 나와야 하는데 실제로는 ${f.actual ?? "계산 불가"}로 계산됐다.`,
+        ),
+      ].join("\n");
+      const retry = await generateWithFallback({
+        tool,
+        text: [input.text ?? "", retryNote].filter(Boolean).join("\n\n"),
+        modelTier: input.modelTier,
+      });
+      const retryRaw = stripHanja(retry.text);
+      data = parsePracticeSet(retryRaw);
+      failed = verifyPracticeSetProblems(data.problems);
+      finalMeta = {
+        provider: retry.provider,
+        model: retry.model,
+        attempts: finalMeta.attempts + retry.attempts,
+      };
+    } catch (err) {
+      console.warn("[toolGeneration] similar-problems 검산 재시도 실패", err);
+      break;
+    }
+  }
+
+  if (failed.length > 0) {
+    const failedIndices = new Set(failed.map((f) => f.index));
+    data = {
+      ...data,
+      problems: data.problems.map((p, i) =>
+        failedIndices.has(i)
+          ? {
+              ...p,
+              explanation: `⚠️ 자동 검산에서 이 문항의 계산이 맞지 않는 것으로 나왔어요. 직접 한 번 더 확인해 주세요.\n\n${p.explanation}`,
+            }
+          : p,
+      ),
+    };
+  }
+
+  return { data, meta: finalMeta };
+}
+
+const STRUCTURED_RETRY_NOTE =
+  "[이전 응답이 유효한 JSON 형식이 아니었다. 설명이나 코드펜스 없이 순수 JSON 객체 하나만 다시 정확히 출력하라.]";
+
+/**
+ * 구조화 툴(JSON 출력) 파싱을 시도하고, 실패하면(또는 isEmpty가 참이면) 교정 지시를
+ * 붙여 1회만 재생성 후 다시 파싱한다. 그래도 실패하면 pptx/xlsx와 같은 스타일의 명확한
+ * 에러로 던진다 — 지금까지는 파싱 실패가 처리되지 않은 SyntaxError로 그대로 올라가
+ * 사용자에게 의미 없는 일반 에러 문구만 보였다.
+ */
+async function parseStructuredWithRetry<T>(
+  parse: (raw: string) => T,
+  raw: string,
+  meta: Meta,
+  tool: ToolDef,
+  input: ToolGenerationInput,
+  isEmpty?: (data: T) => boolean,
+): Promise<{ data: T; meta: Meta }> {
+  function tryParse(candidate: string): T | null {
+    try {
+      const data = parse(candidate);
+      if (isEmpty?.(data)) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  let data = tryParse(raw);
+  let finalMeta = meta;
+
+  if (data === null) {
+    try {
+      const retry = await generateWithFallback({
+        tool,
+        text: [input.text ?? "", STRUCTURED_RETRY_NOTE].filter(Boolean).join("\n\n"),
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+      });
+      const retryRaw = stripHanja(retry.text);
+      data = tryParse(retryRaw);
+      finalMeta = {
+        provider: retry.provider,
+        model: retry.model,
+        attempts: finalMeta.attempts + retry.attempts,
+      };
+    } catch (err) {
+      console.warn(`[toolGeneration] ${tool.id} 구조화 파싱 재시도 실패`, err);
+    }
+  }
+
+  if (data === null) {
+    throw new Error("AI가 예상한 형식으로 응답하지 않았어요. 다시 시도해 주세요.");
+  }
+
+  return { data, meta: finalMeta };
+}
+
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */
 export async function runToolGeneration(
   input: ToolGenerationInput
@@ -217,6 +384,36 @@ export async function runToolGeneration(
     throw new Error("요청할 내용을 입력해 주세요.");
   }
 
+  if (tool.outputType === "image") {
+    if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
+    let data: string;
+    let mimeType: string;
+    try {
+      const img = await geminiGenerateImage({
+        prompt: input.text!.trim(),
+        systemInstruction: tool.systemInstruction,
+      });
+      data = img.data;
+      mimeType = img.mimeType;
+    } catch (err) {
+      noteProviderFailure("gemini", err);
+      throw err;
+    }
+    input.onUploadStart?.();
+    const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
+    const blob = await put(
+      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
+      Buffer.from(data, "base64"),
+      { access: "public", contentType: mimeType, addRandomSuffix: true },
+    );
+    return {
+      tool,
+      outputType: "image",
+      file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
+      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+    };
+  }
+
   const { text: rawText, provider, model, attempts } = await generateWithFallback({
     tool,
     text: input.text,
@@ -227,7 +424,8 @@ export async function runToolGeneration(
   });
   if (!rawText) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
   // 프롬프트로 한자 금지를 지시해도 종종 새어나와, 파싱 전에 결정적으로 제거한다.
-  let raw = stripHanja(rawText);
+  // 단, doc-translate는 일본어·중국어 등 정당한 CJK 번역 결과를 낼 수 있어 예외로 둔다.
+  let raw = tool.id === "doc-translate" ? rawText : stripHanja(rawText);
   let meta: Meta = { provider, model, attempts };
 
   if (tool.id === "math-solve") {
@@ -236,15 +434,37 @@ export async function runToolGeneration(
     meta = verified.meta;
   }
 
-  if (tool.outputType === "structured" && tool.structuredKind) {
-    const structured = parseStructured(tool.structuredKind, raw);
+  if (tool.id === "similar-problems") {
+    const verified = await verifyAndAnnotatePracticeSet(raw, meta, tool, input);
     return {
       tool,
       outputType: "structured",
-      structuredKind: tool.structuredKind,
-      data: structured.data,
-      resultData: JSON.stringify(structured.data),
+      structuredKind: "practiceSet",
+      data: verified.data,
+      resultData: JSON.stringify(verified.data),
+      meta: verified.meta,
+    };
+  }
+
+  if (tool.outputType === "structured" && tool.structuredKind) {
+    const kind = tool.structuredKind;
+    const isEmpty =
+      kind === "mathGraph" ? (data: unknown) => isEmptyMathGraph(data as MathGraph) : undefined;
+    const parsed = await parseStructuredWithRetry(
+      (r) => parseStructured(kind, r).data,
+      raw,
       meta,
+      tool,
+      input,
+      isEmpty,
+    );
+    return {
+      tool,
+      outputType: "structured",
+      structuredKind: kind,
+      data: parsed.data,
+      resultData: JSON.stringify(parsed.data),
+      meta: parsed.meta,
     };
   }
 
@@ -265,7 +485,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: PPTX_MIME },
+      { access: "public", contentType: PPTX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -293,14 +513,20 @@ export async function runToolGeneration(
       throw new Error("엑셀 시트가 비어 있습니다. 요청을 더 구체적으로 적어 주세요.");
     }
     input.onUploadStart?.();
-    const base64 = await buildXlsxBase64(wb);
+    let base64: string;
+    try {
+      base64 = await buildXlsxBase64(wb);
+    } catch (err) {
+      console.error("[toolGeneration] xlsx build", err);
+      throw new Error("엑셀 파일 생성에 실패했습니다. 다시 시도해 주세요.");
+    }
     const safeName = (wb.title || tool.fileBaseName)
       .replace(/[\\/:*?"<>|]+/g, "")
       .slice(0, 40) || tool.fileBaseName;
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: XLSX_MIME },
+      { access: "public", contentType: XLSX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -332,7 +558,7 @@ export async function runToolGeneration(
       const blob = await put(
         `exports/${input.userId}/${tool.fileBaseName}-${Date.now()}.md`,
         body,
-        { access: "public", contentType: "text/markdown; charset=utf-8" },
+        { access: "public", contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
       );
       return {
         tool,

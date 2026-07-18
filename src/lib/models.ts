@@ -4,7 +4,9 @@ export type Provider =
   | "groq"
   | "deepseek"
   | "cerebras"
-  | "mistral";
+  | "mistral"
+  | "github"
+  | "sambanova";
 
 export interface ModelDef {
   provider: Provider;
@@ -49,6 +51,22 @@ export const MISTRAL_FREE: ModelDef[] = [
   { provider: "mistral", model: "ministral-8b-latest", free: true },
 ];
 
+// ── GitHub Models (무료, PAT 하나를 앱 전체가 공유 — 모델별 10~15 RPM·50~150 RPD로
+// 다른 무료 제공자보다 한도가 훨씬 낮다. 그래서 라운드로빈에 안 섞고 무료 풀
+// 맨 뒤 최후 수단으로만 둔다) ──
+export const GITHUB_FREE: ModelDef[] = [
+  { provider: "github", model: "gpt-4o-mini", free: true },
+  { provider: "github", model: "Meta-Llama-3.1-8B-Instruct", free: true },
+];
+
+// ── SambaNova Cloud (무료, 영구 무료 티어 — 모델별 분당 10~30회로 GitHub Models의
+// 일일 한도보다 빨리 회복된다. 그래서 Groq/Cerebras/Mistral과 같은 라운드로빈
+// 그룹에 바로 섞는다) ──
+export const SAMBANOVA_FREE: ModelDef[] = [
+  { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", free: true },
+  { provider: "sambanova", model: "DeepSeek-V3.1", free: true },
+];
+
 // ── DeepSeek 초저가 ──
 const DS_FLASH: ModelDef = {
   provider: "deepseek",
@@ -81,6 +99,19 @@ export const OPENROUTER_FREE_CHAT: ModelDef[] = [
   orFree("meta-llama/llama-3.2-3b-instruct:free"),
 ];
 
+// ── 에이전트(함수 호출) 전용 모델 ──
+// 툴 콜은 모델 품질에 민감해서, 8b 소형 폴백 풀로 새면 tool_calls가 깨진다.
+// 그래서 modelsForTier/FALLBACK_MODELS(소형 모델 안전망 포함)를 재사용하지 않고,
+// OpenAI 함수호출을 안정적으로 지원하는 강한 무료 모델만 골라 고정한다.
+// (OpenRouter free·GitHub Models는 tools 파라미터에 400을 낼 수 있어 제외.)
+export const AGENT_MODELS: ModelDef[] = [
+  { provider: "groq", model: "llama-3.3-70b-versatile", free: true },
+  { provider: "cerebras", model: "llama-3.3-70b", free: true },
+  { provider: "mistral", model: "mistral-small-latest", free: true },
+  { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", free: true },
+  { provider: "deepseek", model: "deepseek-chat", cheap: true },
+];
+
 export const MAX_FREE_ATTEMPTS = 6;
 
 /**
@@ -108,20 +139,37 @@ export function interleaveByProvider(groups: ModelDef[][]): ModelDef[] {
   return out;
 }
 
+/**
+ * 요금제별 후보 순서 — "먼저 성공하는 모델"이 아니라 "결제한 티어만큼 실제로
+ * 다른 모델이 먼저 시도되도록" 차등화한다. 무료 소형 모델 풀은 어느 티어에서도
+ * 완전히 제거하지 않고 안전망(실제 에러 시 폴백)으로 유지한다.
+ */
 function buildTextChain(maxOrFree = MAX_FREE_ATTEMPTS, tier: ModelTier = "standard"): ModelDef[] {
   const freeGroups = [
     GROQ_FREE,
     CEREBRAS_FREE,
     MISTRAL_FREE,
+    SAMBANOVA_FREE,
     OPENROUTER_FREE_CHAT.slice(0, maxOrFree),
   ];
   const freeInterleaved = interleaveByProvider(freeGroups);
+  // GitHub Models는 라운드로빈에 안 섞고 무료 풀 맨 뒤에 최후 수단으로 붙인다.
+  const freePool = [...freeInterleaved, ...GITHUB_FREE];
 
   const mid: ModelDef[] = [DS_FLASH, DS_CHAT, G_FLASH, G_FLASH_LITE];
   const premium: ModelDef[] =
     tier === "top" || tier === "priority" ? [DS_PRO, G_PRO] : [G_PRO, DS_PRO];
 
-  return [...freeInterleaved, ...mid, ...premium];
+  // standard(무료): 비용 우선 — 무료 풀을 먼저 시도, 프리미엄은 최후 수단
+  if (tier === "standard") {
+    return [...freePool, ...mid, ...premium];
+  }
+  // priority(Pro): 중간 등급 모델을 먼저 시도 — 무료 풀은 실패 시 안전망으로 이동
+  if (tier === "priority") {
+    return [...mid, ...premium, ...freePool];
+  }
+  // top(Professional): 프리미엄 모델을 첫 시도로 — 무료 풀은 프리미엄이 에러날 때만
+  return [...premium, ...mid, ...freePool];
 }
 
 /** 검증 전용: 생성에 쓴 제공자와 다른 쪽 우선 */
@@ -162,6 +210,8 @@ export function listFreeModelIds(): string[] {
     ...MISTRAL_FREE.map((m) => `mistral/${m.model}`),
     ...OPENROUTER_FREE_CHAT.map((m) => m.model),
     ...DEEPSEEK_MODELS.map((m) => `deepseek/${m.model}`),
+    ...GITHUB_FREE.map((m) => `github/${m.model}`),
+    ...SAMBANOVA_FREE.map((m) => `sambanova/${m.model}`),
   ];
 }
 

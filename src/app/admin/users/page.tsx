@@ -21,33 +21,29 @@ export default async function AdminUsersPage() {
         <table className="w-full min-w-[48rem] text-left text-sm">
           <thead className="bg-slate-100 text-xs uppercase text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3 font-semibold">아이디</th>
+              <th className="px-4 py-3 font-semibold">이름</th>
               <th className="px-4 py-3 font-semibold">이메일</th>
-              <th className="px-4 py-3 font-semibold">전화번호</th>
               <th className="px-4 py-3 font-semibold">요금제 관리</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={3} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                   회원이 없습니다.
                 </td>
               </tr>
             ) : (
               users.map((u) => {
                 const plan = u.settings?.plan ?? "free";
-                const label = u.username || u.name || u.email || u.id.slice(0, 8);
+                const label = u.name || u.email || u.id.slice(0, 8);
                 return (
                   <tr key={u.id} className="bg-white dark:bg-slate-900">
                     <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                      {u.username ?? "-"}
+                      {u.name ?? "-"}
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
                       {u.email ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                      {u.phone ?? "-"}
                     </td>
                     <td className="px-4 py-3">
                       <AdminUserPlanControl

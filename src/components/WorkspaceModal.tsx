@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { X, Users, Trash2, Mail, Copy, Check, LogOut, Loader2 } from "lucide-react";
 import { useWorkspace } from "@/lib/workspaceClient";
+import { useT, type AppDictKey } from "@/lib/i18n";
 
 interface Member {
   userId: string;
@@ -41,6 +42,7 @@ export default function WorkspaceModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useT();
   const { setActiveId, activeId } = useWorkspace();
   const { data: sessionData } = useSession();
   const myId = sessionData?.user?.id ?? "";
@@ -66,7 +68,7 @@ export default function WorkspaceModal({
       const res = await fetch(`/api/workspaces/${workspaceId}`);
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "불러오지 못했습니다.");
+        setError(data?.error ?? t("ws.loadFailed"));
         return;
       }
       setDetail(data.workspace);
@@ -80,7 +82,7 @@ export default function WorkspaceModal({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, t]);
 
   useEffect(() => {
     load();
@@ -115,7 +117,7 @@ export default function WorkspaceModal({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "초대에 실패했습니다.");
+        setError(data?.error ?? t("ws.inviteFailed"));
         return;
       }
       setInviteLink(data.invite?.inviteUrl ?? "");
@@ -132,7 +134,7 @@ export default function WorkspaceModal({
   }
 
   async function removeMember(userId: string) {
-    if (!confirm("이 멤버를 워크스페이스에서 제거할까요?")) return;
+    if (!confirm(t("ws.confirmRemoveMember"))) return;
     const res = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
       method: "DELETE",
     });
@@ -141,13 +143,13 @@ export default function WorkspaceModal({
       onChanged();
     } else {
       const data = await res.json();
-      setError(data?.error ?? "제거에 실패했습니다.");
+      setError(data?.error ?? t("ws.removeFailed"));
     }
   }
 
   async function leaveWorkspace() {
     if (!detail || !myId) return;
-    if (!confirm("이 워크스페이스에서 나갈까요?")) return;
+    if (!confirm(t("ws.confirmLeave"))) return;
     const res = await fetch(`/api/workspaces/${workspaceId}/members/${myId}`, {
       method: "DELETE",
     });
@@ -157,7 +159,7 @@ export default function WorkspaceModal({
       onClose();
     } else {
       const data = await res.json();
-      setError(data?.error ?? "나가기에 실패했습니다.");
+      setError(data?.error ?? t("ws.leaveFailed"));
     }
   }
 
@@ -173,7 +175,7 @@ export default function WorkspaceModal({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "저장 실패");
+      setError(data?.error ?? t("common.saveFailed"));
       return;
     }
     load();
@@ -188,14 +190,14 @@ export default function WorkspaceModal({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "코드 재발급 실패");
+      setError(data?.error ?? t("ws.regenFailed"));
       return;
     }
     load();
   }
 
   async function transferTo(userId: string) {
-    if (!confirm("대표 권한을 이 멤버에게 양도할까요? 본인은 일반 멤버가 됩니다.")) return;
+    if (!confirm(t("ws.confirmTransfer"))) return;
     const res = await fetch(`/api/workspaces/${workspaceId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -203,7 +205,7 @@ export default function WorkspaceModal({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "양도 실패");
+      setError(data?.error ?? t("ws.transferFailed"));
       return;
     }
     load();
@@ -219,7 +221,7 @@ export default function WorkspaceModal({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "삭제에 실패했습니다.");
+      setError(data?.error ?? t("ws.deleteFailed"));
       return;
     }
     if (data.otpSent) {
@@ -270,11 +272,11 @@ export default function WorkspaceModal({
             </span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-50">
-                {detail?.name ?? "워크스페이스"}
+                {detail?.name ?? t("ws.defaultName")}
               </h2>
               {detail && (
                 <p className="text-xs text-slate-500">
-                  공유 대화 {detail.sessionCount} · 공유 서재 {detail.libraryCount}
+                  {t("ws.sharedChatsLabel")} {detail.sessionCount} · {t("sidebar.sharedLibrary")} {detail.libraryCount}
                 </p>
               )}
             </div>
@@ -303,9 +305,9 @@ export default function WorkspaceModal({
             <div className="mt-4 flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
               {(
                 [
-                  ["members", "멤버"],
-                  ["settings", "설정"],
-                  ...(detail.myRole === "owner" ? [["danger", "삭제"] as const] : []),
+                  ["members", t("ws.tab.members")],
+                  ["settings", t("settings.title")],
+                  ...(detail.myRole === "owner" ? [["danger", t("common.delete")] as const] : []),
                 ] as const
               ).map(([id, label]) => (
                 <button
@@ -326,7 +328,7 @@ export default function WorkspaceModal({
             {tab === "settings" && (detail.myRole === "owner" || detail.myRole === "admin") && (
               <section className="mt-4 space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-500">이름</label>
+                  <label className="text-xs font-medium text-slate-500">{t("ws.nameLabel")}</label>
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
@@ -334,7 +336,7 @@ export default function WorkspaceModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500">이미지 URL</label>
+                  <label className="text-xs font-medium text-slate-500">{t("ws.imageUrlLabel")}</label>
                   <input
                     value={editImage}
                     onChange={(e) => setEditImage(e.target.value)}
@@ -344,7 +346,7 @@ export default function WorkspaceModal({
                 </div>
                 {detail.inviteCode && (
                   <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-500/30 dark:bg-blue-950/30">
-                    <p className="text-xs font-medium text-slate-500">초대 코드</p>
+                    <p className="text-xs font-medium text-slate-500">{t("ws.inviteCodeLabel")}</p>
                     <p className="mt-1 font-mono text-lg font-bold tracking-widest text-blue-700 dark:text-blue-300">
                       {detail.inviteCode}
                     </p>
@@ -354,7 +356,7 @@ export default function WorkspaceModal({
                         onClick={() => navigator.clipboard.writeText(detail.inviteCode!)}
                         className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white"
                       >
-                        복사
+                        {t("chat.copy")}
                       </button>
                       {detail.myRole === "owner" && (
                         <button
@@ -362,21 +364,21 @@ export default function WorkspaceModal({
                           onClick={() => void regenerateCode()}
                           className="rounded-lg border border-slate-300 px-2.5 py-1 text-[11px] dark:border-slate-600"
                         >
-                          재발급
+                          {t("ws.regenerate")}
                         </button>
                       )}
                     </div>
                   </div>
                 )}
                 <p className="text-xs text-slate-500">
-                  채팅 기록 {detail.sessionCount} · 서재 파일 {detail.libraryCount}
+                  {t("settings.data.chatHistory")} {detail.sessionCount} · {t("ws.libraryFilesLabel")} {detail.libraryCount}
                 </p>
                 <button
                   type="button"
                   onClick={() => void saveSettings()}
                   className="w-full rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white"
                 >
-                  설정 저장
+                  {t("ws.saveSettings")}
                 </button>
               </section>
             )}
@@ -384,19 +386,19 @@ export default function WorkspaceModal({
             {tab === "danger" && detail.myRole === "owner" && (
               <section className="mt-4 space-y-3">
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  대표자 이메일 OTP 인증 후 워크스페이스를 삭제합니다.
+                  {t("ws.deleteConfirmIntro")}
                 </p>
                 {otpSent && (
                   <div>
-                    <label className="text-xs text-slate-500">이메일 인증번호</label>
+                    <label className="text-xs text-slate-500">{t("ws.otpLabel")}</label>
                     <input
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      placeholder="6자리"
+                      placeholder={t("ws.otpPlaceholder")}
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
                     />
                     {devOtp && (
-                      <p className="mt-1 text-[11px] text-amber-600">개발용 코드: {devOtp}</p>
+                      <p className="mt-1 text-[11px] text-amber-600">{t("ws.devCodePrefix")}{devOtp}</p>
                     )}
                   </div>
                 )}
@@ -405,7 +407,7 @@ export default function WorkspaceModal({
                   onClick={() => void deleteWorkspace()}
                   className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white"
                 >
-                  {otpSent ? "인증 후 삭제" : "삭제 OTP 발송"}
+                  {otpSent ? t("ws.deleteAfterOtp") : t("ws.sendDeleteOtp")}
                 </button>
               </section>
             )}
@@ -414,7 +416,7 @@ export default function WorkspaceModal({
               <>
                 <section className="mt-4">
                   <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    멤버 {detail.members.length}명
+                    {t("ws.membersPrefix")} {detail.members.length}{t("ws.membersSuffix")}
                   </h3>
                   <ul className="space-y-1">
                     {detail.members.map((m) => (
@@ -432,7 +434,7 @@ export default function WorkspaceModal({
                           <span className="block truncate text-xs text-slate-500">{m.email}</span>
                         </span>
                         <span className="shrink-0 rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-700/60 dark:text-slate-300">
-                          {roleLabel(m.role)}
+                          {roleLabel(m.role, t)}
                         </span>
                         {detail.myRole === "owner" && m.role !== "owner" && (
                           <button
@@ -440,14 +442,14 @@ export default function WorkspaceModal({
                             onClick={() => void transferTo(m.userId)}
                             className="shrink-0 rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600"
                           >
-                            대표 양도
+                            {t("ws.transferOwnership")}
                           </button>
                         )}
                         {detail.myRole === "owner" && m.role !== "owner" && m.userId !== myId && (
                           <button
                             type="button"
                             onClick={() => removeMember(m.userId)}
-                            aria-label="멤버 제거"
+                            aria-label={t("ws.removeMemberAria")}
                             className="shrink-0 rounded-lg p-1 text-slate-400 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -461,7 +463,7 @@ export default function WorkspaceModal({
                 {canManage && (
                   <section className="mt-4">
                     <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      멤버 초대 (이메일)
+                      {t("ws.inviteSectionTitle")}
                     </h3>
                     <div className="flex items-center gap-1.5">
                       <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 dark:border-slate-700 dark:bg-slate-800/80">
@@ -470,7 +472,7 @@ export default function WorkspaceModal({
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && sendInvite()}
-                          placeholder="초대할 이메일"
+                          placeholder={t("ws.inviteEmailPlaceholder")}
                           className="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-900 outline-none dark:text-slate-100"
                         />
                       </div>
@@ -479,8 +481,8 @@ export default function WorkspaceModal({
                         onChange={(e) => setInviteRole(e.target.value as "member" | "admin")}
                         className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
                       >
-                        <option value="member">멤버</option>
-                        <option value="admin">관리자</option>
+                        <option value="member">{t("ws.roleMember")}</option>
+                        <option value="admin">{t("ws.roleAdmin")}</option>
                       </select>
                       <button
                         type="button"
@@ -488,14 +490,14 @@ export default function WorkspaceModal({
                         disabled={inviting || !inviteEmail.trim()}
                         className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                       >
-                        {inviting ? "발송 중…" : "메일 초대"}
+                        {inviting ? t("ws.sendingInvite") : t("ws.sendInvite")}
                       </button>
                     </div>
 
                     {inviteLink && (
                       <div className="mt-2 space-y-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2.5 dark:border-blue-500/30 dark:bg-blue-950/30">
                         <p className="text-xs font-medium text-blue-800 dark:text-blue-200">
-                          초대 메일을 보냈습니다. 상대가 메일 속 링크로 가입할 수 있어요.
+                          {t("ws.inviteSentNotice")}
                         </p>
                         <div className="flex items-center gap-2">
                           <span className="min-w-0 flex-1 truncate text-[11px] text-blue-700/80 dark:text-blue-200/80">
@@ -507,7 +509,7 @@ export default function WorkspaceModal({
                             className="flex shrink-0 items-center gap-1 rounded-md bg-blue-600/15 px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-600/25 dark:bg-blue-600/40 dark:text-blue-100 dark:hover:bg-blue-600/60"
                           >
                             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            {copied ? "복사됨" : "링크 복사"}
+                            {copied ? t("ws.copied") : t("ws.copyLink")}
                           </button>
                         </div>
                       </div>
@@ -523,7 +525,7 @@ export default function WorkspaceModal({
                             <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-600" />
                             <span className="min-w-0 flex-1 truncate">{inv.email}</span>
                             <span className="shrink-0 text-slate-400 dark:text-slate-600">
-                              대기 중 · {roleLabel(inv.role)}
+                              {t("ws.pendingPrefix")}{roleLabel(inv.role, t)}
                             </span>
                           </li>
                         ))}
@@ -540,7 +542,7 @@ export default function WorkspaceModal({
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       <LogOut className="h-4 w-4" />
-                      워크스페이스 나가기
+                      {t("ws.leaveWorkspace")}
                     </button>
                   </section>
                 )}
@@ -554,6 +556,10 @@ export default function WorkspaceModal({
   );
 }
 
-function roleLabel(role: string): string {
-  return role === "owner" ? "소유자" : role === "admin" ? "관리자" : "멤버";
+function roleLabel(role: string, t: (key: AppDictKey) => string): string {
+  return role === "owner"
+    ? t("ws.roleOwner")
+    : role === "admin"
+      ? t("ws.roleAdmin")
+      : t("ws.roleMember");
 }

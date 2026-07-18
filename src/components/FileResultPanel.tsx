@@ -2,6 +2,7 @@
 
 import { Sparkles, Download, FileText, Presentation, Table2 } from "lucide-react";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
+import { useT } from "@/lib/i18n";
 
 export default function FileResultPanel({
   outputType,
@@ -14,6 +15,7 @@ export default function FileResultPanel({
   workbook?: Workbook;
   file?: GeneratedFile;
 }) {
+  const t = useT();
   const isPptx = outputType === "pptx";
   const title = isPptx ? deck?.title : workbook?.title;
   const HeaderIcon = isPptx ? Presentation : Table2;
@@ -23,7 +25,7 @@ export default function FileResultPanel({
       <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
         <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />
-          <span className="truncate">{title || "결과"}</span>
+          <span className="truncate">{title || t("fileResult.defaultTitle")}</span>
         </h2>
         {file && (
           <a
@@ -32,7 +34,7 @@ export default function FileResultPanel({
             className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--mode-accent)] to-[var(--mode-accent-deep)] px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-black/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Download className="h-3.5 w-3.5" />
-            {isPptx ? "PPT 다운로드" : "엑셀 다운로드"}
+            {isPptx ? t("fileResult.downloadPpt") : t("fileResult.downloadExcel")}
           </a>
         )}
       </div>
@@ -43,7 +45,7 @@ export default function FileResultPanel({
             {(deck.subtitle || deck.title) && (
               <div className="rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 dark:border-blue-900/40 dark:from-blue-950/40 dark:to-indigo-950/30">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
-                  표지
+                  {t("fileResult.coverLabel")}
                 </p>
                 <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">
                   {deck.title}
@@ -204,7 +206,7 @@ export default function FileResultPanel({
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60">
               <HeaderIcon className="h-7 w-7 text-slate-400 dark:text-slate-600" />
             </div>
-            <p className="text-sm text-slate-500">결과가 여기에 표시됩니다.</p>
+            <p className="text-sm text-slate-500">{t("fileResult.emptyResult")}</p>
           </div>
         )}
       </div>

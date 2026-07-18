@@ -196,16 +196,40 @@ export function parseExamAnalysis(raw: string): ExamAnalysis {
 
 // ── 전과목 유사문제 생성 ──
 
+/** 산술로 검산 가능한 문제에만 채워진다 — 서버가 expr-eval로 재계산해 정답을 확인한다. */
+export interface PracticeProblemVerify {
+  expr: string;
+  variables: Record<string, number>;
+  expected: number;
+}
+
 export interface PracticeProblem {
   question: string;
   choices: string[];
   answer: string;
   explanation: string;
+  verify: PracticeProblemVerify | null;
 }
 
 export interface PracticeSet {
   subject: string;
   problems: PracticeProblem[];
+}
+
+function parsePracticeVerify(raw: unknown): PracticeProblemVerify | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const expr = typeof o?.expr === "string" ? o.expr : "";
+  const expected = Number(o?.expected);
+  if (!expr || !Number.isFinite(expected)) return null;
+  const variables: Record<string, number> = {};
+  if (o?.variables && typeof o.variables === "object") {
+    for (const [k, v] of Object.entries(o.variables as Record<string, unknown>)) {
+      const n = Number(v);
+      if (Number.isFinite(n)) variables[k] = n;
+    }
+  }
+  return { expr, variables, expected };
 }
 
 export function parsePracticeSet(raw: string): PracticeSet {
@@ -222,6 +246,7 @@ export function parsePracticeSet(raw: string): PracticeSet {
               : [],
             answer: typeof o?.answer === "string" ? o.answer : "",
             explanation: typeof o?.explanation === "string" ? o.explanation : "",
+            verify: parsePracticeVerify(o?.verify),
           };
         })
       : [],
@@ -426,6 +451,18 @@ export function parseMathGraph(raw: string): MathGraph {
   }
 
   return { mode, title, functions, surface, solid, xRange, yRange, zRange };
+}
+
+/**
+ * mode에 맞는 실제 표시 데이터(2D 함수·3D 곡면·입체 도형)가 하나도 없는 "빈 그래프"인지
+ * 판정한다. AI가 expr을 빈 문자열로 주거나 파싱이 실패하면 parseMathGraph는 조용히
+ * null/빈 배열을 반환하는데, 그대로 두면 트레이스 0개짜리 빈 차트가 "성공"으로
+ * 저장된다 — 호출부에서 이 판정으로 실패를 감지해 재시도/에러 처리할 수 있게 한다.
+ */
+export function isEmptyMathGraph(data: MathGraph): boolean {
+  if (data.mode === "2d") return data.functions.length === 0;
+  if (data.mode === "3d") return !data.surface;
+  return !data.solid;
 }
 
 export type StructuredData =

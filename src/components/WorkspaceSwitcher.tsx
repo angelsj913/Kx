@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Users, Check, Plus, ChevronDown, Settings, User as UserIcon } from "lucide-react";
 import { useWorkspace } from "@/lib/workspaceClient";
+import { useT, type AppDictKey } from "@/lib/i18n";
 import WorkspaceModal from "./WorkspaceModal";
 
 export default function WorkspaceSwitcher({
@@ -11,6 +12,7 @@ export default function WorkspaceSwitcher({
 }: {
   collapsed?: boolean;
 }) {
+  const t = useT();
   const { activeId, active, workspaces, setActiveId, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -57,7 +59,7 @@ export default function WorkspaceSwitcher({
         setCreating(false);
         setOpen(false);
       } else {
-        setError(data?.error ?? "생성 실패");
+        setError(data?.error ?? t("ws.createFailed"));
       }
     } finally {
       setBusy(false);
@@ -83,14 +85,14 @@ export default function WorkspaceSwitcher({
         setJoining(false);
         setOpen(false);
       } else {
-        setError(data?.error ?? "가입 실패");
+        setError(data?.error ?? t("ws.joinFailed"));
       }
     } finally {
       setBusy(false);
     }
   }
 
-  const label = active ? active.name : "개인 워크스페이스";
+  const label = active ? active.name : t("ws.personalWorkspace");
 
   return (
     <div
@@ -125,7 +127,9 @@ export default function WorkspaceSwitcher({
                 {label}
               </span>
               <span className="block truncate text-[10px] text-slate-500">
-                {active ? `멤버 ${active.memberCount}명 · ${roleLabel(active.role)}` : "나만의 공간"}
+                {active
+                  ? `${t("ws.membersPrefix")} ${active.memberCount}${t("ws.membersSuffix")} · ${roleLabel(active.role, t)}`
+                  : t("ws.myOwnSpace")}
               </span>
             </span>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -149,8 +153,8 @@ export default function WorkspaceSwitcher({
             <ul className="max-h-64 overflow-y-auto p-1">
               <ScopeRow
                 icon={<UserIcon className="h-4 w-4" />}
-                title="개인 워크스페이스"
-                subtitle="나만의 공간"
+                title={t("ws.personalWorkspace")}
+                subtitle={t("ws.myOwnSpace")}
                 selected={!activeId}
                 onSelect={() => {
                   setActiveId(null);
@@ -162,7 +166,7 @@ export default function WorkspaceSwitcher({
                   key={w.id}
                   icon={<Users className="h-4 w-4" />}
                   title={w.name}
-                  subtitle={`멤버 ${w.memberCount}명 · ${roleLabel(w.role)}`}
+                  subtitle={`${t("ws.membersPrefix")} ${w.memberCount}${t("ws.membersSuffix")} · ${roleLabel(w.role, t)}`}
                   selected={activeId === w.id}
                   onSelect={() => {
                     setActiveId(w.id);
@@ -187,7 +191,7 @@ export default function WorkspaceSwitcher({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && createWorkspace()}
-                    placeholder="워크스페이스 이름"
+                    placeholder={t("ws.namePlaceholder")}
                     maxLength={60}
                     className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
                   />
@@ -197,7 +201,7 @@ export default function WorkspaceSwitcher({
                     disabled={busy || !name.trim()}
                     className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                   >
-                    생성
+                    {t("ws.create")}
                   </button>
                 </div>
               ) : showJoining ? (
@@ -207,7 +211,7 @@ export default function WorkspaceSwitcher({
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     onKeyDown={(e) => e.key === "Enter" && joinWorkspace()}
-                    placeholder="초대 코드 붙여넣기"
+                    placeholder={t("ws.joinCodePlaceholder")}
                     maxLength={16}
                     className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs uppercase tracking-wider text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
                   />
@@ -217,7 +221,7 @@ export default function WorkspaceSwitcher({
                     disabled={busy || !joinCode.trim()}
                     className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                   >
-                    가입
+                    {t("ws.join")}
                   </button>
                 </div>
               ) : (
@@ -230,7 +234,8 @@ export default function WorkspaceSwitcher({
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-slate-100 dark:text-blue-300 dark:hover:bg-slate-800/60"
                   >
-                    <Plus className="h-4 w-4" />새 워크스페이스 만들기
+                    <Plus className="h-4 w-4" />
+                    {t("ws.createNew")}
                   </button>
                   <button
                     type="button"
@@ -240,7 +245,7 @@ export default function WorkspaceSwitcher({
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
                   >
-                    초대 코드로 가입
+                    {t("ws.joinByCode")}
                   </button>
                 </>
               )}
@@ -275,6 +280,7 @@ function ScopeRow({
   onSelect: () => void;
   onManage?: () => void;
 }) {
+  const t = useT();
   return (
     <li className="group flex items-center gap-1">
       <button
@@ -299,7 +305,7 @@ function ScopeRow({
         <button
           type="button"
           onClick={onManage}
-          aria-label="워크스페이스 관리"
+          aria-label={t("ws.manage")}
           className="shrink-0 rounded-lg p-1.5 text-slate-400 opacity-0 transition-opacity hover:text-slate-700 group-hover:opacity-100 dark:text-slate-500 dark:hover:text-slate-200"
         >
           <Settings className="h-3.5 w-3.5" />
@@ -309,6 +315,10 @@ function ScopeRow({
   );
 }
 
-function roleLabel(role: string): string {
-  return role === "owner" ? "소유자" : role === "admin" ? "관리자" : "멤버";
+function roleLabel(role: string, t: (key: AppDictKey) => string): string {
+  return role === "owner"
+    ? t("ws.roleOwner")
+    : role === "admin"
+      ? t("ws.roleAdmin")
+      : t("ws.roleMember");
 }

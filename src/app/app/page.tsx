@@ -9,10 +9,12 @@ import WorkBoardView from "@/components/WorkBoardView";
 import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
 import { workspaceAccentCssVars } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 
 export type AppView = "chat" | "library" | "board" | "rag";
 
 export default function AppWorkspace() {
+  const t = useT();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [view, setView] = useState<AppView>("chat");
   const [mobileNav, setMobileNav] = useState(false);
@@ -22,12 +24,14 @@ export default function AppWorkspace() {
   /** 워크스페이스/목록 로딩 사이클마다 한 번만 활성 세션 결정 */
   const selectedForLoad = useRef(false);
 
-  /** 새 대화 — 사용자가 버튼 누를 때만 */
+  /** 새 대화 — 사용자가 버튼 누를 때만. 제목은 비워둔다: 사이드바가 title 없음을
+   * 알아서 t("sidebar.newChat")으로 보여주므로, 번역된 placeholder 문자열을 데이터로
+   * 저장할 필요가 없다(언어별로 다른 문자열이 저장되면 이후 "제목 없음" 판정이 깨진다). */
   const handleNewChat = useCallback(async () => {
     setView("chat");
     setMobileNav(false);
     try {
-      const s = await createSession("새 대화");
+      const s = await createSession();
       setActiveSessionId(s.id);
     } catch {
       setActiveSessionId(null);
@@ -37,8 +41,8 @@ export default function AppWorkspace() {
   /**
    * 입장 시:
    * 1) 이전 대화 목록을 라이브러리에 표시 (sessions 그대로)
-   * 2) 메시지 있는 최근 대화를 화면에도 열기
-   * 3) 자동으로 「새 대화」를 만들지 않음
+   * 2) 화면은 항상 빈 새 대화로 시작 (라이브러리 채팅 내역을 자동으로 열지 않음)
+   * 3) 자동으로 「새 대화」 세션을 만들지 않음 — 실제 메시지를 보낼 때 생성
    */
   useEffect(() => {
     if (loading) {
@@ -47,17 +51,7 @@ export default function AppWorkspace() {
     }
     if (selectedForLoad.current) return;
     selectedForLoad.current = true;
-
-    if (sessions.length === 0) {
-      // 과거 대화 없음 → 빈 입력 화면 (라이브러리도 비어 있음). 새 대화는 버튼으로.
-      setActiveSessionId(null);
-      return;
-    }
-
-    // 메시지 있는 대화 우선, 없으면 목록 첫 항목
-    const withMsgs = sessions.find((s) => (s.messageCount ?? 0) > 0);
-    const pick = withMsgs ?? sessions[0];
-    setActiveSessionId(pick.id);
+    setActiveSessionId(null);
   }, [loading, sessions]);
 
   // 워크스페이스 전환으로 다시 로딩되면 선택 초기화
@@ -78,7 +72,7 @@ export default function AppWorkspace() {
       {mobileNav && (
         <button
           type="button"
-          aria-label="메뉴 닫기"
+          aria-label={t("nav.closeMenu")}
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setMobileNav(false)}
         />
@@ -132,7 +126,7 @@ export default function AppWorkspace() {
             type="button"
             onClick={() => setMobileNav(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-bg)]"
-            aria-label="메뉴"
+            aria-label={t("nav.menu")}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -147,7 +141,7 @@ export default function AppWorkspace() {
                 setActiveSessionId(id);
                 upsertSession({
                   id,
-                  title: "새 대화",
+                  title: null,
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                   messageCount: 1,

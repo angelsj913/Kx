@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
+import { verifyCronSecret } from "@/lib/cronAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,18 +13,12 @@ function dormantDays(): number {
 }
 
 function authorize(request: Request): boolean {
-  // Vercel Cron 은 x-vercel-cron: 1 헤더를 붙인다
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     // 개발: 시크릿 없으면 로컬만 허용
     return process.env.NODE_ENV !== "production";
   }
-  const header = request.headers.get("authorization") || request.headers.get("x-cron-secret");
-  if (header === secret || header === `Bearer ${secret}`) return true;
-  const url = new URL(request.url);
-  return url.searchParams.get("secret") === secret;
+  return verifyCronSecret(request, secret);
 }
 
 async function run() {

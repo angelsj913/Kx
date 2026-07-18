@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useT, type AppDictKey } from "@/lib/i18n";
 import {
   FileText,
   Presentation,
@@ -16,13 +17,14 @@ import {
   Loader2,
   Paperclip,
   Eye,
+  ImageIcon,
 } from "lucide-react";
 
 export type PanelTab = "files" | "plan" | "terminal";
 
 export interface ChatArtifact {
   id: string;
-  kind: "pptx" | "xlsx" | "doc" | "structured" | "attachment" | "text";
+  kind: "pptx" | "xlsx" | "doc" | "structured" | "attachment" | "text" | "image";
   title: string;
   subtitle?: string;
   url?: string | null;
@@ -46,10 +48,10 @@ export interface TerminalLine {
   level?: "info" | "ok" | "error" | "warn";
 }
 
-const TAB_META: { id: PanelTab; label: string; icon: typeof FolderOpen }[] = [
-  { id: "files", label: "자료", icon: FolderOpen },
-  { id: "plan", label: "계획", icon: ListTodo },
-  { id: "terminal", label: "터미널", icon: Terminal },
+const TAB_META: { id: PanelTab; labelKey: AppDictKey; icon: typeof FolderOpen }[] = [
+  { id: "files", labelKey: "panel.tab.files", icon: FolderOpen },
+  { id: "plan", labelKey: "panel.tab.plan", icon: ListTodo },
+  { id: "terminal", labelKey: "panel.tab.terminal", icon: Terminal },
 ];
 
 function kindIcon(kind: ChatArtifact["kind"]) {
@@ -63,25 +65,29 @@ function kindIcon(kind: ChatArtifact["kind"]) {
       return FileText;
     case "attachment":
       return Paperclip;
+    case "image":
+      return ImageIcon;
     default:
       return File;
   }
 }
 
-function kindLabel(kind: ChatArtifact["kind"]) {
+function kindLabel(kind: ChatArtifact["kind"], t: (key: AppDictKey) => string) {
   switch (kind) {
     case "pptx":
       return "PowerPoint";
     case "xlsx":
       return "Excel";
     case "doc":
-      return "문서";
+      return t("artifact.document");
     case "structured":
-      return "구조화";
+      return t("panel.kind.structured");
     case "attachment":
-      return "첨부";
+      return t("panel.kind.attachment");
+    case "image":
+      return t("artifact.image");
     default:
-      return "텍스트";
+      return t("panel.kind.text");
   }
 }
 
@@ -106,11 +112,12 @@ export default function ChatRightPanel({
   loading: boolean;
   onSelectArtifact?: (a: ChatArtifact) => void;
 }) {
+  const t = useT();
   const emptyHint = useMemo(() => {
-    if (tab === "files") return "채팅에서 생성된 PPT · 엑셀 · 문서가 여기에 모입니다.";
-    if (tab === "plan") return "작업을 시작하면 단계별 계획이 표시됩니다.";
-    return "AI 처리 로그가 여기에 실시간으로 표시됩니다.";
-  }, [tab]);
+    if (tab === "files") return t("panel.emptyHint.files");
+    if (tab === "plan") return t("panel.emptyHint.plan");
+    return t("panel.emptyHint.terminal");
+  }, [tab, t]);
 
   if (!open) {
     return (
@@ -118,17 +125,17 @@ export default function ChatRightPanel({
         <button
           type="button"
           onClick={onToggle}
-          title="우측 패널 열기"
+          title={t("panel.openRight")}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
         >
           <ChevronRight className="h-4 w-4 rotate-180" />
         </button>
         <div className="mt-3 flex flex-col items-center gap-2">
-          {TAB_META.map(({ id, label, icon: Icon }) => (
+          {TAB_META.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               type="button"
-              title={label}
+              title={t(labelKey)}
               onClick={() => {
                 onTabChange(id);
                 if (!open) onToggle();
@@ -154,12 +161,12 @@ export default function ChatRightPanel({
     <aside className="flex h-full min-w-0 flex-col border-l border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/80 dark:backdrop-blur-md">
       <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          작업 패널
+          {t("chat.workPanel")}
         </p>
         <button
           type="button"
           onClick={onToggle}
-          title="우측 패널 접기"
+          title={t("panel.collapseRight")}
           className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
         >
           <ChevronRight className="h-4 w-4" />
@@ -167,7 +174,7 @@ export default function ChatRightPanel({
       </div>
 
       <div className="flex gap-1 border-b border-slate-200 p-1.5 dark:border-slate-800">
-        {TAB_META.map(({ id, label, icon: Icon }) => (
+        {TAB_META.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -179,7 +186,7 @@ export default function ChatRightPanel({
             }`}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden truncate lg:inline">{label}</span>
+            <span className="hidden truncate lg:inline">{t(labelKey)}</span>
           </button>
         ))}
       </div>
@@ -208,7 +215,7 @@ export default function ChatRightPanel({
                             {a.title}
                           </span>
                           <span className="mt-0.5 block truncate text-[11px] text-slate-500">
-                            {kindLabel(a.kind)}
+                            {kindLabel(a.kind, t)}
                             {a.subtitle ? ` · ${a.subtitle}` : ""}
                           </span>
                         </span>
@@ -220,7 +227,7 @@ export default function ChatRightPanel({
                           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                         >
                           <Eye className="h-3 w-3" />
-                          열기
+                          {t("chat.openFile")}
                         </button>
                         {a.url && (
                           <a
@@ -231,7 +238,7 @@ export default function ChatRightPanel({
                             className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
                           >
                             <Download className="h-3 w-3" />
-                            다운로드
+                            {t("chat.download")}
                           </a>
                         )}
                       </div>
@@ -270,7 +277,7 @@ export default function ChatRightPanel({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[11px] font-medium text-slate-400">
-                      단계 {i + 1}
+                      {t("panel.stepPrefix")} {i + 1}
                     </span>
                     <span
                       className={`block text-sm ${

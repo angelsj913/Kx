@@ -19,11 +19,11 @@ async function fetchSessions(): Promise<SessionSummary[]> {
   return (data.sessions ?? []) as SessionSummary[];
 }
 
-export async function createEmptySession(title = "새 대화"): Promise<SessionSummary> {
+export async function createEmptySession(title?: string): Promise<SessionSummary> {
   const res = await wsFetch("/api/chat/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title: title ?? null }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error ?? "대화를 만들지 못했습니다.");
@@ -65,7 +65,7 @@ export function useSessions() {
   }, []);
 
   /** 「새 대화」 버튼 전용 — 입장 시 자동 호출하지 않음 */
-  const createSession = useCallback(async (title = "새 대화") => {
+  const createSession = useCallback(async (title?: string) => {
     const session = await createEmptySession(title);
     setSessions((prev) => {
       const rest = prev.filter((s) => s.id !== session.id);

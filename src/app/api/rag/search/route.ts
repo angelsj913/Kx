@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
-import { topK } from "@/lib/rag";
-import { embedQuery } from "@/lib/embeddings";
+import { resolveScope, WorkspaceError } from "@/lib/workspace";
+import { retrieveChunks } from "@/lib/ragSearch";
 import { chatReplyWithFallback } from "@/lib/ai";
 import { friendlyError } from "@/lib/errors";
 
@@ -11,7 +9,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const TOP_K = 6;
-const CANDIDATE_LIMIT = 2000;
 
 const SYSTEM = `당신은 사내 문서 기반 질의응답 도우미입니다.
 아래 제공된 발췌문(컨텍스트)만 근거로 답하세요.
@@ -48,17 +45,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const where = {
-      ...listWhere(scope, userId),
-      ...(libraryItemId ? { libraryItemId } : {}),
-    };
-    const chunks = await prisma.documentChunk.findMany({
-      where,
-      take: CANDIDATE_LIMIT,
-      select: { id: true, content: true, embedding: true, libraryItemId: true },
+    const { ranked, provider, empty } = await retrieveChunks({
+      userId,
+      workspaceId: scope.workspaceId,
+      libraryItemId,
+      query,
+      k: TOP_K,
     });
 
-    if (chunks.length === 0) {
+    if (empty) {
       return NextResponse.json({
         answer: "아직 색인된 문서가 없어요. 먼저 서재 자료를 색인해 주세요.",
         sources: [],
@@ -66,23 +61,12 @@ export async function POST(request: Request) {
       });
     }
 
-    const { vector, provider } = await embedQuery(query);
-    const ranked = topK(vector, chunks, TOP_K).filter((r) => r.score > 0);
-
     if (ranked.length === 0) {
       return NextResponse.json({ answer: "관련된 내용을 찾지 못했어요.", sources: [], provider });
     }
 
-    // 근거 문서 제목 조회
-    const itemIds = [...new Set(ranked.map((r) => r.item.libraryItemId))];
-    const items = await prisma.libraryItem.findMany({
-      where: { id: { in: itemIds } },
-      select: { id: true, title: true },
-    });
-    const titleOf = new Map(items.map((it) => [it.id, it.title]));
-
     const context = ranked
-      .map((r, i) => `[${i + 1}] (출처: ${titleOf.get(r.item.libraryItemId) ?? "문서"})\n${r.item.content}`)
+      .map((r) => `[${r.n}] (출처: ${r.title})\n${r.content}`)
       .join("\n\n");
 
     const result = await chatReplyWithFallback({
@@ -90,12 +74,12 @@ export async function POST(request: Request) {
       messages: [{ role: "user", text: `질문: ${query}\n\n=== 컨텍스트 ===\n${context}` }],
     });
 
-    const sources = ranked.map((r, i) => ({
-      n: i + 1,
-      libraryItemId: r.item.libraryItemId,
-      title: titleOf.get(r.item.libraryItemId) ?? "문서",
-      snippet: r.item.content.slice(0, 200),
-      score: Number(r.score.toFixed(3)),
+    const sources = ranked.map((r) => ({
+      n: r.n,
+      libraryItemId: r.libraryItemId,
+      title: r.title,
+      snippet: r.snippet,
+      score: r.score,
     }));
 
     return NextResponse.json({ answer: result.text, sources, provider });

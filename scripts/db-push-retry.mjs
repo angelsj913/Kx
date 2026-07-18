@@ -15,7 +15,7 @@ function sleep(ms) {
 async function main() {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     console.log(`[db-push-retry] prisma db push (attempt ${attempt}/${MAX_ATTEMPTS})`);
-    const result = spawnSync("npx", ["prisma", "db", "push"], {
+    const result = spawnSync("npx", ["prisma", "db", "push", "--accept-data-loss"], {
       stdio: "inherit",
       shell: process.platform === "win32",
     });

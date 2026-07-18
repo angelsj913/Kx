@@ -2,13 +2,9 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
-export type OtpChannel = "email" | "sms";
-export type OtpPurpose =
-  | "signup"
-  | "find-id"
-  | "find-password"
-  | "workspace-delete"
-  | "admin-plan-change"; // 관리자 회원 요금제 변경 2단계 인증
+// 이메일 전용(채널 개념 자체를 없앰) — 회원가입·비밀번호 재설정 이메일 인증과,
+// 워크스페이스 삭제·관리자 요금제 변경 2단계 확인에 쓰인다.
+export type OtpPurpose = "signup" | "find-password" | "workspace-delete" | "admin-plan-change";
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
@@ -16,15 +12,8 @@ export function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-export function hasEmailProvider(): boolean {
-  return (
-    !!(process.env.SMTP_USER && process.env.SMTP_PASS) ||
-    !!process.env.RESEND_API_KEY
-  );
-}
-
 export type IssueOtpResult = {
-  /** 실제 메일 발송 성공 여부 */
+  /** 실제 발송 성공 여부 */
   sent: boolean;
   mode: "smtp" | "resend" | "dev-log" | "none";
   /** 개발 또는 메일 미설정/실패 시 화면에 보여줄 코드 (admin 폴백 포함) */
@@ -33,10 +22,9 @@ export type IssueOtpResult = {
   mailError?: string;
 };
 
-/** 6자리 코드를 발급·저장하고 채널로 발송한다. */
+/** 6자리 코드를 발급·저장하고 이메일로 발송한다. */
 export async function issueOtp(
   identifier: string,
-  channel: OtpChannel,
   purpose: OtpPurpose
 ): Promise<IssueOtpResult> {
   const code = generateCode();
@@ -47,13 +35,8 @@ export async function issueOtp(
     where: { identifier, purpose, consumedAt: null },
   });
   await prisma.verificationCode.create({
-    data: { identifier, channel, purpose, code, expiresAt },
+    data: { identifier, purpose, code, expiresAt },
   });
-
-  if (channel === "sms") {
-    await sendSmsOtp(identifier, code);
-    return { sent: false, mode: "none", devCode: code };
-  }
 
   const mail = await sendEmailOtp(identifier, code, purpose);
 
@@ -94,7 +77,13 @@ export async function verifyOtp(
   return true;
 }
 
-/** 최근 인증에 성공(소비)한 기록이 있는지 — 회원가입 최종 처리 직전 재확인용. */
+/**
+ * 최근(30분 이내) 인증에 성공(소비)한 기록이 있는지 — 회원가입 최종 처리·비밀번호
+ * 재설정 직전 재확인용. 이 함수가 false를 반환하는 이유는 "코드를 아예 발송한 적
+ * 없음"(가입 안 된 이메일로 비번 재설정 시도 등)과 "인증을 아직 안 함"을 구분하지
+ * 않는다 — 둘 다 같은 일반 메시지로 처리되게 해서, 계정 존재 여부가 이 단계에서
+ * 새어나가지 않게 한다.
+ */
 export async function hasRecentVerifiedOtp(
   identifier: string,
   purpose: OtpPurpose
@@ -119,7 +108,7 @@ type MailResult = {
 async function sendEmailOtp(
   email: string,
   code: string,
-  purpose: OtpPurpose = "signup"
+  purpose: OtpPurpose
 ): Promise<MailResult> {
   const isAdminPlan = purpose === "admin-plan-change";
   const subject = isAdminPlan
@@ -231,14 +220,4 @@ function friendlyResendError(msg: string): string {
     );
   }
   return `Resend 발송 실패: ${msg}`;
-}
-
-/** 국내 SMS 발송 핸들러 스터브 */
-async function sendSmsOtp(phone: string, code: string): Promise<void> {
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`[OTP:sms:stub] ${phone} -> ${code}`);
-  }
-  if (process.env.NODE_ENV === "production" && !process.env.SMS_API_KEY) {
-    throw new Error("문자 인증은 준비 중입니다. 이메일 인증을 이용해 주세요.");
-  }
 }

@@ -55,7 +55,7 @@ export default function LibraryView({
         setItems(data.items ?? []);
         if (data.usage) setUsage(data.usage);
       } else {
-        setError(data?.error ?? "서재를 불러오지 못했습니다.");
+        setError(data?.error ?? t("library.errors.loadFailed"));
         setItems([]);
       }
     } finally {
@@ -94,11 +94,11 @@ export default function LibraryView({
             })
           : await wsFetch("/api/library?scope=shared", { method: "POST", body: form });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "업로드에 실패했습니다.");
+      if (!res.ok) throw new Error(data?.error ?? t("library.errors.uploadFailed"));
       setItems((prev) => [data.item, ...prev]);
       if (data.usage) setUsage(data.usage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setUploading(false);
     }
@@ -153,8 +153,8 @@ export default function LibraryView({
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
           {usage && tab === "mine" && (
             <p className="mt-1 text-xs text-slate-400">
-              저장 {usage.used} / {usage.max}개
-              {usage.used >= usage.max ? " · 한도 도달" : ""}
+              {t("library.usagePrefix")}{usage.used} / {usage.max}{t("library.usageSuffix")}
+              {usage.used >= usage.max ? t("library.limitReached") : ""}
             </p>
           )}
         </div>

@@ -1,11 +1,13 @@
 import {
   geminiGenerateForTool,
   geminiChatReply,
+  geminiChatReplyStream,
   MissingApiKeyError,
   type ChatMessage,
 } from "./gemini";
 import {
   compatChatReply,
+  compatChatReplyStream,
   compatGenerateForTool,
   hasProviderKey,
   listConfiguredProviders,
@@ -56,13 +58,13 @@ export function filterCandidatesByAvailableKeys(candidates: ModelDef[]): ModelDe
     const configured = listConfiguredProviders().filter((p) => p.set);
     if (configured.length === 0) {
       throw new MissingApiKeyError(
-        "AI API 키가 없습니다. Vercel에 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키 중 하나 이상을 설정하세요.",
+        "AI API 키가 없습니다. Vercel에 GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / SAMBANOVA / GEMINI 키 중 하나 이상을 설정하세요.",
       );
     }
     const relaxed = candidates.filter((m) => hasProviderKey(m.provider));
     if (relaxed.length === 0) {
       throw new MissingApiKeyError(
-        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ·CEREBRAS·MISTRAL·OPENROUTER·DEEPSEEK·GEMINI 키를 확인하세요.",
+        "설정된 키로 쓸 수 있는 모델이 없습니다. GROQ·CEREBRAS·MISTRAL·OPENROUTER·DEEPSEEK·GITHUB·SAMBANOVA·GEMINI 키를 확인하세요.",
       );
     }
     return relaxed;
@@ -166,7 +168,7 @@ async function runWithFallback(
 
   if (attemptNumber === 0) {
     throw new MissingApiKeyError(
-      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GEMINI 키를 확인하세요.",
+      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / SAMBANOVA / GEMINI 키를 확인하세요.",
     );
   }
   throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");
@@ -237,6 +239,142 @@ export async function chatReplyWithFallback(args: {
       }),
     args.onAttempt,
   );
+}
+
+export interface StreamFallbackResult extends FallbackResult {
+  /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 — true면 다른 제공자로
+   * 페일오버하지 않고 이미 보여준 텍스트 그대로 턴을 종료한 상태다. */
+  interrupted: boolean;
+}
+
+function invokeModelStream(
+  m: ModelDef,
+  opts: { systemInstruction: string; messages: ChatMessage[] },
+  onDelta: (delta: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (m.provider === "gemini") {
+    return geminiChatReplyStream({
+      model: m.model,
+      systemInstruction: opts.systemInstruction,
+      messages: opts.messages,
+      onDelta,
+      signal,
+    });
+  }
+  return compatChatReplyStream({
+    provider: m.provider,
+    systemInstruction: opts.systemInstruction,
+    messages: opts.messages,
+    model: m.model,
+    onDelta,
+    signal,
+  });
+}
+
+/**
+ * 채팅 전용 스트리밍 페일오버. 핵심 규칙: **첫 델타가 도착하기 전까지는** 지금처럼
+ * 다음 후보로 넘어가는 페일오버가 그대로 동작하고(대부분의 실패는 인증·레이트리밋처럼
+ * 첫 토큰 이전에 발생), **첫 델타가 도착한 순간부터는 그 제공자에 확정**한다. 확정 후
+ * 스트림이 끊기면(드문 경우) 다른 제공자로 몰래 갈아타지 않는다 — 사용자가 이미 본
+ * 텍스트와 안 이어지는 답이 뒤에 붙는 걸 막기 위해, 그 지점에서 중단(interrupted)으로
+ * 마무리한다.
+ */
+export async function chatReplyWithFallbackStream(args: {
+  systemInstruction: string;
+  messages: ChatMessage[];
+  candidates?: ModelDef[];
+  modelTier?: ModelTier;
+  onAttempt?: (info: AttemptInfo) => void;
+  onDelta: (delta: string) => void;
+  signal?: AbortSignal;
+}): Promise<StreamFallbackResult> {
+  const hasFiles = args.messages.some((m) => m.files && m.files.length > 0);
+  const raw =
+    args.candidates ??
+    (hasFiles
+      ? MULTIMODAL_MODELS
+      : args.modelTier
+        ? modelsForTier(args.modelTier)
+        : FALLBACK_MODELS);
+
+  const list = filterCandidatesByAvailableKeys(raw);
+  let lastErr: unknown;
+  let attemptNumber = 0;
+  let skipPaidOpenRouter = false;
+
+  for (const m of list) {
+    if (args.signal?.aborted) break;
+    if (skipPaidOpenRouter && m.provider === "openrouter" && !m.free) continue;
+    if (isProviderSkipped(m.provider as ProviderId)) continue;
+
+    attemptNumber += 1;
+    args.onAttempt?.({ provider: m.provider, model: m.model, attemptNumber });
+
+    let committed = false;
+    let accumulated = "";
+    try {
+      const text = await invokeModelStream(
+        m,
+        { systemInstruction: args.systemInstruction, messages: args.messages },
+        (delta) => {
+          committed = true;
+          accumulated += delta;
+          args.onDelta(delta);
+        },
+        args.signal,
+      );
+      const finalText = text || accumulated;
+      if (!finalText || !finalText.trim()) {
+        if (committed) {
+          return {
+            text: accumulated,
+            provider: m.provider,
+            model: m.model,
+            attempts: attemptNumber,
+            interrupted: true,
+          };
+        }
+        throw new Error("빈 응답 (empty model output)");
+      }
+      markProviderHealthy(m.provider as ProviderId);
+      return {
+        text: finalText,
+        provider: m.provider,
+        model: m.model,
+        attempts: attemptNumber,
+        interrupted: false,
+      };
+    } catch (err) {
+      if (committed) {
+        console.warn(
+          `[ai] stream interrupted mid-response ${m.provider}/${m.model}:`,
+          errorText(err).slice(0, 300),
+        );
+        return {
+          text: accumulated,
+          provider: m.provider,
+          model: m.model,
+          attempts: attemptNumber,
+          interrupted: true,
+        };
+      }
+      lastErr = err;
+      console.warn(`[ai] stream fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
+      noteProviderFailure(m.provider as ProviderId, err);
+
+      if (m.provider === "openrouter" && isOpenRouterCreditsError(err) && !m.free) {
+        skipPaidOpenRouter = true;
+      }
+    }
+  }
+
+  if (attemptNumber === 0) {
+    throw new MissingApiKeyError(
+      "사용 가능한 AI 모델이 없습니다. GROQ / CEREBRAS / MISTRAL / OPENROUTER / DEEPSEEK / GITHUB / SAMBANOVA / GEMINI 키를 확인하세요.",
+    );
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("AI 요청에 실패했습니다.");
 }
 
 export { listConfiguredProviders, hasProviderKey };

@@ -21,13 +21,16 @@ export default function SupportLegalPage() {
   return (
     <SupportShell active="legal">
       <div className="space-y-10">
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          {t("legal.disclaimer")}
+        </p>
         {/* 이용약관 */}
         <section>
           <h1 id="terms" className="scroll-mt-20 text-xl font-bold sm:text-2xl">
             {t("support.legal.termsTitle")}
           </h1>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            시행일: {COMPANY_INFO.effectiveDate}
+            {t("legal.effectiveDate")} {COMPANY_INFO.effectiveDate}
           </p>
           <div className="mt-4 space-y-4">
             {TERMS.map((a) => (
@@ -51,7 +54,7 @@ export default function SupportLegalPage() {
             {t("support.legal.privacyTitle")}
           </h2>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            최종 개정일: {COMPANY_INFO.lastUpdated}
+            {t("legal.lastUpdated")} {COMPANY_INFO.lastUpdated}
           </p>
           <div className="mt-4 space-y-4">
             {PRIVACY.map((a) => (
@@ -78,14 +81,14 @@ export default function SupportLegalPage() {
         {/* 사업자 정보 */}
         <section className="border-t border-slate-200 pt-8 dark:border-slate-800">
           <div className="rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-            <p className="font-semibold text-slate-700 dark:text-slate-200">사업자 정보</p>
-            <p className="mt-2">서비스명 · 상호: {COMPANY_INFO.companyName}</p>
-            <p>대표자: {COMPANY_INFO.representative}</p>
-            <p>소재지: {COMPANY_INFO.address}</p>
-            <p>사업자등록번호: {COMPANY_INFO.businessNo}</p>
-            <p>통신판매업 신고번호: {COMPANY_INFO.mailOrderNo}</p>
-            <p>개인정보 보호책임자: {COMPANY_INFO.privacyOfficer}</p>
-            <p>문의: {COMPANY_INFO.contactEmail}</p>
+            <p className="font-semibold text-slate-700 dark:text-slate-200">{t("legal.bizInfo.title")}</p>
+            <p className="mt-2">{t("legal.bizInfo.name")} {COMPANY_INFO.companyName}</p>
+            <p>{t("legal.bizInfo.rep")} {COMPANY_INFO.representative}</p>
+            <p>{t("legal.bizInfo.address")} {COMPANY_INFO.address}</p>
+            <p>{t("legal.bizInfo.bizNo")} {COMPANY_INFO.businessNo}</p>
+            <p>{t("legal.bizInfo.mailOrderNo")} {COMPANY_INFO.mailOrderNo}</p>
+            <p>{t("legal.bizInfo.privacyOfficer")} {COMPANY_INFO.privacyOfficer}</p>
+            <p>{t("legal.bizInfo.contact")} {COMPANY_INFO.contactEmail}</p>
           </div>
         </section>
       </div>

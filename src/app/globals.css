@@ -55,6 +55,60 @@ body {
   }
 }
 
+/* ── 랜딩 히어로 등장 애니메이션 (CSS 전용) ──
+   framer-motion의 initial="hidden"은 JS 번들이 전부 로드·하이드레이션될 때까지
+   첫 화면을 통째로 숨겨서 "사이트가 느리다"로 체감된다. CSS 키프레임은 HTML/CSS가
+   도착하는 즉시 재생되므로 JS와 무관하게 콘텐츠가 바로 보인다. */
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-up {
+  animation: landing-fade-up 0.6s ease-out both;
+}
+.hero-delay-1 {
+  animation-delay: 0.1s;
+}
+.hero-delay-2 {
+  animation-delay: 0.25s;
+}
+.hero-delay-3 {
+  animation-delay: 0.4s;
+}
+.hero-delay-4 {
+  animation-delay: 0.55s;
+}
+
+/* ── 페이지 전환 페이드 (라우트 이동 시 template.tsx가 리마운트하며 재생) ── */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-transition {
+  animation: page-enter 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .page-transition {
+    animation: none;
+  }
+}
+
 /* 라이트: 연한 slate 시머 / 다크: 더 밝은 하이라이트로 대비 확보 */
 .skeleton-shimmer {
   background: linear-gradient(

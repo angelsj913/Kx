@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useIsDesktopClient } from "@/lib/useIsDesktopClient";
 
 function GoogleIcon() {
   return (
@@ -21,7 +22,9 @@ function GoogleIcon() {
 
 function LoginCard() {
   const t = useLandingT();
-  const callbackUrl = "/"; // ← 변경: 로그인 후 홈으로 이동
+  // 데스크탑 앱은 마케팅 홈이 차단돼 있으므로 로그인 후 바로 워크스페이스로 보낸다.
+  const isDesktop = useIsDesktopClient();
+  const callbackUrl = isDesktop ? "/app" : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,11 +50,12 @@ function LoginCard() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
+    <div className="relative flex min-h-dvh flex-col items-center justify-start overflow-hidden bg-slate-50 px-6 pb-10 pt-24 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100 sm:justify-center sm:pt-6">
       <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4">
-        <BackButton fallbackHref="/" forceFallback />
+        {/* 데스크탑 앱에서는 뒤로가기(→ 마케팅 홈)를 숨긴다 */}
+        {isDesktop ? <span /> : <BackButton fallbackHref="/" forceFallback />}
         <ThemeToggle />
       </div>
 
@@ -119,8 +123,6 @@ function LoginCard() {
         </form>
 
         <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-          <Link href="/find-id" className="hover:text-blue-600 dark:hover:text-blue-400">{t("login.findId")}</Link>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
           <Link href="/find-password" className="hover:text-blue-600 dark:hover:text-blue-400">{t("login.findPassword")}</Link>
         </div>
 

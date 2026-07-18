@@ -5,6 +5,7 @@ import { Plus, Trash2, CalendarDays, Users, ClipboardList } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
 import type { MeetingMinutes } from "@/lib/structured";
+import { useT } from "@/lib/i18n";
 
 export default function MeetingMinutesView({
   id,
@@ -13,6 +14,7 @@ export default function MeetingMinutesView({
   id: string;
   initial: MeetingMinutes;
 }) {
+  const t = useT();
   const [data, setData] = useState(initial);
   const status = useAutosave(id, data);
 
@@ -39,7 +41,7 @@ export default function MeetingMinutesView({
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <ClipboardList className="h-4 w-4 text-[var(--mode-accent)]" />
-          회의록
+          {t("structured.meetingMinutes.title")}
         </h2>
         <SaveIndicator status={status} />
       </div>
@@ -49,19 +51,19 @@ export default function MeetingMinutesView({
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <CalendarDays className="h-3.5 w-3.5" /> 날짜
+              <CalendarDays className="h-3.5 w-3.5" /> {t("structured.meetingMinutes.date")}
             </span>
             <input
               type="text"
               value={data.date}
               onChange={(e) => setData((d) => ({ ...d, date: e.target.value }))}
-              placeholder="예) 2026-07-09"
+              placeholder={t("structured.meetingMinutes.datePlaceholder")}
               className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
             />
           </label>
           <label className="block">
             <span className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <Users className="h-3.5 w-3.5" /> 참석자
+              <Users className="h-3.5 w-3.5" /> {t("structured.meetingMinutes.attendees")}
             </span>
             <input
               type="text"
@@ -75,14 +77,14 @@ export default function MeetingMinutesView({
                     .filter(Boolean),
                 }))
               }
-              placeholder="쉼표로 구분 (예: 김민준, 이서연)"
+              placeholder={t("structured.meetingMinutes.attendeesPlaceholder")}
               className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
             />
           </label>
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">안건</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">{t("structured.meetingMinutes.agenda")}</span>
           <textarea
             value={data.agenda}
             onChange={(e) => setData((d) => ({ ...d, agenda: e.target.value }))}
@@ -94,19 +96,19 @@ export default function MeetingMinutesView({
         {/* 액션 아이템 위젯 */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">액션 아이템</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t("structured.meetingMinutes.actionItems")}</span>
             <button
               type="button"
               onClick={addItem}
               className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
             >
-              <Plus className="h-3.5 w-3.5" /> 항목 추가
+              <Plus className="h-3.5 w-3.5" /> {t("structured.meetingMinutes.addItem")}
             </button>
           </div>
 
           {data.actionItems.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 py-6 text-center text-xs text-slate-500">
-              아직 액션 아이템이 없습니다.
+              {t("structured.meetingMinutes.emptyItems")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -119,14 +121,14 @@ export default function MeetingMinutesView({
                     type="text"
                     value={item.task}
                     onChange={(e) => updateItem(i, { task: e.target.value })}
-                    placeholder="할 일"
+                    placeholder={t("structured.meetingMinutes.taskPlaceholder")}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                   />
                   <input
                     type="text"
                     value={item.assignee}
                     onChange={(e) => updateItem(i, { assignee: e.target.value })}
-                    placeholder="담당자"
+                    placeholder={t("structured.meetingMinutes.assigneePlaceholder")}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                   />
                   <input
@@ -138,7 +140,7 @@ export default function MeetingMinutesView({
                   <button
                     type="button"
                     onClick={() => removeItem(i)}
-                    aria-label="항목 삭제"
+                    aria-label={t("structured.meetingMinutes.removeItemAria")}
                     className="justify-self-end rounded-lg p-2 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400 sm:justify-self-center"
                   >
                     <Trash2 className="h-4 w-4" />

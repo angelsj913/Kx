@@ -5,6 +5,7 @@ import { Plus, Trash2, BookMarked, List } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
 import type { ResearchDraft } from "@/lib/structured";
+import { useT } from "@/lib/i18n";
 
 export default function ResearchDraftView({
   id,
@@ -13,6 +14,7 @@ export default function ResearchDraftView({
   id: string;
   initial: ResearchDraft;
 }) {
+  const t = useT();
   const [data, setData] = useState(initial);
   const status = useAutosave(id, data);
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -29,7 +31,10 @@ export default function ResearchDraftView({
     }));
   }
   function addSection() {
-    setData((d) => ({ ...d, sections: [...d.sections, { heading: "새 섹션", body: "" }] }));
+    setData((d) => ({
+      ...d,
+      sections: [...d.sections, { heading: t("structured.researchDraft.defaultSectionHeading"), body: "" }],
+    }));
   }
   function removeSection(i: number) {
     setData((d) => ({ ...d, sections: d.sections.filter((_, idx) => idx !== i) }));
@@ -60,11 +65,11 @@ export default function ResearchDraftView({
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <BookMarked className="h-4 w-4 text-[var(--mode-accent)]" />
-          레포트 · 논문 초안
+          {t("structured.researchDraft.title")}
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-xs tabular-nums text-slate-500">
-            {charCount.toLocaleString()}자
+            {charCount.toLocaleString()}{t("structured.researchDraft.charCountSuffix")}
           </span>
           <SaveIndicator status={status} />
         </div>
@@ -74,7 +79,7 @@ export default function ResearchDraftView({
         {/* 아웃라인 사이드바 */}
         <nav className="min-h-0 overflow-y-auto border-r border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/30 p-3">
           <p className="mb-2 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-            <List className="h-3.5 w-3.5" /> 목차
+            <List className="h-3.5 w-3.5" /> {t("structured.researchDraft.toc")}
           </p>
           <ul className="space-y-0.5">
             {data.sections.map((s, i) => (
@@ -85,7 +90,7 @@ export default function ResearchDraftView({
                   className="w-full truncate rounded-lg px-2 py-1.5 text-left text-xs text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-[var(--mode-accent)]"
                   title={s.heading}
                 >
-                  {s.heading || `섹션 ${i + 1}`}
+                  {s.heading || `${t("structured.researchDraft.sectionFallbackPrefix")} ${i + 1}`}
                 </button>
               </li>
             ))}
@@ -95,7 +100,7 @@ export default function ResearchDraftView({
             onClick={addSection}
             className="mt-2 flex w-full items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
           >
-            <Plus className="h-3.5 w-3.5" /> 섹션 추가
+            <Plus className="h-3.5 w-3.5" /> {t("structured.researchDraft.addSection")}
           </button>
         </nav>
 
@@ -120,7 +125,7 @@ export default function ResearchDraftView({
                   <button
                     type="button"
                     onClick={() => removeSection(i)}
-                    aria-label="섹션 삭제"
+                    aria-label={t("structured.researchDraft.removeSectionAria")}
                     className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -139,13 +144,13 @@ export default function ResearchDraftView({
           {/* 인용/출처 로그 테이블 */}
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">참고자료 목록</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t("structured.researchDraft.citationsHeading")}</h3>
               <button
                 type="button"
                 onClick={addCitation}
                 className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
               >
-                <Plus className="h-3.5 w-3.5" /> 자료 추가
+                <Plus className="h-3.5 w-3.5" /> {t("structured.researchDraft.addCitation")}
               </button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
@@ -153,13 +158,13 @@ export default function ResearchDraftView({
                 <thead>
                   <tr className="bg-white dark:bg-slate-900/60">
                     <th className="whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
-                      출처
+                      {t("structured.researchDraft.sourceCol")}
                     </th>
                     <th className="whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
-                      저자
+                      {t("structured.researchDraft.authorCol")}
                     </th>
                     <th className="whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
-                      메모
+                      {t("structured.researchDraft.noteCol")}
                     </th>
                     <th className="w-8 border-b border-slate-200 dark:border-slate-800" />
                   </tr>
@@ -195,7 +200,7 @@ export default function ResearchDraftView({
                         <button
                           type="button"
                           onClick={() => removeCitation(i)}
-                          aria-label="자료 삭제"
+                          aria-label={t("structured.researchDraft.removeCitationAria")}
                           className="rounded-md p-1 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -206,7 +211,7 @@ export default function ResearchDraftView({
                   {data.citations.length === 0 && (
                     <tr>
                       <td colSpan={4} className="px-3 py-6 text-center text-xs text-slate-500">
-                        아직 등록된 참고자료가 없습니다.
+                        {t("structured.researchDraft.emptyCitations")}
                       </td>
                     </tr>
                   )}

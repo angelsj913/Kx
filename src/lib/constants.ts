@@ -1,3 +1,10 @@
+// 업로드 제한 — 라이브러리·채팅 첨부 공통. 서버 메모리(파일을 통째로
+// Buffer + base64로 올린다)와 Blob 저장 비용을 로그인 사용자가 임의로
+// 키우지 못하게 막는 상한이다.
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB / 파일
+export const MAX_UPLOAD_MB = 20;
+export const MAX_CHAT_FILES = 10; // 한 메시지당 첨부 개수
+
 // ZEFF AI 데스크톱 설치 파일 — GitHub Release 자산으로 배포
 export const REPO = "https://github.com/angelsj913/Kx";
 export const REPO_SLUG = "angelsj913/Kx";

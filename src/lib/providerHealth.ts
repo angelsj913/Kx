@@ -4,7 +4,9 @@ export type ProviderId =
   | "groq"
   | "deepseek"
   | "cerebras"
-  | "mistral";
+  | "mistral"
+  | "github"
+  | "sambanova";
 
 interface HealthState {
   skipUntil: number;
@@ -18,6 +20,8 @@ const health: Record<ProviderId, HealthState> = {
   deepseek: { skipUntil: 0, reason: "" },
   cerebras: { skipUntil: 0, reason: "" },
   mistral: { skipUntil: 0, reason: "" },
+  github: { skipUntil: 0, reason: "" },
+  sambanova: { skipUntil: 0, reason: "" },
 };
 
 const DEFAULT_SKIP_MS = 10 * 60 * 1000;

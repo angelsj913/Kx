@@ -3,24 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { CheckCircle2 } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import OtpInput from "@/components/auth/OtpInput";
+import PasswordStrengthHint from "@/components/auth/PasswordStrengthHint";
 import Logo from "@/components/ui/Logo";
-
-const DIAL_CODES = [
-  { code: "+82", label: "🇰🇷 +82" },
-  { code: "+1", label: "🇺🇸 +1" },
-  { code: "+81", label: "🇯🇵 +81" },
-  { code: "+86", label: "🇨🇳 +86" },
-  { code: "+44", label: "🇬🇧 +44" },
-  { code: "+49", label: "🇩🇪 +49" },
-  { code: "+33", label: "🇫🇷 +33" },
-  { code: "+34", label: "🇪🇸 +34" },
-  { code: "+7", label: "🇷🇺 +7" },
-];
+import { checkPasswordStrength } from "@/lib/password";
 
 function fmtTimer(s: number): string {
   const m = Math.floor(s / 60);
@@ -31,10 +20,7 @@ function fmtTimer(s: number): string {
 export default function SignupPage() {
   const t = useLandingT();
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [dialCode, setDialCode] = useState("+82");
-  const [phone, setPhone] = useState("");
 
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
@@ -60,16 +46,17 @@ export default function SignupPage() {
       setError("올바른 이메일 주소를 입력해 주세요.");
       return;
     }
-    if (password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
+    const strength = checkPasswordStrength(password, { email });
+    if (!strength.ok) {
+      setError(strength.reason ?? "비밀번호 조건을 확인해 주세요.");
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/verify", {
+      const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", identifier: email, channel: "email", purpose: "signup" }),
+        body: JSON.stringify({ action: "send", identifier: email, purpose: "signup" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "발송에 실패했습니다.");
@@ -89,7 +76,7 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/verify", {
+      const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "check", identifier: email, purpose: "signup", code: otp }),
@@ -112,16 +99,12 @@ export default function SignupPage() {
       setError("이메일 인증을 먼저 완료해 주세요.");
       return;
     }
-    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
-      setError("아이디는 영문·숫자·밑줄(_) 4~20자로 입력해 주세요.");
-      return;
-    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, password, dialCode, phone }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "가입에 실패했습니다.");
@@ -135,8 +118,8 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-6 py-3.5">
-          <BackButton fallbackHref="/login" forceFallback />
+        <div className="mx-auto flex max-w-md items-center justify-between px-6 py-3.5">
+          <BackButton fallbackHref="/login" />
           <Link href="/" className="flex items-center">
             <Logo size="sm" />
           </Link>
@@ -144,11 +127,11 @@ export default function SignupPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-lg px-6 py-10">
+      <div className="mx-auto max-w-md px-6 py-10">
         <h1 className="text-2xl font-bold">{t("auth.signup.title")}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("auth.signup.subtitle")}</p>
 
-        <form className="mt-8 space-y-5" onSubmit={onSubmit}>
+        <form className="mt-8 space-y-4" onSubmit={onSubmit}>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
               {t("auth.field.email")}
@@ -166,27 +149,6 @@ export default function SignupPage() {
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
-              {t("auth.field.username")}
-            </span>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-              disabled={otpVerified}
-              required
-              minLength={4}
-              maxLength={20}
-              autoComplete="username"
-              placeholder="zeff_user"
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
-            <span className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">
-              {t("auth.field.usernameHint")}
-            </span>
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
               {t("auth.field.password")}
             </span>
             <input
@@ -198,84 +160,50 @@ export default function SignupPage() {
               placeholder={t("auth.field.passwordHint")}
               className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
+            {!otpVerified && <PasswordStrengthHint password={password} context={{ email }} />}
           </label>
 
-          <div className="block">
-            <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
-              {t("auth.field.phone")}
-            </span>
-            <div className="flex gap-2">
-              <select
-                value={dialCode}
-                onChange={(e) => setDialCode(e.target.value)}
-                className="shrink-0 rounded-xl border border-slate-300 bg-white px-2.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              >
-                {DIAL_CODES.map((d) => (
-                  <option key={d.code} value={d.code}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
-                placeholder={t("auth.field.phoneHint")}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <span className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">
-              {t("auth.field.phoneNote")}
-            </span>
-          </div>
-
-          {/* 이메일 OTP */}
-          {!otpVerified ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              {!otpSent ? (
+          {!otpSent ? (
+            <button
+              type="button"
+              onClick={sendOtp}
+              disabled={loading}
+              className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+            >
+              {t("auth.otp.send")}
+            </button>
+          ) : !otpVerified ? (
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400">{t("auth.otp.enter")}</span>
+                <span className={expired ? "font-semibold text-red-500" : "font-semibold text-blue-600 dark:text-blue-400"}>
+                  {expired ? t("auth.otp.expired") : fmtTimer(secondsLeft)}
+                </span>
+              </div>
+              <OtpInput value={otp} onChange={setOtp} disabled={expired} />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={checkOtp}
+                  disabled={loading || otp.length !== 6 || expired}
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+                >
+                  {t("auth.otp.verify")}
+                </button>
                 <button
                   type="button"
                   onClick={sendOtp}
                   disabled={loading}
-                  className="w-full rounded-xl border border-blue-500/50 bg-blue-600/10 px-4 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-600/20 disabled:opacity-60 dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-300 dark:hover:bg-blue-500/25"
+                  className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400/60 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
                 >
-                  {t("auth.otp.send")}
+                  {t("auth.otp.resend")}
                 </button>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">{t("auth.otp.enter")}</span>
-                    <span className={expired ? "font-semibold text-red-500" : "font-semibold text-blue-600 dark:text-blue-400"}>
-                      {expired ? t("auth.otp.expired") : fmtTimer(secondsLeft)}
-                    </span>
-                  </div>
-                  <OtpInput value={otp} onChange={setOtp} disabled={expired} />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={checkOtp}
-                      disabled={loading || otp.length !== 6 || expired}
-                      className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-                    >
-                      {t("auth.otp.verify")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={sendOtp}
-                      disabled={loading}
-                      className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400/60 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
-                    >
-                      {t("auth.otp.resend")}
-                    </button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-sm font-medium text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
-              <CheckCircle2 className="h-5 w-5" />
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               {t("auth.otp.verified")}
-            </div>
+            </p>
           )}
 
           {info && <p className="text-xs text-slate-500 dark:text-slate-400">{info}</p>}
@@ -285,30 +213,15 @@ export default function SignupPage() {
             </p>
           )}
 
-          {/* 약관 동의 문구 */}
-          <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-            {t("auth.agree.prefix")}{" "}
-            <Link href="/support/legal#terms" target="_blank" className="text-blue-600 underline dark:text-blue-400">
-              {t("support.legal.termsTitle")}
-            </Link>
-            {", "}
-            <Link href="/support/legal#privacy" target="_blank" className="text-blue-600 underline dark:text-blue-400">
-              {t("support.legal.privacyTitle")}
-            </Link>
-            {", "}
-            <Link href="/support/legal#consent" target="_blank" className="text-blue-600 underline dark:text-blue-400">
-              {t("support.legal.consentTitle")}
-            </Link>
-            {t("auth.agree.suffix")}
-          </p>
-
-          <button
-            type="submit"
-            disabled={loading || !otpVerified}
-            className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 disabled:opacity-50"
-          >
-            {t("auth.signup.submit")}
-          </button>
+          {otpVerified && (
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+            >
+              {t("auth.signup.submit")}
+            </button>
+          )}
         </form>
       </div>
     </div>

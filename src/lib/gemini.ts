@@ -1,9 +1,12 @@
-import { GoogleGenAI, createUserContent, type Content, type Part } from "@google/genai";
+import { GoogleGenAI, Modality, createUserContent, type Content, type Part } from "@google/genai";
 import type { ToolDef } from "./tools";
 
 export class MissingApiKeyError extends Error {}
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+// "나노 바나나" — 카드 등록 없이 하루 500회 무료(2026-07 기준, 공개 자료 확인).
+// Imagen 계열(ai.models.generateImages)은 무료 티어가 없어 쓰지 않는다.
+const IMAGE_GEN_MODEL = "gemini-2.5-flash-image";
 
 function client(apiKey?: string): GoogleGenAI {
   const key = apiKey || process.env.GEMINI_API_KEY;
@@ -86,6 +89,39 @@ export async function geminiGenerateForTool(input: GenInput): Promise<string> {
   return response.text ?? "";
 }
 
+export interface GeneratedImage {
+  data: string; // base64
+  mimeType: string;
+}
+
+/** 텍스트 프롬프트로 이미지를 생성한다(gemini-2.5-flash-image, 입력은 텍스트만 — 이미지 편집은 범위 밖). */
+export async function geminiGenerateImage(input: {
+  prompt: string;
+  systemInstruction?: string;
+  apiKey?: string;
+}): Promise<GeneratedImage> {
+  const ai = client(input.apiKey);
+
+  const response = await ai.models.generateContent({
+    model: IMAGE_GEN_MODEL,
+    contents: input.prompt,
+    config: {
+      ...(input.systemInstruction ? { systemInstruction: input.systemInstruction } : {}),
+      responseModalities: [Modality.IMAGE],
+    },
+  });
+
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((p) => p.inlineData?.data);
+  if (!imagePart?.inlineData?.data) {
+    throw new Error("이미지를 생성하지 못했어요. 다른 표현으로 다시 시도해 주세요.");
+  }
+  return {
+    data: imagePart.inlineData.data,
+    mimeType: imagePart.inlineData.mimeType || "image/png",
+  };
+}
+
 // ── 채팅 ──
 
 export interface ChatFile {
@@ -124,4 +160,44 @@ export async function geminiChatReply(opts: {
   });
 
   return response.text ?? "";
+}
+
+export async function geminiChatReplyStream(opts: {
+  model?: string;
+  apiKey?: string;
+  systemInstruction: string;
+  messages: ChatMessage[];
+  onDelta: (delta: string) => void;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const ai = client(opts.apiKey);
+
+  const contents: Content[] = opts.messages.map((m) => ({
+    role: m.role,
+    parts: [
+      ...(m.files ?? []).map((f) => ({
+        inlineData: { data: f.data, mimeType: f.mimeType },
+      })),
+      ...(m.text ? [{ text: m.text }] : []),
+    ],
+  }));
+
+  const stream = await ai.models.generateContentStream({
+    model: opts.model || DEFAULT_GEMINI_MODEL,
+    contents,
+    config: {
+      systemInstruction: opts.systemInstruction,
+      ...(opts.signal ? { abortSignal: opts.signal } : {}),
+    },
+  });
+
+  let full = "";
+  for await (const chunk of stream) {
+    const delta = chunk.text ?? "";
+    if (delta) {
+      full += delta;
+      opts.onDelta(delta);
+    }
+  }
+  return full;
 }

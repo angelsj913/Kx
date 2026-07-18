@@ -5,6 +5,7 @@ import { Plus, Trash2, Shuffle } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
 import type { PracticeSet } from "@/lib/structured";
+import { useT } from "@/lib/i18n";
 
 export default function PracticeSetView({
   id,
@@ -13,6 +14,7 @@ export default function PracticeSetView({
   id: string;
   initial: PracticeSet;
 }) {
+  const t = useT();
   const [data, setData] = useState(initial);
   const status = useAutosave(id, data);
 
@@ -51,7 +53,10 @@ export default function PracticeSetView({
   function addProblem() {
     setData((d) => ({
       ...d,
-      problems: [...d.problems, { question: "", choices: ["", ""], answer: "", explanation: "" }],
+      problems: [
+        ...d.problems,
+        { question: "", choices: ["", ""], answer: "", explanation: "", verify: null },
+      ],
     }));
   }
 
@@ -64,14 +69,14 @@ export default function PracticeSetView({
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <Shuffle className="h-4 w-4 text-[var(--mode-accent)]" />
-          유사문제
+          {t("structured.practiceSet.title")}
         </h2>
         <SaveIndicator status={status} />
       </div>
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">과목</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">{t("structured.subjectLabel")}</span>
           <input
             type="text"
             value={data.subject}
@@ -82,19 +87,19 @@ export default function PracticeSetView({
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">문제 목록</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t("structured.practiceSet.problemList")}</span>
             <button
               type="button"
               onClick={addProblem}
               className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
             >
-              <Plus className="h-3.5 w-3.5" /> 문제 추가
+              <Plus className="h-3.5 w-3.5" /> {t("structured.practiceSet.addProblem")}
             </button>
           </div>
 
           {data.problems.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 py-6 text-center text-xs text-slate-500">
-              아직 생성된 문제가 없습니다.
+              {t("structured.practiceSet.emptyProblems")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -108,13 +113,13 @@ export default function PracticeSetView({
                       value={p.question}
                       onChange={(e) => updateProblem(i, { question: e.target.value })}
                       rows={2}
-                      placeholder="문제 내용"
+                      placeholder={t("structured.practiceSet.questionPlaceholder")}
                       className="w-full flex-1 resize-y rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                     />
                     <button
                       type="button"
                       onClick={() => removeProblem(i)}
-                      aria-label="문제 삭제"
+                      aria-label={t("structured.practiceSet.removeProblemAria")}
                       className="mt-1.5 shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -129,13 +134,13 @@ export default function PracticeSetView({
                           type="text"
                           value={c}
                           onChange={(e) => updateChoice(i, ci, e.target.value)}
-                          placeholder="보기"
+                          placeholder={t("structured.practiceSet.choicePlaceholder")}
                           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                         />
                         <button
                           type="button"
                           onClick={() => removeChoice(i, ci)}
-                          aria-label="보기 삭제"
+                          aria-label={t("structured.practiceSet.removeChoiceAria")}
                           className="shrink-0 rounded-md p-1 text-slate-500 transition-colors hover:text-red-500 dark:hover:text-red-400"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -147,7 +152,7 @@ export default function PracticeSetView({
                       onClick={() => addChoice(i)}
                       className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-[var(--mode-accent)] transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40"
                     >
-                      <Plus className="h-3 w-3" /> 보기 추가
+                      <Plus className="h-3 w-3" /> {t("structured.practiceSet.addChoice")}
                     </button>
                   </div>
 
@@ -156,14 +161,14 @@ export default function PracticeSetView({
                       type="text"
                       value={p.answer}
                       onChange={(e) => updateProblem(i, { answer: e.target.value })}
-                      placeholder="정답"
+                      placeholder={t("structured.practiceSet.answerPlaceholder")}
                       className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                     />
                     <input
                       type="text"
                       value={p.explanation}
                       onChange={(e) => updateProblem(i, { explanation: e.target.value })}
-                      placeholder="해설"
+                      placeholder={t("structured.practiceSet.explanationPlaceholder")}
                       className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                     />
                   </div>

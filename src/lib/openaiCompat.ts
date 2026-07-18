@@ -61,6 +61,27 @@ export const PROVIDER_CONFIG: Record<
     missingKeyMessage:
       "Mistral API 키가 없습니다. MISTRAL_API_KEY 설정 (console.mistral.ai Experiment 무료)",
   },
+  // GitHub Models — GitHub 계정만 있으면 무료(models:read 권한의 PAT 필요).
+  // 다만 무료 티어 요청 한도가 다른 무료 제공자보다 훨씬 낮아(모델별 10~15
+  // RPM·50~150 RPD, PAT 하나를 앱 전체가 공유) models.ts에서 최후 수단으로만 쓴다.
+  github: {
+    provider: "github",
+    envKey: "GITHUB_MODELS_TOKEN",
+    baseUrl: "https://models.github.ai/inference/chat/completions",
+    defaultModel: "gpt-4o-mini",
+    missingKeyMessage:
+      "GitHub Models 토큰이 없습니다. models:read 권한의 GitHub PAT를 GITHUB_MODELS_TOKEN에 설정하세요 (github.com/settings/tokens 무료)",
+  },
+  // SambaNova Cloud — 영구 무료 티어(카드 등록 불필요). Cohere의 무료 Trial 키는
+  // 상업적 이용을 명시적으로 금지해 후보에서 제외했다.
+  sambanova: {
+    provider: "sambanova",
+    envKey: "SAMBANOVA_API_KEY",
+    baseUrl: "https://api.sambanova.ai/v1/chat/completions",
+    defaultModel: "Meta-Llama-3.3-70B-Instruct",
+    missingKeyMessage:
+      "SambaNova API 키가 없습니다. SAMBANOVA_API_KEY 설정 (cloud.sambanova.ai 무료 티어)",
+  },
 };
 
 function requireKey(cfg: CompatProviderConfig, apiKey?: string): string {
@@ -72,6 +93,159 @@ function requireKey(cfg: CompatProviderConfig, apiKey?: string): string {
 interface OAIMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+// ── 에이전트(함수 호출) 지원 ──
+// 기존 callCompat/문자열 반환 경로는 건드리지 않고, tools를 실을 수 있는 별도
+// 메시지·호출 타입을 추가한다. "OpenAI 호환"은 형식 규격일 뿐이라 Groq·Cerebras·
+// Mistral·DeepSeek·SambaNova 등 무료 제공자가 각자 키로 동일하게 받아준다.
+interface RawToolCall {
+  id?: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
+}
+
+export interface OAIToolMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  /** assistant 턴이 도구를 부를 때 */
+  tool_calls?: RawToolCall[];
+  /** tool 결과 메시지일 때 */
+  tool_call_id?: string;
+}
+
+/** OpenAI function-calling 스키마 한 개 */
+export interface OpenAIToolSchema {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
+/** 제공자 무관 정규화된 도구 호출 */
+export interface NormalizedToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface AgentTurnResult {
+  /** 어시스턴트 텍스트 (순수 도구 호출 턴이면 "") */
+  content: string;
+  /** 최종 답변 턴이면 빈 배열 */
+  toolCalls: NormalizedToolCall[];
+  provider: Provider;
+  model: string;
+}
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (!err || typeof err !== "object") return fallback;
+  const e = err as { error?: { message?: string } | string; message?: string };
+  const detail =
+    (typeof e.error === "object" ? e.error?.message : undefined) ||
+    e.message ||
+    (typeof e.error === "string" ? e.error : null);
+  return detail ? String(detail) : fallback;
+}
+
+/**
+ * 한 번의 에이전트 턴 — tools를 실어 보내고, 모델이 도구를 부르면 tool_calls를,
+ * 아니면 최종 텍스트를 돌려준다. 비스트리밍(툴 결정은 스트리밍하지 않는다).
+ */
+async function callCompatTools(
+  cfg: CompatProviderConfig,
+  model: string,
+  messages: OAIToolMessage[],
+  tools: OpenAIToolSchema[],
+  apiKey?: string,
+  signal?: AbortSignal,
+): Promise<{ content: string; toolCalls: NormalizedToolCall[] }> {
+  const key = requireKey(cfg, apiKey);
+  const res = await fetch(cfg.baseUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      tools,
+      tool_choice: "auto",
+    }),
+    signal,
+  });
+
+  if (!res.ok) {
+    let msg = `${cfg.provider} 오류 (${res.status})`;
+    try {
+      msg = extractErrorMessage(await res.json(), msg);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  if (data?.error?.message) throw new Error(String(data.error.message));
+
+  const message = data?.choices?.[0]?.message ?? {};
+  const rawContent = message?.content;
+  const content =
+    typeof rawContent === "string"
+      ? rawContent
+      : Array.isArray(rawContent)
+        ? rawContent
+            .map((p: { text?: string; content?: string }) => p?.text ?? p?.content ?? "")
+            .join("")
+        : "";
+
+  const rawCalls: RawToolCall[] = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+  const toolCalls: NormalizedToolCall[] = [];
+  for (let i = 0; i < rawCalls.length; i++) {
+    const c = rawCalls[i];
+    const name = c?.function?.name;
+    if (!name) continue;
+    let args: Record<string, unknown> = {};
+    const rawArgs = c?.function?.arguments;
+    if (rawArgs) {
+      try {
+        const parsed = JSON.parse(rawArgs);
+        if (parsed && typeof parsed === "object") args = parsed as Record<string, unknown>;
+      } catch {
+        // 파싱 실패는 throw하지 않고, 원문을 담아 둔다(실행기가 에러 결과로 처리).
+        args = { __rawArguments: rawArgs, __parseError: true };
+      }
+    }
+    toolCalls.push({ id: c?.id || `call_${i}`, name, arguments: args });
+  }
+
+  return { content, toolCalls };
+}
+
+/** 제공자 하나로 에이전트 턴 1회 실행 (폴백은 상위 agentRoute가 담당). */
+export async function compatAgentTurn(opts: {
+  provider: Exclude<Provider, "gemini">;
+  model?: string;
+  messages: OAIToolMessage[];
+  tools: OpenAIToolSchema[];
+  apiKey?: string;
+  signal?: AbortSignal;
+}): Promise<AgentTurnResult> {
+  const cfg = PROVIDER_CONFIG[opts.provider];
+  const model = opts.model || cfg.defaultModel;
+  const { content, toolCalls } = await callCompatTools(
+    cfg,
+    model,
+    opts.messages,
+    opts.tools,
+    opts.apiKey,
+    opts.signal,
+  );
+  return { content, toolCalls, provider: opts.provider, model };
 }
 
 async function callCompat(
@@ -123,6 +297,80 @@ async function callCompat(
   return "";
 }
 
+/** SSE 스트리밍 버전 — 델타가 올 때마다 onDelta로 중계하고, 누적된 전체 텍스트를 반환한다. */
+async function callCompatStream(
+  cfg: CompatProviderConfig,
+  model: string,
+  messages: OAIMessage[],
+  onDelta: (delta: string) => void,
+  apiKey?: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const key = requireKey(cfg, apiKey);
+  const res = await fetch(cfg.baseUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({ model, messages, stream: true }),
+    signal,
+  });
+
+  if (!res.ok || !res.body) {
+    let msg = `${cfg.provider} 오류 (${res.status})`;
+    try {
+      const err = await res.json();
+      const detail =
+        err?.error?.message ||
+        err?.message ||
+        (typeof err?.error === "string" ? err.error : null);
+      if (detail) msg = String(detail);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let full = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+
+      let json: unknown;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      const chunk = json as {
+        error?: { message?: string };
+        choices?: { delta?: { content?: string } }[];
+      };
+      if (chunk?.error?.message) throw new Error(String(chunk.error.message));
+      const delta = chunk?.choices?.[0]?.delta?.content;
+      if (typeof delta === "string" && delta) {
+        full += delta;
+        onDelta(delta);
+      }
+    }
+  }
+  return full;
+}
+
 export async function compatGenerateForTool(opts: {
   provider: Exclude<Provider, "gemini">;
   tool: ToolDef;
@@ -170,6 +418,32 @@ export async function compatChatReply(opts: {
   );
 }
 
+export async function compatChatReplyStream(opts: {
+  provider: Exclude<Provider, "gemini">;
+  systemInstruction: string;
+  messages: ChatMessage[];
+  onDelta: (delta: string) => void;
+  model?: string;
+  apiKey?: string;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const cfg = PROVIDER_CONFIG[opts.provider];
+  return callCompatStream(
+    cfg,
+    opts.model || cfg.defaultModel,
+    [
+      { role: "system", content: opts.systemInstruction },
+      ...opts.messages.map((m) => ({
+        role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
+        content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
+      })),
+    ],
+    opts.onDelta,
+    opts.apiKey,
+    opts.signal,
+  );
+}
+
 export function hasProviderKey(provider: Provider): boolean {
   if (provider === "gemini") return !!process.env.GEMINI_API_KEY?.trim();
   const cfg = PROVIDER_CONFIG[provider as Exclude<Provider, "gemini">];
@@ -200,6 +474,16 @@ export function listConfiguredProviders(): {
       provider: "deepseek",
       envKey: "DEEPSEEK_API_KEY",
       set: !!process.env.DEEPSEEK_API_KEY?.trim(),
+    },
+    {
+      provider: "github",
+      envKey: "GITHUB_MODELS_TOKEN",
+      set: !!process.env.GITHUB_MODELS_TOKEN?.trim(),
+    },
+    {
+      provider: "sambanova",
+      envKey: "SAMBANOVA_API_KEY",
+      set: !!process.env.SAMBANOVA_API_KEY?.trim(),
     },
   ];
 }

@@ -60,7 +60,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            title="사이드바 펼치기"
+            title={t("sidebar.expand")}
             className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
           >
             <Logo size="sm" withWordmark={false} />
@@ -71,7 +71,7 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => setIsCollapsed(true)}
-              title="사이드바 접기"
+              title={t("sidebar.collapse")}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)]"
             >
               <ChevronLeft size={ICON} />
@@ -85,7 +85,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            title="사이드바 펼치기"
+            title={t("sidebar.expand")}
             className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)] hover:text-blue-600"
           >
             <ChevronRight size={ICON} />
@@ -119,19 +119,19 @@ export default function Sidebar({
           active={activeView === "board"}
           collapsed={isCollapsed}
           onClick={onOpenBoard}
-          title="워크보드"
+          title={t("sidebar.workboard")}
           icon={<Kanban size={ICON} className="shrink-0" />}
         >
-          워크보드
+          {t("sidebar.workboard")}
         </NavItem>
         <NavItem
           active={activeView === "rag"}
           collapsed={isCollapsed}
           onClick={onOpenRag}
-          title="지식 검색"
+          title={t("sidebar.knowledgeSearch")}
           icon={<Database size={ICON} className="shrink-0" />}
         >
-          지식 검색
+          {t("sidebar.knowledgeSearch")}
         </NavItem>
       </div>
 

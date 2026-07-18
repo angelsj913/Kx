@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { joinByInviteCode, WorkspaceError } from "@/lib/workspace";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    // 코드 공간(33^8)이 넓긴 하지만, 대입 자체를 막을 방법이 전혀 없었다.
+    await assertRateLimit("workspace-join:user", session.user.id, { max: 10, windowSeconds: 300 });
+    await assertRateLimit("workspace-join:ip", clientIp(request), { max: 20, windowSeconds: 300 });
     const result = await joinByInviteCode(session.user.id, code);
     return NextResponse.json({
       ok: true,
@@ -30,6 +34,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     if (err instanceof WorkspaceError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }

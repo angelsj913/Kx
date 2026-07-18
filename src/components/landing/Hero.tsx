@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Download, Apple, Smartphone, Sparkles, X } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
@@ -20,16 +19,6 @@ function WindowsIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
-};
-
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.15 } },
-};
 
 export default function Hero() {
   const t = useLandingT();
@@ -70,24 +59,13 @@ export default function Hero() {
     <section id="about" className="relative overflow-hidden pb-8 pt-32 sm:pt-40">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="relative mx-auto flex max-w-4xl flex-col items-center px-6 text-center"
-      >
-        <motion.span
-          variants={fadeUp}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300"
-        >
+      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-6 text-center">
+        <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
           <Sparkles className="h-3.5 w-3.5" />
           {t("hero.badge")}
-        </motion.span>
+        </span>
 
-        <motion.h1
-          variants={fadeUp}
-          className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50"
-        >
+        <h1 className="hero-fade-up hero-delay-1 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
           {t("hero.title.line1")}
           <br />
           <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
@@ -96,19 +74,15 @@ export default function Hero() {
             </span>
             <Logo size="hero" className="!items-center" />
           </span>
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          variants={fadeUp}
-          className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
-        >
+        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
           {t("hero.subtitle")}
-        </motion.p>
+        </p>
 
-        <motion.div
+        <div
           id="download"
-          variants={fadeUp}
-          className="mt-10 flex w-full max-w-2xl scroll-mt-32 flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-2xl scroll-mt-32 flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
         >
           <button
             type="button"
@@ -143,12 +117,12 @@ export default function Hero() {
               {t("hero.download.soon")}
             </span>
           </button>
-        </motion.div>
+        </div>
 
-        <motion.p variants={fadeUp} className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+        <p className="hero-fade-up hero-delay-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
           {t("hero.download.note")}
-        </motion.p>
-      </motion.div>
+        </p>
+      </div>
 
       {info && (
         <div

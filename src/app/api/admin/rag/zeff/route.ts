@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { friendlyError } from "@/lib/errors";
 import { chunkText } from "@/lib/rag";
 import { embedTexts } from "@/lib/embeddings";
+import { verifyCronSecret } from "@/lib/cronAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,27 +29,26 @@ function resolveSourcePath(candidate?: string): string {
 }
 
 function hasSecretAccess(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-
   const secret = process.env.ZEFF_RAG_INDEX_SECRET || process.env.CRON_SECRET;
   if (!secret) return process.env.NODE_ENV !== "production";
-
-  const header =
-    request.headers.get("authorization") ||
-    request.headers.get("x-rag-secret") ||
-    request.headers.get("x-cron-secret");
-  if (header === secret || header === `Bearer ${secret}`) return true;
-
-  const url = new URL(request.url);
-  return url.searchParams.get("secret") === secret;
+  return verifyCronSecret(request, secret);
 }
 
-async function authorize(request: Request) {
-  const session = await auth();
-  if (isAdminSession(session)) {
-    return { session, via: "session" as const };
+/**
+ * GET은 관리자 세션 쿠키만으로 통과시키지 않는다 — 로그인한 관리자가 악성 링크를
+ * 클릭하기만 해도(쿠키가 자동으로 실림) 이 라우트의 쓰기 동작이 실행되는
+ * CSRF 경로였다. 세션 인증은 명시적 확인이 있는 POST에서만 허용하고, GET은
+ * (curl 등으로) 시크릿을 직접 넣어 호출할 때만 허용한다.
+ */
+async function authorize(request: Request, opts: { allowSessionCookie: boolean }) {
+  if (opts.allowSessionCookie) {
+    const session = await auth();
+    if (isAdminSession(session)) {
+      return { session, via: "session" as const };
+    }
   }
   if (hasSecretAccess(request)) {
+    const session = await auth();
     return { session, via: "secret" as const };
   }
   return null;
@@ -202,8 +202,12 @@ function paramsFromUrl(request: Request) {
   };
 }
 
-async function run(request: Request, body: Record<string, unknown>) {
-  const authz = await authorize(request);
+async function run(
+  request: Request,
+  body: Record<string, unknown>,
+  opts: { allowSessionCookie: boolean },
+) {
+  const authz = await authorize(request, opts);
   if (!authz) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -247,9 +251,9 @@ async function run(request: Request, body: Record<string, unknown>) {
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  return run(request, body);
+  return run(request, body, { allowSessionCookie: true });
 }
 
 export async function GET(request: Request) {
-  return run(request, paramsFromUrl(request));
+  return run(request, paramsFromUrl(request), { allowSessionCookie: false });
 }

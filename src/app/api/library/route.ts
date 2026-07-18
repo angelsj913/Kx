@@ -6,6 +6,8 @@ import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
 import { resolveScope, WorkspaceError } from "@/lib/workspace";
 import { getPlanOrFree } from "@/lib/plans";
+import { indexLibraryItem } from "@/lib/ragIndexing";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/constants";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -91,6 +93,7 @@ export async function GET(request: Request) {
         mimeType: true,
         createdAt: true,
         workspaceId: true,
+        _count: { select: { chunks: true } },
       },
     }),
   ]);
@@ -155,8 +158,11 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "파일을 첨부해 주세요." }, { status: 400 });
   }
-  if (file.size > 20 * 1024 * 1024) {
-    return NextResponse.json({ error: "파일이 너무 큽니다 (최대 20MB)." }, { status: 400 });
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json(
+      { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB).` },
+      { status: 400 },
+    );
   }
 
   try {
@@ -166,6 +172,7 @@ export async function POST(request: Request) {
     const blob = await put(`library/${userId}/${Date.now()}-${file.name}`, buf, {
       access: "public",
       contentType: mimeType,
+      addRandomSuffix: true,
     });
 
     // 추출은 업로드 병목 — 실패해도 저장은 유지
@@ -194,8 +201,18 @@ export async function POST(request: Request) {
       },
     });
 
+    // 검색 가능하게 즉시 색인 — 실패해도 서재 저장 자체는 이미 유효하니 무시한다.
+    let indexed = false;
+    try {
+      const indexResult = await indexLibraryItem(item);
+      indexed = !!indexResult;
+    } catch (err) {
+      console.warn("library auto-index skipped:", err);
+    }
+
     return NextResponse.json({
       item,
+      indexed,
       usage: { used: currentCount + 1, max: plan.libraryMax, plan: plan.id },
     });
   } catch (err) {

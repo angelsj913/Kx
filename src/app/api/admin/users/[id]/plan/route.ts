@@ -52,7 +52,6 @@ export async function POST(request: Request, ctx: RouteCtx) {
       select: {
         id: true,
         email: true,
-        username: true,
         name: true,
         settings: { select: { plan: true } },
       },
@@ -68,7 +67,7 @@ export async function POST(request: Request, ctx: RouteCtx) {
 
     // ── 1단계: 관리자 이메일로 OTP 발송 ──
     if (action === "send-otp") {
-      const result = await issueOtp(adminEmail, "email", "admin-plan-change");
+      const result = await issueOtp(adminEmail, "admin-plan-change");
       const masked = maskEmail(adminEmail);
 
       // 메일 실패해도 관리자 작업은 막지 않음 — 화면 코드(devCode)로 2단계 진행

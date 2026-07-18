@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // 커스텀 도메인(www.zeffai.com)에서 세션 쿠키/호스트 검증이 깨지지 않도록
@@ -26,10 +27,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = String(credentials?.email ?? "").trim().toLowerCase();
         const password = String(credentials?.password ?? "");
         if (!email || !password) return null;
+
+        // 계정 하나를 노린 분산 대입과, 한 IP가 여러 계정을 훑는 대입 둘 다 막는다.
+        // bcrypt 비교 자체가 어느 정도 느리긴 하지만 시도 횟수 제한이 따로 필요하다.
+        const ip = clientIp(request);
+        const [ipOk, emailOk] = await Promise.all([
+          checkRateLimit("login:ip", ip, { max: 20, windowSeconds: 300 }),
+          checkRateLimit("login:email", email, { max: 6, windowSeconds: 300 }),
+        ]);
+        if (!ipOk || !emailOk) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;
@@ -37,14 +47,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // name 이 비어 있으면 username 으로 표시 (이메일 가입 사용자)
-        const displayName = user.name?.trim() || user.username || user.email;
         return {
           id: user.id,
           email: user.email,
-          name: displayName,
+          name: user.name,
           image: user.image,
-          username: user.username ?? undefined,
         };
       },
     }),
@@ -61,11 +68,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.email = user.email.trim().toLowerCase();
         }
         token.picture = user.image;
-        const username =
-          "username" in user && typeof user.username === "string"
-            ? user.username
-            : undefined;
-        if (username) token.username = username;
       }
       // Google profile 에서 이메일이 오면 JWT 에 강제 반영 (세션 이메일 누락 방지)
       if (account?.provider === "google" && profile && typeof profile === "object") {
@@ -74,7 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.email = pe.trim().toLowerCase();
         }
       }
-      // Google / 이메일 공통: 매 요청 관리자 여부 재계산
+      // 매 요청 관리자 여부 재계산
       const email =
         (typeof token.email === "string" && token.email) ||
         (user && typeof user.email === "string" ? user.email : null);
@@ -91,7 +93,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           session.user.email = token.email.trim().toLowerCase();
         }
         if (typeof token?.picture === "string") session.user.image = token.picture;
-        if (typeof token?.username === "string") session.user.username = token.username;
         session.user.isAdmin =
           token?.isAdmin === true || isAdminEmail(session.user.email);
       }

@@ -78,10 +78,10 @@ export default function Header() {
       }`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <button type="button" aria-label="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
+            <button type="button" aria-label={t("header.menuAria")} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link href="/" className="flex items-center" aria-label="ZEFF AI 홈">
+            <Link href="/" className="flex items-center" aria-label={t("header.homeAria")}>
               <Logo size="lg" />
             </Link>
           </div>
@@ -93,10 +93,10 @@ export default function Header() {
               <a
                 href="/admin"
                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-blue-500/50 bg-blue-600/10 px-3 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
-                title="관리자 패널"
+                title={t("header.adminPanel")}
               >
                 <Wrench className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">관리자</span>
+                <span className="hidden sm:inline">{t("header.admin")}</span>
               </a>
             )}
 
@@ -125,20 +125,20 @@ export default function Header() {
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
                 <span className="hidden max-w-[8rem] truncate text-xs font-medium text-slate-600 sm:inline dark:text-slate-300">
-                  {session?.user?.name || session?.user?.email || "프로필"}
+                  {session?.user?.name || session?.user?.email || t("header.profile")}
                 </span>
                 <button
                   type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 sm:inline dark:text-slate-300 dark:hover:text-white"
                 >
-                  로그아웃
+                  {t("header.logout")}
                 </button>
                 <Link
                   href="/app"
                   className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.985] sm:px-5"
                 >
-                  웹에서 시작하기
+                  {t("header.startWeb")}
                 </Link>
               </div>
             ) : (
