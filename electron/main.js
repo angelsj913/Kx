@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, shell, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -196,6 +196,19 @@ function isZeffOrigin(url) {
   }
 }
 
+/** 데스크탑 앱에서는 마케팅 공식 홈페이지에 들어가지 못하게 한다.
+ *  (로그인·워크스페이스·인증 콜백만 앱 안에서 쓰고, 홈은 아예 차단) */
+const MARKETING_PATHS = new Set(["/", "/about", "/vision", "/download", "/prototype"]);
+function isBlockedMarketing(url) {
+  try {
+    const u = new URL(url);
+    if (!isZeffOrigin(url)) return false;
+    return MARKETING_PATHS.has(u.pathname.replace(/\/+$/, "") || "/");
+  } catch {
+    return false;
+  }
+}
+
 /** 결제·지원/약관은 공식 홈 브라우저에서 열기 */
 function shouldForceExternal(url) {
   try {
@@ -252,6 +265,8 @@ async function createWindow() {
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // 마케팅 홈은 데스크탑에서 열지 않는다(외부 브라우저로도 X) — 앱 안에서 무시
+    if (isBlockedMarketing(url)) return { action: "deny" };
     if (isAllowedInApp(url) && !shouldForceExternal(url)) {
       return { action: "allow" };
     }
@@ -260,6 +275,12 @@ async function createWindow() {
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
+    // 마케팅 홈페이지로의 이동은 막고, 워크스페이스(/app)로 되돌린다.
+    if (isBlockedMarketing(url)) {
+      event.preventDefault();
+      mainWindow.loadURL(`${APP_ORIGIN}/app`);
+      return;
+    }
     if (!isAllowedInApp(url) || shouldForceExternal(url)) {
       event.preventDefault();
       shell.openExternal(url);
@@ -269,6 +290,22 @@ async function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  // 데스크탑 클라이언트 표시 — 웹이 이 쿠키를 보고 로그인 화면 뒤로가기 버튼을 숨긴다.
+  try {
+    const cookieTargets = isDev
+      ? ["http://localhost:3000"]
+      : [APP_ORIGIN, "https://www.zeffai.com"];
+    await Promise.all(
+      cookieTargets.map((u) =>
+        session.defaultSession.cookies
+          .set({ url: u, name: "zeff_client", value: "desktop", sameSite: "lax" })
+          .catch(() => {}),
+      ),
+    );
+  } catch {
+    /* 쿠키 실패해도 앱은 정상 동작 */
+  }
 
   // 브랜드 로고 모션 로딩 → 로그인 화면
   await mainWindow.loadURL(loadingHtml());
