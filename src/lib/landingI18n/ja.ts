@@ -182,6 +182,7 @@ const ja: Record<keyof typeof ko, string> = {
   "auth.goLogin": "ログインへ",
 
   "support.title": "サポートセンター",
+  "support.hero.subtitle": "よくある質問をすばやく確認し、必要なときはいつでもお問い合わせください。",
   "support.tab.faq": "よくある質問",
   "support.tab.announcements": "お知らせ・アップデート",
   "support.tab.legacy": "旧バージョン",
@@ -219,8 +220,8 @@ const ja: Record<keyof typeof ko, string> = {
   "support.faq.a3": "クレジット・デビットカード決済に対応しており、今後さまざまな決済手段を順次追加予定です。",
   "support.faq.q4": "プランはいつでも変更できますか?",
   "support.faq.a4": "はい、設定の料金プランタブから即座に変更できます。ダウングレードは次回請求サイクルから適用されます。",
-  "support.faq.q5": "Googleアカウントなしで登録できますか?",
-  "support.faq.a5": "現在はGoogleアカウントログインのみ対応しています。メール登録は準備中です。",
+  "support.faq.q5": "登録はどうすればいいですか?",
+  "support.faq.a5": "メールで登録するか、Googleアカウントですぐに始めることができます。使いやすい方をお選びください。",
   "support.faq.q6": "複数デバイスで同時に利用できますか?",
   "support.faq.a6": "はい、同じアカウントでログインすれば、会話履歴と設定がリアルタイムで同期されます。",
   "support.faq.q7": "生成したファイルはどこに保存されますか?",

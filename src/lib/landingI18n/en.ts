@@ -193,6 +193,7 @@ const en: Record<keyof typeof ko, string> = {
   "auth.goLogin": "Go to login",
 
   "support.title": "Support Center",
+  "support.hero.subtitle": "Find quick answers, and reach out anytime you need us.",
   "support.tab.faq": "FAQ",
   "support.tab.announcements": "Announcements",
   "support.tab.legacy": "Legacy Releases",
@@ -230,8 +231,8 @@ const en: Record<keyof typeof ko, string> = {
   "support.faq.a3": "We currently support credit/debit cards, with more payment options planned in the future.",
   "support.faq.q4": "Can I change plans anytime?",
   "support.faq.a4": "Yes, you can switch plans instantly from the Plan tab in Settings. Downgrades take effect from the next billing cycle.",
-  "support.faq.q5": "Can I sign up without a Google account?",
-  "support.faq.a5": "Right now we only support Google sign-in. Email sign-up is on the way.",
+  "support.faq.q5": "How do I sign up?",
+  "support.faq.a5": "You can sign up with your email or jump right in with a Google account — pick whichever is easier for you.",
   "support.faq.q6": "Can I use it on multiple devices at once?",
   "support.faq.a6": "Yes — signing in with the same account keeps your conversations and settings synced in real time.",
   "support.faq.q7": "Where are my generated files stored?",

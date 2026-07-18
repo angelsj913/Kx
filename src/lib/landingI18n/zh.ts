@@ -179,6 +179,7 @@ const zh: Record<keyof typeof ko, string> = {
   "auth.goLogin": "前往登录",
 
   "support.title": "支持中心",
+  "support.hero.subtitle": "快速查找常见问题，需要时随时联系我们。",
   "support.tab.faq": "常见问题",
   "support.tab.announcements": "公告与更新",
   "support.tab.legacy": "历史版本",
@@ -216,8 +217,8 @@ const zh: Record<keyof typeof ko, string> = {
   "support.faq.a3": "目前支持信用卡/借记卡支付，后续将陆续新增多种便捷支付方式。",
   "support.faq.q4": "可以随时更改方案吗?",
   "support.faq.a4": "可以，在设置的价格方案标签中即可立即更改。降级将从下一个计费周期开始生效。",
-  "support.faq.q5": "没有 Google 账号也能注册吗?",
-  "support.faq.a5": "目前仅支持 Google 账号登录，邮箱注册功能正在筹备中。",
+  "support.faq.q5": "如何注册?",
+  "support.faq.a5": "你可以用邮箱注册，也可以直接用 Google 账号开始，选择方便的方式即可。",
   "support.faq.q6": "可以在多台设备上同时使用吗?",
   "support.faq.a6": "可以，使用同一账号登录后，对话记录与设置会实时同步。",
   "support.faq.q7": "生成的文件保存在哪里?",

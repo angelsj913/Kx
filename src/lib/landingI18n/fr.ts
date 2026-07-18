@@ -187,6 +187,7 @@ const fr: Record<keyof typeof ko, string> = {
   "auth.goLogin": "Aller à la connexion",
 
   "support.title": "Centre d'assistance",
+  "support.hero.subtitle": "Trouvez rapidement des réponses et contactez-nous à tout moment.",
   "support.tab.faq": "FAQ",
   "support.tab.announcements": "Annonces et mises à jour",
   "support.tab.legacy": "Anciennes versions",
@@ -224,8 +225,8 @@ const fr: Record<keyof typeof ko, string> = {
   "support.faq.a3": "Les cartes de crédit/débit sont actuellement acceptées ; d'autres moyens de paiement seront ajoutés progressivement.",
   "support.faq.q4": "Peut-on changer de forfait à tout moment ?",
   "support.faq.a4": "Oui, vous pouvez changer instantanément dans l'onglet Forfait des paramètres. Les rétrogradations prennent effet au prochain cycle de facturation.",
-  "support.faq.q5": "Peut-on s'inscrire sans compte Google ?",
-  "support.faq.a5": "Seule la connexion via Google est actuellement prise en charge. L'inscription par e-mail est en préparation.",
+  "support.faq.q5": "Comment s'inscrire ?",
+  "support.faq.a5": "Vous pouvez vous inscrire par e-mail ou démarrer directement avec un compte Google — choisissez la méthode qui vous convient le mieux.",
   "support.faq.q6": "Peut-on utiliser le service sur plusieurs appareils à la fois ?",
   "support.faq.a6": "Oui, en vous connectant avec le même compte, l'historique des conversations et les paramètres sont synchronisés en temps réel.",
   "support.faq.q7": "Où sont stockés les fichiers générés ?",

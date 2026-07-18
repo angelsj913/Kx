@@ -187,6 +187,7 @@ const es: Record<keyof typeof ko, string> = {
   "auth.goLogin": "Ir a iniciar sesión",
 
   "support.title": "Centro de soporte",
+  "support.hero.subtitle": "Encuentra respuestas rápidas y contáctanos cuando lo necesites.",
   "support.tab.faq": "Preguntas frecuentes",
   "support.tab.announcements": "Anuncios y novedades",
   "support.tab.legacy": "Versiones anteriores",
@@ -224,8 +225,8 @@ const es: Record<keyof typeof ko, string> = {
   "support.faq.a3": "Actualmente se admiten tarjetas de crédito/débito, y se irán añadiendo más métodos de pago progresivamente.",
   "support.faq.q4": "¿Puedo cambiar de plan en cualquier momento?",
   "support.faq.a4": "Sí, puedes cambiar al instante desde la pestaña de planes de Configuración. Las bajadas de plan se aplican en el siguiente ciclo de facturación.",
-  "support.faq.q5": "¿Puedo registrarme sin una cuenta de Google?",
-  "support.faq.a5": "Por ahora solo se admite el inicio de sesión con Google. El registro por correo electrónico está en preparación.",
+  "support.faq.q5": "¿Cómo me registro?",
+  "support.faq.a5": "Puedes registrarte con tu correo electrónico o empezar directamente con una cuenta de Google: elige lo que te resulte más cómodo.",
   "support.faq.q6": "¿Puedo usarlo en varios dispositivos a la vez?",
   "support.faq.a6": "Sí, al iniciar sesión con la misma cuenta, el historial de conversaciones y la configuración se sincronizan en tiempo real.",
   "support.faq.q7": "¿Dónde se guardan los archivos generados?",

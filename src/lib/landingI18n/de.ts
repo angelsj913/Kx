@@ -187,6 +187,7 @@ const de: Record<keyof typeof ko, string> = {
   "auth.goLogin": "Zum Login",
 
   "support.title": "Support-Center",
+  "support.hero.subtitle": "Finden Sie schnell Antworten und kontaktieren Sie uns jederzeit.",
   "support.tab.faq": "Häufige Fragen",
   "support.tab.announcements": "Ankündigungen & Updates",
   "support.tab.legacy": "Ältere Versionen",
@@ -224,8 +225,8 @@ const de: Record<keyof typeof ko, string> = {
   "support.faq.a3": "Derzeit werden Kredit-/Debitkarten unterstützt, weitere Zahlungsmethoden werden nach und nach ergänzt.",
   "support.faq.q4": "Kann ich den Plan jederzeit wechseln?",
   "support.faq.a4": "Ja, im Tarif-Tab der Einstellungen können Sie den Plan sofort wechseln. Downgrades gelten ab dem nächsten Abrechnungszeitraum.",
-  "support.faq.q5": "Kann ich mich ohne Google-Konto anmelden?",
-  "support.faq.a5": "Derzeit wird nur die Anmeldung über Google unterstützt. Die Registrierung per E-Mail ist in Vorbereitung.",
+  "support.faq.q5": "Wie melde ich mich an?",
+  "support.faq.a5": "Sie können sich per E-Mail registrieren oder direkt mit einem Google-Konto loslegen — wählen Sie einfach, was für Sie bequemer ist.",
   "support.faq.q6": "Kann ich mehrere Geräte gleichzeitig nutzen?",
   "support.faq.a6": "Ja, bei Anmeldung mit demselben Konto werden Verlauf und Einstellungen in Echtzeit synchronisiert.",
   "support.faq.q7": "Wo werden erstellte Dateien gespeichert?",
