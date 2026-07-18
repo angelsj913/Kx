@@ -288,3 +288,25 @@ body {
 .prose-ai {
   color: var(--workspace-text-secondary);
 }
+
+/* ── RTL(아랍어 등) 미세 조정 ──
+   dir="rtl"만으로 텍스트 정렬·flex 주축은 자동으로 뒤집히지만, 물리적 방향
+   유틸(padding-left, border-left 등)은 그대로라 눈에 띄는 곳만 보정한다. */
+[dir="rtl"] .prose-ai ul,
+[dir="rtl"] .prose-ai ol {
+  padding-left: 0;
+  padding-right: 1.25rem;
+}
+[dir="rtl"] .prose-ai blockquote {
+  border-left: none;
+  border-right: 3px solid #7c3aed;
+  padding-left: 0;
+  padding-right: 0.9rem;
+}
+[dir="rtl"] .prose-ai {
+  text-align: right;
+}
+[dir="rtl"] .workspace-sidebar {
+  border-right: none;
+  border-left: 1px solid var(--workspace-border);
+}

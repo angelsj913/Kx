@@ -10,7 +10,7 @@ type Value = { title: string; desc: string };
 
 type TeamCopy = { title: string; subtitle: string; role: string; bio: string; valuesTitle: string; values: Value[] };
 
-const COPY: Record<LandingLanguage, TeamCopy> = {
+const COPY: Partial<Record<LandingLanguage, TeamCopy>> & { en: TeamCopy } = {
   ko: {
     title: "만드는 사람들",
     subtitle: "작지만, 제품을 매일 직접 쓰는 사람들이 만듭니다.",

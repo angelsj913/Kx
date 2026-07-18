@@ -3173,6 +3173,84 @@ const ES: Record<keyof typeof KO, string> = {
 
 export type AppDictKey = keyof typeof KO;
 
+// 아랍어 — 핵심 UI 키를 번역하고, 나머지는 영어로 폴백한다(AR = { ...EN, ...번역 }).
+// 새 키가 추가돼도 타입이 깨지지 않으며, 번역이 채워지는 만큼 아랍어 커버리지가 넓어진다.
+const AR_CORE: Partial<Record<AppDictKey, string>> = {
+  // 공통 액션
+  "common.save": "حفظ",
+  "common.cancel": "إلغاء",
+  "common.delete": "حذف",
+  "common.add": "إضافة",
+  "common.loading": "جارٍ التحميل...",
+  "common.error": "خطأ",
+  "common.unknownError": "حدث خطأ غير معروف.",
+  "common.saveFailed": "فشل الحفظ.",
+  "common.savingIndicator": "جارٍ الحفظ...",
+  // 프로필 / 테마
+  "profile.settings": "الإعدادات",
+  "profile.logout": "تسجيل الخروج",
+  "profile.loggingOut": "جارٍ تسجيل الخروج...",
+  "profile.lightMode": "الوضع الفاتح",
+  "profile.darkMode": "الوضع الداكن",
+  "profile.goHome": "الذهاب إلى الصفحة الرئيسية",
+  "profile.adminPanel": "لوحة المشرف",
+  "profile.defaultUser": "مستخدم",
+  // 내비 / 사이드바
+  "nav.menu": "القائمة",
+  "nav.closeMenu": "إغلاق القائمة",
+  "sidebar.newChat": "محادثة جديدة",
+  "sidebar.myLibrary": "مكتبتي",
+  "sidebar.library": "المكتبة",
+  "sidebar.libraryEmpty": "لا توجد عناصر بعد.",
+  "sidebar.knowledgeSearch": "بحث المعرفة",
+  "sidebar.expand": "توسيع الشريط الجانبي",
+  "sidebar.collapse": "طي الشريط الجانبي",
+  "sidebar.plan.free": "مجاني",
+  "sidebar.plan.pro": "برو",
+  "sidebar.plan.professional": "احترافي",
+  // 채팅
+  "chat.placeholder": "اسألني أي شيء...  (Enter للإرسال · Shift+Enter لسطر جديد)",
+  "chat.attach": "إرفاق صورة أو مستند",
+  "chat.quickActions": "إجراءات سريعة",
+  "chat.empty": "اسألني أي شيء. يمكنك أيضًا إرفاق صور أو مستندات.",
+  "chat.send": "إرسال",
+  "chat.stop": "إيقاف",
+  "chat.editMessage": "تعديل",
+  "chat.editCancel": "إلغاء",
+  "chat.editSave": "حفظ",
+  "chat.regenerate": "إعادة التوليد",
+  "chat.copy": "نسخ",
+  "chat.copied": "تم النسخ",
+  "chat.download": "تنزيل",
+  "chat.preview": "معاينة",
+  "chat.closePreview": "إغلاق المعاينة",
+  "chat.openFile": "فتح الملف",
+  // 기능 그룹
+  "feature.create": "المستندات · الملفات",
+  "feature.learn": "الدراسة · الاختبارات",
+  "feature.media": "الصوت · المحاضرات",
+  // 작업 패널
+  "panel.tab.files": "الملفات",
+  "panel.tab.plan": "الخطة",
+  "panel.tab.terminal": "الطرفية",
+  "panel.openRight": "فتح لوحة العمل",
+  "panel.collapseRight": "طي لوحة العمل",
+  "panel.kind.attachment": "مرفق",
+  "panel.kind.structured": "نتيجة منظمة",
+  "panel.kind.text": "نص",
+  // 아티팩트
+  "artifact.presentation": "عرض تقديمي",
+  "artifact.spreadsheet": "جدول بيانات",
+  "artifact.document": "مستند",
+  "artifact.image": "صورة",
+  "artifact.documentResponse": "رد مستند",
+  "artifact.structuredResult": "نتيجة منظمة",
+  // 설정
+  "settings.language.label": "اللغة",
+  "settings.language.apply": "تطبيق",
+  "settings.plan.current": "الخطة الحالية",
+};
+
 const DICT: Record<AppLanguage, Record<AppDictKey, string>> = {
   ko: { ...KO },
   en: EN,
@@ -3182,6 +3260,7 @@ const DICT: Record<AppLanguage, Record<AppDictKey, string>> = {
   de: DE,
   fr: FR,
   es: ES,
+  ar: { ...EN, ...AR_CORE },
 };
 
 function resolveDict(lang: AppLanguage): Record<AppDictKey, string> {

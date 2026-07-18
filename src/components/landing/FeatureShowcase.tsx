@@ -8,7 +8,7 @@ import type { LandingLanguage } from "@/lib/landingI18n";
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
 
-const COPY: Record<LandingLanguage, ShowcaseCopy> = {
+const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy } = {
   ko: {
     title: "이럴 때, Zeff",
     subtitle: "화면 안에서 실제로 매일 쓰이는 기능만 골라 담았습니다.",
