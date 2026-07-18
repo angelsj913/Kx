@@ -416,6 +416,29 @@ export async function POST(request: Request) {
             toolText = enriched.enrichedText;
           }
 
+          // 대화 맥락 자동 이어받기: 최근 대화를 참고 컨텍스트로 덧붙이고,
+          // 요청이 이를 가리키면 반영·아니면 무시하도록 모델이 스스로 판단하게 한다.
+          if (text) {
+            const prior = await prisma.chatHistory.findMany({
+              where: { sessionId: resolvedSessionId },
+              orderBy: { createdAt: "desc" },
+              take: 8,
+              select: { role: true, text: true },
+            });
+            prior.reverse();
+            // 방금 저장된 현재 사용자 메시지는 제외
+            if (prior.length && prior[prior.length - 1]?.text === text) prior.pop();
+            const ctx = prior
+              .filter((m) => m.text?.trim())
+              .map((m) => `${m.role === "model" ? "AI" : "사용자"}: ${m.text.slice(0, 500)}`)
+              .join("\n")
+              .slice(-2000);
+            if (ctx) {
+              toolText =
+                `[최근 대화 맥락 — 이번 요청이 이 내용을 가리키거나 이어지는 경우에만 참고하고, 무관하면 완전히 무시하세요]\n${ctx}\n\n[요청]\n${toolText}`;
+            }
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text: toolText,
