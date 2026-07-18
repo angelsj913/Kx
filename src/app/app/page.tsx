@@ -5,13 +5,13 @@ import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import ChatWorkspace from "@/components/ChatWorkspace";
 import LibraryView from "@/components/LibraryView";
-import WorkBoardView from "@/components/WorkBoardView";
+import InsightBoardView from "@/components/InsightBoardView";
 import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
 import { workspaceAccentCssVars } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
 
-export type AppView = "chat" | "library" | "board" | "rag";
+export type AppView = "chat" | "library" | "insight" | "rag";
 
 export default function AppWorkspace() {
   const t = useT();
@@ -109,8 +109,8 @@ export default function AppWorkspace() {
             setView("library");
             setMobileNav(false);
           }}
-          onOpenBoard={() => {
-            setView("board");
+          onOpenInsight={() => {
+            setView("insight");
             setMobileNav(false);
           }}
           onOpenRag={() => {
@@ -162,7 +162,7 @@ export default function AppWorkspace() {
               }}
             />
           )}
-          {view === "board" && <WorkBoardView />}
+          {view === "insight" && <InsightBoardView />}
           {view === "rag" && <RagView />}
         </div>
       </div>

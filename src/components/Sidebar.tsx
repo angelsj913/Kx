@@ -6,7 +6,7 @@ import {
   MessageSquare,
   Trash2,
   BookOpen,
-  Kanban,
+  Lightbulb,
   Database,
   ChevronLeft,
   ChevronRight,
@@ -28,17 +28,17 @@ export default function Sidebar({
   onNewChat,
   onDeleteSession,
   onOpenLibrary,
-  onOpenBoard,
+  onOpenInsight,
   onOpenRag,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
-  activeView: "chat" | "library" | "board" | "rag";
+  activeView: "chat" | "library" | "insight" | "rag";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenLibrary: () => void;
-  onOpenBoard: () => void;
+  onOpenInsight: () => void;
   onOpenRag: () => void;
 }) {
   const t = useT();
@@ -116,13 +116,13 @@ export default function Sidebar({
           {t("sidebar.myLibrary")}
         </NavItem>
         <NavItem
-          active={activeView === "board"}
+          active={activeView === "insight"}
           collapsed={isCollapsed}
-          onClick={onOpenBoard}
-          title={t("sidebar.workboard")}
-          icon={<Kanban size={ICON} className="shrink-0" />}
+          onClick={onOpenInsight}
+          title={t("sidebar.insightBoard")}
+          icon={<Lightbulb size={ICON} className="shrink-0" />}
         >
-          {t("sidebar.workboard")}
+          {t("sidebar.insightBoard")}
         </NavItem>
         <NavItem
           active={activeView === "rag"}
