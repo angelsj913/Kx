@@ -155,6 +155,13 @@ export async function DELETE(
   try {
     await requireRole(id, session.user.id, "owner");
 
+    // 관리자는 OTP 등 까다로운 인증 절차를 건너뛴다(요금제 변경 확인 OTP는 별도 라우트에서 유지).
+    const { isAdminSession } = await import("@/lib/admin");
+    if (isAdminSession(session)) {
+      await prisma.workspace.delete({ where: { id } });
+      return NextResponse.json({ ok: true, deleted: true });
+    }
+
     const workspace = await prisma.workspace.findUnique({
       where: { id },
       include: { owner: { select: { email: true } } },
