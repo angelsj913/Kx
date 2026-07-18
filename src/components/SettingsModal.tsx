@@ -269,14 +269,16 @@ type OrderRow = {
 
 function BillingPanel() {
   const t = useT();
+  const { settings } = useSettings();
+  const isPaidPlan =
+    isPlanId(settings?.plan ?? "free") && (settings?.plan ?? "free") !== "free";
   const [methods, setMethods] = useState<
-    { id: string; brand: string; last4: string; holder: string | null }[]
+    { id: string; brand: string; last4: string }[]
   >([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [brand, setBrand] = useState("visa");
   const [last4, setLast4] = useState("");
-  const [holder, setHolder] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -317,12 +319,11 @@ function BillingPanel() {
       const res = await fetch("/api/billing/methods", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ brand, last4, holder }),
+        body: JSON.stringify({ brand, last4 }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? t("billing.addFailed"));
       setLast4("");
-      setHolder("");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.error"));
@@ -380,16 +381,17 @@ function BillingPanel() {
                       (m.brand === "local" ? t("billing.cardLocal") : t("billing.cardGeneric"))}{" "}
                     ···· {m.last4}
                   </p>
-                  {m.holder && (
-                    <p className="text-[11px] text-slate-500">{m.holder}</p>
-                  )}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => removeMethod(m.id)}
-                disabled={methods.length <= 1}
-                title={methods.length <= 1 ? t("billing.cannotRemoveLast") : t("billing.remove")}
+                disabled={isPaidPlan && methods.length <= 1}
+                title={
+                  isPaidPlan && methods.length <= 1
+                    ? t("billing.cancelPlanFirst")
+                    : t("billing.remove")
+                }
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40"
               >
                 <Trash2 className="h-4 w-4" />
@@ -398,7 +400,7 @@ function BillingPanel() {
           ))}
         </ul>
 
-        <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-4 dark:border-slate-700">
+        <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-3 dark:border-slate-700">
           <select
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
@@ -413,12 +415,6 @@ function BillingPanel() {
             value={last4}
             onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
             placeholder={t("billing.last4Placeholder")}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-          />
-          <input
-            value={holder}
-            onChange={(e) => setHolder(e.target.value)}
-            placeholder={t("billing.holderPlaceholder")}
             className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
           />
           <button
