@@ -44,6 +44,7 @@ model User {
   usageCounters        UsageCounter[]
   boardTasks           WorkBoardTask[]
   assignedBoardTasks   WorkBoardTask[]       @relation("WorkBoardAssignee")
+  savedInsights        SavedInsight[]
 }
 
 model Account {
@@ -418,4 +419,30 @@ model WorkBoardTask {
   @@index([userId, status, updatedAt])
   @@index([workspaceId, status])
   @@index([assigneeId])
+}
+
+/**
+ * 인사이트 보드(#16) — 워크보드를 대체한다. 지식 베이스 문서를 AI가 요약·핵심포인트로
+ * 정리해 카드로 저장하고, 사용자는 이 카드들을 다시 열어보거나 고정/삭제하며 관리한다.
+ * (문서 기반 요약 + 저장한 결과물 관리를 한 기능으로 합친 형태.)
+ */
+model SavedInsight {
+  id            String   @id @default(cuid())
+  userId        String
+  workspaceId   String?
+  /** 요약의 출처가 된 서재 항목(있으면). 항목이 지워지면 카드 자체는 남기고 연결만 끊는다. */
+  libraryItemId String?
+  /** 출처 문서 제목 스냅샷(libraryItem이 삭제돼도 표시용) */
+  sourceName    String?
+  title         String
+  summary       String   @db.Text
+  /** 핵심 포인트 — 문자열 배열의 JSON */
+  keyPoints     String   @db.Text
+  pinned        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, pinned, createdAt])
+  @@index([workspaceId])
 }

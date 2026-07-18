@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Download, Apple, Monitor, HardDrive, Cpu, MemoryStick, CheckCircle2, Package, ExternalLink, Loader2 } from "lucide-react";
+import { Download, Apple, Monitor, HardDrive, Cpu, MemoryStick, CheckCircle2, Package } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/ui/Logo";
@@ -12,10 +12,8 @@ import {
   MAC_DOWNLOAD_URL,
   WINDOWS_FILENAME,
   MAC_FILENAME,
-  ALL_RELEASES_URL,
   APP_VERSION,
   SYSTEM_REQUIREMENTS,
-  REPO_SLUG,
 } from "@/lib/constants";
 
 type OS = "windows" | "mac" | "other";
@@ -27,17 +25,6 @@ function WindowsIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-type GhAsset = { name: string; browser_download_url: string; size: number };
-type GhRelease = {
-  id: number;
-  tag_name: string;
-  name: string | null;
-  published_at: string;
-  html_url: string;
-  prerelease: boolean;
-  assets: GhAsset[];
-};
 
 const COPY = {
   ko: {
@@ -234,17 +221,9 @@ const COPY = {
   },
 };
 
-function formatSize(bytes: number): string {
-  if (!bytes) return "";
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
-}
-
 export default function DownloadPage() {
   const c = useLocalCopy(COPY);
   const [os, setOs] = useState<OS>("other");
-  const [releases, setReleases] = useState<GhRelease[] | null>(null);
-  const [loadingReleases, setLoadingReleases] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -252,27 +231,6 @@ export default function DownloadPage() {
       if (/Win/i.test(ua)) setOs("windows");
       else if (/Mac/i.test(ua)) setOs("mac");
     })();
-  }, []);
-
-  useEffect(() => {
-    let ignore = false;
-    (async () => {
-      try {
-        const res = await fetch(`https://api.github.com/repos/${REPO_SLUG}/releases?per_page=20`, {
-          headers: { Accept: "application/vnd.github+json" },
-        });
-        if (!res.ok) throw new Error("failed");
-        const data: GhRelease[] = await res.json();
-        if (!ignore) setReleases(Array.isArray(data) ? data : []);
-      } catch {
-        if (!ignore) setReleases([]);
-      } finally {
-        if (!ignore) setLoadingReleases(false);
-      }
-    })();
-    return () => {
-      ignore = true;
-    };
   }, []);
 
   const platforms = [
@@ -295,9 +253,6 @@ export default function DownloadPage() {
       req: SYSTEM_REQUIREMENTS.mac,
     },
   ];
-
-  // 이전 버전: 최신(첫 릴리스)을 제외한 나머지
-  const olderReleases = (releases ?? []).slice(1);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100">
@@ -404,82 +359,6 @@ export default function DownloadPage() {
               </tbody>
             </table>
           </div>
-        </section>
-
-        {/* 이전 버전 */}
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">{c.olderTitle}</h2>
-            <a
-              href={ALL_RELEASES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              {c.archive}
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{c.olderDesc}</p>
-
-          <div className="mt-4 space-y-3">
-            {loadingReleases ? (
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {c.olderLoading}
-              </div>
-            ) : olderReleases.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                {c.olderEmpty}
-              </p>
-            ) : (
-              olderReleases.map((rel) => (
-                <div
-                  key={rel.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                        {rel.name || rel.tag_name}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {c.released} {new Date(rel.published_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {rel.assets.length === 0 ? (
-                        <a
-                          href={rel.html_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-blue-400/60 dark:border-slate-700 dark:text-slate-300"
-                        >
-                          {c.archive}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        rel.assets.map((a) => (
-                          <a
-                            key={a.name}
-                            href={a.browser_download_url}
-                            download
-                            className="inline-flex items-center gap-1 rounded-lg bg-blue-600/10 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-600/20 dark:text-blue-300"
-                          >
-                            <Download className="h-3 w-3" />
-                            {a.name.endsWith(".dmg") ? "macOS" : a.name.endsWith(".exe") ? "Windows" : a.name}
-                            {a.size ? <span className="text-blue-500/70">· {formatSize(a.size)}</span> : null}
-                          </a>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">{c.notesNote}</p>
         </section>
       </div>
     </div>

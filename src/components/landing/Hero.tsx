@@ -158,11 +158,13 @@ export default function Hero() {
                     ? t("hero.modal.androidNote")
                     : t("hero.modal.instruction")}
                 </p>
+                {/* GitHub 릴리스 URL은 교차 출처라 download 속성이 무시된다(GitHub이
+                    Content-Disposition으로 강제 다운로드). 새 탭으로 열어 인앱 브라우저
+                    (인스타그램 등)에서도 시스템 브라우저로 넘어가 받을 확률을 높인다. */}
                 <a
                   href={info.url}
-                  {...(info.downloadAttr
-                    ? { download: info.downloadAttr }
-                    : { target: "_blank", rel: "noopener noreferrer" })}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
                 >
                   <Download className="h-4 w-4" />

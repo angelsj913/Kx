@@ -253,7 +253,7 @@ const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy 
 
 function MockSummary() {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="flex items-center gap-1.5 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
         <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
         <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
@@ -294,7 +294,7 @@ function MockSummary() {
 
 function MockLecture() {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="relative flex aspect-video items-center justify-center bg-slate-900">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-900">
           <Play className="h-4 w-4 translate-x-[1px]" />
@@ -314,7 +314,7 @@ function MockLecture() {
 
 function MockDocs() {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900">
           <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -334,7 +334,7 @@ function MockDocs() {
 
 function MockLibrary() {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="mb-2 flex gap-1.5">
         <span className="rounded-md bg-blue-600/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
           내 서재

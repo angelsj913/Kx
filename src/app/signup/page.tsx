@@ -214,13 +214,23 @@ export default function SignupPage() {
           )}
 
           {otpVerified && (
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
-            >
-              {t("auth.signup.submit")}
-            </button>
+            <>
+              <Link
+                href="/support/legal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-[11px] leading-relaxed text-slate-400 underline-offset-2 hover:text-blue-500 hover:underline dark:text-slate-500"
+              >
+                {t("auth.signup.consent")}
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+              >
+                {t("auth.signup.submit")}
+              </button>
+            </>
           )}
         </form>
       </div>

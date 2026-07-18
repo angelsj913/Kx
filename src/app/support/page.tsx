@@ -21,12 +21,12 @@ export default function SupportFaqPage() {
 
   return (
     <SupportShell active="faq">
-      <h1 className="mb-5 text-xl font-bold sm:text-2xl">{t("support.tab.faq")}</h1>
+      <h2 className="mb-5 text-lg font-bold sm:text-xl">{t("support.tab.faq")}</h2>
       <div className="space-y-3">
         {FAQ_KEYS.map(([qKey, aKey]) => (
           <details
             key={qKey}
-            className="group rounded-xl border border-slate-200 bg-white p-4 open:border-blue-400/60 dark:border-slate-800 dark:bg-slate-900 dark:open:border-blue-500/60"
+            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors open:border-blue-400/60 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none dark:open:border-blue-500/60"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 [&::-webkit-details-marker]:hidden">
               {t(qKey)}

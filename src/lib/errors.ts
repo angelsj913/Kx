@@ -63,9 +63,12 @@ export function friendlyError(err: unknown): string {
     lower.includes("quota") ||
     lower.includes("rate limit") ||
     lower.includes("429") ||
-    lower.includes("resource_exhausted")
+    lower.includes("resource_exhausted") ||
+    lower.includes("depleted")
   ) {
-    return "AI 사용량 한도에 도달했습니다. 잠시 후 다시 시도하거나 할당량을 확인해 주세요.";
+    // 이건 제공자(예: Gemini) 쪽 일시 제한/크레딧 문제지, 사용자의 요금제 한도가 아니다.
+    // 요금제 초과는 QuotaError → 402 로 별도의 명확한 메시지가 나간다(usage.ts).
+    return "지금 AI 분석 서버가 일시적으로 혼잡해요. 잠시 후 다시 시도해 주세요. (회원님 요금제 한도와는 무관합니다.)";
   }
 
   if (lower.includes("timeout") || lower.includes("etimedout") || lower.includes("aborted")) {

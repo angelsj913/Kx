@@ -90,9 +90,38 @@ function requireKey(cfg: CompatProviderConfig, apiKey?: string): string {
   return key;
 }
 
+/** OpenAI 멀티모달 content part (텍스트 또는 이미지). */
+type OAIContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 interface OAIMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | OAIContentPart[];
+}
+
+const NO_TEXT_FALLBACK = "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)";
+
+/**
+ * 첨부 이미지가 있으면 OpenAI 멀티모달 content(배열)로, 없으면 문자열로 만든다.
+ * 이미지 계열(image/*)만 image_url 로 싣는다 — PDF·오디오 등은 이 경로가 처리 못 하므로
+ * 텍스트만 남기고, 상위 폴백 체인에서 멀티모달 전용(Gemini) 후보가 맡는다.
+ */
+function buildUserContent(
+  text: string,
+  files?: { data: string; mimeType: string }[],
+): string | OAIContentPart[] {
+  const images = (files ?? []).filter((f) => f.mimeType.startsWith("image/"));
+  if (images.length === 0) return text || NO_TEXT_FALLBACK;
+  const parts: OAIContentPart[] = [];
+  if (text) parts.push({ type: "text", text });
+  for (const img of images) {
+    parts.push({
+      type: "image_url",
+      image_url: { url: `data:${img.mimeType};base64,${img.data}` },
+    });
+  }
+  return parts;
 }
 
 // ── 에이전트(함수 호출) 지원 ──
@@ -375,6 +404,7 @@ export async function compatGenerateForTool(opts: {
   provider: Exclude<Provider, "gemini">;
   tool: ToolDef;
   text: string;
+  images?: { data: string; mimeType: string }[];
   model?: string;
   apiKey?: string;
 }): Promise<string> {
@@ -388,7 +418,10 @@ export async function compatGenerateForTool(opts: {
     opts.model || cfg.defaultModel,
     [
       { role: "system", content: opts.tool.systemInstruction },
-      { role: "user", content: opts.text || "요청을 수행해 주세요." },
+      {
+        role: "user",
+        content: buildUserContent(opts.text || "요청을 수행해 주세요.", opts.images),
+      },
     ],
     jsonMode,
     opts.apiKey,
@@ -410,7 +443,10 @@ export async function compatChatReply(opts: {
       { role: "system", content: opts.systemInstruction },
       ...opts.messages.map((m) => ({
         role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
-        content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
+        content:
+          m.role === "model"
+            ? m.text || NO_TEXT_FALLBACK
+            : buildUserContent(m.text, m.files),
       })),
     ],
     false,
@@ -435,7 +471,10 @@ export async function compatChatReplyStream(opts: {
       { role: "system", content: opts.systemInstruction },
       ...opts.messages.map((m) => ({
         role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
-        content: m.text || "(첨부 파일은 텍스트 경로에서 처리되지 않습니다)",
+        content:
+          m.role === "model"
+            ? m.text || NO_TEXT_FALLBACK
+            : buildUserContent(m.text, m.files),
       })),
     ],
     opts.onDelta,
