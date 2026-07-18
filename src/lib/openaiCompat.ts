@@ -95,6 +95,159 @@ interface OAIMessage {
   content: string;
 }
 
+// ── 에이전트(함수 호출) 지원 ──
+// 기존 callCompat/문자열 반환 경로는 건드리지 않고, tools를 실을 수 있는 별도
+// 메시지·호출 타입을 추가한다. "OpenAI 호환"은 형식 규격일 뿐이라 Groq·Cerebras·
+// Mistral·DeepSeek·SambaNova 등 무료 제공자가 각자 키로 동일하게 받아준다.
+interface RawToolCall {
+  id?: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
+}
+
+export interface OAIToolMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  /** assistant 턴이 도구를 부를 때 */
+  tool_calls?: RawToolCall[];
+  /** tool 결과 메시지일 때 */
+  tool_call_id?: string;
+}
+
+/** OpenAI function-calling 스키마 한 개 */
+export interface OpenAIToolSchema {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
+/** 제공자 무관 정규화된 도구 호출 */
+export interface NormalizedToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface AgentTurnResult {
+  /** 어시스턴트 텍스트 (순수 도구 호출 턴이면 "") */
+  content: string;
+  /** 최종 답변 턴이면 빈 배열 */
+  toolCalls: NormalizedToolCall[];
+  provider: Provider;
+  model: string;
+}
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (!err || typeof err !== "object") return fallback;
+  const e = err as { error?: { message?: string } | string; message?: string };
+  const detail =
+    (typeof e.error === "object" ? e.error?.message : undefined) ||
+    e.message ||
+    (typeof e.error === "string" ? e.error : null);
+  return detail ? String(detail) : fallback;
+}
+
+/**
+ * 한 번의 에이전트 턴 — tools를 실어 보내고, 모델이 도구를 부르면 tool_calls를,
+ * 아니면 최종 텍스트를 돌려준다. 비스트리밍(툴 결정은 스트리밍하지 않는다).
+ */
+async function callCompatTools(
+  cfg: CompatProviderConfig,
+  model: string,
+  messages: OAIToolMessage[],
+  tools: OpenAIToolSchema[],
+  apiKey?: string,
+  signal?: AbortSignal,
+): Promise<{ content: string; toolCalls: NormalizedToolCall[] }> {
+  const key = requireKey(cfg, apiKey);
+  const res = await fetch(cfg.baseUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      tools,
+      tool_choice: "auto",
+    }),
+    signal,
+  });
+
+  if (!res.ok) {
+    let msg = `${cfg.provider} 오류 (${res.status})`;
+    try {
+      msg = extractErrorMessage(await res.json(), msg);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  if (data?.error?.message) throw new Error(String(data.error.message));
+
+  const message = data?.choices?.[0]?.message ?? {};
+  const rawContent = message?.content;
+  const content =
+    typeof rawContent === "string"
+      ? rawContent
+      : Array.isArray(rawContent)
+        ? rawContent
+            .map((p: { text?: string; content?: string }) => p?.text ?? p?.content ?? "")
+            .join("")
+        : "";
+
+  const rawCalls: RawToolCall[] = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+  const toolCalls: NormalizedToolCall[] = [];
+  for (let i = 0; i < rawCalls.length; i++) {
+    const c = rawCalls[i];
+    const name = c?.function?.name;
+    if (!name) continue;
+    let args: Record<string, unknown> = {};
+    const rawArgs = c?.function?.arguments;
+    if (rawArgs) {
+      try {
+        const parsed = JSON.parse(rawArgs);
+        if (parsed && typeof parsed === "object") args = parsed as Record<string, unknown>;
+      } catch {
+        // 파싱 실패는 throw하지 않고, 원문을 담아 둔다(실행기가 에러 결과로 처리).
+        args = { __rawArguments: rawArgs, __parseError: true };
+      }
+    }
+    toolCalls.push({ id: c?.id || `call_${i}`, name, arguments: args });
+  }
+
+  return { content, toolCalls };
+}
+
+/** 제공자 하나로 에이전트 턴 1회 실행 (폴백은 상위 agentRoute가 담당). */
+export async function compatAgentTurn(opts: {
+  provider: Exclude<Provider, "gemini">;
+  model?: string;
+  messages: OAIToolMessage[];
+  tools: OpenAIToolSchema[];
+  apiKey?: string;
+  signal?: AbortSignal;
+}): Promise<AgentTurnResult> {
+  const cfg = PROVIDER_CONFIG[opts.provider];
+  const model = opts.model || cfg.defaultModel;
+  const { content, toolCalls } = await callCompatTools(
+    cfg,
+    model,
+    opts.messages,
+    opts.tools,
+    opts.apiKey,
+    opts.signal,
+  );
+  return { content, toolCalls, provider: opts.provider, model };
+}
+
 async function callCompat(
   cfg: CompatProviderConfig,
   model: string,

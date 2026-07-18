@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
+import { runAgentRoute } from "@/lib/agentRoute";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
@@ -302,7 +303,82 @@ export async function POST(request: Request) {
       }
 
       try {
-        if (quickToolId) {
+        if (quickToolId === "agent") {
+          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 ──
+          send({
+            type: "status",
+            key: "status.route.start",
+            sessionId: resolvedSessionId,
+            detail: "agent",
+          });
+
+          const AGENT_HISTORY_LIMIT = 16;
+          const agentHistory = await prisma.chatHistory.findMany({
+            where: { sessionId: resolvedSessionId },
+            orderBy: { createdAt: "desc" },
+            take: AGENT_HISTORY_LIMIT,
+            select: { role: true, text: true },
+          });
+          agentHistory.reverse();
+          const agentMessages: ChatMessage[] = agentHistory.map((m) => ({
+            role: m.role === "model" ? "model" : "user",
+            text: m.text,
+          }));
+
+          const agentResult = await runAgentRoute({
+            text,
+            messages: agentMessages,
+            modelTier,
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
+            signal: request.signal,
+            onDelta: (delta) =>
+              send({ type: "delta", sessionId: resolvedSessionId, text: delta }),
+            onStage: (detail) =>
+              send({
+                type: "status",
+                key: "status.route.generate.try",
+                sessionId: resolvedSessionId,
+                detail,
+              }),
+            onAttempt: (info) =>
+              send({
+                type: "status",
+                key: "status.route.generate.try",
+                sessionId: resolvedSessionId,
+                detail: `${info.provider}/${info.model}`,
+              }),
+          });
+
+          const art = agentResult.artifact;
+          const assistantRow = await prisma.chatHistory.create({
+            data: {
+              sessionId: resolvedSessionId,
+              role: "model",
+              text: agentResult.text,
+              agentId: `agent:${agentResult.toolsUsed.join(",") || "none"}`,
+              provider: agentResult.provider,
+              modelName: agentResult.model,
+              attempts: agentResult.attempts,
+              outputType: art?.outputType,
+              structuredKind: art?.structuredKind,
+              resultData: art?.resultData,
+              fileUrl: art?.fileUrl,
+              fileName: art?.fileName,
+            },
+          });
+          await prisma.chatSession.update({
+            where: { id: resolvedSessionId },
+            data: { updatedAt: new Date() },
+          });
+
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: assistantRow,
+            interrupted: agentResult.interrupted,
+          });
+        } else if (quickToolId) {
           send({
             type: "status",
             key: "status.quicktool.generating",

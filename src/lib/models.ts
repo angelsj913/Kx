@@ -99,6 +99,19 @@ export const OPENROUTER_FREE_CHAT: ModelDef[] = [
   orFree("meta-llama/llama-3.2-3b-instruct:free"),
 ];
 
+// ── 에이전트(함수 호출) 전용 모델 ──
+// 툴 콜은 모델 품질에 민감해서, 8b 소형 폴백 풀로 새면 tool_calls가 깨진다.
+// 그래서 modelsForTier/FALLBACK_MODELS(소형 모델 안전망 포함)를 재사용하지 않고,
+// OpenAI 함수호출을 안정적으로 지원하는 강한 무료 모델만 골라 고정한다.
+// (OpenRouter free·GitHub Models는 tools 파라미터에 400을 낼 수 있어 제외.)
+export const AGENT_MODELS: ModelDef[] = [
+  { provider: "groq", model: "llama-3.3-70b-versatile", free: true },
+  { provider: "cerebras", model: "llama-3.3-70b", free: true },
+  { provider: "mistral", model: "mistral-small-latest", free: true },
+  { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", free: true },
+  { provider: "deepseek", model: "deepseek-chat", cheap: true },
+];
+
 export const MAX_FREE_ATTEMPTS = 6;
 
 /**
