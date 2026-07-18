@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { HelpCircle, Megaphone, Archive, Mail, ScrollText, Inbox } from "lucide-react";
+import { HelpCircle, Megaphone, Mail, ScrollText, Inbox } from "lucide-react";
 import { useLandingT, type LandingDictKey } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -21,7 +21,6 @@ interface NavItem {
 const NAV: NavItem[] = [
   { key: "faq", href: "/support", icon: HelpCircle, labelKey: "support.tab.faq" },
   { key: "notices", href: "/support/notices", icon: Megaphone, labelKey: "support.tab.announcements" },
-  { key: "releases", href: "/support/releases", icon: Archive, labelKey: "support.tab.legacy" },
   { key: "inquiry", href: "/support/inquiry", icon: Mail, labelKey: "support.tab.inquiry" },
   { key: "history", href: "/support/inquiry/history", icon: Inbox, labelKey: "support.nav.history", indent: true },
   { key: "legal", href: "/support/legal", icon: ScrollText, labelKey: "support.tab.legal" },
