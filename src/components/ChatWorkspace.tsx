@@ -36,6 +36,7 @@ import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languag
 import { getToolPlaceholder } from "@/lib/toolPlaceholders";
 import CopyButton from "@/components/CopyButton";
 import { wsFetch } from "@/lib/workspaceClient";
+import { useSession } from "next-auth/react";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
 import { groupedQuickTools } from "@/lib/quickTools";
@@ -295,6 +296,8 @@ export default function ChatWorkspace({
 }) {
   const t = useT();
   const uiLang = useAppLanguage();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin === true;
   const { settings } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
@@ -1311,6 +1314,7 @@ export default function ChatWorkspace({
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -1345,6 +1349,7 @@ export default function ChatWorkspace({
                   openArtifact(a);
                   setMobileSheet(false);
                 }}
+                isAdmin={isAdmin}
               />
             </motion.div>
           </motion.div>

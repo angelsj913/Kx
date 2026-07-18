@@ -56,7 +56,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: { strategy: "jwt" },
+  // 로그인 유지: JWT 세션을 30일간 보관하고, 활동이 있으면 하루 단위로 만료를 갱신한다.
+  // (재접속 때마다 다시 로그인하지 않도록 — "로그인 상태 유지")
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user, account, profile }) {

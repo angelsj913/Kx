@@ -101,6 +101,7 @@ export default function ChatRightPanel({
   terminalLines,
   loading,
   onSelectArtifact,
+  isAdmin = false,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -111,8 +112,15 @@ export default function ChatRightPanel({
   terminalLines: TerminalLine[];
   loading: boolean;
   onSelectArtifact?: (a: ChatArtifact) => void;
+  /** 터미널 탭은 관리자에게만 보인다. */
+  isAdmin?: boolean;
 }) {
   const t = useT();
+  // 터미널 탭은 관리자 전용 — 일반 사용자에겐 메뉴 자체를 숨긴다.
+  const visibleTabs = useMemo(
+    () => TAB_META.filter((m) => m.id !== "terminal" || isAdmin),
+    [isAdmin],
+  );
   const emptyHint = useMemo(() => {
     if (tab === "files") return t("panel.emptyHint.files");
     if (tab === "plan") return t("panel.emptyHint.plan");
@@ -131,7 +139,7 @@ export default function ChatRightPanel({
           <ChevronRight className="h-4 w-4 rotate-180" />
         </button>
         <div className="mt-3 flex flex-col items-center gap-2">
-          {TAB_META.map(({ id, labelKey, icon: Icon }) => (
+          {visibleTabs.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -174,7 +182,7 @@ export default function ChatRightPanel({
       </div>
 
       <div className="flex gap-1 border-b border-slate-200 p-1.5 dark:border-slate-800">
-        {TAB_META.map(({ id, labelKey, icon: Icon }) => (
+        {visibleTabs.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -295,7 +303,7 @@ export default function ChatRightPanel({
           )
         )}
 
-        {tab === "terminal" && (
+        {tab === "terminal" && isAdmin && (
           terminalLines.length === 0 ? (
             <EmptyState text={emptyHint} />
           ) : (
