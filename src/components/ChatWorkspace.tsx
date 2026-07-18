@@ -22,7 +22,6 @@ import {
   PanelRight,
   Download,
   Printer,
-  Copy,
   Pencil,
   Check,
   RotateCcw,
@@ -32,8 +31,10 @@ import {
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
-import { useT, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
+import { useT, useAppLanguage, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
 import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
+import { getToolPlaceholder } from "@/lib/toolPlaceholders";
+import CopyButton from "@/components/CopyButton";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSpeech } from "@/lib/useSpeech";
 import { useSettings } from "@/lib/useSettings";
@@ -293,6 +294,7 @@ export default function ChatWorkspace({
   onTurnSaved: () => void;
 }) {
   const t = useT();
+  const uiLang = useAppLanguage();
   const { settings } = useSettings();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
@@ -935,17 +937,7 @@ export default function ChatWorkspace({
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
                     {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(m.text).catch(() => {});
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("chat.copy")}
-                        >
-                          <Copy className="h-3 w-3" />
-                          {t("chat.copy")}
-                        </button>
+                        <CopyButton text={m.text} />
                         {m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
                           !loading && (
@@ -975,17 +967,7 @@ export default function ChatWorkspace({
                             {t("chat.saveMd")}
                           </a>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(m.text).catch(() => {});
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("chat.copy")}
-                        >
-                          <Copy className="h-3 w-3" />
-                          {t("chat.copy")}
-                        </button>
+                        <CopyButton text={m.text} />
                         <button
                           type="button"
                           onClick={() =>
@@ -1246,7 +1228,11 @@ export default function ChatWorkspace({
                 }
               }}
               rows={1}
-              placeholder={activeQuickTool ? activeQuickTool.placeholder : t("chat.placeholder")}
+              placeholder={
+                activeQuickTool
+                  ? getToolPlaceholder(activeQuickTool.id, uiLang, activeQuickTool.placeholder)
+                  : t("chat.placeholder")
+              }
               className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-600"
             />
             {sttSupported && (

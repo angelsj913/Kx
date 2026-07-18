@@ -15,60 +15,25 @@ import {
   LANGUAGE_ORDER,
   type AppLanguage,
 } from "../languages";
+import {
+  getLanguage,
+  getServerLanguage,
+  setLanguage as setSharedLanguage,
+  subscribeLanguage,
+} from "../languageStore";
 
 export type LandingLanguage = AppLanguage;
 export { LANGUAGE_LABELS, LANGUAGE_ORDER };
 
-const STORAGE_KEY = "zeff-landing-language";
-const DEFAULT_LANGUAGE: LandingLanguage = "ko";
-
 const DICT: Record<LandingLanguage, Record<keyof typeof ko, string>> = { ko, en, ja, zh, ru, de, fr, es };
 
-let cache: LandingLanguage | null = null;
-const listeners = new Set<() => void>();
-
-function isLandingLanguage(v: string | null): v is LandingLanguage {
-  return !!v && LANGUAGE_ORDER.includes(v as LandingLanguage);
-}
-
-function read(): LandingLanguage {
-  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return isLandingLanguage(raw) ? raw : DEFAULT_LANGUAGE;
-  } catch {
-    return DEFAULT_LANGUAGE;
-  }
-}
-
-function getSnapshot(): LandingLanguage {
-  if (cache === null) cache = read();
-  return cache;
-}
-
-function getServerSnapshot(): LandingLanguage {
-  return DEFAULT_LANGUAGE;
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
+// 앱·랜딩·결제창이 languageStore 하나를 공유한다(별도 캐시로 인한 언어 되돌림 버그 방지).
 export function setLandingLanguage(lang: LandingLanguage) {
-  cache = lang;
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      /* ignore quota errors */
-    }
-  }
-  listeners.forEach((l) => l());
+  setSharedLanguage(lang);
 }
 
 export function useLandingLanguage() {
-  const language = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const language = useSyncExternalStore(subscribeLanguage, getLanguage, getServerLanguage);
   return { language, setLanguage: setLandingLanguage };
 }
 

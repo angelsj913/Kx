@@ -12,22 +12,19 @@ interface EmbeddedChunk {
   libraryItemId: string;
 }
 
-// 사용자의 워크스페이스 언어 설정에 맞춰 응답 언어를 지시 — UI 언어를 바꿔도
-// AI 응답은 항상 한국어로 고정되던 문제를 해결한다.
-const RESPONSE_LANGUAGE_LINE: Record<string, string> = {
-  ko: "답변은 한국어로, 결론 먼저, 짧고 실무적으로 작성합니다.",
-  en: "Reply in English, lead with the conclusion, and keep it short and practical.",
-  ja: "日本語で、結論を先に、短く実務的に回答します。",
-  zh: "请用中文回答，先给结论，简短实用。",
-  ru: "Отвечайте на русском языке, сначала выводы, кратко и по делу.",
-  de: "Antworten Sie auf Deutsch, zuerst das Ergebnis, kurz und praxisnah.",
-  fr: "Répondez en français, en commençant par la conclusion, de façon brève et pratique.",
-  es: "Responde en español, empezando por la conclusión, de forma breve y práctica.",
-};
+// 응답 언어 규칙: UI 설정 언어를 강요하지 않고, "사용자가 방금 입력한 언어"에 맞춰
+// 답한다. 설정이 영어인데 한국어로 물으면 영어를 강요해 언어가 섞이던 버그를 없앤다.
+// 입력 언어를 알 수 없거나 지원하지 않으면 영어로 답한다.
+const RESPONSE_LANGUAGE_LINE =
+  "답변 언어 규칙(매우 중요): 사용자가 방금 보낸 메시지와 정확히 같은 언어로만 답합니다. " +
+  "UI 설정 언어가 무엇이든 무시하고, 오직 사용자의 입력 언어를 따릅니다. " +
+  "여러 언어를 한 답변에 섞지 않습니다. " +
+  "입력 언어를 판별할 수 없거나 지원 언어(한국어·영어·일본어·중국어·러시아어·독일어·프랑스어·스페인어·아랍어)에 없으면 영어로 답합니다. " +
+  "결론을 먼저, 짧고 실무적으로 작성합니다.";
 
 // 생성한 데이터셋에서 추출한 운영 규칙의 런타임 반영본.
-function buildZeffSystemPrompt(language?: string | null): string {
-  const responseLine = RESPONSE_LANGUAGE_LINE[language ?? "ko"] ?? RESPONSE_LANGUAGE_LINE.ko;
+function buildZeffSystemPrompt(): string {
+  const responseLine = RESPONSE_LANGUAGE_LINE;
   return [
     "당신은 ZEFF AI 운영 문맥을 따르는 도우미입니다.",
     "공식 도메인은 https://zeffai.com 입니다.",
@@ -46,7 +43,7 @@ function buildZeffSystemPrompt(language?: string | null): string {
 }
 
 // 이전 코드와의 호환을 위해 한국어 기본값을 유지한다.
-export const ZEFF_SYSTEM_PROMPT = buildZeffSystemPrompt("ko");
+export const ZEFF_SYSTEM_PROMPT = buildZeffSystemPrompt();
 
 export async function buildZeffRuntimeInstruction(args: {
   userId: string;
@@ -54,7 +51,7 @@ export async function buildZeffRuntimeInstruction(args: {
   query: string;
   language?: string | null;
 }): Promise<string> {
-  const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt(args.language)}`];
+  const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt()}`];
   const query = args.query.trim();
 
   if (!query) return sections.join("\n\n");

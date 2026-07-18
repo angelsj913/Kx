@@ -6,65 +6,24 @@ import {
   LANGUAGE_ORDER,
   type AppLanguage,
 } from "./languages";
+import {
+  getLanguage,
+  getServerLanguage,
+  setLanguage,
+  subscribeLanguage,
+} from "./languageStore";
 
 export type { AppLanguage };
 export { LANGUAGE_LABELS, LANGUAGE_ORDER };
 
-const STORAGE_KEY = "zeff-app-language";
-const DEFAULT_LANGUAGE: AppLanguage = "ko";
-
-let cache: AppLanguage | null = null;
-const listeners = new Set<() => void>();
-
-function isAppLanguage(v: string | null): v is AppLanguage {
-  return !!v && (LANGUAGE_ORDER as string[]).includes(v);
-}
-
-function read(): AppLanguage {
-  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (isAppLanguage(raw)) return raw;
-    // 홈 언어 키도 공유 (결제창 동기화)
-    const landing = window.localStorage.getItem("zeff-landing-language");
-    if (isAppLanguage(landing)) return landing;
-    return DEFAULT_LANGUAGE;
-  } catch {
-    return DEFAULT_LANGUAGE;
-  }
-}
-
-function getSnapshot(): AppLanguage {
-  if (cache === null) cache = read();
-  return cache;
-}
-
-function getServerSnapshot(): AppLanguage {
-  return DEFAULT_LANGUAGE;
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-/** 서버(UserSettings) 반영이 끝난 뒤에만 호출해서 전역 언어를 실제로 갈아입힌다. */
+/** 서버(UserSettings) 반영이 끝난 뒤에만 호출해서 전역 언어를 실제로 갈아입힌다.
+ *  앱·랜딩·결제창이 모두 languageStore 하나를 공유하므로 어디서든 즉시 반영된다. */
 export function setAppLanguage(lang: AppLanguage) {
-  cache = lang;
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, lang);
-      // 홈/결제창과 동기화
-      window.localStorage.setItem("zeff-landing-language", lang);
-    } catch {
-      /* ignore quota errors */
-    }
-  }
-  listeners.forEach((l) => l());
+  setLanguage(lang);
 }
 
 export function useAppLanguage(): AppLanguage {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribeLanguage, getLanguage, getServerLanguage);
 }
 
 /** 베이스 딕셔너리 — ko / en 완전 번역. 기타 언어는 en 폴백. */
