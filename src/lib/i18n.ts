@@ -29,7 +29,7 @@ export function useAppLanguage(): AppLanguage {
 /** 베이스 딕셔너리 — ko / en 완전 번역. 기타 언어는 en 폴백. */
 const KO = {
   "sidebar.newChat": "새 채팅",
-  "sidebar.myLibrary": "내 서재",
+  "sidebar.myLibrary": "지식 베이스",
   "sidebar.sharedLibrary": "공유 서재",
   "sidebar.library": "라이브러리",
   "sidebar.libraryEmpty": "아직 대화가 없어요.",
@@ -241,6 +241,9 @@ const KO = {
   "workboard.column.done": "완료",
   "workboard.column.doneHint": "끝남",
   "workboard.subtitle": "할 일·마감을 칸반으로 관리하세요. (복습 스케줄러를 대체한 협업 보드)",
+  "workboard.aiHint": "목표를 입력하면 AI가 실행 작업으로 분해해 보드에 채워 줍니다.",
+  "workboard.aiGoalPlaceholder": "예) 다음 달까지 신제품 출시 준비하기",
+  "workboard.aiPlan": "AI로 작업 생성",
   "workboard.newTaskPlaceholder": "새 작업 제목",
   "workboard.priority.low": "낮음",
   "workboard.priority.normal": "보통",
@@ -435,7 +438,7 @@ const KO = {
 
 const EN: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "New chat",
-  "sidebar.myLibrary": "My Library",
+  "sidebar.myLibrary": "Knowledge Base",
   "sidebar.sharedLibrary": "Shared Library",
   "sidebar.library": "Library",
   "sidebar.libraryEmpty": "No conversations yet.",
@@ -651,6 +654,9 @@ const EN: Record<keyof typeof KO, string> = {
   "workboard.column.doneHint": "Finished",
   "workboard.subtitle":
     "Manage tasks and deadlines with a kanban board. (A collaboration board that replaces the review scheduler.)",
+  "workboard.aiHint": "Enter a goal and AI breaks it into actionable tasks on the board.",
+  "workboard.aiGoalPlaceholder": "e.g. Prepare the product launch by next month",
+  "workboard.aiPlan": "AI-generate tasks",
   "workboard.newTaskPlaceholder": "New task title",
   "workboard.priority.low": "Low",
   "workboard.priority.normal": "Normal",
@@ -845,7 +851,7 @@ const EN: Record<keyof typeof KO, string> = {
 
 const JA: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "新しいチャット",
-  "sidebar.myLibrary": "マイライブラリ",
+  "sidebar.myLibrary": "ナレッジベース",
   "sidebar.sharedLibrary": "共有ライブラリ",
   "sidebar.library": "ライブラリ",
   "sidebar.libraryEmpty": "まだ会話がありません。",
@@ -1040,6 +1046,9 @@ const JA: Record<keyof typeof KO, string> = {
   "workboard.column.done": "完了",
   "workboard.column.doneHint": "終了",
   "workboard.subtitle": "やること・締め切りをカンバンで管理しましょう。（復習スケジューラーに代わる共同作業ボード）",
+  "workboard.aiHint": "目標を入力すると、AIが実行可能なタスクに分解してボードに追加します。",
+  "workboard.aiGoalPlaceholder": "例）来月までに新製品の発売準備をする",
+  "workboard.aiPlan": "AIでタスクを生成",
   "workboard.newTaskPlaceholder": "新しいタスクのタイトル",
   "workboard.priority.low": "低",
   "workboard.priority.normal": "中",
@@ -1233,7 +1242,7 @@ const JA: Record<keyof typeof KO, string> = {
 
 const ZH: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "新对话",
-  "sidebar.myLibrary": "我的资料库",
+  "sidebar.myLibrary": "知识库",
   "sidebar.sharedLibrary": "共享资料库",
   "sidebar.library": "资料库",
   "sidebar.libraryEmpty": "还没有对话。",
@@ -1428,6 +1437,9 @@ const ZH: Record<keyof typeof KO, string> = {
   "workboard.column.done": "已完成",
   "workboard.column.doneHint": "结束",
   "workboard.subtitle": "用看板管理待办事项与截止日期。（取代复习计划器的协作看板）",
+  "workboard.aiHint": "输入目标，AI 会将其拆解为可执行的任务并填入看板。",
+  "workboard.aiGoalPlaceholder": "例）在下个月前准备好新产品发布",
+  "workboard.aiPlan": "用 AI 生成任务",
   "workboard.newTaskPlaceholder": "新任务标题",
   "workboard.priority.low": "低",
   "workboard.priority.normal": "中",
@@ -1621,7 +1633,7 @@ const ZH: Record<keyof typeof KO, string> = {
 
 const RU: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "Новый чат",
-  "sidebar.myLibrary": "Моя библиотека",
+  "sidebar.myLibrary": "База знаний",
   "sidebar.sharedLibrary": "Общая библиотека",
   "sidebar.library": "Библиотека",
   "sidebar.libraryEmpty": "Пока нет диалогов.",
@@ -1816,6 +1828,9 @@ const RU: Record<keyof typeof KO, string> = {
   "workboard.column.done": "Готово",
   "workboard.column.doneHint": "Завершено",
   "workboard.subtitle": "Управляйте задачами и сроками с помощью канбан-доски. (Доска для совместной работы, заменяющая планировщик повторений.)",
+  "workboard.aiHint": "Введите цель, и ИИ разобьёт её на выполнимые задачи на доске.",
+  "workboard.aiGoalPlaceholder": "напр. Подготовить запуск продукта к следующему месяцу",
+  "workboard.aiPlan": "Создать задачи с ИИ",
   "workboard.newTaskPlaceholder": "Название новой задачи",
   "workboard.priority.low": "Низкий",
   "workboard.priority.normal": "Средний",
@@ -2009,7 +2024,7 @@ const RU: Record<keyof typeof KO, string> = {
 
 const DE: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "Neuer Chat",
-  "sidebar.myLibrary": "Meine Bibliothek",
+  "sidebar.myLibrary": "Wissensdatenbank",
   "sidebar.sharedLibrary": "Geteilte Bibliothek",
   "sidebar.library": "Bibliothek",
   "sidebar.libraryEmpty": "Noch keine Unterhaltungen.",
@@ -2204,6 +2219,9 @@ const DE: Record<keyof typeof KO, string> = {
   "workboard.column.done": "Erledigt",
   "workboard.column.doneHint": "Beendet",
   "workboard.subtitle": "Verwalten Sie Aufgaben und Fristen mit einem Kanban-Board. (Ein Kollaborationsboard, das den Wiederholungsplaner ersetzt.)",
+  "workboard.aiHint": "Geben Sie ein Ziel ein, und die KI zerlegt es in umsetzbare Aufgaben auf dem Board.",
+  "workboard.aiGoalPlaceholder": "z. B. Den Produktstart bis nächsten Monat vorbereiten",
+  "workboard.aiPlan": "Aufgaben mit KI erstellen",
   "workboard.newTaskPlaceholder": "Neuer Aufgabentitel",
   "workboard.priority.low": "Niedrig",
   "workboard.priority.normal": "Normal",
@@ -2397,7 +2415,7 @@ const DE: Record<keyof typeof KO, string> = {
 
 const FR: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "Nouvelle discussion",
-  "sidebar.myLibrary": "Ma bibliothèque",
+  "sidebar.myLibrary": "Base de connaissances",
   "sidebar.sharedLibrary": "Bibliothèque partagée",
   "sidebar.library": "Bibliothèque",
   "sidebar.libraryEmpty": "Pas encore de conversations.",
@@ -2592,6 +2610,9 @@ const FR: Record<keyof typeof KO, string> = {
   "workboard.column.done": "Terminé",
   "workboard.column.doneHint": "Fini",
   "workboard.subtitle": "Gérez vos tâches et échéances avec un tableau kanban. (Un tableau collaboratif qui remplace le planificateur de révisions.)",
+  "workboard.aiHint": "Saisissez un objectif et l'IA le décompose en tâches concrètes sur le tableau.",
+  "workboard.aiGoalPlaceholder": "ex. Préparer le lancement du produit d'ici le mois prochain",
+  "workboard.aiPlan": "Générer des tâches par IA",
   "workboard.newTaskPlaceholder": "Titre de la nouvelle tâche",
   "workboard.priority.low": "Faible",
   "workboard.priority.normal": "Normale",
@@ -2785,7 +2806,7 @@ const FR: Record<keyof typeof KO, string> = {
 
 const ES: Record<keyof typeof KO, string> = {
   "sidebar.newChat": "Nuevo chat",
-  "sidebar.myLibrary": "Mi biblioteca",
+  "sidebar.myLibrary": "Base de conocimiento",
   "sidebar.sharedLibrary": "Biblioteca compartida",
   "sidebar.library": "Biblioteca",
   "sidebar.libraryEmpty": "Aún no hay conversaciones.",
@@ -2980,6 +3001,9 @@ const ES: Record<keyof typeof KO, string> = {
   "workboard.column.done": "Hecho",
   "workboard.column.doneHint": "Finalizado",
   "workboard.subtitle": "Gestiona tareas y plazos con un tablero kanban. (Un tablero colaborativo que reemplaza al planificador de repasos.)",
+  "workboard.aiHint": "Escribe un objetivo y la IA lo divide en tareas accionables en el tablero.",
+  "workboard.aiGoalPlaceholder": "p. ej. Preparar el lanzamiento del producto para el próximo mes",
+  "workboard.aiPlan": "Generar tareas con IA",
   "workboard.newTaskPlaceholder": "Título de la nueva tarea",
   "workboard.priority.low": "Baja",
   "workboard.priority.normal": "Normal",
@@ -3199,7 +3223,7 @@ const AR_CORE: Partial<Record<AppDictKey, string>> = {
   "nav.menu": "القائمة",
   "nav.closeMenu": "إغلاق القائمة",
   "sidebar.newChat": "محادثة جديدة",
-  "sidebar.myLibrary": "مكتبتي",
+  "sidebar.myLibrary": "قاعدة المعرفة",
   "sidebar.library": "المكتبة",
   "sidebar.libraryEmpty": "لا توجد عناصر بعد.",
   "sidebar.knowledgeSearch": "بحث المعرفة",

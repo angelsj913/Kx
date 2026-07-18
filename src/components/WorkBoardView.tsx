@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Plus, Trash2, Kanban, Loader2, User as UserIcon } from "lucide-react";
+import { Plus, Trash2, Kanban, Loader2, User as UserIcon, Sparkles } from "lucide-react";
 import { useWorkspace, wsFetch } from "@/lib/workspaceClient";
 import { useT, type AppDictKey } from "@/lib/i18n";
 
@@ -80,6 +80,9 @@ export default function WorkBoardView() {
   const [assigneeId, setAssigneeId] = useState("");
   const [busy, setBusy] = useState(false);
   const [myTasksOnly, setMyTasksOnly] = useState(false);
+  const [goal, setGoal] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const hasTeam = !!activeId;
 
@@ -153,6 +156,31 @@ export default function WorkBoardView() {
     }
   }
 
+  async function aiPlan() {
+    const value = goal.trim();
+    if (!value || aiBusy) return;
+    setAiBusy(true);
+    setAiError("");
+    try {
+      const res = await wsFetch("/api/board/plan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ goal: value }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGoal("");
+        await load();
+      } else {
+        setAiError(data?.error ?? t("common.unknownError"));
+      }
+    } catch {
+      setAiError(t("common.unknownError"));
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   async function move(id: string, status: Status) {
     setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, status } : task)));
     await wsFetch("/api/board", {
@@ -203,7 +231,7 @@ export default function WorkBoardView() {
               {t("sidebar.workboard")}
             </h1>
             <p className="mt-1 text-sm text-[var(--workspace-text-secondary)]">
-              {t("workboard.subtitle")}
+              {t("workboard.aiHint")}
             </p>
           </div>
           {hasTeam && (
@@ -270,6 +298,30 @@ export default function WorkBoardView() {
           >
             <Plus className="h-4 w-4" /> {t("common.add")}
           </button>
+        </div>
+
+        {/* AI 프로젝트 어시스턴트: 목표를 입력하면 실행 작업으로 자동 분해 */}
+        <div className="rounded-xl border border-blue-500/30 bg-blue-600/5 p-2.5 dark:bg-blue-500/10">
+          <div className="flex flex-wrap gap-2">
+            <input
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && aiPlan()}
+              placeholder={t("workboard.aiGoalPlaceholder")}
+              disabled={aiBusy}
+              className="min-w-0 flex-1 rounded-lg border border-[var(--workspace-border)] bg-[var(--workspace-surface)] px-3 py-2 text-sm outline-none focus:border-blue-500 sm:w-72"
+            />
+            <button
+              type="button"
+              onClick={() => void aiPlan()}
+              disabled={aiBusy || !goal.trim()}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+            >
+              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {t("workboard.aiPlan")}
+            </button>
+          </div>
+          {aiError && <p className="mt-1.5 text-xs text-red-500">{aiError}</p>}
         </div>
       </div>
 
