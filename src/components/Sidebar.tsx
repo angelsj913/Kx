@@ -57,13 +57,21 @@ export default function Sidebar({
         }`}
       >
         {isCollapsed ? (
+          // 접힘: 로고 = 펼치기 버튼. 평소엔 로고, 호버 시 오른쪽 화살표로 바뀐다.
+          // (예전엔 로고 버튼 + 별도 화살표 줄이 겹쳐 "화살표 2개"로 보였음 → 하나로 통합.)
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
             title={t("sidebar.expand")}
-            className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
+            className="group relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-[var(--workspace-bg)]"
           >
-            <Logo size="sm" withWordmark={false} />
+            <span className="transition-opacity group-hover:opacity-0">
+              <Logo size="sm" withWordmark={false} />
+            </span>
+            <ChevronRight
+              size={ICON}
+              className="absolute text-[var(--workspace-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-blue-600"
+            />
           </button>
         ) : (
           <>
@@ -80,18 +88,6 @@ export default function Sidebar({
         )}
       </div>
 
-      {isCollapsed && (
-        <div className="flex shrink-0 items-center justify-center border-b border-[var(--workspace-border)] py-1">
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(false)}
-            title={t("sidebar.expand")}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)] hover:text-blue-600"
-          >
-            <ChevronRight size={ICON} />
-          </button>
-        </div>
-      )}
 
       <WorkspaceSwitcher collapsed={isCollapsed} />
 

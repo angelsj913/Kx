@@ -83,17 +83,32 @@ export default function LibraryView({
     setError("");
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
+      // 1) 파일을 Blob으로 직접 업로드 — 서버리스 4.5MB 본문 한도(413 "Request Entity Too
+      //    Large")를 우회한다. 예전엔 FormData로 함수에 통째 보내다 큰 파일에서 깨졌다.
+      const { upload } = await import("@vercel/blob/client");
+      const blob = await upload(`library/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/library/blob-upload",
+      });
+      // 2) 메타데이터(작은 JSON)만 서버로 보내 서재 항목 생성·색인.
+      const init: RequestInit = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blobUrl: blob.url,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          size: file.size,
+        }),
+      };
       const res =
         tab === "mine"
           ? await fetch("/api/library?scope=personal", {
-              method: "POST",
-              body: form,
-              headers: { "X-Workspace-Id": "personal" },
+              ...init,
+              headers: { ...init.headers, "X-Workspace-Id": "personal" },
             })
-          : await wsFetch("/api/library?scope=shared", { method: "POST", body: form });
-      const data = await res.json();
+          : await wsFetch("/api/library?scope=shared", init);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? t("library.errors.uploadFailed"));
       setItems((prev) => [data.item, ...prev]);
       if (data.usage) setUsage(data.usage);

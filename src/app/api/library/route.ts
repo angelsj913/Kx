@@ -152,29 +152,63 @@ export async function POST(request: Request) {
     );
   }
 
-  const form = await request.formData();
-  const file = form.get("file");
-  const titleInput = String(form.get("title") ?? "").trim();
-
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "파일을 첨부해 주세요." }, { status: 400 });
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json(
-      { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB).` },
-      { status: 400 },
-    );
-  }
+  // ── 입력 파싱: (신규) 클라이언트 직접 업로드 JSON 완결 / (레거시) FormData ──
+  // JSON 경로는 파일을 함수 본문으로 보내지 않으므로 4.5MB 413 문제가 없다.
+  const reqContentType = request.headers.get("content-type") || "";
+  let buf: Buffer;
+  let mimeType: string;
+  let fileName: string;
+  let titleInput: string;
+  let blobUrl: string;
 
   try {
-    const buf = Buffer.from(await file.arrayBuffer());
-    const mimeType = file.type || "application/octet-stream";
+    if (reqContentType.includes("application/json")) {
+      const body = await request.json().catch(() => ({}));
+      blobUrl = String(body?.blobUrl ?? "");
+      fileName = String(body?.fileName ?? "file");
+      mimeType = String(body?.mimeType ?? "application/octet-stream");
+      titleInput = String(body?.title ?? "").trim();
+      const size = Number(body?.size ?? 0);
 
-    const blob = await put(`library/${userId}/${Date.now()}-${file.name}`, buf, {
-      access: "public",
-      contentType: mimeType,
-      addRandomSuffix: true,
-    });
+      // 우리 Blob 스토어의 URL만 허용(임의 URL 인젝션 방지)
+      if (!/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(blobUrl)) {
+        return NextResponse.json({ error: "유효하지 않은 업로드입니다." }, { status: 400 });
+      }
+      if (size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB).` },
+          { status: 400 },
+        );
+      }
+      // 추출·색인을 위해 Blob 내용을 가져온다(작은 JSON 요청과 별개).
+      const fetched = await fetch(blobUrl);
+      if (!fetched.ok) {
+        return NextResponse.json({ error: "업로드한 파일을 읽지 못했습니다." }, { status: 400 });
+      }
+      buf = Buffer.from(await fetched.arrayBuffer());
+    } else {
+      const form = await request.formData();
+      const file = form.get("file");
+      titleInput = String(form.get("title") ?? "").trim();
+      if (!(file instanceof File)) {
+        return NextResponse.json({ error: "파일을 첨부해 주세요." }, { status: 400 });
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB).` },
+          { status: 400 },
+        );
+      }
+      buf = Buffer.from(await file.arrayBuffer());
+      mimeType = file.type || "application/octet-stream";
+      fileName = file.name;
+      const blob = await put(`library/${userId}/${Date.now()}-${file.name}`, buf, {
+        access: "public",
+        contentType: mimeType,
+        addRandomSuffix: true,
+      });
+      blobUrl = blob.url;
+    }
 
     // 추출은 업로드 병목 — 실패해도 저장은 유지
     // 1) PDF에 텍스트 레이어가 있으면 AI 없이 즉시·무료로 추출한다(Gemini 크레딧 무관).
@@ -203,9 +237,9 @@ export async function POST(request: Request) {
       data: {
         userId,
         workspaceId,
-        title: titleInput || file.name.replace(/\.[^.]+$/, ""),
-        fileUrl: blob.url,
-        fileName: file.name,
+        title: titleInput || fileName.replace(/\.[^.]+$/, ""),
+        fileUrl: blobUrl,
+        fileName,
         mimeType,
         extractedText,
       },
