@@ -5,6 +5,7 @@ import WorkspaceIntro from "@/components/landing/WorkspaceIntro";
 import OfficeFeatures from "@/components/landing/OfficeFeatures";
 import LectureAnalysis from "@/components/landing/LectureAnalysis";
 import FeatureGrid from "@/components/landing/FeatureGrid";
+import WhyZeff from "@/components/landing/WhyZeff";
 import Pricing from "@/components/landing/Pricing";
 import FeatureShowcase from "@/components/landing/FeatureShowcase";
 import Team from "@/components/landing/Team";
@@ -26,6 +27,7 @@ export default function Landing() {
           <OfficeFeatures />
           <LectureAnalysis />
           <FeatureGrid />
+          <WhyZeff />
           <Pricing />
           <FeatureShowcase />
           <Team />

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
+import ReferralCard from "@/components/settings/ReferralCard";
 import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
 import {
   useT,
@@ -162,7 +163,12 @@ export default function SettingsModal({
               {tab === "security" && <SecurityPanel />}
               {tab === "billing" && <BillingPanel />}
               {tab === "data" && <DataPanel />}
-              {tab === "plan" && <PlanPanel />}
+              {tab === "plan" && (
+                <>
+                  <ReferralCard />
+                  <PlanPanel />
+                </>
+              )}
               {tab === "about" && <AboutPanel />}
             </div>
           </div>

@@ -28,6 +28,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "알 수 없는 요금제입니다." }, { status: 400 });
     }
 
+    // 결제 주기: 연간(year)이면 연간가로 청구, 그 외는 월간. 연간가 미지원 플랜은 월간으로 폴백.
+    const isAnnual = body?.interval === "year" && plan.annualAmount != null;
+    const interval: "month" | "year" = isAnnual ? "year" : "month";
+    const chargeAmount = isAnnual ? (plan.annualAmount as number) : plan.amount;
+
     const merchantUid = newMerchantUid();
     const stripe = getStripe();
     const baseUrl = getBaseUrl();
@@ -38,7 +43,7 @@ export async function POST(request: Request) {
         merchantUid,
         userId,
         plan: plan.id,
-        amount: plan.amount,
+        amount: chargeAmount,
         currency: plan.currency,
         status: "pending",
       },
@@ -94,15 +99,17 @@ export async function POST(request: Request) {
         {
           price_data: {
             currency: plan.currency,
-            product_data: { name: `ZEFF AI ${plan.label}` },
-            unit_amount: plan.amount,
-            recurring: { interval: "month" },
+            product_data: {
+              name: `ZEFF AI ${plan.label}${isAnnual ? " (연간)" : ""}`,
+            },
+            unit_amount: chargeAmount,
+            recurring: { interval },
           },
           quantity: 1,
         },
       ],
       client_reference_id: merchantUid,
-      metadata: { merchantUid, plan: plan.id, userId },
+      metadata: { merchantUid, plan: plan.id, userId, interval },
       success_url: `${baseUrl}/checkout/complete?uid=${encodeURIComponent(merchantUid)}`,
       cancel_url: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,
       customer_email: userEmail,
