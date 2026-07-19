@@ -36,8 +36,10 @@ export default function Footer() {
         className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-[0.09] dark:block"
       />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+      {/* 좌: 내비 링크 / 우: 브랜드·회사·대표 정보(오른쪽 벽으로 정렬).
+          모바일에서는 세로 스택으로 자연스럽게 폴백한다. */}
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 text-xs text-slate-500 md:flex-row md:items-end md:justify-between md:gap-6 dark:text-slate-400">
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-start">
           <Link
             href="/support"
             className="font-medium text-slate-600 transition-colors duration-300 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
@@ -63,11 +65,13 @@ export default function Footer() {
             {t("footer.inquiry")}
           </Link>
         </nav>
-        {/* 브랜드 워드마크 (텍스트 'ZEFF AI' 대신 디자인 로고) */}
-        <Logo size="md" />
-        <p>
-          {t("footer.contact")} {CONTACT_EMAIL} · {t("footer.ceo")} {ceoName}
-        </p>
+        {/* 브랜드 워드마크 + 회사/대표 정보 — 오른쪽 벽에 붙는 블록 */}
+        <div className="flex flex-col items-center gap-2 md:items-end md:text-right">
+          <Logo size="md" />
+          <p>
+            {t("footer.contact")} {CONTACT_EMAIL} · {t("footer.ceo")} {ceoName}
+          </p>
+        </div>
       </div>
     </footer>
   );

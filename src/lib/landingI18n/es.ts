@@ -115,9 +115,7 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Unas 30 veces el límite del plan gratuito",
   "pricing.pro.desc":
     "Para quienes desean un entorno de trabajo más cómodo y recursos más flexibles. Suaviza el flujo de trabajo diario y ofrece notablemente más capacidad que el plan básico, disponible justo cuando la necesitas.",
-  "pricing.pro.originalPrice": "19,99 €",
-  "pricing.pro.discount": "35 % de descuento",
-  "pricing.pro.price": "12,99 €",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ mes",
   "pricing.pro.cta": "Suscribirse",
   "pricing.pro.bullet1": "Entorno de trabajo ampliado para tareas reales",
@@ -132,9 +130,7 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Nuestro plan de mayor nivel para quienes lideran proyectos grandes y complejos y no quieren que los límites de recursos frenen sus ideas. Nuestro modelo de razonamiento más avanzado y su notable velocidad se integran por completo en tu forma de trabajar.",
-  "pricing.professional.originalPrice": "39,99 €",
-  "pricing.professional.discount": "40 % de descuento",
-  "pricing.professional.price": "23,99 €",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ mes",
   "pricing.professional.cta": "Suscribirse",
   "pricing.professional.bullet1": "Funciones Pro + límites ampliados",

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { LANGUAGE_ORDER } from "@/lib/languages";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const LANGUAGES = ["en", "ko", "ja", "zh", "ru", "de", "fr", "es"];
+// 지원 언어 단일 소스(아랍어 포함) — 여기서 배열을 따로 관리하면 언어가 추가될 때
+// 저장 API만 뒤처져 특정 언어(예: 아랍어) 저장이 400으로 막히는 버그가 생긴다.
+const LANGUAGES: readonly string[] = LANGUAGE_ORDER;
 
 export async function GET() {
   const session = await auth();

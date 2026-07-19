@@ -1,7 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileText, ListChecks, Lightbulb, StickyNote, Play, Presentation } from "lucide-react";
+import {
+  FileText,
+  ListChecks,
+  Lightbulb,
+  StickyNote,
+  Play,
+  Presentation,
+  Sparkles,
+  Users,
+  Check,
+} from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
 
@@ -251,41 +261,80 @@ const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy 
   },
 };
 
+/* 기능 미리보기 목업 — 회색 스켈레톤 막대가 아니라 실제 제품 UI처럼 보이도록
+   문서 구조·파형·미니 차트·표 등 시각 요소로 밀도와 사실성을 높였다. 문구는
+   로케일에 종속되지 않게 최소화하고 형태로 의미를 전달한다.
+   (라이트: 겉 카드는 border-slate-200+bg-white → 전역 규칙으로 slate-50 면이 되고,
+    안쪽 패널은 bg-white 흰 면으로 얹혀 다크 모드처럼 면의 위계가 생긴다.) */
+
+// 요약 패널의 라인 — width로 자연스러운 문단 리듬을 준다.
+function TextLine({ w, tone = "base" }: { w: string; tone?: "base" | "faint" | "accent" }) {
+  const bg =
+    tone === "accent"
+      ? "bg-blue-200/80 dark:bg-blue-500/30"
+      : tone === "faint"
+        ? "bg-slate-100 dark:bg-slate-800"
+        : "bg-slate-200 dark:bg-slate-700/80";
+  return <div className={`h-1.5 rounded-full ${bg}`} style={{ width: w }} />;
+}
+
 function MockSummary() {
+  const summaryTabs = [
+    { Icon: FileText, active: true },
+    { Icon: ListChecks, active: false },
+    { Icon: Lightbulb, active: false },
+    { Icon: StickyNote, active: false },
+  ];
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="flex items-center gap-1.5 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
-        <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-        <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-        <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+      <div className="flex items-center gap-1.5 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+        <span className="h-2.5 w-2.5 rounded-full bg-rose-300/80 dark:bg-slate-700" />
+        <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80 dark:bg-slate-700" />
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80 dark:bg-slate-700" />
+        <span className="ml-2 h-3 w-24 rounded-full bg-slate-100 dark:bg-slate-800" />
       </div>
-      <div className="grid grid-cols-2 gap-3 p-3">
-        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="h-2 w-3/4 rounded bg-slate-300 dark:bg-slate-700" />
-          <div className="h-2 w-full rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-full rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-2/3 rounded bg-slate-200 dark:bg-slate-800" />
+      <div className="grid grid-cols-[1fr_1.1fr] gap-2.5 p-3">
+        {/* 원본 문서 */}
+        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="h-2 w-1/2 rounded bg-slate-300 dark:bg-slate-600" />
+          <div className="space-y-1.5 pt-0.5">
+            <TextLine w="100%" tone="faint" />
+            <TextLine w="92%" tone="accent" />
+            <TextLine w="98%" tone="faint" />
+            <TextLine w="80%" tone="faint" />
+            <TextLine w="88%" tone="faint" />
+            <TextLine w="70%" tone="faint" />
+          </div>
         </div>
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-1">
-            {[FileText, ListChecks, Lightbulb, StickyNote].map((Icon, i) => (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
-                  i === 0
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                }`}
-              >
-                <Icon className="h-2.5 w-2.5" />
-              </span>
+        {/* AI 요약 */}
+        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1">
+              {summaryTabs.map(({ Icon, active }, i) => (
+                <span
+                  key={i}
+                  className={`inline-flex items-center justify-center rounded-md p-1 ${
+                    active
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                      : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                  }`}
+                >
+                  <Icon className="h-2.5 w-2.5" />
+                </span>
+              ))}
+            </div>
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[8px] font-semibold text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+              <Sparkles className="h-2 w-2" /> AI
+            </span>
+          </div>
+          <div className="space-y-1.5 pt-0.5">
+            {["96%", "88%", "92%", "78%"].map((w, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <Check className="h-2.5 w-2.5 shrink-0 text-blue-500" />
+                <TextLine w={w} />
+              </div>
             ))}
           </div>
-          <div className="h-2 w-full rounded bg-blue-200 dark:bg-blue-500/30" />
-          <div className="h-2 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-full rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-4/5 rounded bg-slate-200 dark:bg-slate-800" />
         </div>
       </div>
     </div>
@@ -293,20 +342,46 @@ function MockSummary() {
 }
 
 function MockLecture() {
+  // 파형(오디오) — 높이가 다른 막대로 실제 음성 트랙처럼 보이게.
+  const wave = [30, 55, 40, 70, 90, 60, 45, 75, 50, 85, 65, 40, 55, 80, 60, 35, 50, 72];
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="relative flex aspect-video items-center justify-center bg-slate-900">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-900">
-          <Play className="h-4 w-4 translate-x-[1px]" />
+      <div className="relative flex aspect-video items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-800">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg">
+          <Play className="h-4 w-4 translate-x-[1px] fill-current" />
         </span>
-        <span className="absolute bottom-2 left-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-medium text-white">
-          12:04
+        <span className="absolute bottom-2 right-2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-white">
+          08:12 / 12:04
         </span>
+        {/* 하단 진행바 */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
+          <div className="h-full w-2/3 bg-blue-500" />
+        </div>
       </div>
-      <div className="space-y-1.5 p-3">
-        <div className="h-2 w-1/2 rounded bg-slate-300 dark:bg-slate-700" />
-        <div className="h-2 w-full rounded bg-slate-200 dark:bg-slate-800" />
-        <div className="h-2 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
+      {/* 파형 + 자막 노트 */}
+      <div className="space-y-2.5 p-3">
+        <div className="flex h-8 items-center gap-[3px]">
+          {wave.map((h, i) => (
+            <span
+              key={i}
+              className={`w-full rounded-full ${i < 12 ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
+              style={{ height: `${h}%` }}
+            />
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          {[
+            { t: "00:12", w: "82%" },
+            { t: "03:40", w: "70%" },
+          ].map(({ t, w }) => (
+            <div key={t} className="flex items-center gap-1.5">
+              <span className="rounded bg-slate-100 px-1 py-0.5 text-[8px] font-medium tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {t}
+              </span>
+              <TextLine w={w} tone="faint" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -315,17 +390,50 @@ function MockLecture() {
 function MockDocs() {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <div className="h-2 w-3/4 rounded bg-slate-300 dark:bg-slate-700" />
-          <div className="h-2 w-full rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
+      <div className="grid grid-cols-2 gap-2.5">
+        {/* Word 문서 + 표 */}
+        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-1">
+            <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="h-2 w-10 rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+          <TextLine w="70%" />
+          <TextLine w="100%" tone="faint" />
+          <TextLine w="90%" tone="faint" />
+          {/* 미니 표 */}
+          <div className="mt-1 overflow-hidden rounded border border-slate-200 dark:border-slate-700">
+            {[0, 1, 2].map((r) => (
+              <div key={r} className="flex divide-x divide-slate-200 dark:divide-slate-700">
+                {[0, 1, 2].map((c) => (
+                  <div
+                    key={c}
+                    className={`h-3 flex-1 ${
+                      r === 0 ? "bg-blue-50 dark:bg-blue-500/10" : "bg-white dark:bg-slate-900"
+                    } ${r === 0 || c === 0 ? "border-b border-slate-200 dark:border-slate-700" : ""}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <Presentation className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <div className="h-8 w-full rounded bg-slate-200 dark:bg-slate-800" />
-          <div className="h-2 w-2/3 rounded bg-slate-200 dark:bg-slate-800" />
+        {/* PPT 슬라이드 + 막대 차트 */}
+        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-1">
+            <Presentation className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="h-2 w-8 rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+          <TextLine w="60%" />
+          {/* 막대 차트 */}
+          <div className="flex h-12 items-end gap-1.5 pt-1">
+            {[45, 70, 55, 90, 65].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+          <div className="h-px bg-slate-200 dark:bg-slate-700" />
         </div>
       </div>
     </div>
@@ -333,27 +441,42 @@ function MockDocs() {
 }
 
 function MockLibrary() {
+  const files = [
+    { badge: "PDF", badgeCls: "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300", shared: false, w: "68%" },
+    { badge: "DOC", badgeCls: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300", shared: true, w: "80%" },
+    { badge: "XLS", badgeCls: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300", shared: true, w: "56%" },
+  ];
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="mb-2 flex gap-1.5">
-        <span className="rounded-md bg-blue-600/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+      <div className="mb-2.5 flex gap-1.5">
+        <span className="rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm shadow-blue-600/30">
           내 서재
         </span>
-        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          공유 서재
+        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <Users className="h-2.5 w-2.5" /> 공유 서재
         </span>
       </div>
-      <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
+      <div className="space-y-1.5">
+        {files.map((f, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900"
+            className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900"
           >
-            <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-[7px] font-bold ${f.badgeCls}`}
+            >
+              {f.badge}
+            </span>
             <div className="min-w-0 flex-1 space-y-1">
-              <div className="h-2 w-3/4 rounded bg-slate-300 dark:bg-slate-700" />
-              <div className="h-1.5 w-1/2 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-2 rounded bg-slate-300 dark:bg-slate-600" style={{ width: f.w }} />
+              <div className="h-1.5 w-1/3 rounded bg-slate-200 dark:bg-slate-800" />
             </div>
+            {f.shared && (
+              <div className="flex -space-x-1">
+                <span className="h-3.5 w-3.5 rounded-full border border-white bg-blue-400 dark:border-slate-900" />
+                <span className="h-3.5 w-3.5 rounded-full border border-white bg-indigo-400 dark:border-slate-900" />
+              </div>
+            )}
           </div>
         ))}
       </div>

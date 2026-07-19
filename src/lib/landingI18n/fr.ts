@@ -115,9 +115,7 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Environ 30× le quota gratuit",
   "pricing.pro.desc":
     "Pour ceux qui veulent un peu plus de marge de manœuvre au travail. Il fluidifie le rythme quotidien des tâches, avec nettement plus de ressources que le plan de base — une capacité supplémentaire, disponible dès que vous en avez besoin.",
-  "pricing.pro.originalPrice": "19,99 €",
-  "pricing.pro.discount": "35 % de réduction",
-  "pricing.pro.price": "12,99 €",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ mois",
   "pricing.pro.cta": "S'abonner",
   "pricing.pro.bullet1": "Espace de travail élargi pour un usage réel",
@@ -132,9 +130,7 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Notre forfait haut de gamme pour ceux qui pilotent de grands projets complexes et ne veulent pas que des limites de ressources freinent leurs idées. Notre modèle de raisonnement le plus puissant et sa vitesse remarquable s'intègrent naturellement à votre façon de travailler.",
-  "pricing.professional.originalPrice": "39,99 €",
-  "pricing.professional.discount": "40 % de réduction",
-  "pricing.professional.price": "23,99 €",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ mois",
   "pricing.professional.cta": "S'abonner",
   "pricing.professional.bullet1": "Fonctions Pro + limites étendues",

@@ -17,7 +17,9 @@
 }
 
 body {
-  background: #f8fafc;
+  /* 라이트 모드: 페이지 배경은 순백(#fff). 깊이감은 카드 fill이 배경보다
+     살짝 어두운(slate-50) 대비로 만든다(다크 모드와 동일한 면 위계). */
+  background: #ffffff;
   color: #0f172a;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
@@ -223,13 +225,14 @@ body {
    ============================================ */
 
 :root {
-  /* 라이트 모드 가시성(#11): 배경을 slate-100으로 살짝 낮춰 흰 카드가 도드라지고,
-     경계는 slate-300으로 또렷하게 한다. */
-  --workspace-bg: #f1f5f9;
-  --workspace-surface: #ffffff;
+  /* 라이트 모드 입체감: 배경은 순백(#fff), 카드(surface)는 배경보다 살짝 어두운
+     slate-50으로 두어 "배경 위에 얹힌 면"처럼 보이게 한다(다크 모드가 어두운
+     배경 위에 밝은 카드를 얹는 것과 대칭). 경계선은 부드러운 slate-200으로. */
+  --workspace-bg: #ffffff;
+  --workspace-surface: #f8fafc;
   --workspace-text: #0f172a;
   --workspace-text-secondary: #475569;
-  --workspace-border: #cbd5e1;
+  --workspace-border: #e2e8f0;
   --workspace-accent: #2563eb;
   --workspace-accent-hover: #1d4ed8;
 }
@@ -313,15 +316,18 @@ body {
   border-left: 1px solid var(--workspace-border);
 }
 
-/* ── 라이트 모드 UI 경계 강화(#11) ──
-   흐린 slate-200 경계선이 흰 배경에서 거의 안 보이던 문제. slate-300(#cbd5e1)로
-   올렸지만 대비가 여전히 낮아 밝기·명암비가 다른 디스플레이에선 테두리가 사라져
-   "화면마다 칸 구분이 다르게 보이는" 현상이 있었다. 저품질·고밝기 화면에서도 확실히
-   보이도록 slate-400(#94a3b8)로 올린다(다크 모드는 그대로). Tailwind 유틸보다
-   레이어 밖 규칙이 우선하므로 별도 !important 없이 덮인다. */
+/* ── 라이트 모드 카드 입체감(재설계) ──
+   이전엔 테두리를 slate-400(#94a3b8)까지 진하게 올려 칸을 구분했는데 "너무 딱딱"
+   하다는 피드백이 있었다. 접근을 바꿔, 깊이감은 거친 선이 아니라 "면(fill) 대비"로
+   만든다: 페이지 배경은 순백(#fff), 카드(=border+bg-white 조합)는 배경보다 살짝
+   어두운 slate-50(#f8fafc)으로 얹혀 보이게 하고, 테두리는 부드러운 slate-200
+   (#e2e8f0)로 되돌린다. 다크 모드 규칙(dark:border-*)은 전혀 건드리지 않는다. */
+:root:not(.dark) .bg-white.border-slate-200 {
+  background-color: #f8fafc;
+}
 :root:not(.dark) .border-slate-200 {
-  border-color: #94a3b8;
+  border-color: #e2e8f0;
 }
 :root:not(.dark) .border-slate-100 {
-  border-color: #e2e8f0;
+  border-color: #eef2f6;
 }

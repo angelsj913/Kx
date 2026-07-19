@@ -111,8 +111,6 @@ const ko = {
   "pricing.pro.badge": "무료 대비 약 30배 이용량",
   "pricing.pro.desc":
     "조금 더 몰입감 있는 작업 환경과 넉넉한 유연성이 필요한 분들을 위한 플랜입니다. 일상의 루틴한 업무 흐름을 한결 부드럽게 만들어 주며, 기본 환경보다 한층 더 여유로운 연산 자원이 유기적으로 지원됩니다.",
-  "pricing.pro.originalPrice": "₩19,900",
-  "pricing.pro.discount": "50% 할인",
   "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ 월",
   "pricing.pro.cta": "결제하기",
@@ -128,9 +126,7 @@ const ko = {
   "pricing.professional.badge2": "정밀 AI 라우트 이용",
   "pricing.professional.desc":
     "깊은 분석과 시험·학습 도구까지 폭넓게 쓰는 분을 위한 상위 플랜입니다. 다중 AI 라우트와 넉넉한 이용량으로 작업 흐름을 이어 갑니다.",
-  "pricing.professional.originalPrice": "₩39,900",
-  "pricing.professional.discount": "50% 할인",
-  "pricing.professional.price": "₩19,900",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ 월",
   "pricing.professional.cta": "결제하기",
   "pricing.professional.bullet1": "Pro 기능 + 확장 한도",
