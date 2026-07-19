@@ -314,11 +314,13 @@ body {
 }
 
 /* ── 라이트 모드 UI 경계 강화(#11) ──
-   흐린 slate-200 경계선이 흰 배경에서 거의 안 보이던 문제. 라이트 모드에서만
-   slate-300 톤으로 또렷하게 올린다(다크 모드는 그대로). Tailwind 유틸보다
+   흐린 slate-200 경계선이 흰 배경에서 거의 안 보이던 문제. slate-300(#cbd5e1)로
+   올렸지만 대비가 여전히 낮아 밝기·명암비가 다른 디스플레이에선 테두리가 사라져
+   "화면마다 칸 구분이 다르게 보이는" 현상이 있었다. 저품질·고밝기 화면에서도 확실히
+   보이도록 slate-400(#94a3b8)로 올린다(다크 모드는 그대로). Tailwind 유틸보다
    레이어 밖 규칙이 우선하므로 별도 !important 없이 덮인다. */
 :root:not(.dark) .border-slate-200 {
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
 }
 :root:not(.dark) .border-slate-100 {
   border-color: #e2e8f0;
