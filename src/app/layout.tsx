@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import { SessionProvider } from "next-auth/react";   // ← 추가
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,6 +64,7 @@ export default function RootLayout({
         <SessionProvider>           {/* ← 추가 */}
           <ThemeProvider>{children}</ThemeProvider>
         </SessionProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
