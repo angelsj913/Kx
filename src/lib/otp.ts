@@ -3,8 +3,13 @@ import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
 
 // 이메일 전용(채널 개념 자체를 없앰) — 회원가입·비밀번호 재설정 이메일 인증과,
-// 워크스페이스 삭제·관리자 요금제 변경 2단계 확인에 쓰인다.
-export type OtpPurpose = "signup" | "find-password" | "workspace-delete" | "admin-plan-change";
+// 워크스페이스 삭제·관리자 요금제 변경 2단계 확인, 그리고 로그인 2단계 인증에 쓰인다.
+export type OtpPurpose =
+  | "signup"
+  | "find-password"
+  | "workspace-delete"
+  | "admin-plan-change"
+  | "login-2fa";
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
@@ -111,12 +116,17 @@ async function sendEmailOtp(
   purpose: OtpPurpose
 ): Promise<MailResult> {
   const isAdminPlan = purpose === "admin-plan-change";
+  const is2fa = purpose === "login-2fa";
   const subject = isAdminPlan
     ? "[ZEFF AI] 관리자 · 요금제 변경 인증번호"
-    : "[ZEFF AI] 인증번호";
+    : is2fa
+      ? "[ZEFF AI] 로그인 2단계 인증번호"
+      : "[ZEFF AI] 인증번호";
   const text = isAdminPlan
     ? `ZEFF AI 관리자 요금제 변경 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 요청하지 않았다면 무시하세요.`
-    : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
+    : is2fa
+      ? `ZEFF AI 로그인 2단계 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 로그인하지 않았다면 비밀번호를 변경해 주세요.`
+      : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
   const html = isAdminPlan
     ? `<div style="font-family:sans-serif;padding:24px;max-width:420px">
         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#2563eb">ZEFF AI · 관리자</p>

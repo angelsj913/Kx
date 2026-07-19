@@ -50,6 +50,8 @@ const COPY = {
     released: "게시일",
     download: "다운로드",
     notesNote: "설치 파일이 아직 게시되지 않은 경우 다운로드 링크는 릴리스 게시 후 동작합니다.",
+    smartScreenTitle: "설치 중 보안 경고가 뜨나요?",
+    smartScreen: "Windows에서 'Windows의 PC 보호'(SmartScreen)나 '알 수 없는 게시자' 경고가 보이면 [추가 정보] → [실행]을 눌러 설치하세요. 아직 코드 서명 인증서 적용 전이라 표시되는 정상 경고입니다. macOS에서 '확인되지 않은 개발자' 경고가 나오면 파일을 마우스 오른쪽 클릭 → [열기]를 선택하세요.",
   },
   en: {
     title: "Download ZEFF AI",
@@ -74,6 +76,8 @@ const COPY = {
     released: "Released",
     download: "Download",
     notesNote: "If installers aren't published yet, the download links will start working once a release is posted.",
+    smartScreenTitle: "Seeing a security warning during install?",
+    smartScreen: "If Windows shows a 'Windows protected your PC' (SmartScreen) or 'unknown publisher' warning, click More info → Run anyway. It appears only because the app isn't code-signed yet and is safe to proceed. On macOS, if you see an 'unidentified developer' warning, right-click the file → Open.",
   },
   ja: {
     title: "ZEFF AI ダウンロード",
@@ -98,6 +102,8 @@ const COPY = {
     released: "公開日",
     download: "ダウンロード",
     notesNote: "インストーラーがまだ公開されていない場合、ダウンロードリンクはリリース公開後に有効になります。",
+    smartScreenTitle: "インストール中にセキュリティ警告が出ますか？",
+    smartScreen: "Windowsで「WindowsによってPCが保護されました」(SmartScreen)や「不明な発行元」の警告が出た場合は、[詳細情報]→[実行]を押してインストールしてください。まだコード署名証明書を適用していないため表示される正常な警告です。macOSで「未確認の開発元」警告が出た場合は、ファイルを右クリック→[開く]を選択してください。",
   },
   zh: {
     title: "下载 ZEFF AI",
@@ -122,6 +128,8 @@ const COPY = {
     released: "发布日期",
     download: "下载",
     notesNote: "如果安装程序尚未发布，下载链接将在版本发布后生效。",
+    smartScreenTitle: "安装时出现安全警告？",
+    smartScreen: "如果 Windows 显示“Windows 已保护你的电脑”(SmartScreen) 或“未知发布者”警告，请点击“更多信息”→“仍要运行”进行安装。这只是因为应用尚未进行代码签名，可放心继续。在 macOS 上如果出现“无法验证开发者”警告，请右键点击文件→“打开”。",
   },
   ru: {
     title: "Скачать ZEFF AI",
@@ -146,6 +154,8 @@ const COPY = {
     released: "Дата выпуска",
     download: "Скачать",
     notesNote: "Если установщик ещё не опубликован, ссылка для скачивания станет активной после публикации релиза.",
+    smartScreenTitle: "Предупреждение безопасности при установке?",
+    smartScreen: "Если Windows показывает предупреждение «Система Windows защитила ваш компьютер» (SmartScreen) или «неизвестный издатель», нажмите «Подробнее» → «Выполнить в любом случае». Оно появляется лишь потому, что приложение ещё не подписано сертификатом, и продолжать безопасно. В macOS при предупреждении «неопознанный разработчик» щёлкните файл правой кнопкой → «Открыть».",
   },
   de: {
     title: "ZEFF AI herunterladen",
@@ -170,6 +180,8 @@ const COPY = {
     released: "Veröffentlicht",
     download: "Herunterladen",
     notesNote: "Falls die Installationsprogramme noch nicht veröffentlicht sind, funktionieren die Download-Links, sobald ein Release veröffentlicht wurde.",
+    smartScreenTitle: "Sicherheitswarnung bei der Installation?",
+    smartScreen: "Wenn Windows eine Warnung „Der Computer wurde durch Windows geschützt“ (SmartScreen) oder „unbekannter Herausgeber“ anzeigt, klicken Sie auf Weitere Informationen → Trotzdem ausführen. Sie erscheint nur, weil die App noch nicht code-signiert ist, und das Fortfahren ist sicher. Wenn macOS „nicht verifizierter Entwickler“ meldet, klicken Sie mit der rechten Maustaste auf die Datei → Öffnen.",
   },
   fr: {
     title: "Télécharger ZEFF AI",
@@ -194,6 +206,8 @@ const COPY = {
     released: "Publiée le",
     download: "Télécharger",
     notesNote: "Si les installateurs ne sont pas encore publiés, les liens de téléchargement fonctionneront dès la publication d'une version.",
+    smartScreenTitle: "Un avertissement de sécurité pendant l'installation ?",
+    smartScreen: "Si Windows affiche un avertissement « Windows a protégé votre ordinateur » (SmartScreen) ou « éditeur inconnu », cliquez sur Informations complémentaires → Exécuter quand même. Il apparaît uniquement parce que l'application n'est pas encore signée, et vous pouvez continuer en toute sécurité. Sur macOS, en cas d'avertissement « développeur non identifié », faites un clic droit sur le fichier → Ouvrir.",
   },
   es: {
     title: "Descargar ZEFF AI",
@@ -218,6 +232,8 @@ const COPY = {
     released: "Publicada",
     download: "Descargar",
     notesNote: "Si los instaladores aún no se han publicado, los enlaces de descarga funcionarán en cuanto se publique una versión.",
+    smartScreenTitle: "¿Aparece una advertencia de seguridad al instalar?",
+    smartScreen: "Si Windows muestra una advertencia «Windows protegió tu PC» (SmartScreen) o «editor desconocido», haz clic en Más información → Ejecutar de todas formas. Aparece solo porque la app aún no está firmada con certificado, y es seguro continuar. En macOS, si ves una advertencia de «desarrollador no identificado», haz clic derecho en el archivo → Abrir.",
   },
 };
 
@@ -325,6 +341,12 @@ export default function DownloadPage() {
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
           {c.howto}
         </p>
+
+        {/* 코드 서명 전이라 설치 시 뜨는 SmartScreen/미확인 개발자 경고 안내 */}
+        <details className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
+          <summary className="cursor-pointer font-semibold">{c.smartScreenTitle}</summary>
+          <p className="mt-2">{c.smartScreen}</p>
+        </details>
 
         {/* 상세 시스템 요구사항 표 */}
         <section className="mt-10">

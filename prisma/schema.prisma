@@ -20,6 +20,12 @@ model User {
   image         String?
   passwordHash  String?
 
+  /** 세션 토큰 버전 — 증가시키면 이전에 발급된 모든 JWT가 무효화된다("다른 기기 모두
+     로그아웃" / 비밀번호 변경 시). JWT 전략에선 서버 세션 목록이 없어 이 방식으로 전역 폐기. */
+  sessionVersion     Int       @default(0)
+  /** 2단계 인증(이메일 OTP) 사용 여부 */
+  twoFactorEnabled   Boolean   @default(false)
+
   /** 마지막 활동 시각 — 휴면 판정용 */
   lastActiveAt       DateTime?
   /** active | dormant */
@@ -45,6 +51,21 @@ model User {
   boardTasks           WorkBoardTask[]
   assignedBoardTasks   WorkBoardTask[]       @relation("WorkBoardAssignee")
   savedInsights        SavedInsight[]
+  loginEvents          LoginEvent[]
+}
+
+/** 로그인 기록 — 보안 탭의 "최근 로그인" 표시 및 새 기기 알림용. */
+model LoginEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  ip         String?
+  userAgent  String?  @db.Text
+  provider   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Account {
