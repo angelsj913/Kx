@@ -26,6 +26,9 @@ model User {
   /** 2단계 인증(이메일 OTP) 사용 여부 */
   twoFactorEnabled   Boolean   @default(false)
 
+  /** 친구 추천용 고유 코드(지연 생성). 다른 사람이 이 코드로 가입/입력하면 양쪽에 보상. */
+  referralCode       String?   @unique
+
   /** 마지막 활동 시각 — 휴면 판정용 */
   lastActiveAt       DateTime?
   /** active | dormant */
@@ -48,10 +51,25 @@ model User {
   reviewCards          ReviewCard[]
   paymentMethods       SavedPaymentMethod[]
   usageCounters        UsageCounter[]
+  referralsMade        Referral[]            @relation("ReferralReferrer")
+  referralReceived     Referral?             @relation("ReferralReferred")
   boardTasks           WorkBoardTask[]
   assignedBoardTasks   WorkBoardTask[]       @relation("WorkBoardAssignee")
   savedInsights        SavedInsight[]
   loginEvents          LoginEvent[]
+}
+
+/** 친구 추천 성사 기록 — 추천인(referrer)이 피추천인(referred)을 데려온 1건. 피추천인당 1회. */
+model Referral {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredUserId String   @unique
+  createdAt      DateTime @default(now())
+
+  referrer     User @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser User @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
 }
 
 /** 로그인 기록 — 보안 탭의 "최근 로그인" 표시 및 새 기기 알림용. */
@@ -334,6 +352,9 @@ model UserSettings {
   stripeCustomerId  String?
   /** 관리자가 사용자 AI 를 개별 차단할 때 true */
   aiDisabled        Boolean  @default(false)
+  /** 추천 보상 등 한시적 플랜 부여(유료 plan과 별개). 만료 후 자동 무시. */
+  grantedPlan       String?
+  grantedPlanUntil  DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

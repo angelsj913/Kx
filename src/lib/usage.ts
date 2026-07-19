@@ -27,11 +27,21 @@ export class QuotaError extends Error {
   }
 }
 
+const PLAN_RANK: Record<PlanId, number> = { free: 0, pro: 1, professional: 2 };
+
+function asPlanId(v: string | null | undefined): PlanId {
+  return v === "pro" || v === "professional" || v === "free" ? v : "free";
+}
+
 async function getUserPlanId(userId: string): Promise<PlanId> {
   const s = await prisma.userSettings.findUnique({ where: { userId } });
-  const plan = s?.plan;
-  if (plan === "pro" || plan === "professional" || plan === "free") return plan;
-  return "free";
+  const paid = asPlanId(s?.plan);
+  // 추천 보상 등 한시적 부여(grantedPlan)가 살아 있으면 유료 plan 과 비교해 더 높은 쪽 적용.
+  if (s?.grantedPlan && s.grantedPlanUntil && s.grantedPlanUntil.getTime() > Date.now()) {
+    const granted = asPlanId(s.grantedPlan);
+    return PLAN_RANK[granted] > PLAN_RANK[paid] ? granted : paid;
+  }
+  return paid;
 }
 
 /**

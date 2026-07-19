@@ -16,8 +16,10 @@ function CheckoutInner() {
   const params = useSearchParams();
   const router = useRouter();
   const planId = params.get("plan") ?? "";
+  const interval = params.get("interval") === "year" ? "year" : "month";
   const canceled = params.get("canceled") === "1";
   const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
+  const isAnnual = interval === "year" && plan?.annualAmount != null;
 
   // 설정 언어 우선 동기화 (UserSettings → localStorage 폴백)
   const [lang, setLang] = useState<AppLanguage>(() => readCheckoutLanguage());
@@ -65,13 +67,13 @@ function CheckoutInner() {
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: planId }),
+          body: JSON.stringify({ plan: planId, interval }),
         });
         const data = await res.json();
         if (ignore) return;
         if (res.status === 401 || data?.needLogin) {
           router.replace(
-            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}`)}`,
+            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}&interval=${interval}`)}`,
           );
           return;
         }
@@ -96,7 +98,9 @@ function CheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
-  const amount = plan ? `₩${plan.amount.toLocaleString("ko-KR")}` : "";
+  const amount = plan
+    ? `₩${(isAnnual ? (plan.annualAmount as number) : plan.amount).toLocaleString("ko-KR")}`
+    : "";
 
   function goComplete() {
     if (!merchantUid || paying) return;

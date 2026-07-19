@@ -1,7 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
-import { useLandingT, type LandingDictKey } from "@/lib/landingI18n";
+import { useLandingT, useLandingLanguage, type LandingDictKey } from "@/lib/landingI18n";
+import { PLANS } from "@/lib/plans";
+import type { LandingLanguage } from "@/lib/landingI18n";
+
+// 월/연 토글 라벨 — 앱 사전을 늘리지 않도록 로컬 카피(+en 폴백).
+const BILLING: Partial<Record<LandingLanguage, { monthly: string; annual: string; save: string; perYear: string }>> & {
+  en: { monthly: string; annual: string; save: string; perYear: string };
+} = {
+  ko: { monthly: "월간", annual: "연간", save: "2개월 무료", perYear: "/년" },
+  en: { monthly: "Monthly", annual: "Annual", save: "2 months free", perYear: "/yr" },
+  ja: { monthly: "月額", annual: "年額", save: "2か月無料", perYear: "/年" },
+  zh: { monthly: "按月", annual: "按年", save: "省2个月", perYear: "/年" },
+  ru: { monthly: "Помесячно", annual: "Ежегодно", save: "2 месяца бесплатно", perYear: "/год" },
+  de: { monthly: "Monatlich", annual: "Jährlich", save: "2 Monate gratis", perYear: "/Jahr" },
+  fr: { monthly: "Mensuel", annual: "Annuel", save: "2 mois offerts", perYear: "/an" },
+  es: { monthly: "Mensual", annual: "Anual", save: "2 meses gratis", perYear: "/año" },
+};
 
 const FREE_BULLETS: LandingDictKey[] = [
   "pricing.free.bullet1",
@@ -34,6 +51,11 @@ const PROFESSIONAL_BULLETS: LandingDictKey[] = [
 
 export default function Pricing() {
   const t = useLandingT();
+  const { language } = useLandingLanguage();
+  const b = BILLING[language] ?? BILLING.en;
+  const [annual, setAnnual] = useState(false);
+  const proHref = `/checkout?plan=pro${annual ? "&interval=year" : ""}`;
+  const professionalHref = `/checkout?plan=professional${annual ? "&interval=year" : ""}`;
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/40 to-white pb-28 pt-20 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950">
@@ -48,6 +70,39 @@ export default function Pricing() {
             {t("pricing.title")}
           </h2>
           <p className="mt-3 text-sm text-slate-600 sm:text-base dark:text-slate-300">{t("pricing.subtitle")}</p>
+
+          {/* 월/연 결제 토글 — 연간은 2개월 무료 */}
+          <div className="mt-7 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <button
+              type="button"
+              onClick={() => setAnnual(false)}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                !annual
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              }`}
+            >
+              {b.monthly}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnual(true)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                annual
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              }`}
+            >
+              {b.annual}
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                  annual ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                }`}
+              >
+                {b.save}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div className="mt-12 grid items-end gap-6 lg:grid-cols-3">
@@ -84,11 +139,15 @@ export default function Pricing() {
             </span>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{t("pricing.pro.desc")}</p>
             <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">{t("pricing.pro.price")}</span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">{t("pricing.pro.period")}</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                {annual ? PLANS.pro.annualPriceLabel : t("pricing.pro.price")}
+              </span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {annual ? b.perYear : t("pricing.pro.period")}
+              </span>
             </div>
             <a
-              href="/checkout?plan=pro"
+              href={proHref}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 block w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-900 shadow-none transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:border-transparent group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
@@ -125,12 +184,14 @@ export default function Pricing() {
             </p>
             <div className="mt-6 flex items-baseline gap-1">
               <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                {t("pricing.professional.price")}
+                {annual ? PLANS.professional.annualPriceLabel : t("pricing.professional.price")}
               </span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">{t("pricing.professional.period")}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {annual ? b.perYear : t("pricing.professional.period")}
+              </span>
             </div>
             <a
-              href="/checkout?plan=professional"
+              href={professionalHref}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 block w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-900 shadow-none transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:border-transparent group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"

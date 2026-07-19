@@ -8,10 +8,14 @@ export interface PlanDef {
   name: string;
   /** checkout / Stripe 표시명 */
   label: string;
-  /** KRW 원 단위 (zero-decimal) */
+  /** KRW 원 단위 (zero-decimal) — 월간 결제액 */
   amount: number;
+  /** 연간 결제액(원). 2개월 무료 관행 = 월×10. free/미지원은 null. */
+  annualAmount: number | null;
   currency: string;
   priceLabel: string;
+  /** 연간 표시가 (예: "₩99,000"). 없으면 null. */
+  annualPriceLabel: string | null;
   periodLabel: string;
   description: string;
   bullets: string[];
@@ -40,8 +44,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
     name: "free",
     label: "free",
     amount: 0,
+    annualAmount: null,
     currency: "krw",
     priceLabel: "₩0",
+    annualPriceLabel: null,
     periodLabel: "/월",
     description: "가볍게 시작해 보는 기본 플랜",
     bullets: [
@@ -67,8 +73,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
     name: "Pro",
     label: "Pro",
     amount: 9900,
+    annualAmount: 99000,
     currency: "krw",
     priceLabel: "₩9,900",
+    annualPriceLabel: "₩99,000",
     periodLabel: "/월",
     description: "업무·학습을 본격적으로 돌리는 실무 플랜",
     bullets: [
@@ -95,8 +103,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
     name: "Professional",
     label: "Professional",
     amount: 14900,
+    annualAmount: 149000,
     currency: "krw",
     priceLabel: "₩14,900",
+    annualPriceLabel: "₩149,000",
     periodLabel: "/월",
     description: "정밀 라우트와 시험 기능을 쓰는 프리미엄 플랜",
     bullets: [
