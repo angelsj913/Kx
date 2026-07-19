@@ -83,13 +83,7 @@ export default function Pricing() {
               {t("pricing.pro.badge")}
             </span>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{t("pricing.pro.desc")}</p>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="text-sm text-slate-400 line-through dark:text-slate-500">{t("pricing.pro.originalPrice")}</span>
-              <span className="inline-flex items-center rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-white">
-                {t("pricing.pro.discount")}
-              </span>
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
+            <div className="mt-6 flex items-baseline gap-1">
               <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">{t("pricing.pro.price")}</span>
               <span className="text-sm text-slate-500 dark:text-slate-400">{t("pricing.pro.period")}</span>
             </div>
@@ -129,15 +123,7 @@ export default function Pricing() {
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {t("pricing.professional.desc")}
             </p>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="text-sm text-slate-400 line-through dark:text-slate-500">
-                {t("pricing.professional.originalPrice")}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-white">
-                {t("pricing.professional.discount")}
-              </span>
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
+            <div className="mt-6 flex items-baseline gap-1">
               <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
                 {t("pricing.professional.price")}
               </span>

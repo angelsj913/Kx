@@ -116,9 +116,7 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "About 30× free usage allowance",
   "pricing.pro.desc":
     "Built for anyone who wants a bit more room to breathe while they work. It smooths out the everyday rhythm of your tasks, with noticeably more headroom than the basic plan — extra capacity that's simply there when you need it.",
-  "pricing.pro.originalPrice": "$19.99",
-  "pricing.pro.discount": "35% OFF",
-  "pricing.pro.price": "$12.99",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ mo",
   "pricing.pro.cta": "Subscribe",
   "pricing.pro.bullet1": "Expanded workspace for real work",
@@ -133,9 +131,7 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Our top-tier plan for anyone leading large, complex projects who doesn't want resource limits getting in the way of an idea. Our deepest reasoning model and its remarkable speed become part of how you naturally work.",
-  "pricing.professional.originalPrice": "$39.99",
-  "pricing.professional.discount": "40% OFF",
-  "pricing.professional.price": "$23.99",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ mo",
   "pricing.professional.cta": "Subscribe",
   "pricing.professional.bullet1": "Pro features + higher limits",

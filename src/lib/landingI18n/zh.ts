@@ -107,9 +107,7 @@ const zh: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "相当于免费版约30倍的用量",
   "pricing.pro.desc":
     "为需要更沉浸的工作环境与更充裕资源的专业人士打造的方案，让日常工作流程更顺畅，并提供比基础环境更宽裕的算力支持。",
-  "pricing.pro.originalPrice": "¥19,900",
-  "pricing.pro.discount": "享 35% 折扣",
-  "pricing.pro.price": "¥12,900",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ 月",
   "pricing.pro.cta": "立即订阅",
   "pricing.pro.bullet1": "面向实际工作的扩展作业环境",
@@ -124,9 +122,7 @@ const zh: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "为主导大型复杂项目、不希望资源受限而无法实现创意的用户打造的顶级方案。最深层的高性能推理模型与压倒性的处理速度，完全融入你的日常工作。",
-  "pricing.professional.originalPrice": "¥39,900",
-  "pricing.professional.discount": "享 40% 折扣",
-  "pricing.professional.price": "¥23,900",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ 月",
   "pricing.professional.cta": "立即订阅",
   "pricing.professional.bullet1": "Pro 功能 + 扩展额度",

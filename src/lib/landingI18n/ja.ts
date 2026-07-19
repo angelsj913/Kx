@@ -110,9 +110,7 @@ const ja: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "無料版比 約30倍の利用量",
   "pricing.pro.desc":
     "より没入感のある作業環境と、余裕あるリソースを求める方のためのプランです。日々のワークフローを途切れさせずスムーズにし、標準環境よりゆとりある計算リソースを有機的にサポートします。",
-  "pricing.pro.originalPrice": "¥19,900",
-  "pricing.pro.discount": "35%オフ",
-  "pricing.pro.price": "¥12,900",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ 月",
   "pricing.pro.cta": "お申し込み",
   "pricing.pro.bullet1": "実務向けの拡張された作業環境",
@@ -127,9 +125,7 @@ const ja: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "大規模で複雑なプロジェクトを主導し、リソースの制約なくアイデアを実現したい方のための最上位プランです。最も深い高性能推論モデルと圧倒的な処理速度が、日常に完全に溶け込みます。",
-  "pricing.professional.originalPrice": "¥39,900",
-  "pricing.professional.discount": "40%オフ",
-  "pricing.professional.price": "¥23,900",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ 月",
   "pricing.professional.cta": "お申し込み",
   "pricing.professional.bullet1": "Pro機能 + 拡張上限",

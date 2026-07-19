@@ -94,9 +94,9 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "professional",
     name: "Professional",
     label: "Professional",
-    amount: 19900,
+    amount: 14900,
     currency: "krw",
-    priceLabel: "₩19,900",
+    priceLabel: "₩14,900",
     periodLabel: "/월",
     description: "정밀 라우트와 시험 기능을 쓰는 프리미엄 플랜",
     bullets: [

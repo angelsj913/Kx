@@ -115,9 +115,7 @@ const de: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Rund das 30-Fache des kostenlosen Kontingents",
   "pricing.pro.desc":
     "Für alle, die etwas mehr Spielraum beim Arbeiten wünschen. Er glättet den täglichen Arbeitsablauf und stellt spürbar mehr Ressourcen bereit als der Basisplan — zusätzliche Kapazität, die einfach da ist, wenn Sie sie brauchen.",
-  "pricing.pro.originalPrice": "19,99 €",
-  "pricing.pro.discount": "35 % Rabatt",
-  "pricing.pro.price": "12,99 €",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ Monat",
   "pricing.pro.cta": "Abonnieren",
   "pricing.pro.bullet1": "Erweiterter Arbeitsbereich für den echten Einsatz",
@@ -132,9 +130,7 @@ const de: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Unser Top-Plan für alle, die große, komplexe Projekte leiten und keine Ressourcengrenzen wollen, die Ideen im Weg stehen. Unser leistungsstärkstes Reasoning-Modell und seine bemerkenswerte Geschwindigkeit werden Teil Ihres Arbeitsalltags.",
-  "pricing.professional.originalPrice": "39,99 €",
-  "pricing.professional.discount": "40 % Rabatt",
-  "pricing.professional.price": "23,99 €",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ Monat",
   "pricing.professional.cta": "Abonnieren",
   "pricing.professional.bullet1": "Pro-Funktionen + erweiterte Limits",

@@ -115,9 +115,7 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Примерно в 30 раз больше лимита бесплатного плана",
   "pricing.pro.desc":
     "Тариф для тех, кому нужна более комфортная рабочая среда и гибкие ресурсы. Он делает повседневный рабочий процесс более плавным, органично предоставляя больше вычислительных ресурсов, чем базовая версия.",
-  "pricing.pro.originalPrice": "$19.99",
-  "pricing.pro.discount": "Скидка 35%",
-  "pricing.pro.price": "$12.99",
+  "pricing.pro.price": "₩9,900",
   "pricing.pro.period": "/ мес",
   "pricing.pro.cta": "Оформить",
   "pricing.pro.bullet1": "Расширенная рабочая среда для реальных задач",
@@ -132,9 +130,7 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Топовый тариф для тех, кто ведёт крупные и сложные проекты и не хочет, чтобы ограничения ресурсов мешали воплощать идеи. Самая мощная модель рассуждений и впечатляющая скорость становятся частью вашей повседневной работы.",
-  "pricing.professional.originalPrice": "$39.99",
-  "pricing.professional.discount": "Скидка 40%",
-  "pricing.professional.price": "$23.99",
+  "pricing.professional.price": "₩14,900",
   "pricing.professional.period": "/ мес",
   "pricing.professional.cta": "Оформить",
   "pricing.professional.bullet1": "Функции Pro + расширенные лимиты",
