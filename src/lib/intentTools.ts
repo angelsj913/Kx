@@ -118,6 +118,9 @@ export function detectQuickToolFromText(text: string): string | null {
   const solidShapeNoun =
     /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체/.test(t) ||
     /\b(pyramid|cube|cuboid|prism|cylinder|cone|tetrahedron|polyhedron)\b/i.test(t);
+  // ── 마인드맵 (그래프 감지보다 먼저 — "마인드맵 그려줘"가 그래프로 새지 않게) ──
+  if (/마인드\s*맵|mind\s*map|mindmap/i.test(t)) return "mind-map";
+
   const wantsGraph =
     /그래프|그려\s*줘|그려\s*주세요|그리기|시각화/.test(t) ||
     /\b(plot|graph|visuali[sz]e)\b/i.test(t) ||
@@ -166,6 +169,7 @@ export function toolIntentLabel(toolId: string): string {
     "exam-maker": "시험지",
     "math-solve": "수학 풀이",
     "math-graph": "그래프 생성",
+    "mind-map": "마인드맵 생성",
     "image-gen": "이미지 생성",
     "doc-translate": "문서 번역",
   };

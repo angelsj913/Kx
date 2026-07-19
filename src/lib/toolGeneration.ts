@@ -10,9 +10,11 @@ import {
   parseStructured,
   parsePracticeSet,
   isEmptyMathGraph,
+  isEmptyMindMap,
   type StructuredKind,
   type PracticeSet,
   type MathGraph,
+  type MindMap,
 } from "./structured";
 import type { Deck, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
@@ -388,6 +390,9 @@ export async function runToolGeneration(
     if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
     let data: string;
     let mimeType: string;
+    let imgProvider: Meta["provider"] = "gemini";
+    let imgModel = "gemini-2.5-flash-image";
+    let imgAttempts = 1;
     try {
       const img = await geminiGenerateImage({
         prompt: input.text!.trim(),
@@ -396,8 +401,21 @@ export async function runToolGeneration(
       data = img.data;
       mimeType = img.mimeType;
     } catch (err) {
+      // Gemini 실패(무료 쿼터 소진 등) → 키가 필요 없는 대체 제공자로 폴백.
       noteProviderFailure("gemini", err);
-      throw err;
+      try {
+        const { fallbackGenerateImage } = await import("./imageFallback");
+        const img = await fallbackGenerateImage(input.text!.trim());
+        data = img.data;
+        mimeType = img.mimeType;
+        imgProvider = "pollinations" as Meta["provider"];
+        imgModel = "pollinations-flux";
+        imgAttempts = 2;
+      } catch (fallbackErr) {
+        console.error("image fallback (pollinations) failed:", fallbackErr);
+        // 폴백도 실패하면 원래 Gemini 오류 메시지를 사용자에게 전달.
+        throw err;
+      }
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
@@ -410,7 +428,7 @@ export async function runToolGeneration(
       tool,
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
-      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+      meta: { provider: imgProvider, model: imgModel, attempts: imgAttempts },
     };
   }
 
@@ -449,7 +467,11 @@ export async function runToolGeneration(
   if (tool.outputType === "structured" && tool.structuredKind) {
     const kind = tool.structuredKind;
     const isEmpty =
-      kind === "mathGraph" ? (data: unknown) => isEmptyMathGraph(data as MathGraph) : undefined;
+      kind === "mathGraph"
+        ? (data: unknown) => isEmptyMathGraph(data as MathGraph)
+        : kind === "mindMap"
+          ? (data: unknown) => isEmptyMindMap(data as MindMap)
+          : undefined;
     const parsed = await parseStructuredWithRetry(
       (r) => parseStructured(kind, r).data,
       raw,
