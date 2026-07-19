@@ -7,6 +7,7 @@ import {
   X,
   Settings2,
   Shield,
+  Lock,
   CreditCard,
   Database,
   Sparkles,
@@ -17,6 +18,7 @@ import {
   Plus,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import SecurityPanel from "@/components/settings/SecurityPanel";
 import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
 import {
   useT,
@@ -31,6 +33,7 @@ import { COMPANY_INFO } from "@/lib/legalContent";
 type Tab =
   | "general"
   | "privacy"
+  | "security"
   | "billing"
   | "data"
   | "plan"
@@ -39,6 +42,7 @@ type Tab =
 const TABS: { id: Tab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
   { id: "general", labelKey: "settings.tab.general", icon: Settings2 },
   { id: "privacy", labelKey: "settings.tab.privacy", icon: Shield },
+  { id: "security", labelKey: "settings.tab.security", icon: Lock },
   { id: "billing", labelKey: "settings.tab.billing", icon: CreditCard },
   { id: "data", labelKey: "settings.tab.data", icon: Database },
   { id: "plan", labelKey: "settings.tab.plan", icon: Sparkles },
@@ -155,6 +159,7 @@ export default function SettingsModal({
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               {tab === "general" && <GeneralPanel />}
               {tab === "privacy" && <PrivacyPanel />}
+              {tab === "security" && <SecurityPanel />}
               {tab === "billing" && <BillingPanel />}
               {tab === "data" && <DataPanel />}
               {tab === "plan" && <PlanPanel />}

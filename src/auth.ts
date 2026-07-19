@@ -26,10 +26,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        // 2단계 인증을 켠 계정만 사용 — 로그인 페이지가 코드 단계에서 함께 보낸다.
+        code: { label: "Code", type: "text" },
       },
       async authorize(credentials, request) {
         const email = String(credentials?.email ?? "").trim().toLowerCase();
         const password = String(credentials?.password ?? "");
+        const code = String(credentials?.code ?? "").trim();
         if (!email || !password) return null;
 
         // 계정 하나를 노린 분산 대입과, 한 IP가 여러 계정을 훑는 대입 둘 다 막는다.
@@ -47,6 +50,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
+        // 2단계 인증이 켜진 계정은 이메일로 받은 코드가 반드시 맞아야 로그인 완료.
+        // (미사용 계정은 이 분기를 건너뛰어 기존 로그인 동작이 그대로 유지된다.)
+        if (user.twoFactorEnabled) {
+          if (!code) return null;
+          const { verifyOtp } = await import("@/lib/otp");
+          const codeOk = await verifyOtp(email, "login-2fa", code);
+          if (!codeOk) return null;
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -61,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   pages: { signIn: "/login" },
   callbacks: {
-    jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile }) {
       // 로그인 시마다 토큰에 해당 사용자 정보를 다시 심어, 다른 계정 전환 시 프로필이 갱신되게 한다.
       if (user) {
         token.id = user.id;
@@ -70,6 +82,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.email = user.email.trim().toLowerCase();
         }
         token.picture = user.image;
+      }
+
+      // ── 세션 토큰 버전(전역 로그아웃/비번 변경 시 무효화) ──
+      // JWT 전략이라 서버 세션 목록이 없다. 대신 사용자의 sessionVersion을 토큰에 심어
+      // 두고, DB 값과 어긋나면 토큰을 무효화(return null)해 "다른 기기 모두 로그아웃"을
+      // 구현한다. Prisma 쿼리는 엣지 런타임(미들웨어)에서 실행할 수 없으므로 node에서만
+      // 검사한다 — 엣지 미들웨어를 통과하더라도 실제 데이터 접근(API·RSC)은 node에서
+      // auth()를 다시 호출하므로 거기서 무효 토큰이 걸러진다. 오류 시엔 대량 로그아웃을
+      // 피하려 열림(fail-open) 처리한다.
+      if (process.env.NEXT_RUNTIME !== "edge" && token.id) {
+        try {
+          if (user) {
+            // 로그인 직후: 현재 버전을 토큰에 기록
+            const u = await prisma.user.findUnique({
+              where: { id: String(token.id) },
+              select: { sessionVersion: true },
+            });
+            token.sv = u?.sessionVersion ?? 0;
+            token.svAt = Date.now();
+          } else {
+            // 토큰 갱신 경로: 과도한 DB 부하를 막으려 60초에 한 번만 재검사
+            const last = typeof token.svAt === "number" ? token.svAt : 0;
+            if (Date.now() - last > 60_000) {
+              const u = await prisma.user.findUnique({
+                where: { id: String(token.id) },
+                select: { sessionVersion: true },
+              });
+              if (u && typeof token.sv === "number" && u.sessionVersion !== token.sv) {
+                return null; // 버전 불일치 → 세션 무효화(로그아웃)
+              }
+              if (u) {
+                token.sv = u.sessionVersion;
+                token.svAt = Date.now();
+              }
+            }
+          }
+        } catch {
+          /* DB 접근 실패 시 로그아웃시키지 않음(fail-open) */
+        }
       }
       // Google profile 에서 이메일이 오면 JWT 에 강제 반영 (세션 이메일 누락 방지)
       if (account?.provider === "google" && profile && typeof profile === "object") {
@@ -103,10 +154,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     // 로그인 시 1회 활동 갱신·휴면 복구 (세션 콜백 매 요청 부하 방지)
-    async signIn({ user }) {
-      if (user?.id) {
-        const { touchUserActivity } = await import("@/lib/activity");
-        await touchUserActivity(user.id);
+    async signIn({ user, account }) {
+      if (!user?.id) return;
+      const { touchUserActivity } = await import("@/lib/activity");
+      await touchUserActivity(user.id);
+      // 로그인 기록(보안 탭 "최근 로그인" 표시용) — 요청 헤더에서 IP·UA를 best-effort로 취득.
+      try {
+        const { headers } = await import("next/headers");
+        const h = await headers();
+        const ip =
+          (h.get("x-forwarded-for")?.split(",")[0] || h.get("x-real-ip") || "").trim() || null;
+        const ua = h.get("user-agent");
+        await prisma.loginEvent.create({
+          data: {
+            userId: user.id,
+            ip,
+            userAgent: ua ?? null,
+            provider: account?.provider ?? null,
+          },
+        });
+      } catch (e) {
+        console.error("[loginEvent] failed:", e);
       }
     },
   },

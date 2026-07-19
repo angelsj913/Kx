@@ -29,22 +29,60 @@ function LoginCard() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // 2단계 인증: 기본 로그인은 그대로, 2FA를 켠 계정만 코드 입력 단계로 넘어간다.
+  const [stage, setStage] = useState<"credentials" | "2fa">("credentials");
+  const [code, setCode] = useState("");
+
+  async function finishSignIn(otp?: string) {
+    const res = await signIn("credentials", {
+      email,
+      password,
+      code: otp ?? "",
+      redirect: false,
+      callbackUrl,
+    });
+    if (res?.error) {
+      setError(stage === "2fa" ? t("login.2fa.error") : t("login.error"));
+      setLoading(false);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    window.location.href = res?.url || callbackUrl;
+  }
 
   async function onCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const res = await signIn("credentials", { email, password, redirect: false, callbackUrl });
-      if (res?.error) {
-        setError(t("login.error"));
+      // 이 계정이 2FA를 쓰는지 먼저 확인(비밀번호도 여기서 검증). 켜져 있으면 코드 발송.
+      const res = await fetch("/api/account/2fa/login-challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.twoFactor) {
+        setStage("2fa");
         setLoading(false);
         return;
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
-      window.location.href = res?.url || callbackUrl;
+      // 2FA 미사용(또는 자격증명 불일치) — 평소대로 로그인 시도(오류 메시지 일관 유지).
+      await finishSignIn();
     } catch {
       setError(t("login.error"));
+      setLoading(false);
+    }
+  }
+
+  async function onVerify2fa(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await finishSignIn(code.trim());
+    } catch {
+      setError(t("login.2fa.error"));
       setLoading(false);
     }
   }
@@ -89,42 +127,77 @@ function LoginCard() {
           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
-        <form className="mt-6 space-y-3 text-left" onSubmit={onCredentials}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder={t("login.email")}
-            autoComplete="email"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder={t("login.password")}
-            autoComplete="current-password"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
-          />
-          {error && (
-            <p className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
-          >
-            {t("login.submit")}
-          </button>
-        </form>
+        {stage === "credentials" ? (
+          <form className="mt-6 space-y-3 text-left" onSubmit={onCredentials}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder={t("login.email")}
+              autoComplete="email"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder={t("login.password")}
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
+            />
+            {error && (
+              <p className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
+            >
+              {t("login.submit")}
+            </button>
+          </form>
+        ) : (
+          <form className="mt-6 space-y-3 text-left" onSubmit={onVerify2fa}>
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t("login.2fa.title")}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t("login.2fa.hint")}</p>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              required
+              placeholder={t("login.2fa.code")}
+              autoFocus
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-lg font-semibold tracking-[0.4em] text-slate-900 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 outline-none transition-colors duration-400 focus:border-blue-500/70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-500"
+            />
+            {error && (
+              <p className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={loading || code.length < 6}
+              className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
+            >
+              {t("login.2fa.verify")}
+            </button>
+          </form>
+        )}
 
-        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-          <Link href="/find-password" className="hover:text-blue-600 dark:hover:text-blue-400">{t("login.findPassword")}</Link>
-        </div>
+        {stage === "credentials" && (
+          <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <Link href="/find-password" className="hover:text-blue-600 dark:hover:text-blue-400">{t("login.findPassword")}</Link>
+          </div>
+        )}
 
         <p className="mt-5 border-t border-slate-100 pt-5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           {t("login.signupPrompt")}{" "}
