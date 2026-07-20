@@ -5,6 +5,9 @@ export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB / 파일
 export const MAX_UPLOAD_MB = 20;
 export const MAX_CHAT_FILES = 10; // 한 메시지당 첨부 개수
 
+/** 접속 국가 기본 언어 쿠키 — proxy.ts(서버)와 languageStore(클라이언트) 공유 */
+export const GEO_COOKIE = "zeff-geo-lang";
+
 // ZEFF AI 데스크톱 설치 파일 — GitHub Release 자산으로 배포
 export const REPO = "https://github.com/angelsj913/Kx";
 export const REPO_SLUG = "angelsj913/Kx";

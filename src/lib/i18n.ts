@@ -1,11 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import {
-  LANGUAGE_LABELS,
-  LANGUAGE_ORDER,
-  type AppLanguage,
-} from "./languages";
+import { type AppLanguage } from "./languages";
 import {
   getLanguage,
   getServerLanguage,
@@ -14,7 +10,6 @@ import {
 } from "./languageStore";
 
 export type { AppLanguage };
-export { LANGUAGE_LABELS, LANGUAGE_ORDER };
 
 /** 서버(UserSettings) 반영이 끝난 뒤에만 호출해서 전역 언어를 실제로 갈아입힌다.
  *  앱·랜딩·결제창이 모두 languageStore 하나를 공유하므로 어디서든 즉시 반영된다. */

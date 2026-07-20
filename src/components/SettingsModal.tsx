@@ -21,10 +21,9 @@ import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
 import ReferralCard from "@/components/settings/ReferralCard";
 import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
+import { LANGUAGE_ORDER, LANGUAGE_LABELS } from "@/lib/languages";
 import {
   useT,
-  LANGUAGE_ORDER,
-  LANGUAGE_LABELS,
   type AppLanguage,
   type AppDictKey,
 } from "@/lib/i18n";

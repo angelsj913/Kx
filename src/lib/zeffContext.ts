@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { topK } from "@/lib/rag";
 import { embedQuery } from "@/lib/embeddings";
 import { listWhere } from "@/lib/workspace";
+import { RAG_CANDIDATE_LIMIT } from "@/lib/ragSearch";
 
-const RAG_CANDIDATE_LIMIT = 1200;
 const RAG_TOP_K = 4;
 
 interface EmbeddedChunk {
@@ -41,9 +41,6 @@ function buildZeffSystemPrompt(): string {
     responseLine,
   ].join("\n");
 }
-
-// 이전 코드와의 호환을 위해 한국어 기본값을 유지한다.
-export const ZEFF_SYSTEM_PROMPT = buildZeffSystemPrompt();
 
 export async function buildZeffRuntimeInstruction(args: {
   userId: string;

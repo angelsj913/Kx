@@ -46,11 +46,6 @@ export async function setAiDailyRequestCap(cap: number | null): Promise<void> {
   });
 }
 
-/** 대략 토큰 추정(문자 수 / 4) — 과금 토큰과 무관한 운영 지표 */
-export function estimateTokens(text: string): number {
-  return Math.ceil((text?.length ?? 0) / 4);
-}
-
 const AI_DAILY_FEATURE = "ai-daily";
 
 function dayKey(d = new Date()): string {

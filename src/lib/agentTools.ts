@@ -1,4 +1,4 @@
-import { Parser } from "expr-eval";
+import { evaluateExpr } from "@/lib/safeExpr";
 import type { ModelTier } from "@/lib/models";
 import type { OpenAIToolSchema } from "@/lib/openaiCompat";
 import { retrieveChunks } from "@/lib/ragSearch";
@@ -9,8 +9,6 @@ import { runToolGeneration } from "@/lib/toolGeneration";
  * OpenAI function-calling 스키마로 직렬화한다(Gemini functionDeclarations 어댑터는
  * 이번 범위 밖 — 강한 OpenAI 호환 모델로 충분).
  */
-
-const parser = new Parser();
 
 export interface AgentToolCtx {
   userId: string;
@@ -100,13 +98,11 @@ const CALCULATOR: AgentToolSpec = {
     const expr = String(args.expression ?? "").trim();
     if (!expr) return { terminal: false, text: "수식이 비어 있습니다." };
     ctx.onStatus?.(`계산 중… (${expr.slice(0, 40)})`);
-    try {
-      const value = parser.parse(expr).evaluate();
-      return { terminal: false, text: `${expr} = ${value}` };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "계산 실패";
-      return { terminal: false, text: `계산할 수 없는 수식입니다: ${msg}` };
+    const value = evaluateExpr(expr);
+    if (value == null) {
+      return { terminal: false, text: "계산할 수 없는 수식입니다." };
     }
+    return { terminal: false, text: `${expr} = ${value}` };
   },
 };
 

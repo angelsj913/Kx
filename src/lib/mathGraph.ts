@@ -1,21 +1,11 @@
-// 수학 그래프(2D 함수 / 3D 곡면) 순수 계산 유틸 — expr-eval로 안전하게 파싱·샘플링한다.
+// 수학 그래프(2D 함수 / 3D 곡면) 순수 계산 유틸 — safeExpr로 파싱·샘플링한다.
 // React/Next 의존성 없음, 서버(structured.ts의 parseMathGraph)에서만 호출된다.
 
-import { Parser, type Expression } from "expr-eval";
-
-const parser = new Parser();
-// AI가 소문자 pi/e를 쓰는 경우도 흔해서 별칭으로 등록해둔다(기본은 대문자 PI/E).
-parser.consts.pi = Math.PI;
-parser.consts.e = Math.E;
-
-export function compileExpr(expr: string): Expression | null {
-  if (typeof expr !== "string" || !expr.trim()) return null;
-  try {
-    return parser.parse(expr);
-  } catch {
-    return null;
-  }
-}
+import {
+  compileExpr,
+  evaluateCompiled,
+  type CompiledExpr,
+} from "@/lib/safeExpr";
 
 function linspace(min: number, max: number, steps: number): number[] {
   if (steps <= 1) return [min];
@@ -25,13 +15,8 @@ function linspace(min: number, max: number, steps: number): number[] {
   return out;
 }
 
-function safeEval(compiled: Expression, values: Record<string, number>): number | null {
-  try {
-    const v = compiled.evaluate(values);
-    return typeof v === "number" && Number.isFinite(v) ? v : null;
-  } catch {
-    return null;
-  }
+function safeEval(compiled: CompiledExpr, values: Record<string, number>): number | null {
+  return evaluateCompiled(compiled, values);
 }
 
 export function sample2D(

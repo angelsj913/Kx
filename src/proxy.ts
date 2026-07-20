@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-
-/** 접속 국가로 정한 "기본" 언어 쿠키 이름 — languageStore와 공유(문자열로 맞춤). */
-const GEO_COOKIE = "zeff-geo-lang";
+import { GEO_COOKIE } from "@/lib/constants";
 
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;

@@ -1,11 +1,7 @@
-// math-solve 응답의 최종 답을 AI 자신의 "검산" 서술이 아니라, 서버에서 expr-eval로
+// math-solve 응답의 최종 답을 AI 자신의 "검산" 서술이 아니라, 서버에서 safeExpr로
 // 실제 대입 계산해 기계적으로 재확인하는 순수 함수 모듈. React/Next 의존성 없음.
 
-import { Parser } from "expr-eval";
-
-const parser = new Parser();
-parser.consts.pi = Math.PI;
-parser.consts.e = Math.E;
+import { evaluateExpr } from "@/lib/safeExpr";
 
 export interface VerifyCheck {
   expr: string;
@@ -91,13 +87,7 @@ export function verifyMathSolve(raw: string): VerifyResult | null {
 
   const failed: VerifyResult["failed"] = [];
   for (const check of checks) {
-    let actual: number | null = null;
-    try {
-      const value = parser.parse(check.expr).evaluate(check.variables);
-      actual = typeof value === "number" && Number.isFinite(value) ? value : null;
-    } catch {
-      actual = null;
-    }
+    const actual = evaluateExpr(check.expr, check.variables);
     const ok =
       actual != null &&
       Math.abs(actual - check.expected) <= TOLERANCE * Math.max(1, Math.abs(check.expected));
@@ -125,13 +115,7 @@ export function verifyPracticeSetProblems(
   const failed: PracticeVerifyFailure[] = [];
   problems.forEach((p, index) => {
     if (!p.verify) return;
-    let actual: number | null = null;
-    try {
-      const value = parser.parse(p.verify.expr).evaluate(p.verify.variables);
-      actual = typeof value === "number" && Number.isFinite(value) ? value : null;
-    } catch {
-      actual = null;
-    }
+    const actual = evaluateExpr(p.verify.expr, p.verify.variables);
     const ok =
       actual != null &&
       Math.abs(actual - p.verify.expected) <= TOLERANCE * Math.max(1, Math.abs(p.verify.expected));
