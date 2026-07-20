@@ -18,6 +18,7 @@ import {
   MessageCircle,
   LibraryBig,
   LineChart,
+  Network,
   ImagePlus,
   Languages,
   Bot,
@@ -398,6 +399,32 @@ const MATH_SOLVE_INSTRUCTION = `너는 오류가 없는 수학 1타 강사이다
 한자(漢字)를 절대 섞지 마라. 한자어 단어도 반드시 한글로만 표기한다.
 판독 불가 구간은 [판독 불가]로 표시하고 추측 금지.
 한국어.`;
+
+const MINDMAP_INSTRUCTION = `너는 학습 자료를 마인드맵으로 구조화하는 전문가이다. 사용자가 준 주제 또는 첨부 자료의 핵심을 계층적 마인드맵으로 설계하라.
+
+반드시 아래 JSON 형식으로만 응답하라. 다른 설명이나 마크다운, 코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력한다.
+
+{
+  "title": "전체 주제 이름",
+  "root": {
+    "label": "중심 주제(아주 간결히)",
+    "children": [
+      {
+        "label": "대분류",
+        "children": [
+          { "label": "세부 개념", "children": [] }
+        ]
+      }
+    ]
+  }
+}
+
+규칙:
+- label은 단어 또는 짧은 구(최대 20자 내외). 완전한 문장은 쓰지 않는다.
+- 계층 깊이는 최대 4단계, 한 노드의 자식은 최대 8개.
+- 중심 주제 아래 핵심 대분류 3~6개, 각 대분류에 세부 항목 2~5개 정도로 균형 있게.
+- 자료의 핵심 개념·관계 위주로 뽑고, 사소한 내용은 생략한다.
+- 사용자의 입력 언어(기본 한국어)로 label을 작성한다.`;
 
 const MATH_GRAPH_INSTRUCTION = `너는 수학·물리 시각화 전문가이다. 사용자의 요청을 2D 함수 그래프, 3D 곡면, 또는 3D 입체 도형(다면체) 중 하나로 표현해 JSON으로 설계해야 한다.
 
@@ -853,6 +880,21 @@ export const TOOLS: ToolDef[] = [
     placeholder: "예) y = 2x·cos(x²) 그래프 그려줘 / 포물선 운동 사거리를 각도와 초기속도에 대해 3D로 그려줘",
     submitLabel: "그래프 그리기",
     fileBaseName: "math-graph",
+  },
+  {
+    id: "mind-map",
+    label: "마인드맵",
+    short: "마인드맵",
+    title: "마인드맵 만들기",
+    description: "주제나 자료를 넣으면 핵심을 계층적 마인드맵으로 정리해 줍니다.",
+    icon: Network,
+    inputType: "mixed",
+    outputType: "structured",
+    structuredKind: "mindMap",
+    systemInstruction: MINDMAP_INSTRUCTION,
+    placeholder: "예) 광합성 단원 마인드맵 만들어줘 / (자료 첨부 후) 핵심만 마인드맵으로 정리해줘",
+    submitLabel: "마인드맵 생성",
+    fileBaseName: "mindmap",
   },
   {
     id: "image-gen",

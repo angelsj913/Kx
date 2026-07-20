@@ -11,7 +11,8 @@ export type StructuredKind =
   | "researchDraft"
   | "examAnalysis"
   | "practiceSet"
-  | "mathGraph";
+  | "mathGraph"
+  | "mindMap";
 
 // ── 회의록 ──
 
@@ -389,6 +390,57 @@ function parseSolid(raw: unknown): GraphSolid3D | null {
   return { label, vertices, faces, color };
 }
 
+// ── 마인드맵 ──
+
+export interface MindMapNode {
+  label: string;
+  children: MindMapNode[];
+}
+
+export interface MindMap {
+  title: string;
+  root: MindMapNode;
+}
+
+const MINDMAP_MAX_DEPTH = 4;
+const MINDMAP_MAX_CHILDREN = 8;
+const MINDMAP_MAX_NODES = 80;
+
+function parseMindMapNode(
+  raw: unknown,
+  depth: number,
+  budget: { count: number },
+): MindMapNode {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  const label = typeof o.label === "string" ? o.label.trim().slice(0, 120) : "";
+  const children: MindMapNode[] = [];
+  if (depth < MINDMAP_MAX_DEPTH && Array.isArray(o.children)) {
+    for (const child of o.children as unknown[]) {
+      if (budget.count >= MINDMAP_MAX_NODES) break;
+      if (children.length >= MINDMAP_MAX_CHILDREN) break;
+      budget.count += 1;
+      const node = parseMindMapNode(child, depth + 1, budget);
+      if (node.label) children.push(node);
+    }
+  }
+  return { label, children };
+}
+
+export function parseMindMap(raw: string): MindMap {
+  const obj = JSON.parse(extractJson(raw));
+  const title = typeof obj?.title === "string" ? obj.title.trim().slice(0, 120) : "";
+  const budget = { count: 1 };
+  const rootRaw = obj?.root ?? { label: title, children: obj?.children ?? [] };
+  const root = parseMindMapNode(rootRaw, 0, budget);
+  if (!root.label) root.label = title || "마인드맵";
+  return { title: title || root.label, root };
+}
+
+/** 루트에 자식이 하나도 없으면 "빈 마인드맵" — 호출부에서 재시도/에러 처리용. */
+export function isEmptyMindMap(data: MindMap): boolean {
+  return data.root.children.length === 0;
+}
+
 export function parseMathGraph(raw: string): MathGraph {
   const obj = JSON.parse(extractJson(raw));
   let mode: "2d" | "3d" | "solid" =
@@ -472,7 +524,8 @@ export type StructuredData =
   | { kind: "researchDraft"; data: ResearchDraft }
   | { kind: "examAnalysis"; data: ExamAnalysis }
   | { kind: "practiceSet"; data: PracticeSet }
-  | { kind: "mathGraph"; data: MathGraph };
+  | { kind: "mathGraph"; data: MathGraph }
+  | { kind: "mindMap"; data: MindMap };
 
 export function parseStructured(kind: StructuredKind, raw: string): StructuredData {
   switch (kind) {
@@ -490,5 +543,7 @@ export function parseStructured(kind: StructuredKind, raw: string): StructuredDa
       return { kind, data: parsePracticeSet(raw) };
     case "mathGraph":
       return { kind, data: parseMathGraph(raw) };
+    case "mindMap":
+      return { kind, data: parseMindMap(raw) };
   }
 }

@@ -23,6 +23,7 @@ export const FEATURE_GROUPS: {
       "video-summary",
       "lecture",
       "lecture-notes",
+      "mind-map",
       "math-solve",
       "math-graph",
       "exam-analysis",

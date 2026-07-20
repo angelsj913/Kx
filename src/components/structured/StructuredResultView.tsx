@@ -8,6 +8,7 @@ import LectureNotesView from "./LectureNotesView";
 import ResearchDraftView from "./ResearchDraftView";
 import ExamAnalysisView from "./ExamAnalysisView";
 import PracticeSetView from "./PracticeSetView";
+import MindMapView from "./MindMapView";
 import type {
   MeetingMinutes,
   WeeklyReport,
@@ -16,6 +17,7 @@ import type {
   ExamAnalysis,
   PracticeSet,
   MathGraph,
+  MindMap,
 } from "@/lib/structured";
 
 // Plotly가 window/canvas를 만지므로 SSR 불가 — 이 뷰만 예외적으로 dynamic import.
@@ -33,7 +35,8 @@ type Props =
   | { id: string; kind: "researchDraft"; data: ResearchDraft }
   | { id: string; kind: "examAnalysis"; data: ExamAnalysis }
   | { id: string; kind: "practiceSet"; data: PracticeSet }
-  | { id: string; kind: "mathGraph"; data: MathGraph };
+  | { id: string; kind: "mathGraph"; data: MathGraph }
+  | { id: string; kind: "mindMap"; data: MindMap };
 
 /** structuredKind에 맞는 편집기를 골라 렌더링한다. 항목이 바뀌면 호출부에서 key={id}로 리마운트시켜야 한다. */
 export default function StructuredResultView(props: Props) {
@@ -56,5 +59,7 @@ export default function StructuredResultView(props: Props) {
           <GraphView id={props.id} initial={props.data} />
         </GraphErrorBoundary>
       );
+    case "mindMap":
+      return <MindMapView id={props.id} initial={props.data} />;
   }
 }
