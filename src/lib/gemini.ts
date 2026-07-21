@@ -2,11 +2,23 @@ import { GoogleGenAI, Modality, createUserContent, type Content, type Part } fro
 import type { ToolDef } from "./tools";
 
 export class MissingApiKeyError extends Error {}
+export class SafetyRefusalError extends Error {}
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 // "나노 바나나" — 카드 등록 없이 하루 500회 무료(2026-07 기준, 공개 자료 확인).
 // Imagen 계열(ai.models.generateImages)은 무료 티어가 없어 쓰지 않는다.
 const IMAGE_GEN_MODEL = "gemini-2.5-flash-image";
+
+function throwIfSafetyBlocked(response: unknown): void {
+  const value = response as {
+    promptFeedback?: { blockReason?: string };
+    candidates?: { finishReason?: string }[];
+  };
+  const reason = value?.promptFeedback?.blockReason || value?.candidates?.[0]?.finishReason;
+  if (reason && /safety|blocked|prohibited/i.test(reason)) {
+    throw new SafetyRefusalError(`Gemini safety refusal: ${reason}`);
+  }
+}
 
 function client(apiKey?: string): GoogleGenAI {
   const key = apiKey || process.env.GEMINI_API_KEY;
@@ -85,7 +97,7 @@ export async function geminiGenerateForTool(input: GenInput): Promise<string> {
       ...(needsJson ? { responseMimeType: "application/json" } : {}),
     },
   });
-
+  throwIfSafetyBlocked(response);
   return response.text ?? "";
 }
 
@@ -110,6 +122,7 @@ export async function geminiGenerateImage(input: {
         responseModalities: [Modality.IMAGE],
       },
     });
+    throwIfSafetyBlocked(response);
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     const imagePart = parts.find((p) => p.inlineData?.data);
@@ -124,7 +137,8 @@ export async function geminiGenerateImage(input: {
 
   try {
     return await run(input.prompt);
-  } catch {
+  } catch (err) {
+    if (err instanceof SafetyRefusalError) throw err;
     await new Promise((r) => setTimeout(r, 800));
     const shorter =
       input.prompt.length > 80 ? input.prompt.slice(0, 80).trim() : input.prompt;
@@ -168,7 +182,7 @@ export async function geminiChatReply(opts: {
     contents,
     config: { systemInstruction: opts.systemInstruction },
   });
-
+  throwIfSafetyBlocked(response);
   return response.text ?? "";
 }
 

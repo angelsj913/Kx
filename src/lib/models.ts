@@ -190,15 +190,15 @@ export function modelsForVerify(
 // 죽어도 사진 질문이 폴백으로 처리되게 한다. 모델명은 공개 문서 기준 best-effort이며
 // 사용 불가 시 폴백 루프가 조용히 다음 후보로 넘어간다.
 export const VISION_FALLBACK: ModelDef[] = [
-  { provider: "groq", model: "meta-llama/llama-4-scout-17b-16e-instruct", free: true },
   orFree("meta-llama/llama-3.2-11b-vision-instruct:free"),
   orFree("qwen/qwen2.5-vl-72b-instruct:free"),
+  { provider: "groq", model: "meta-llama/llama-4-scout-17b-16e-instruct", free: true },
 ];
 
 const TEXT_CHAIN = buildTextChain();
-// 이미지 입력은 OpenRouter 호환 비전 모델을 우선 사용한다. Gemini는 최후 수단이며
-// OPENROUTER_API_KEY만으로도 이미지 읽기 기능을 사용할 수 있어야 한다.
-const MULTI_CHAIN: ModelDef[] = [...VISION_FALLBACK, G_FLASH, G_FLASH_LITE, G_PRO];
+// 이미지 입력은 Gemini Flash를 먼저 시도하고, 빈 응답·일시 오류일 때만 OpenRouter 및
+// Groq 비전 모델로 넘어간다. OPENROUTER_VISION_MODELS는 런타임에서 이 두 후보를 교체한다.
+const MULTI_CHAIN: ModelDef[] = [G_FLASH, ...VISION_FALLBACK];
 
 export const FALLBACK_MODELS: ModelDef[] = TEXT_CHAIN;
 export const MULTIMODAL_MODELS: ModelDef[] = MULTI_CHAIN;
@@ -208,8 +208,7 @@ export function modelsForTier(
   opts?: { multimodal?: boolean },
 ): ModelDef[] {
   if (opts?.multimodal) {
-    if (tier === "top") return [...VISION_FALLBACK, G_PRO, G_FLASH, G_FLASH_LITE];
-    return [...VISION_FALLBACK, G_FLASH, G_FLASH_LITE, G_PRO];
+    return MULTI_CHAIN;
   }
   if (tier === "top") return buildTextChain(8, "top");
   if (tier === "priority") return buildTextChain(6, "priority");

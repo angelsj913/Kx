@@ -1,7 +1,7 @@
 /**
  * OpenAI 호환 Chat Completions — 다중 제공자.
  */
-import { MissingApiKeyError, type ChatMessage } from "./gemini";
+import { MissingApiKeyError, SafetyRefusalError, type ChatMessage } from "./gemini";
 import type { ToolDef } from "./tools";
 import type { Provider } from "./models";
 
@@ -18,6 +18,25 @@ export interface GeneratedImage {
   data: string;
   mimeType: string;
   model: string;
+}
+
+type OpenRouterCapabilityCache = {
+  expiresAt: number;
+  visionModels: string[];
+  imageModels: string[];
+};
+
+let openRouterCapabilities: OpenRouterCapabilityCache | null = null;
+let openRouterCapabilitiesPending: Promise<OpenRouterCapabilityCache> | null = null;
+const CAPABILITY_CACHE_MS = 10 * 60 * 1000;
+
+function configuredModels(name: string, fallback: string[]): string[] {
+  const raw = process.env[name]?.trim();
+  return raw ? raw.split(",").map((model) => model.trim()).filter(Boolean) : fallback;
+}
+
+function safetyRefusal(message: string): boolean {
+  return /(?:safety|content policy|moderation|policy violation|blocked)/i.test(message);
 }
 
 export const PROVIDER_CONFIG: Record<
@@ -507,7 +526,7 @@ export async function openRouterGenerateImage(input: {
   const cfg = PROVIDER_CONFIG.openrouter;
   const key = requireKey(cfg);
   const model = input.model || process.env.OPENROUTER_IMAGE_MODEL || "openai/gpt-image-1";
-  const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
+  const res = await fetch("https://openrouter.ai/api/v1/images", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -517,8 +536,8 @@ export async function openRouterGenerateImage(input: {
     body: JSON.stringify({
       model,
       prompt: input.prompt,
-      size: "1024x1024",
-      response_format: "b64_json",
+      resolution: "1K",
+      output_format: "png",
     }),
   });
   if (!res.ok) {
@@ -528,6 +547,7 @@ export async function openRouterGenerateImage(input: {
     } catch {
       /* keep status message */
     }
+    if (safetyRefusal(detail)) throw new SafetyRefusalError(detail);
     throw new Error(detail);
   }
   const payload = await res.json();
@@ -546,6 +566,91 @@ export async function openRouterGenerateImage(input: {
     };
   }
   throw new Error("OpenRouter가 이미지 데이터를 반환하지 않았습니다.");
+}
+
+async function discoverOpenRouterCapabilities(): Promise<OpenRouterCapabilityCache> {
+  const cfg = PROVIDER_CONFIG.openrouter;
+  const key = requireKey(cfg);
+  const headers = {
+    Authorization: `Bearer ${key}`,
+    ...(cfg.extraHeaders ?? {}),
+  };
+  const [visionResult, imageResult] = await Promise.allSettled([
+    fetch("https://openrouter.ai/api/v1/models?input_modalities=image", {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    }),
+    fetch("https://openrouter.ai/api/v1/images/models", {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    }),
+  ]);
+  const ids = async (result: PromiseSettledResult<Response>): Promise<string[]> => {
+    if (result.status !== "fulfilled" || !result.value.ok) return [];
+    const data = await result.value.json().catch(() => ({}));
+    const rows = Array.isArray(data?.data) ? data.data : [];
+    return rows
+      .map((row: { id?: unknown; slug?: unknown }) =>
+        typeof row.id === "string" ? row.id : typeof row.slug === "string" ? row.slug : "",
+      )
+      .filter(Boolean);
+  };
+  return {
+    expiresAt: Date.now() + CAPABILITY_CACHE_MS,
+    visionModels: await ids(visionResult),
+    imageModels: await ids(imageResult),
+  };
+}
+
+async function capabilities(): Promise<OpenRouterCapabilityCache> {
+  if (openRouterCapabilities && openRouterCapabilities.expiresAt > Date.now()) {
+    return openRouterCapabilities;
+  }
+  if (!openRouterCapabilitiesPending) {
+    openRouterCapabilitiesPending = discoverOpenRouterCapabilities()
+      .then((result) => {
+        openRouterCapabilities = result;
+        return result;
+      })
+      .finally(() => {
+        openRouterCapabilitiesPending = null;
+      });
+  }
+  return openRouterCapabilitiesPending;
+}
+
+/** 환경변수 우선 순서를 보존하면서 현재 OpenRouter에서 제공하는 모델만 남긴다. */
+export async function getOpenRouterVisionModels(): Promise<string[]> {
+  const preferred = configuredModels("OPENROUTER_VISION_MODELS", [
+    "qwen/qwen2.5-vl-72b-instruct:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
+  ]);
+  try {
+    const available = new Set((await capabilities()).visionModels);
+    const availableBase = new Set([...available].map((model) => model.replace(/:free$/, "")));
+    return preferred
+      .filter(
+        (model) =>
+          available.size === 0 ||
+          available.has(model) ||
+          availableBase.has(model.replace(/:free$/, "")),
+      )
+      .slice(0, 2);
+  } catch {
+    return preferred.slice(0, 2);
+  }
+}
+
+export async function getOpenRouterImageModels(): Promise<string[]> {
+  const preferred = configuredModels("OPENROUTER_IMAGE_FALLBACK_MODELS", []);
+  try {
+    const available = (await capabilities()).imageModels;
+    const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
+    const ordered = [...preferred, ...available.filter((model) => model !== primary)];
+    return [...new Set(ordered)].slice(0, 2);
+  } catch {
+    return preferred.slice(0, 2);
+  }
 }
 
 export function listConfiguredProviders(): {

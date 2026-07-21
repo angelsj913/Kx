@@ -3,12 +3,14 @@ import {
   geminiChatReply,
   geminiChatReplyStream,
   MissingApiKeyError,
+  SafetyRefusalError,
   type ChatMessage,
 } from "./gemini";
 import {
   compatChatReply,
   compatChatReplyStream,
   compatGenerateForTool,
+  getOpenRouterVisionModels,
   hasProviderKey,
   listConfiguredProviders,
 } from "./openaiCompat";
@@ -84,6 +86,19 @@ export interface FallbackResult {
   attempts: number;
 }
 
+/** Gemini Flash → configured OpenRouter vision 1/2 → Groq vision. */
+async function imageVisionCandidates(): Promise<ModelDef[]> {
+  const gemini = MULTIMODAL_MODELS.find((model) => model.provider === "gemini");
+  const groq = MULTIMODAL_MODELS.find((model) => model.provider === "groq");
+  const openRouter = hasProviderKey("openrouter")
+    ? (await getOpenRouterVisionModels()).map((model) => ({
+        provider: "openrouter" as const,
+        model,
+      }))
+    : [];
+  return [gemini, ...openRouter, groq].filter((model): model is ModelDef => !!model);
+}
+
 async function invokeModel(
   m: ModelDef,
   opts: {
@@ -156,6 +171,7 @@ async function runWithFallback(
       markProviderHealthy(m.provider as Provider);
       return { text, provider: m.provider, model: m.model, attempts: attemptNumber };
     } catch (err) {
+      if (err instanceof SafetyRefusalError) throw err;
       lastErr = err;
       console.warn(`[ai] fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
       noteProviderFailure(m.provider as Provider, err);
@@ -199,7 +215,7 @@ export async function generateWithFallback(args: {
     );
   }
 
-  let candidates = modelsForTier(tier, { multimodal: multi }).filter(
+  let candidates = (multi ? await imageVisionCandidates() : modelsForTier(tier)).filter(
     (m) => !args.excludeProviders?.includes(m.provider),
   );
   // 오디오 입력은 Gemini만 실제로 들을 수 있다 — 비전 폴백에 오디오를 넘기면 소리를
@@ -231,7 +247,7 @@ export async function chatReplyWithFallback(args: {
   const raw =
     args.candidates ??
     (hasFiles
-      ? MULTIMODAL_MODELS
+      ? await imageVisionCandidates()
       : args.modelTier
         ? modelsForTier(args.modelTier)
         : FALLBACK_MODELS);
@@ -300,7 +316,7 @@ export async function chatReplyWithFallbackStream(args: {
   const raw =
     args.candidates ??
     (hasFiles
-      ? MULTIMODAL_MODELS
+      ? await imageVisionCandidates()
       : args.modelTier
         ? modelsForTier(args.modelTier)
         : FALLBACK_MODELS);
@@ -353,6 +369,7 @@ export async function chatReplyWithFallbackStream(args: {
         interrupted: false,
       };
     } catch (err) {
+      if (err instanceof SafetyRefusalError) throw err;
       if (committed) {
         console.warn(
           `[ai] stream interrupted mid-response ${m.provider}/${m.model}:`,

@@ -4,8 +4,8 @@ import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./a
 import { validateDeck, validateWorkbook } from "./pptValidate";
 import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
-import { geminiGenerateForTool } from "./gemini";
-import { openRouterGenerateImage } from "./openaiCompat";
+import { geminiGenerateForTool, geminiGenerateImage, SafetyRefusalError } from "./gemini";
+import { getOpenRouterImageModels, openRouterGenerateImage } from "./openaiCompat";
 import { noteProviderFailure } from "./providerHealth";
 import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
@@ -48,6 +48,16 @@ interface Meta {
   provider: FallbackResult["provider"] | "local";
   model: FallbackResult["model"];
   attempts: number;
+}
+
+async function upscaleImage2x(data: string): Promise<string> {
+  const image = sharp(Buffer.from(data, "base64")).rotate();
+  const metadata = await image.metadata();
+  const width = Math.min((metadata.width ?? 1024) * 2, 4096);
+  const height = Math.min((metadata.height ?? 1024) * 2, 4096);
+  return (await image.resize(width, height, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()).toString(
+    "base64",
+  );
 }
 
 export type ToolGenerationResult =
@@ -404,28 +414,48 @@ export async function runToolGeneration(
     if (tool.id === "image-upscale") {
       const source = input.images?.[0];
       if (!source) throw new Error("확대할 이미지를 첨부해 주세요.");
-      const image = sharp(Buffer.from(source.data, "base64")).rotate();
-      const metadata = await image.metadata();
-      const width = Math.min((metadata.width ?? 1024) * 2, 4096);
-      const height = Math.min((metadata.height ?? 1024) * 2, 4096);
-      data = (await image.resize(width, height, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()).toString(
-        "base64",
-      );
+      data = await upscaleImage2x(source.data);
       mimeType = "image/png";
       model = "lanczos3-2x";
     } else {
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
+      const prompt = input.text!.trim();
       try {
-        const img = await openRouterGenerateImage({
-          prompt: input.text!.trim(),
+        // 이미지 생성은 Gemini를 먼저 사용하고, 빈 결과·일시 오류에서만 OpenRouter로 넘어간다.
+        const img = await geminiGenerateImage({
+          prompt,
+          systemInstruction: tool.systemInstruction,
         });
         data = img.data;
         mimeType = img.mimeType;
-        model = img.model;
+        model = "gemini-2.5-flash-image";
       } catch (err) {
-        noteProviderFailure("openrouter", err);
-        throw err;
+        if (err instanceof SafetyRefusalError) throw err;
+        noteProviderFailure("gemini", err);
+        const models = [
+          process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5",
+          ...(await getOpenRouterImageModels()),
+        ];
+        let lastError: unknown = err;
+        for (const candidate of [...new Set(models)]) {
+          try {
+            const img = await openRouterGenerateImage({ prompt, model: candidate });
+            data = img.data;
+            mimeType = img.mimeType;
+            model = img.model;
+            lastError = null;
+            break;
+          } catch (fallbackError) {
+            if (fallbackError instanceof SafetyRefusalError) throw fallbackError;
+            noteProviderFailure("openrouter", fallbackError);
+            lastError = fallbackError;
+          }
+        }
+        if (lastError) throw lastError;
       }
+      data = await upscaleImage2x(data);
+      mimeType = "image/png";
+      model = `${model}+lanczos3-2x`;
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
@@ -438,7 +468,11 @@ export async function runToolGeneration(
       tool,
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
-      meta: { provider: tool.id === "image-upscale" ? "local" : "openrouter", model, attempts: 1 },
+      meta: {
+        provider: tool.id === "image-upscale" ? "local" : model.startsWith("gemini") ? "gemini" : "openrouter",
+        model,
+        attempts: 1,
+      },
     };
   }
 

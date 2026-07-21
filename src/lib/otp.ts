@@ -109,21 +109,12 @@ type MailResult = {
   error?: string;
 };
 
-function publicAppUrl(): string {
-  const configured = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "https://zeffai.com";
-}
-
 function otpEmailHtml(code: string, title: string, message: string, admin = false): string {
-  const logoUrl = `${publicAppUrl()}/logo-zeff.png`;
   return `<div style="margin:0;padding:32px 16px;background:#f8fafc;font-family:Arial,'Apple SD Gothic Neo',sans-serif;color:#0f172a">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:440px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px">
         <tr><td style="padding:28px 28px 12px">
-          <img src="${logoUrl}" width="42" height="42" alt="ZEFF AI" style="display:block;width:42px;height:42px;border:0;border-radius:10px;object-fit:contain" />
-          <p style="margin:16px 0 0;font-size:12px;font-weight:700;letter-spacing:.08em;color:#2563eb">ZEFF AI${admin ? " · ADMIN" : ""}</p>
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;color:#2563eb">ZEFF AI${admin ? " · ADMIN" : ""}</p>
           <h1 style="margin:8px 0 0;font-size:20px;line-height:1.35">${title}</h1>
           <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#64748b">${message}</p>
         </td></tr>
