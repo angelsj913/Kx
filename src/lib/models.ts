@@ -11,7 +11,7 @@
  * 2. 이미지 생성
  *    BEFORE: Gemini try/catch → OpenRouter 루프 (비용 순서 미정)
  *    AFTER:  imageGenerationCandidates() — 비용 오름차순 단일 폴백 루프
- *    순서: gemini-2.5-flash-image(free) → OPENROUTER_IMAGE_MODEL → env fallbacks → API
+ *    순서: Pollinations(무료,키불필요) → Gemini → OPENROUTER_IMAGE_MODEL → env fallbacks
  *
  * 3. 복잡/고급 작업 (변경 없음)
  *    - buildTextChain tier chains (standard/priority/top)
@@ -47,7 +47,7 @@ export interface ModelDef {
 export type ModelTier = "standard" | "priority" | "top";
 
 export interface ImageGenCandidate {
-  provider: "gemini" | "openrouter";
+  provider: "pollinations" | "gemini" | "openrouter";
   model: string;
   free?: boolean;
 }
@@ -218,9 +218,10 @@ export function filterAvailableCandidates(candidates: ModelDef[]): ModelDef[] {
 export function filterAvailableImageGenCandidates(
   candidates: ImageGenCandidate[],
 ): ImageGenCandidate[] {
-  return candidates.filter(
-    (c) => hasProviderKey(c.provider) && !isProviderSkipped(c.provider),
-  );
+  return candidates.filter((c) => {
+    if (c.provider === "pollinations") return true; // API 키 불필요
+    return hasProviderKey(c.provider) && !isProviderSkipped(c.provider);
+  });
 }
 
 /**
@@ -323,8 +324,13 @@ export async function buildVisionCandidates(): Promise<ModelDef[]> {
   return available;
 }
 
-/** 이미지 생성 비용 순위 — rank 0 = gemini free, rank 1+ = OpenRouter paid. */
+/** 이미지 생성 비용 순위 — 무료(Pollinations) → Gemini → OpenRouter paid. */
 export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
+  {
+    provider: "pollinations",
+    model: process.env.POLLINATIONS_IMAGE_MODEL || "flux",
+    free: true,
+  },
   { provider: "gemini", model: "gemini-2.5-flash-image", free: true },
   {
     provider: "openrouter",
@@ -334,17 +340,21 @@ export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
 
 /**
  * 이미지 생성 후보 — 비용 오름차순 단일 폴백 체인.
- * rank 0: Gemini free → rank 1: OPENROUTER_IMAGE_MODEL → env fallbacks(최대 2).
- * OpenRouter API 카탈로그 전체는 넣지 않는다(크레딧 부족 시 연쇄 실패 방지).
+ * rank 0: Pollinations(완전 무료, 키 불필요)
+ * rank 1: Gemini flash-image
+ * rank 2+: OPENROUTER_IMAGE_MODEL → env fallbacks(최대 2)
  */
 export async function imageGenerationCandidates(): Promise<ImageGenCandidate[]> {
   const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
-  const base: ImageGenCandidate[] = [];
+  const pollinationsModel = process.env.POLLINATIONS_IMAGE_MODEL || "flux";
+  const base: ImageGenCandidate[] = [
+    { provider: "pollinations", model: pollinationsModel, free: true },
+  ];
 
-  if (hasProviderKey("gemini")) {
+  if (hasProviderKey("gemini") && !isProviderSkipped("gemini")) {
     base.push({ provider: "gemini", model: "gemini-2.5-flash-image", free: true });
   }
-  if (hasProviderKey("openrouter")) {
+  if (hasProviderKey("openrouter") && !isProviderSkipped("openrouter")) {
     base.push({ provider: "openrouter", model: primary });
     try {
       const fallbacks = await getOpenRouterImageModels();

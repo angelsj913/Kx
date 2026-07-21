@@ -11,8 +11,9 @@ import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
 import { geminiGenerateForTool, geminiGenerateImage, MissingApiKeyError, SafetyRefusalError } from "./gemini";
 import { openRouterGenerateImage } from "./openaiCompat";
+import { pollinationsGenerateImage } from "./pollinations";
 import { noteProviderFailure } from "./providerHealth";
-import { imageGenerationCandidates, type ModelTier } from "./models";
+import { imageGenerationCandidates, type ModelTier, type Provider } from "./models";
 import {
   PipelineStageError,
   pipelineError,
@@ -56,7 +57,7 @@ export interface ToolGenerationInput {
 }
 
 interface Meta {
-  provider: FallbackResult["provider"] | "local";
+  provider: Provider | "local" | "pollinations";
   model: FallbackResult["model"];
   attempts: number;
 }
@@ -196,7 +197,9 @@ async function verifyAndAnnotateMathSolve(
     }
     try {
       const excluded =
-        finalMeta.provider === "local" ? [] : [finalMeta.provider];
+        finalMeta.provider === "local" || finalMeta.provider === "pollinations"
+          ? []
+          : [finalMeta.provider];
       const crossCheck = await generateWithFallback({
         tool,
         text: input.text,
@@ -453,16 +456,23 @@ export async function runToolGeneration(
           `${candidate.provider}/${candidate.model}`,
         );
         try {
-          const img =
-            candidate.provider === "gemini"
-              ? await geminiGenerateImage({
-                  prompt,
-                  systemInstruction: tool.systemInstruction,
-                })
-              : await openRouterGenerateImage({ prompt, model: candidate.model });
+          let img: { data: string; mimeType: string; model?: string };
+          if (candidate.provider === "pollinations") {
+            img = await pollinationsGenerateImage({
+              prompt,
+              model: candidate.model,
+            });
+          } else if (candidate.provider === "gemini") {
+            img = await geminiGenerateImage({
+              prompt,
+              systemInstruction: tool.systemInstruction,
+            });
+          } else {
+            img = await openRouterGenerateImage({ prompt, model: candidate.model });
+          }
           data = img.data;
           mimeType = img.mimeType;
-          model = candidate.model;
+          model = img.model || candidate.model;
           lastError = null;
           imageAttempts = attempt;
           pipelineInfo(
@@ -478,7 +488,9 @@ export async function runToolGeneration(
             `fail #${attempt} ${candidate.provider}/${candidate.model}`,
             err,
           );
-          noteProviderFailure(candidate.provider, err);
+          if (candidate.provider !== "pollinations") {
+            noteProviderFailure(candidate.provider as Provider, err);
+          }
           lastError = err;
 
           // OpenRouter 크레딧 부족은 계정 단위 — 나머지 OR 모델 시도는 전부 동일 실패이므로 즉시 중단
@@ -531,7 +543,14 @@ export async function runToolGeneration(
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
       meta: {
-        provider: tool.id === "image-upscale" ? "local" : model.startsWith("gemini") ? "gemini" : "openrouter",
+        provider:
+          tool.id === "image-upscale"
+            ? "local"
+            : model.startsWith("pollinations")
+              ? "pollinations"
+              : model.startsWith("gemini")
+                ? "gemini"
+                : "openrouter",
         model,
         attempts: imageAttempts,
       },
