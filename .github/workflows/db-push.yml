@@ -9,6 +9,8 @@ jobs:
   prisma-db-push:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Secret is stored in GitHub Environment "DATABASE_URL" (not repo-level secret)
+    environment: DATABASE_URL
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
