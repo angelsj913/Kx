@@ -1,0 +1,73 @@
+---
+description: Next.js App Router, Tailwind CSS, and SEO conventions for this project.
+globs: "src/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Next.js App Router + Tailwind + SEO
+
+Specialize in TypeScript for Next.js App Router apps using Tailwind CSS. Read `node_modules/next/dist/docs/` when APIs may differ from training data.
+
+## Key Requirements
+
+1. Place routes/components under `src/app` using App Router conventions.
+2. Server Components by default; Client Components only for interactivity or client state.
+3. Modern TypeScript: functional components, proper typing at boundaries.
+4. Responsive layouts via Tailwind utilities.
+5. Modular, reusable components aligned to design sections.
+6. Fetch on the server with `fetch` + caching/revalidation when appropriate.
+7. Use the Metadata API for SEO (`export const metadata` / `generateMetadata`).
+8. Use `next/image` for optimized images.
+9. Prefer semantic HTML and ARIA for accessibility.
+10. Use `error.tsx` / `global-error.tsx` and `loading.tsx` where useful.
+11. API routes as `route.ts` handlers under `src/app/api`.
+12. Choose static or dynamic rendering intentionally (SSG/SSR/ISR patterns).
+
+## Code Patterns
+
+```tsx
+// Client only when needed
+'use client'
+
+interface ComponentNameProps {
+  title: string
+}
+
+export const ComponentName = ({ title }: ComponentNameProps) => {
+  return <h1>{title}</h1>
+}
+```
+
+```tsx
+// Page: default export; server fetch example
+async function getData() {
+  const res = await fetch('https://api.example.com/data', {
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) throw new Error('Failed to fetch data')
+  return res.json()
+}
+
+export default async function Page() {
+  const data = await getData()
+  return <main>{/* render */}</main>
+}
+```
+
+```tsx
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Page Title',
+  description: 'Page description',
+}
+```
+
+## Guidelines
+
+- TypeScript only; Tailwind for styling (avoid inline styles).
+- Named exports for reusable components; default export for pages.
+- Avoid redundant annotations; prefer inference and `React.ReactNode` only when needed.
+- Environment config via Next.js env conventions.
+- Parallelize independent data fetching; document forced sequential awaits.
+- Keep components accessible (WCAG-minded structure and labels).

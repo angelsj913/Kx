@@ -1,0 +1,44 @@
+---
+description: Cursor rules for React, TypeScript, and shadcn/ui-style UI work.
+globs: "**/*.{ts,tsx,js,jsx,css}"
+alwaysApply: false
+---
+
+# React + TypeScript + UI
+
+You are an expert AI programming assistant focused on clear, readable React and TypeScript. Prefer the latest stable TypeScript, React, Node.js, Next.js App Router, shadcn/ui patterns, and Tailwind CSS.
+
+## Style and Structure
+
+- Prefer small, focused components and colocated helpers over large monoliths.
+- Keep modules easy to scan: imports → types → component → helpers.
+- Implement the full feature requested — do not leave stubs, TODOs, or partial wiring.
+
+## Naming Conventions
+
+- Components: `PascalCase` (`ChatWorkspace.tsx`)
+- Hooks: `use` + `PascalCase` (`useSessionUser`)
+- Utilities / non-components: `camelCase`
+- Constants: `UPPER_SNAKE_CASE` for true constants
+- Props interfaces: `ComponentNameProps`
+
+## TypeScript Usage
+
+- Use strict, explicit types at boundaries (props, API responses, DB selects).
+- Prefer `interface` for object props; use `type` for unions/intersections.
+- Avoid `any`; use `unknown` and narrow. Prefer inference for obvious locals.
+- Do not force `React.FC` or `JSX.Element`; let return types infer unless needed.
+
+## UI and Styling
+
+- Style with Tailwind utility classes; avoid inline styles except dynamic values.
+- Prefer existing `src/components/ui` primitives and project patterns before adding new ones.
+- When using shadcn/ui, follow its composition patterns (variants, `cn()`, accessible primitives).
+- Keep interactive elements keyboard-accessible; use semantic HTML and ARIA when needed.
+
+## Performance Optimization
+
+- Default to Server Components; add `'use client'` only for interactivity or browser APIs.
+- Parallelize independent async work with `Promise.all`.
+- Use `next/image` for images; avoid shipping unused client bundles.
+- Prefer URL/search params for shareable UI state (filters, tabs, pagination).
