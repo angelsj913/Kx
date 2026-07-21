@@ -1,0 +1,32 @@
+name: Notify Figma on Homepage Change
+
+# Vercel은 GitHub 연동으로 main 병합 시 자동 배포된다(별도 워크플로 불필요).
+# Figma REST API는 레이어/디자인을 코드로 다시 그려주는 쓰기 기능이 없어서
+# "배포처럼 완전 자동으로 디자인까지 동기화"는 불가능하다 — 그건 Figma
+# 플러그인 실행 환경(Cursor의 Figma MCP)에서만 할 수 있다. 대신 이 워크플로는
+# 홈페이지 관련 코드가 main에 병합될 때마다 Figma 파일에 알림 댓글을 남겨서,
+# 디자이너가 코드가 바뀐 걸 즉시 알 수 있게 한다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/app/page.tsx"
+      - "src/app/layout.tsx"
+      - "src/components/landing/**"
+
+jobs:
+  notify-figma:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Notify Figma file
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
+          FIGMA_FILE_KEY: ${{ vars.FIGMA_FILE_KEY }}
+          HOMEPAGE_DEPLOY_URL: ${{ vars.HOMEPAGE_DEPLOY_URL }}
+        run: node scripts/figma-notify.mjs

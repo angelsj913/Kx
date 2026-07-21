@@ -13,6 +13,7 @@
     "lint": "eslint",
     "rag:index:zeff": "npx tsx scripts/index-zeff-rag.mjs",
     "rag:prepare-qa-source": "node scripts/prepare-rag-qa-source.mjs",
+    "figma:notify": "node scripts/figma-notify.mjs",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:build:win": "electron-builder --win --publish never && node scripts/copy-win-installer-alias.cjs",
