@@ -26,6 +26,9 @@ const PLACEHOLDERS: Record<string, PH> = {
   },
   lecture: { en: "e.g. https://www.youtube.com/watch?v=..." },
   audio: {
+    en: "Attach a class/lecture recording (or record), then tap organize.",
+  },
+  presentation: {
     en: "e.g. Write a 5-minute speech on the theme 'our part in protecting the environment.'",
   },
   "lecture-notes": { en: "e.g. Paste today's microeconomics supply-and-demand notes…" },

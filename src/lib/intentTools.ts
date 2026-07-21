@@ -101,31 +101,41 @@ export function detectQuickToolFromText(text: string): string | null {
 
   // ── 이미지 생성 (math-graph의 "그려줘"와 겹치지 않도록 그림/이미지/사진 등
   // 명시적 명사가 있을 때만 매칭한다) ──
+  const solidShapeNounEarly =
+    /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체/.test(t) ||
+    /\b(pyramid|cube|cuboid|prism|cylinder|cone|tetrahedron|polyhedron)\b/i.test(t);
   const hasImageNoun =
-    /그림|이미지|사진|삽화|일러스트(레이션)?|아이콘|로고|캐릭터/.test(t) ||
-    /\b(image|picture|photo|illustration|artwork|icon|logo)\b/i.test(t);
+    /그림|이미지|사진|삽화|일러스트(레이션)?|아이콘|로고|캐릭터|고양이|강아지|풍경|인물/.test(t) ||
+    /\b(image|picture|photo|illustration|artwork|icon|logo|cat|dog|landscape|portrait)\b/i.test(t);
   const wantsImageGen =
     (hasImageNoun && /(그려|만들|생성|디자인)/.test(t)) ||
     /\b(draw|generate|create|make)\b.*\b(image|picture|photo|illustration|artwork|icon|logo)\b/i.test(
       t,
-    );
+    ) ||
+    // "고양이 그려줘"처럼 그림 명사 없이 그려줘만 있어도, 그래프/수식/입체도형 단서가 없으면 이미지로
+    (/(그려\s*줘|그려\s*주세요|그려줘)/.test(t) &&
+      !solidShapeNounEarly &&
+      !/그래프|함수|방정식|좌표|plot|graph|f\s*\(/i.test(t) &&
+      !/[a-zA-Z]\s*=\s*[^=]/.test(t));
   if (wantsImageGen) return "image-gen";
 
   // ── 수학 그래프 / 3D 도형 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
   const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
   const wants3DExplicit = /\b3d\b/i.test(t) || /입체/.test(t) || /\bsolid\s*shape\b/i.test(t);
   // 삼각뿔·정육면체 등은 함수식이 없어도 그 자체로 3D 입체 요청이 명확한 명사들.
-  const solidShapeNoun =
-    /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체/.test(t) ||
-    /\b(pyramid|cube|cuboid|prism|cylinder|cone|tetrahedron|polyhedron)\b/i.test(t);
-  const wantsGraph =
+  const solidShapeNoun = solidShapeNounEarly;
+  const wantsDrawVerb =
     /그래프|그려\s*줘|그려\s*주세요|그리기|시각화/.test(t) ||
+    /\b(plot|graph|visuali[sz]e|draw)\b/i.test(t);
+  // "3D"/"입체" 단독(3D 프린터 등)은 제외 — 그래프·도형 단서와 함께일 때만
+  const wantsGraph =
+    /그래프/.test(t) ||
     /\b(plot|graph|visuali[sz]e)\b/i.test(t) ||
-    (hasEquationShape && /(그려|시각화|보여)/.test(t)) ||
+    (hasEquationShape && /(그려|시각화|보여|그리기)/.test(t)) ||
     (hasEquationShape && /\b(plot|graph|draw|visuali[sz]e|show)\b/i.test(t)) ||
-    wants3DExplicit ||
-    (solidShapeNoun && /(만들|그려|생성|보여)/.test(t)) ||
-    (solidShapeNoun && /\b(make|create|draw|generate|show)\b/i.test(t));
+    (wants3DExplicit && (wantsDrawVerb || solidShapeNoun || hasEquationShape)) ||
+    (solidShapeNoun && /(만들|그려|생성|보여|그리기)/.test(t)) ||
+    (solidShapeNoun && /\b(make|create|draw|generate|show|plot)\b/i.test(t));
   if (wantsGraph) return "math-graph";
 
   // ── 수학 풀이 (검산·교차검증이 붙는 전용 도구라, 자연스러운 표현도 최대한 걸리게 한다) ──
@@ -160,14 +170,25 @@ export function toolIntentLabel(toolId: string): string {
     ppt: "PPT 파일 생성",
     excel: "엑셀 파일 생성",
     "word-doc": "문서 작성",
+    bizdoc: "문서 작성",
     presentation: "발표문 작성",
     "video-summary": "영상 요약",
+    lecture: "강의 영상 요약",
+    "lecture-notes": "강의 노트",
+    "lecture-chat": "강의 채팅",
     "note-a4": "A4 노트",
     "exam-maker": "시험지",
+    "exam-analysis": "시험지 분석",
+    "exam-similarity": "유사도 분석",
+    "similar-problems": "유사문제 생성",
     "math-solve": "수학 풀이",
     "math-graph": "그래프 생성",
     "image-gen": "이미지 생성",
     "doc-translate": "문서 번역",
+    "doc-convert": "문서 변환",
+    "research-draft": "논문 초안",
+    audio: "음성 정리",
+    agent: "에이전트",
   };
   return map[toolId] ?? toolId;
 }

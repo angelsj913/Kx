@@ -409,9 +409,13 @@ export async function POST(request: Request) {
             quickTool?.inputType === "image" ||
             quickTool?.inputType === "audio";
 
-          // 영상 요약: YouTube oEmbed 메타 보강
+          // 영상 URL 도구: YouTube oEmbed 메타 보강
           let toolText = text;
-          if (quickToolId === "video-summary") {
+          if (
+            quickToolId === "video-summary" ||
+            quickToolId === "lecture" ||
+            quickToolId === "lecture-chat"
+          ) {
             send({
               type: "status",
               key: "status.quicktool.generating",
@@ -451,13 +455,15 @@ export async function POST(request: Request) {
             modelTier,
             audio:
               quickTool?.inputType === "audio"
-                ? inlineFiles[0]
+                ? audioFile ?? inlineFiles.find((f) => f.mimeType.startsWith("audio/"))
                 : useMixed
                   ? audioFile
                   : undefined,
             images:
               quickTool?.inputType === "image"
-                ? inlineFiles
+                ? imageLike.length
+                  ? imageLike
+                  : inlineFiles.filter((f) => f.mimeType.startsWith("image/"))
                 : useMixed
                   ? imageLike.length
                     ? imageLike

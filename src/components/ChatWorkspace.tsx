@@ -628,6 +628,14 @@ export default function ChatWorkspace({
     if (spokenTurn && !text) return;
     if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
     if (requiresAttachment && pending.length === 0) return;
+    if (
+      !spokenTurn &&
+      activeQuickTool?.id === "exam-similarity" &&
+      pending.filter((p) => p.file.type.startsWith("image/")).length < 2
+    ) {
+      setError(t("chat.examSimilarityNeedTwo"));
+      return;
+    }
     // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
 
     pushTerminal(`$ zeff run — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
@@ -719,8 +727,12 @@ export default function ChatWorkspace({
 
   const requiresAttachment =
     activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
+  const examSimilarityReady =
+    activeQuickTool?.id !== "exam-similarity" ||
+    pending.filter((p) => p.file.type.startsWith("image/")).length >= 2;
   const canSend =
     !loading &&
+    examSimilarityReady &&
     (requiresAttachment
       ? pending.length > 0
       : draft.trim().length > 0 || pending.length > 0);
@@ -1155,6 +1167,11 @@ export default function ChatWorkspace({
               {activeQuickTool.id === "exam-maker" && (
                 <span className="text-[11px] text-slate-500">
                   {t("quicktool.examMaker.placeholder")}
+                </span>
+              )}
+              {activeQuickTool.id === "exam-similarity" && (
+                <span className="text-[11px] text-slate-500">
+                  {t("chat.examSimilarityNeedTwo")}
                 </span>
               )}
             </div>
