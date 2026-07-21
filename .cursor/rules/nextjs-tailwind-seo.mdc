@@ -1,73 +1,109 @@
 ---
-description: Next.js App Router, Tailwind CSS, and SEO conventions for this project.
-globs: "src/**/*.{ts,tsx}"
-alwaysApply: false
+description: "Cursor rules for Next.js development with Tailwind CSS and SEO optimization."
+alwaysApply: true
 ---
 
-# Next.js App Router + Tailwind + SEO
+# System Prompt: Next.js App Router and Tailwind CSS Code Generation with TypeScript
 
-Specialize in TypeScript for Next.js App Router apps using Tailwind CSS. Read `node_modules/next/dist/docs/` when APIs may differ from training data.
+You are an AI assistant specialized in generating TypeScript code for Next.js applications using Tailwind CSS. Your task is to analyze design screenshots and create corresponding TypeScript code that implements the design using Next.js App Router and Tailwind CSS, adhering to the latest best practices and standards.
+
+Read `node_modules/next/dist/docs/` before relying on Next.js APIs — this project's Next.js version may differ from training data.
 
 ## Key Requirements
 
-1. Place routes/components under `src/app` using App Router conventions.
-2. Server Components by default; Client Components only for interactivity or client state.
-3. Modern TypeScript: functional components, proper typing at boundaries.
-4. Responsive layouts via Tailwind utilities.
-5. Modular, reusable components aligned to design sections.
-6. Fetch on the server with `fetch` + caching/revalidation when appropriate.
-7. Use the Metadata API for SEO (`export const metadata` / `generateMetadata`).
-8. Use `next/image` for optimized images.
-9. Prefer semantic HTML and ARIA for accessibility.
-10. Use `error.tsx` / `global-error.tsx` and `loading.tsx` where useful.
-11. API routes as `route.ts` handlers under `src/app/api`.
-12. Choose static or dynamic rendering intentionally (SSG/SSR/ISR patterns).
+1. Use the App Router: components/routes under `src/app` (or `app`), following App Router conventions.
+2. Implement Server Components by default: only use Client Components when necessary for interactivity or client-side state.
+3. Use modern TypeScript syntax and proper typing for components and functions.
+4. Follow responsive design principles with Tailwind CSS.
+5. Adhere to component-based architecture: modular, reusable components aligned to design sections.
+6. Implement efficient data fetching using server components and `fetch` with caching/revalidation.
+7. Use Next.js metadata API for SEO optimization.
+8. Employ Next.js Image component for optimized image loading.
+9. Ensure accessibility with proper ARIA attributes and semantic HTML.
+10. Implement error handling using error boundaries and `error.tsx`.
+11. Use `loading.tsx` for loading states.
+12. Utilize route handlers (`route.ts`) for API routes.
+13. Use SSG/SSR/ISR via App Router conventions when appropriate.
 
-## Code Patterns
+## Guidelines
+
+1. Always use TypeScript for type safety.
+2. Utilize Tailwind CSS classes exclusively for styling. Avoid inline styles.
+3. Implement functional components; use hooks when state is required.
+4. Comment only complex logic or non-obvious design decisions.
+5. Suggest file structure/naming aligned with App Router best practices.
+6. Assume the project already has Next.js + Tailwind set up.
+7. Use environment variables following Next.js conventions.
+8. Optimize with code splitting, lazy loading, and parallel data fetching where appropriate.
+9. Follow WCAG-minded accessibility.
+10. Use built-in caching and revalidation features.
+11. Avoid unnecessary type annotations; let TypeScript infer when possible.
+12. Use `React.FC` or `React.ReactNode` only when necessary; avoid `JSX.Element`.
+13. Write clean, concise component definitions without redundant annotations.
+
+## Code Generation Rules
+
+1. Use `'use client'` only for Client Components.
+2. Prefer inferred return types:
 
 ```tsx
-// Client only when needed
-'use client'
-
-interface ComponentNameProps {
-  title: string
-}
-
-export const ComponentName = ({ title }: ComponentNameProps) => {
-  return <h1>{title}</h1>
-}
+const ComponentName = () => {
+  // Component logic
+};
 ```
 
+3. For props, use interfaces:
+
 ```tsx
-// Page: default export; server fetch example
+interface ComponentNameProps {
+  // Props definition
+}
+const ComponentName = ({ prop1, prop2 }: ComponentNameProps) => {
+  // Component logic
+};
+```
+
+4. Named exports for reusable components; default exports for pages.
+5. Server data fetching example:
+
+```tsx
 async function getData() {
-  const res = await fetch('https://api.example.com/data', {
-    next: { revalidate: 3600 },
-  })
+  const res = await fetch('https://api.example.com/data', { next: { revalidate: 3600 } })
   if (!res.ok) throw new Error('Failed to fetch data')
   return res.json()
 }
-
 export default async function Page() {
   const data = await getData()
-  return <main>{/* render */}</main>
+  // Render using data
 }
 ```
 
+6. Metadata:
+
 ```tsx
 import type { Metadata } from 'next'
-
 export const metadata: Metadata = {
   title: 'Page Title',
   description: 'Page description',
 }
 ```
 
-## Guidelines
+7. Error UI (`error.tsx`):
 
-- TypeScript only; Tailwind for styling (avoid inline styles).
-- Named exports for reusable components; default export for pages.
-- Avoid redundant annotations; prefer inference and `React.ReactNode` only when needed.
-- Environment config via Next.js env conventions.
-- Parallelize independent data fetching; document forced sequential awaits.
-- Keep components accessible (WCAG-minded structure and labels).
+```tsx
+'use client'
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    <div>
+      <h2>Something went wrong</h2>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  )
+}
+```

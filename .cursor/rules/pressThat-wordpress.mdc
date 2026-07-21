@@ -1,0 +1,25 @@
+---
+description: "Cursor rules for WordPress development on macOS (PressThat)."
+alwaysApply: true
+---
+
+# PressThat
+
+This project is called PressThat.
+
+PressThat is a system tray app that connects to your WordPress website to create and view draft posts.
+
+After first installing the app, you need to configure it with your website details. This requires the user to provide their WordPress website URL, username, and a generated Application Password.
+
+Users can generate an Application Password in their WordPress dashboard at the bottom of the "Users -> Profile" page. This password is unique and can be easily revoked at any time.
+
+## New user experience (NUX)
+
+Here's a quick flow for how the new user experience (NUX) will work:
+
+1. On first launch, show an onboarding/config screen (not the main tray UI).
+2. Ask for WordPress site URL, username, and Application Password.
+3. Validate credentials against the WordPress REST API before saving.
+4. Persist credentials securely in the OS keychain / secure storage (never plain text in repo or logs).
+5. After successful setup, open the system tray experience for creating/viewing draft posts.
+6. Allow revisiting settings later to update or revoke connection details.
