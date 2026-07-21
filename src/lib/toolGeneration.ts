@@ -12,6 +12,7 @@ import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/
 import { geminiGenerateForTool, geminiGenerateImage, MissingApiKeyError, SafetyRefusalError } from "./gemini";
 import { openRouterGenerateImage } from "./openaiCompat";
 import { pollinationsGenerateImage } from "./pollinations";
+import { buildImagePrompt } from "./imagePrompt";
 import { noteProviderFailure } from "./providerHealth";
 import { imageGenerationCandidates, type ModelTier, type Provider } from "./models";
 import {
@@ -434,7 +435,8 @@ export async function runToolGeneration(
       model = "lanczos3-2x";
     } else {
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
-      const prompt = input.text!.trim();
+      const prompt = buildImagePrompt(input.text!.trim());
+      pipelineInfo("image-gen/generate", "prompt", prompt.slice(0, 200));
       const candidates = await imageGenerationCandidates();
       if (candidates.length === 0) {
         pipelineError("image-gen/candidates", "no providers with API keys");

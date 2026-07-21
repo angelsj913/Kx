@@ -36,6 +36,7 @@ export async function pollinationsGenerateImage(input: {
   url.searchParams.set("height", String(height));
   url.searchParams.set("nologo", "true");
   url.searchParams.set("model", model);
+  url.searchParams.set("enhance", "true");
   // 캐시 회피 — 동일 프롬프트 재시도 시 새 결과
   url.searchParams.set("seed", String(Date.now() % 1_000_000_000));
 

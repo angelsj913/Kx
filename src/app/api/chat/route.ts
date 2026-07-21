@@ -490,7 +490,9 @@ export async function POST(request: Request) {
 
           // 대화 맥락 자동 이어받기: 최근 대화를 참고 컨텍스트로 덧붙이고,
           // 요청이 이를 가리키면 반영·아니면 무시하도록 모델이 스스로 판단하게 한다.
-          if (text) {
+          // 이미지 생성은 프롬프트가 곧 픽셀이므로 이전 대화(노트북 등)가 섞이면
+          // 요청과 무관한 이미지가 나온다 — 현재 사용자 문장만 사용한다.
+          if (text && quickToolId !== "image-gen" && quickToolId !== "image-upscale") {
             const prior = await prisma.chatHistory.findMany({
               where: { sessionId: resolvedSessionId },
               orderBy: { createdAt: "desc" },
