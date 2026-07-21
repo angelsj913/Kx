@@ -69,27 +69,54 @@ const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
 const CHAT_MIN = 320;
 
-/** 에이전트 작업 단계 (status key → 계획 단계) */
+/** 백엔드 라우트 / 도구 오케스트레이션 단계 (status key → 계획 단계) */
 const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
   {
     id: "select",
     label: "status.pipeline.select",
-    keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
+    keys: [
+      "status.agent.selecting",
+      "status.analyzing",
+      "status.routing",
+      "status.route.start",
+      "status.route.classify",
+    ],
   },
   {
     id: "research",
     label: "status.pipeline.research",
-    keys: ["status.researching", "status.context", "status.reading"],
+    keys: [
+      "status.researching",
+      "status.context",
+      "status.reading",
+      "status.route.orchestrate",
+      "status.route.orchestrate.tool",
+    ],
   },
   {
     id: "generate",
     label: "status.pipeline.generate",
-    keys: ["status.generating", "status.writing", "status.tool", "status.building"],
+    keys: [
+      "status.generating",
+      "status.writing",
+      "status.tool",
+      "status.building",
+      "status.route.generate",
+      "status.route.generate.try",
+    ],
   },
   {
     id: "finalize",
     label: "status.pipeline.finalize",
-    keys: ["status.finalizing", "status.saving", "status.done"],
+    keys: [
+      "status.finalizing",
+      "status.saving",
+      "status.done",
+      "status.route.verify.light",
+      "status.route.verify.deep",
+      "status.route.complete",
+      "status.route.complete.refined",
+    ],
   },
 ];
 

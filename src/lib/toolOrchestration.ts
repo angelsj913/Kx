@@ -1,3 +1,8 @@
+/**
+ * 도구 오케스트레이션 루프 — 백엔드 라우트(조건부)에서 공유.
+ * 모델이 knowledge_search / calculator / web_search / zeff_tool 을
+ * 골라 연쇄 호출하고, zeff_tool 산출물이면 즉시 종결한다.
+ */
 import type { ChatMessage } from "@/lib/gemini";
 import type { ModelTier, Provider } from "@/lib/models";
 import { AGENT_MODELS } from "@/lib/models";
@@ -13,6 +18,7 @@ import {
 } from "@/lib/ai";
 import { markProviderHealthy, noteProviderFailure } from "@/lib/providerHealth";
 import { stripHanja } from "@/lib/textSanitize";
+import { detectQuickToolFromText } from "@/lib/intentTools";
 import {
   buildAgentTools,
   toOpenAITools,
@@ -22,7 +28,7 @@ import {
 
 const MAX_ITERS = 5;
 
-const AGENT_SYSTEM = `너는 ZEFF의 도구 사용 에이전트다. 사용자의 요청을 이루기 위해 필요한 도구를 스스로 골라 호출하고, 결과를 종합해 한국어로 정확하게 답한다.
+const ORCHESTRATION_SYSTEM = `너는 ZEFF의 도구 사용 에이전트다. 사용자의 요청을 이루기 위해 필요한 도구를 스스로 골라 호출하고, 결과를 종합해 한국어로 정확하게 답한다.
 
 규칙:
 - 도구가 필요 없으면 바로 답한다. 필요하면 적절한 도구를 호출한다.
@@ -31,25 +37,23 @@ const AGENT_SYSTEM = `너는 ZEFF의 도구 사용 에이전트다. 사용자의
 - 근거가 있으면 출처 번호로 표시하고, 모르면 모른다고 말한다.
 - 답변 언어(매우 중요): 사용자가 방금 보낸 메시지와 같은 언어로만 답한다. 언어를 섞지 않는다. 입력 언어를 판별할 수 없거나 지원 언어(한/영/일/중/러/독/불/스/아랍어)에 없으면 영어로 답한다.`;
 
-export interface AgentRouteResult {
+export interface OrchestrationResult {
   text: string;
   provider: string;
   model: string;
   attempts: number;
   toolsUsed: string[];
-  /** zeff_tool 종결 시 산출물(라우트가 이 필드로 히스토리를 저장) */
   artifact?: ArtifactPayload;
   interrupted?: boolean;
 }
 
 /** ChatMessage 히스토리 + 현재 입력 → OpenAI tool 메시지 배열 */
 function toToolMessages(history: ChatMessage[], text: string): OAIToolMessage[] {
-  const msgs: OAIToolMessage[] = [{ role: "system", content: AGENT_SYSTEM }];
+  const msgs: OAIToolMessage[] = [{ role: "system", content: ORCHESTRATION_SYSTEM }];
   for (const m of history) {
     if (!m.text) continue;
     msgs.push({ role: m.role === "model" ? "assistant" : "user", content: m.text });
   }
-  // 마지막 사용자 입력이 히스토리에 이미 포함돼 있지 않으면 추가
   const last = history[history.length - 1];
   if (!last || last.role !== "user" || last.text !== text) {
     if (text) msgs.push({ role: "user", content: text });
@@ -57,8 +61,7 @@ function toToolMessages(history: ChatMessage[], text: string): OAIToolMessage[] 
   return msgs;
 }
 
-/** AGENT_MODELS를 순회하며 툴 턴 1회 성공시킨다(제공자 폴백). */
-async function agentTurnWithFallback(
+async function toolTurnWithFallback(
   messages: OAIToolMessage[],
   tools: ReturnType<typeof toOpenAITools>,
   signal: AbortSignal | undefined,
@@ -67,7 +70,7 @@ async function agentTurnWithFallback(
   const candidates = filterCandidatesByAvailableKeys(AGENT_MODELS);
   if (candidates.length === 0) {
     throw new Error(
-      "에이전트를 실행할 AI 키가 없습니다. GROQ / CEREBRAS / MISTRAL / SAMBANOVA / DEEPSEEK 키 중 하나 이상을 설정하세요.",
+      "도구 오케스트레이션을 실행할 AI 키가 없습니다. GROQ / CEREBRAS / MISTRAL / SAMBANOVA / DEEPSEEK 키 중 하나 이상을 설정하세요.",
     );
   }
   let attempt = 0;
@@ -91,16 +94,53 @@ async function agentTurnWithFallback(
       noteProviderFailure(m.provider as Provider, err);
     }
   }
-  throw lastErr ?? new Error("에이전트 모델 호출에 모두 실패했습니다.");
+  throw lastErr ?? new Error("오케스트레이션 모델 호출에 모두 실패했습니다.");
 }
 
-/** 최종 답변을 문장/토막 단위로 흘려보낸다(Variant A — 추가 모델 호출 없음). */
 function streamChunks(text: string, onDelta: (d: string) => void) {
   const parts = text.match(/[^\n]*\n|[^\n]+$/g) ?? [text];
   for (const p of parts) onDelta(p);
 }
 
-export async function runAgentRoute(args: {
+/**
+ * 조건부(B) 진입 — 지식/웹/계산·또는 "조사+생성" 복합 요청일 때만 true.
+ * 단순 "PPT 만들어줘"는 false → 기존 퀵툴 자동감지 경로 유지.
+ */
+export function needsToolOrchestration(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+
+  const wantsKnowledge =
+    /서재|지식\s*검색|내\s*(자료|문서)|업로드한|색인된|library|knowledge\s*base|from\s*my\s*(docs?|library|files?)/i.test(
+      t,
+    ) || /(자료|문서|파일)\s*(에서|중에)\s*(찾|검색|요약)/.test(t);
+
+  const wantsWeb =
+    /최신|오늘\s*기준|뉴스|시세|웹\s*검색|인터넷\s*검색|\b(latest|news|search\s*the\s*web|look\s*up\s*online)\b/i.test(
+      t,
+    );
+
+  const wantsCalc =
+    /\d+\s*[+*\-×÷/]\s*\d+/.test(t) &&
+    /(계산|얼마|결과는|calculate|compute|what\s+is)/i.test(t);
+
+  const createTool = detectQuickToolFromText(t);
+  const wantsResearchThenCreate =
+    !!createTool &&
+    (wantsKnowledge ||
+      wantsWeb ||
+      /찾[아아서여]|검색(해서|한\s*뒤|후)?|요약해서|바탕으로|기반으로|그걸로|그것으로/.test(t) ||
+      /\b(find|search|summarize).{0,40}\b(then|and)\b.{0,40}\b(make|create|build|generate)\b/i.test(
+        t,
+      ));
+
+  if (wantsResearchThenCreate) return true;
+  if (wantsKnowledge || wantsWeb) return true;
+  if (wantsCalc && !createTool) return true;
+  return false;
+}
+
+export async function runToolOrchestration(args: {
   text: string;
   messages: ChatMessage[];
   modelTier?: ModelTier;
@@ -110,7 +150,7 @@ export async function runAgentRoute(args: {
   onAttempt?: (info: AttemptInfo) => void;
   onDelta: (delta: string) => void;
   signal?: AbortSignal;
-}): Promise<AgentRouteResult> {
+}): Promise<OrchestrationResult> {
   const specs = buildAgentTools();
   const toolSchemas = toOpenAITools(specs);
   const byName = new Map(specs.map((s) => [s.name, s]));
@@ -139,12 +179,11 @@ export async function runAgentRoute(args: {
       };
     }
 
-    const turn = await agentTurnWithFallback(msgs, toolSchemas, args.signal, args.onAttempt);
+    const turn = await toolTurnWithFallback(msgs, toolSchemas, args.signal, args.onAttempt);
     totalAttempts += turn.attempts;
     lastProvider = turn.provider;
     lastModel = turn.model;
 
-    // 도구를 부르지 않으면 이 content가 최종 답변
     if (turn.toolCalls.length === 0) {
       const finalText = stripHanja(turn.content).trim() || "요청을 처리했어요.";
       streamChunks(finalText, args.onDelta);
@@ -157,7 +196,6 @@ export async function runAgentRoute(args: {
       };
     }
 
-    // 어시스턴트 도구 호출 메시지 기록
     msgs.push({
       role: "assistant",
       content: turn.content || null,
@@ -181,7 +219,6 @@ export async function runAgentRoute(args: {
       const outcome = await spec.run(call.arguments, ctx);
       toolsUsed.push(call.name);
       if (outcome.terminal) {
-        // zeff_tool 등 산출물 생성 — 즉시 종료(모델에 되먹이지 않음)
         return {
           text: outcome.artifact.replyText,
           provider: outcome.artifact.provider,
@@ -195,7 +232,6 @@ export async function runAgentRoute(args: {
     }
   }
 
-  // 반복 상한 도달 — 도구 없이 마무리 답변을 강제(스트리밍 재사용)
   const foldedHistory: ChatMessage[] = msgs
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
@@ -203,7 +239,7 @@ export async function runAgentRoute(args: {
       text: typeof m.content === "string" ? m.content : "",
     }));
   const final = await chatReplyWithFallbackStream({
-    systemInstruction: AGENT_SYSTEM,
+    systemInstruction: ORCHESTRATION_SYSTEM,
     messages: foldedHistory,
     candidates: AGENT_MODELS,
     onDelta: args.onDelta,

@@ -22,7 +22,13 @@ export async function GET() {
     create: { userId: session.user.id },
   });
 
-  return NextResponse.json({ settings });
+  const enabledQuickTools = Array.isArray(settings.enabledQuickTools)
+    ? (settings.enabledQuickTools as string[]).filter((id) => id !== "agent")
+    : settings.enabledQuickTools;
+
+  return NextResponse.json({
+    settings: { ...settings, enabledQuickTools },
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -52,7 +58,7 @@ export async function PATCH(request: Request) {
   }
   if (Array.isArray(body?.enabledQuickTools)) {
     data.enabledQuickTools = body.enabledQuickTools.filter(
-      (v: unknown): v is string => typeof v === "string"
+      (v: unknown): v is string => typeof v === "string" && v !== "agent",
     );
   }
 

@@ -1,10 +1,11 @@
 /**
- * ZEFF 백엔드 라우트 — 다중 제공자 극대화
+ * ZEFF 백엔드 라우트 — 다중 제공자 + 조건부 도구 오케스트레이션
  *
- * 1. classify  — 전문 에이전트 + 의도 힌트 + 가용 제공자 풀 표시
- * 2. generate  — 제공자 라운드로빈 모델 체인 (Groq↔Cerebras↔Mistral↔OR↔DeepSeek↔Gemini)
- * 3. verify    — priority/top 에서 생성과 **다른 제공자** 우선 검수
- * 4. complete  — 최종 메타
+ * 1. classify     — 의도 힌트 + 가용 제공자 풀 + 오케스트레이션 필요 여부
+ * 2. orchestrate  — (조건부) 도구 연쇄 호출; zeff_tool 산출물이면 즉시 완료
+ * 3. generate     — 오케스트레이션 미사용 시 제공자 라운드로빈 스트리밍
+ * 4. verify       — priority/top 에서 생성과 **다른 제공자** 우선 검수
+ * 5. complete     — 최종 메타
  */
 import { chatReplyWithFallback, chatReplyWithFallbackStream, type AttemptInfo } from "./ai";
 import { stripHanja } from "./textSanitize";
@@ -18,8 +19,13 @@ import {
 } from "./models";
 import type { ChatMessage } from "./gemini";
 import { listConfiguredProviders } from "./openaiCompat";
+import {
+  needsToolOrchestration,
+  runToolOrchestration,
+} from "./toolOrchestration";
+import type { ArtifactPayload } from "./agentTools";
 
-export type RouteStage = "classify" | "generate" | "verify" | "complete";
+export type RouteStage = "classify" | "orchestrate" | "generate" | "verify" | "complete";
 
 export interface RouteStageEvent {
   stage: RouteStage;
@@ -42,6 +48,8 @@ export interface BackendRouteResult {
   routeLabel: string;
   intentTool?: string | null;
   providersTried?: string[];
+  toolsUsed?: string[];
+  artifact?: ArtifactPayload;
   /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 (스트리밍 전용) */
   interrupted?: boolean;
 }
@@ -120,6 +128,8 @@ export async function runBackendRoute(args: {
   hasFiles: boolean;
   messages: ChatMessage[];
   modelTier?: ModelTier;
+  userId: string;
+  workspaceId?: string | null;
   extraSystemInstruction?: string;
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: string; stage: RouteStage }) => void;
@@ -135,17 +145,92 @@ export async function runBackendRoute(args: {
   stages.push("classify");
   const intentTool = detectQuickToolFromText(args.text);
   const pool = availableProviderSummary() || "none";
+  const shouldOrchestrate = needsToolOrchestration(args.text);
 
   args.onStage?.({
     stage: "classify",
     key: "status.route.classify",
-    detail: `${AGENT_ID}${intentTool ? ` · intent:${intentTool}` : ""} · keys:${pool}`,
+    detail: `${AGENT_ID}${intentTool ? ` · intent:${intentTool}` : ""}${
+      shouldOrchestrate ? " · tools" : ""
+    } · keys:${pool}`,
     agentId: AGENT_ID,
   });
 
+  // ── 2. orchestrate (조건부 B) ──
+  if (shouldOrchestrate) {
+    stages.push("orchestrate");
+    args.onStage?.({
+      stage: "orchestrate",
+      key: "status.route.orchestrate",
+      agentId: AGENT_ID,
+      detail: "tool loop",
+    });
+
+    const orch = await runToolOrchestration({
+      text: args.text,
+      messages: args.messages,
+      modelTier: tier,
+      userId: args.userId,
+      workspaceId: args.workspaceId,
+      signal: args.signal,
+      onDelta: (d) => args.onDelta?.(d),
+      onStage: (detail) =>
+        args.onStage?.({
+          stage: "orchestrate",
+          key: "status.route.orchestrate.tool",
+          agentId: AGENT_ID,
+          detail,
+        }),
+      onAttempt: (info) => {
+        providersTried.add(info.provider);
+        args.onAttempt?.({ ...info, agentId: AGENT_ID, stage: "orchestrate" });
+        args.onStage?.({
+          stage: "orchestrate",
+          key: "status.route.generate.try",
+          agentId: AGENT_ID,
+          provider: info.provider,
+          model: info.model,
+          detail: `tools ${info.provider}/${info.model} #${info.attemptNumber}`,
+        });
+      },
+    });
+    if (orch.provider) providersTried.add(orch.provider);
+
+    stages.push("complete");
+    args.onStage?.({
+      stage: "complete",
+      key: orch.artifact
+        ? "status.route.complete"
+        : orch.toolsUsed.length
+          ? "status.route.complete"
+          : "status.route.complete",
+      agentId: AGENT_ID,
+      provider: orch.provider,
+      model: orch.model,
+      detail: `tools:${orch.toolsUsed.join(",") || "none"} · tried:${[...providersTried].join("+")}`,
+    });
+
+    return {
+      text: stripHanja(orch.text),
+      agentId: AGENT_ID,
+      modelTier: tier,
+      provider: orch.provider,
+      model: orch.model,
+      attempts: orch.attempts,
+      refined: false,
+      stages,
+      routeLabel: `${tierRouteLabel(tier)}+orchestrate`,
+      intentTool,
+      providersTried: [...providersTried],
+      toolsUsed: orch.toolsUsed,
+      artifact: orch.artifact,
+      interrupted: orch.interrupted,
+    };
+  }
+
   const candidates = modelsForTier(tier, { multimodal: args.hasFiles });
 
-  // ── 2. generate ──
+  // ── 3. generate ──
   stages.push("generate");
   args.onStage?.({
     stage: "generate",
@@ -190,7 +275,7 @@ export async function runBackendRoute(args: {
   let refined = false;
   let verifyAttempts = 0;
 
-  // ── 3. verify ──
+  // ── 4. verify ──
   // 토큰 비증가 + 지연 최소화: standard 무검증, priority/top 도 구조화·중간 길이 초안은 스킵
   const draftLen = draft.text.trim().length;
   const looksStructured =
@@ -270,7 +355,7 @@ export async function runBackendRoute(args: {
     }
   }
 
-  // ── 4. complete ──
+  // ── 5. complete ──
   stages.push("complete");
   args.onStage?.({
     stage: "complete",

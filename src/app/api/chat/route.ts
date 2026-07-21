@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
-import { runAgentRoute } from "@/lib/agentRoute";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
@@ -13,6 +12,7 @@ import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption }
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
+import { needsToolOrchestration } from "@/lib/toolOrchestration";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
 import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
@@ -92,8 +92,13 @@ export async function POST(request: Request) {
   }
 
   // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
+  // 레거시 클라이언트/설정에 남은 agent 퀵툴은 무시 → 백엔드 라우트 오케스트레이션으로
+  if (quickToolId === "agent") quickToolId = null;
+
+  // 조사+생성 등 오케스트레이션이 필요한 복합 요청은 퀵툴 자동감지를 건너뛰고
+  // 백엔드 라우트 도구 루프로 보낸다. 단순 "PPT 만들어줘"는 기존처럼 퀵툴 직행.
   const autoDetectedTool = !quickToolId && text ? detectQuickToolFromText(text) : null;
-  if (autoDetectedTool) {
+  if (autoDetectedTool && !(text && needsToolOrchestration(text))) {
     quickToolId = autoDetectedTool;
   }
 
@@ -303,82 +308,7 @@ export async function POST(request: Request) {
       }
 
       try {
-        if (quickToolId === "agent") {
-          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 ──
-          send({
-            type: "status",
-            key: "status.route.start",
-            sessionId: resolvedSessionId,
-            detail: "agent",
-          });
-
-          const AGENT_HISTORY_LIMIT = 16;
-          const agentHistory = await prisma.chatHistory.findMany({
-            where: { sessionId: resolvedSessionId },
-            orderBy: { createdAt: "desc" },
-            take: AGENT_HISTORY_LIMIT,
-            select: { role: true, text: true },
-          });
-          agentHistory.reverse();
-          const agentMessages: ChatMessage[] = agentHistory.map((m) => ({
-            role: m.role === "model" ? "model" : "user",
-            text: m.text,
-          }));
-
-          const agentResult = await runAgentRoute({
-            text,
-            messages: agentMessages,
-            modelTier,
-            userId,
-            workspaceId: chatSession.workspaceId ?? null,
-            signal: request.signal,
-            onDelta: (delta) =>
-              send({ type: "delta", sessionId: resolvedSessionId, text: delta }),
-            onStage: (detail) =>
-              send({
-                type: "status",
-                key: "status.route.generate.try",
-                sessionId: resolvedSessionId,
-                detail,
-              }),
-            onAttempt: (info) =>
-              send({
-                type: "status",
-                key: "status.route.generate.try",
-                sessionId: resolvedSessionId,
-                detail: `${info.provider}/${info.model}`,
-              }),
-          });
-
-          const art = agentResult.artifact;
-          const assistantRow = await prisma.chatHistory.create({
-            data: {
-              sessionId: resolvedSessionId,
-              role: "model",
-              text: agentResult.text,
-              agentId: `agent:${agentResult.toolsUsed.join(",") || "none"}`,
-              provider: agentResult.provider,
-              modelName: agentResult.model,
-              attempts: agentResult.attempts,
-              outputType: art?.outputType,
-              structuredKind: art?.structuredKind,
-              resultData: art?.resultData,
-              fileUrl: art?.fileUrl,
-              fileName: art?.fileName,
-            },
-          });
-          await prisma.chatSession.update({
-            where: { id: resolvedSessionId },
-            data: { updatedAt: new Date() },
-          });
-
-          send({
-            type: "done",
-            sessionId: resolvedSessionId,
-            message: assistantRow,
-            interrupted: agentResult.interrupted,
-          });
-        } else if (quickToolId) {
+        if (quickToolId) {
           send({
             type: "status",
             key: "status.quicktool.generating",
@@ -561,6 +491,8 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
             extraSystemInstruction,
             signal: request.signal,
             onDelta: (delta) => {
@@ -584,15 +516,24 @@ export async function POST(request: Request) {
             },
           });
 
+          const art = result.artifact;
+          const toolsSuffix = result.toolsUsed?.length
+            ? `+tools:${result.toolsUsed.join(",")}`
+            : "";
           const assistantRow = await prisma.chatHistory.create({
             data: {
               sessionId: resolvedSessionId,
               role: "model",
               text: result.text,
-              agentId: `route:${result.agentId}${result.refined ? "+verify" : ""}`,
+              agentId: `route:${result.agentId}${result.refined ? "+verify" : ""}${toolsSuffix}`,
               provider: result.provider,
               modelName: result.model,
               attempts: result.attempts,
+              outputType: art?.outputType,
+              structuredKind: art?.structuredKind,
+              resultData: art?.resultData,
+              fileUrl: art?.fileUrl,
+              fileName: art?.fileName,
             },
           });
           await prisma.chatSession.update({
