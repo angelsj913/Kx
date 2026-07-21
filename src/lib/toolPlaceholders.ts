@@ -49,6 +49,9 @@ const PLACEHOLDERS: Record<string, PH> = {
   "image-gen": {
     en: "e.g. A laptop and coffee cup under a blue sky, watercolor style",
   },
+  agent: {
+    en: "e.g. Find A in my library, summarize it, and build a slide deck from it",
+  },
   "doc-translate": { en: "Type the text to translate, or attach a document." },
   "exam-maker": {
     en: "e.g. Grade 11 math · calculus · trig & limits · mostly multiple choice · medium-hard · 20 questions",

@@ -20,6 +20,7 @@ import {
   LineChart,
   ImagePlus,
   Languages,
+  Bot,
 } from "lucide-react";
 import type { StructuredKind } from "./structured";
 
@@ -866,6 +867,22 @@ export const TOOLS: ToolDef[] = [
     placeholder: "예) 파란 하늘 아래 놓인 노트북과 커피잔, 수채화 스타일",
     submitLabel: "이미지 생성",
     fileBaseName: "generated-image",
+  },
+  {
+    // (+) 메뉴(FEATURE_GROUPS)에는 넣지 않음 — 강제 도구 모드용 정의만 유지.
+    // 챗 라우트가 quickToolId==="agent"면 도구 오케스트레이션 루프로 보낸다.
+    id: "agent",
+    label: "에이전트",
+    short: "에이전트",
+    title: "AI 에이전트",
+    description: "AI가 스스로 도구(지식검색·웹검색·계산·생성)를 골라 연쇄로 처리합니다.",
+    icon: Bot,
+    inputType: "text",
+    outputType: "markdown",
+    systemInstruction: "",
+    placeholder: "예) 우리 서재에서 A를 찾아 요약하고, 그걸로 발표 자료 만들어줘",
+    submitLabel: "실행",
+    fileBaseName: "agent-result",
   },
   {
     id: "doc-translate",

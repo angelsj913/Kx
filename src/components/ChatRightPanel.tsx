@@ -312,7 +312,7 @@ export default function ChatRightPanel({
                 <span className="h-2 w-2 rounded-full bg-red-500/80" />
                 <span className="h-2 w-2 rounded-full bg-amber-400/80" />
                 <span className="h-2 w-2 rounded-full bg-emerald-500/80" />
-                <span className="ml-2">zeff · route</span>
+                <span className="ml-2">zeff · agent</span>
               </div>
               <ul className="max-h-full space-y-1 overflow-y-auto p-3">
                 {terminalLines.map((line) => (
