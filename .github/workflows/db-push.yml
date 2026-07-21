@@ -20,11 +20,14 @@ jobs:
       - name: prisma db push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DB_URL: ${{ vars.DATABASE_URL }}
         run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "::error::DATABASE_URL GitHub Actions secret is not set."
-            echo "Add it at: Settings → Secrets and variables → Actions → New repository secret"
-            echo "Value: Neon Postgres connection string (same as Vercel DATABASE_URL)"
+          URL="${DATABASE_URL:-${NEON_DATABASE_URL:-$DB_URL}}"
+          if [ -z "$URL" ]; then
+            echo "::error::DATABASE_URL is not available to this workflow."
+            echo "Add a repository secret named DATABASE_URL (Settings → Secrets and variables → Actions)."
+            echo "If you added an environment secret, add environment: <name> to the workflow job."
             exit 1
           fi
-          npx prisma db push --accept-data-loss
+          DATABASE_URL="$URL" npx prisma db push --accept-data-loss
