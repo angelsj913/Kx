@@ -1,15 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import ChatWorkspace from "@/components/ChatWorkspace";
-import LibraryView from "@/components/LibraryView";
-import InsightBoardView from "@/components/InsightBoardView";
-import RagView from "@/components/RagView";
 import { useSessions } from "@/lib/sessions";
 import { workspaceAccentCssVars } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
+
+const ChatWorkspace = dynamic(() => import("@/components/ChatWorkspace"), {
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-[var(--workspace-text-secondary)]">
+      …
+    </div>
+  ),
+});
+const LibraryView = dynamic(() => import("@/components/LibraryView"));
+const InsightBoardView = dynamic(() => import("@/components/InsightBoardView"));
+const RagView = dynamic(() => import("@/components/RagView"));
 
 export type AppView = "chat" | "library" | "insight" | "rag";
 
