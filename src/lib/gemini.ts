@@ -94,32 +94,42 @@ export interface GeneratedImage {
   mimeType: string;
 }
 
-/** 텍스트 프롬프트로 이미지를 생성한다(gemini-2.5-flash-image, 입력은 텍스트만 — 이미지 편집은 범위 밖). */
+/** 텍스트 프롬프트로 이미지를 생성한다(gemini-2.5-flash-image). 1회 재시도 포함. */
 export async function geminiGenerateImage(input: {
   prompt: string;
   systemInstruction?: string;
   apiKey?: string;
 }): Promise<GeneratedImage> {
-  const ai = client(input.apiKey);
+  const run = async (prompt: string): Promise<GeneratedImage> => {
+    const ai = client(input.apiKey);
+    const response = await ai.models.generateContent({
+      model: IMAGE_GEN_MODEL,
+      contents: prompt,
+      config: {
+        ...(input.systemInstruction ? { systemInstruction: input.systemInstruction } : {}),
+        responseModalities: [Modality.IMAGE],
+      },
+    });
 
-  const response = await ai.models.generateContent({
-    model: IMAGE_GEN_MODEL,
-    contents: input.prompt,
-    config: {
-      ...(input.systemInstruction ? { systemInstruction: input.systemInstruction } : {}),
-      responseModalities: [Modality.IMAGE],
-    },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-  if (!imagePart?.inlineData?.data) {
-    throw new Error("이미지를 생성하지 못했어요. 다른 표현으로 다시 시도해 주세요.");
-  }
-  return {
-    data: imagePart.inlineData.data,
-    mimeType: imagePart.inlineData.mimeType || "image/png",
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = parts.find((p) => p.inlineData?.data);
+    if (!imagePart?.inlineData?.data) {
+      throw new Error("이미지를 생성하지 못했어요. 다른 표현으로 다시 시도해 주세요.");
+    }
+    return {
+      data: imagePart.inlineData.data,
+      mimeType: imagePart.inlineData.mimeType || "image/png",
+    };
   };
+
+  try {
+    return await run(input.prompt);
+  } catch {
+    await new Promise((r) => setTimeout(r, 800));
+    const shorter =
+      input.prompt.length > 80 ? input.prompt.slice(0, 80).trim() : input.prompt;
+    return run(shorter);
+  }
 }
 
 // ── 채팅 ──

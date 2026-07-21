@@ -1,0 +1,10 @@
+[
+  { "id": "yt-id-1", "type": "youtube_id", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "expectedId": "dQw4w9WgXcQ" },
+  { "id": "yt-id-2", "type": "youtube_id", "url": "https://youtu.be/abc123XYZ", "expectedId": "abc123XYZ" },
+  { "id": "yt-id-3", "type": "youtube_id", "url": "https://www.youtube.com/embed/xyz789", "expectedId": "xyz789" },
+  { "id": "yt-id-4", "type": "youtube_id", "url": "https://www.youtube.com/shorts/short123", "expectedId": "short123" },
+  { "id": "yt-id-5", "type": "youtube_id", "url": "https://example.com/video", "expectedId": null },
+  { "id": "lecture-intent-1", "type": "intent", "text": "이 유튜브 강의 요약해줘 https://youtube.com/watch?v=test", "expectedTool": "video-summary" },
+  { "id": "lecture-intent-2", "type": "intent", "text": "youtube 영상 요약해줘", "expectedTool": "video-summary" },
+  { "id": "lecture-live-skip", "type": "live_skip", "note": "transcript fetch requires network" }
+]

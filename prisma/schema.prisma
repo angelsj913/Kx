@@ -57,6 +57,9 @@ model User {
   assignedBoardTasks   WorkBoardTask[]       @relation("WorkBoardAssignee")
   savedInsights        SavedInsight[]
   loginEvents          LoginEvent[]
+  answerFeedbacks      AnswerFeedback[]
+  aiProfile            UserAiProfile?
+  learnedQaPairs       LearnedQaPair[]
 }
 
 /** 친구 추천 성사 기록 — 추천인(referrer)이 피추천인(referred)을 데려온 1건. 피추천인당 1회. */
@@ -184,6 +187,52 @@ model ChatHistory {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
+}
+
+// ── AI 답변 피드백 (품질 측정·학습 루프) ──
+model AnswerFeedback {
+  id            String   @id @default(cuid())
+  userId        String
+  chatHistoryId String?
+  sessionId     String?
+  toolId        String?
+  rating        Int
+  reason        String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatHistoryId])
+  @@index([userId, createdAt])
+  @@index([toolId, rating])
+}
+
+// ── 사용자별 AI 선호 (자동 학습 1차) ──
+model UserAiProfile {
+  userId            String   @id
+  preferredTone     String?
+  preferredLanguage String?  @default("ko")
+  commonToolIds     String[] @default([])
+  negativePatterns  Json?
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── thumbs-up / 수정 답변 기반 학습 Q&A ──
+model LearnedQaPair {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String?
+  question    String   @db.Text
+  answer      String   @db.Text
+  source      String
+  embedding   Float[]
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model LibraryItem {

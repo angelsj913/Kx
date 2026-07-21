@@ -1,4 +1,5 @@
 import { MissingApiKeyError } from "./gemini";
+import { getProviderCooldownMinutes } from "./providerHealth";
 
 /** 원본 오류 → 사용자가 조치할 수 있는 한국어 메시지 */
 export function friendlyError(err: unknown): string {
@@ -33,7 +34,16 @@ export function friendlyError(err: unknown): string {
     lower.includes("generate_content_free_tier") ||
     (lower.includes("gemini") && lower.includes("quota"))
   ) {
-    return "Gemini 무료 할당량이 없습니다. OpenRouter 키로 자동 전환됩니다. Google AI Studio에서 할당량/결제를 열면 Gemini도 다시 쓸 수 있습니다.";
+    const mins = getProviderCooldownMinutes("gemini");
+    const cooldown =
+      mins != null && mins > 0
+        ? ` 약 ${mins}분 후 Gemini 이미지·PDF 분석을 다시 시도할 수 있습니다.`
+        : "";
+    return (
+      "Gemini 무료 할당량이 소진되었습니다. Google AI Studio에서 할당량을 확인하거나, 잠시 후 다시 시도해 주세요." +
+      cooldown +
+      " (텍스트 채팅은 다른 제공자로 자동 전환될 수 있습니다.)"
+    );
   }
 
   if (

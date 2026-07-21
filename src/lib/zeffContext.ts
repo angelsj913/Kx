@@ -1,16 +1,8 @@
-import { prisma } from "@/lib/prisma";
-import { topK } from "@/lib/rag";
-import { embedQuery } from "@/lib/embeddings";
-import { listWhere } from "@/lib/workspace";
-import { RAG_CANDIDATE_LIMIT } from "@/lib/ragSearch";
+import { retrieveChunks, type RankedChunk } from "@/lib/ragSearch";
+import { formatLearnedInstruction, retrieveLearnedContext } from "@/lib/userLearning";
+import { citationRules } from "@/lib/prompts/registry";
 
 const RAG_TOP_K = 4;
-
-interface EmbeddedChunk {
-  content: string;
-  embedding: number[];
-  libraryItemId: string;
-}
 
 // 응답 언어 규칙: UI 설정 언어를 강요하지 않고, "사용자가 방금 입력한 언어"에 맞춰
 // 답한다. 설정이 영어인데 한국어로 물으면 영어를 강요해 언어가 섞이던 버그를 없앤다.
@@ -22,7 +14,6 @@ const RESPONSE_LANGUAGE_LINE =
   "입력 언어를 판별할 수 없거나 지원 언어(한국어·영어·일본어·중국어·러시아어·독일어·프랑스어·스페인어·아랍어)에 없으면 영어로 답합니다. " +
   "결론을 먼저, 짧고 실무적으로 작성합니다.";
 
-// 생성한 데이터셋에서 추출한 운영 규칙의 런타임 반영본.
 function buildZeffSystemPrompt(): string {
   const responseLine = RESPONSE_LANGUAGE_LINE;
   return [
@@ -42,55 +33,68 @@ function buildZeffSystemPrompt(): string {
   ].join("\n");
 }
 
+export interface ZeffRuntimeContext {
+  instruction: string;
+  citations: RankedChunk[];
+}
+
 export async function buildZeffRuntimeInstruction(args: {
   userId: string;
   workspaceId: string | null;
   query: string;
   language?: string | null;
 }): Promise<string> {
+  const ctx = await buildZeffRuntimeContext(args);
+  return ctx.instruction;
+}
+
+export async function buildZeffRuntimeContext(args: {
+  userId: string;
+  workspaceId: string | null;
+  query: string;
+  language?: string | null;
+}): Promise<ZeffRuntimeContext> {
   const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt()}`];
   const query = args.query.trim();
+  let citations: RankedChunk[] = [];
 
-  if (!query) return sections.join("\n\n");
+  if (query) {
+    try {
+      const learned = await retrieveLearnedContext({ userId: args.userId, query, k: 2 });
+      const learnedBlock = formatLearnedInstruction(learned);
+      if (learnedBlock) sections.push(learnedBlock);
 
-  try {
-    const chunks: EmbeddedChunk[] = await prisma.documentChunk.findMany({
-      where: listWhere({ workspaceId: args.workspaceId }, args.userId),
-      take: RAG_CANDIDATE_LIMIT,
-      select: { content: true, embedding: true, libraryItemId: true },
-    });
+      const { ranked, empty } = await retrieveChunks({
+        userId: args.userId,
+        workspaceId: args.workspaceId,
+        query,
+        k: RAG_TOP_K,
+      });
 
-    if (chunks.length === 0) return sections.join("\n\n");
+      if (!empty && ranked.length) {
+        citations = ranked;
+        const context = ranked
+          .map((r) => `[${r.n}] ${r.title}\n${r.content}`)
+          .join("\n\n");
 
-    const { vector } = await embedQuery(query);
-    const ranked = topK(vector, chunks, RAG_TOP_K).filter((r) => r.score > 0.18);
-    if (ranked.length === 0) return sections.join("\n\n");
-
-    const itemIds = [...new Set(ranked.map((r) => r.item.libraryItemId))];
-    const items = await prisma.libraryItem.findMany({
-      where: { id: { in: itemIds } },
-      select: { id: true, title: true },
-    });
-    const titleOf = new Map<string, string>(items.map((item) => [item.id, item.title]));
-
-    const context = ranked
-      .map(
-        (r, i) =>
-          `[${i + 1}] ${titleOf.get(r.item.libraryItemId) ?? "문서"}\n${r.item.content}`,
-      )
-      .join("\n\n");
-
-    sections.push(
-      [
-        "[검색된 운영 컨텍스트]",
-        "아래는 현재 프로젝트에서 색인된 문서 중 질문과 가장 관련 있는 발췌문입니다.",
-        "이 컨텍스트가 질문과 직접 관련 있으면 우선 참고하고, 관련이 약하면 일반 규칙만 따릅니다.",
-        context,
-      ].join("\n"),
-    );
-  } catch (err) {
-    console.warn("[zeffContext] runtime context skipped:", err);
+        sections.push(
+          [
+            "[검색된 운영 컨텍스트]",
+            citationRules,
+            "아래는 현재 워크스페이스/서재에서 색인된 문서 중 질문과 관련 있는 발췌문입니다.",
+            "관련이 약하면 일반 규칙만 따르고, 근거가 없으면 답변에 명시합니다.",
+            context,
+          ].join("\n"),
+        );
+      } else if (!empty) {
+        sections.push(
+          "[검색 결과] 색인된 문서는 있으나 이번 질문과의 관련도가 낮습니다. 추측하지 말고 근거 부족을 명시하세요.",
+        );
+      }
+    } catch (err) {
+      console.warn("[zeffContext] runtime context skipped:", err);
+    }
   }
 
-  return sections.join("\n\n");
+  return { instruction: sections.join("\n\n"), citations };
 }

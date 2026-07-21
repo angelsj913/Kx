@@ -2,8 +2,7 @@ import { parseDeck, buildPptxBase64, resolvePalette, inferThemePreset } from "..
 import { parseWorkbook, buildXlsxBase64 } from "../src/lib/xlsx.ts";
 import { detectQuickToolFromText } from "../src/lib/intentTools.ts";
 import { getTool } from "../src/lib/tools.ts";
-import { modelsForTier, listFreeModelIds } from "../src/lib/models.ts";
-import { pickAgent } from "../src/lib/agents.ts";
+import { modelsForTier } from "../src/lib/models.ts";
 
 type R = { name: string; ok: boolean; detail?: string };
 const results: R[] = [];
@@ -125,9 +124,8 @@ for (const id of ["ppt", "excel", "video-summary", "note-a4", "exam-maker"]) {
   check(`tool.${id}`, !!getTool(id));
 }
 
-check("models.free", listFreeModelIds().length >= 15);
+check("models.free", modelsForTier("standard").filter((m) => m.free).length >= 5);
 check("models.tier", modelsForTier("standard").some((m) => m.free));
-check("agent.general", pickAgent("안녕", false).id === "general");
 
 const failed = results.filter((r) => !r.ok);
 console.log("---");

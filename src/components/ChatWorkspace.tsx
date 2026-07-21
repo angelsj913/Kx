@@ -36,6 +36,9 @@ import { useT, useAppLanguage, toolUiLabel, featureGroupLabel, type AppDictKey }
 import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
 import { getToolPlaceholder } from "@/lib/toolPlaceholders";
 import CopyButton from "@/components/CopyButton";
+import AnswerFeedbackButtons from "@/components/AnswerFeedbackButtons";
+import CitationCards, { parseCitationsFromResultData } from "@/components/CitationCards";
+import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSession } from "next-auth/react";
 import { useSpeech } from "@/lib/useSpeech";
@@ -68,6 +71,35 @@ const PANEL_MIN = 240;
 const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
 const CHAT_MIN = 320;
+
+function feedbackToolId(agentId?: string | null, outputType?: string): string | null {
+  if (agentId?.startsWith("quicktool:")) return agentId.replace("quicktool:", "");
+  if (outputType && outputType !== "chat") return outputType;
+  return null;
+}
+
+function ModelFeedback({
+  messageId,
+  sessionId,
+  agentId,
+  outputType,
+  streaming,
+}: {
+  messageId: string;
+  sessionId: string | null;
+  agentId?: string | null;
+  outputType?: string;
+  streaming?: boolean;
+}) {
+  if (streaming || messageId.startsWith("temp-")) return null;
+  return (
+    <AnswerFeedbackButtons
+      chatHistoryId={messageId}
+      sessionId={sessionId}
+      toolId={feedbackToolId(agentId, outputType)}
+    />
+  );
+}
 
 /** 에이전트 작업 단계 (status key → 계획 단계) */
 const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
@@ -118,6 +150,7 @@ interface Msg {
   streaming?: boolean;
   /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
   interrupted?: boolean;
+  agentId?: string | null;
 }
 
 interface StreamEvent {
@@ -433,7 +466,7 @@ export default function ChatWorkspace({
     const files = Array.from(e.target.files ?? []);
     const added: PendingFile[] = [];
     for (const f of files) {
-      if (f.size > 12 * 1024 * 1024) {
+      if (f.size > MAX_UPLOAD_BYTES) {
         setError(`${f.name}: ${t("chat.fileTooLarge")}`);
         continue;
       }
@@ -883,6 +916,13 @@ export default function ChatWorkspace({
                       }
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : m.outputType === "image" && m.fileUrl ? (
                   <div className="min-w-0 max-w-[min(100%,28rem)] flex-1">
@@ -903,6 +943,13 @@ export default function ChatWorkspace({
                         {t("chat.download")}
                       </a>
                     </div>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
@@ -913,6 +960,13 @@ export default function ChatWorkspace({
                       data={JSON.parse(m.resultData)}
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
@@ -924,6 +978,9 @@ export default function ChatWorkspace({
                       >
                         {m.text}
                       </ReactMarkdown>
+                      {!m.streaming && (
+                        <CitationCards citations={parseCitationsFromResultData(m.resultData)} />
+                      )}
                       {m.streaming && (
                         <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-slate-400 align-middle dark:bg-slate-500" />
                       )}
@@ -1023,6 +1080,13 @@ export default function ChatWorkspace({
                           )}
                       </div>
                     )}
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 )}
               </div>

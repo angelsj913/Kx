@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ppt-parse-1",
+    "type": "ppt_parse",
+    "input": {
+      "title": "테스트",
+      "subtitle": "발표",
+      "theme": { "preset": "science" },
+      "slides": [
+        { "layout": "agenda", "title": "목차", "bullets": ["a", "b", "c", "d"] },
+        { "layout": "content", "title": "본문", "subtitle": "요약", "bullets": ["핵심 내용 첫 번째 문장입니다", "두 번째 핵심 문장입니다", "세 번째 핵심 문장입니다"] },
+        { "layout": "closing", "title": "마무리", "bullets": ["감사합니다"] }
+      ]
+    }
+  },
+  {
+    "id": "ppt-validate-ok",
+    "type": "ppt_validate",
+    "expectOk": true,
+    "input": {
+      "title": "세포",
+      "slides": [
+        { "layout": "agenda", "title": "목차", "bullets": ["1", "2", "3", "4"] },
+        { "layout": "content", "title": "분열", "subtitle": "개요", "bullets": ["간기에서 DNA가 복제됩니다", "중기에 염색체가 적도에 정렬합니다", "후기에 분리가 일어납니다"] },
+        { "layout": "table", "title": "비교", "table": { "headers": ["A", "B"], "rows": [["1", "2"], ["3", "4"], ["5", "6"]] }, "bullets": ["표 해석 첫 줄", "표 해석 둘째 줄"] },
+        { "layout": "process", "title": "과정", "diagram": { "type": "process", "steps": [{ "label": "1", "desc": "첫 단계 설명" }, { "label": "2", "desc": "둘째 단계" }] }, "bullets": ["과정 요약 첫 번째 문장입니다", "과정 요약 두 번째 문장입니다"] },
+        { "layout": "closing", "title": "끝", "bullets": ["감사"] }
+      ]
+    }
+  },
+  {
+    "id": "ppt-validate-fail",
+    "type": "ppt_validate",
+    "expectOk": false,
+    "input": { "title": "빈", "slides": [{ "layout": "content", "title": "x", "bullets": [] }] }
+  },
+  { "id": "ppt-parse-2", "type": "ppt_parse", "input": { "title": "A", "slides": [{ "layout": "section", "title": "1장" }, { "layout": "content", "title": "내용", "bullets": ["a", "b", "c"] }, { "layout": "closing", "title": "끝" }] } },
+  { "id": "ppt-parse-3", "type": "ppt_parse", "input": { "title": "B", "slides": [{ "layout": "cycle", "title": "순환", "diagram": { "type": "cycle", "steps": [{ "label": "A", "desc": "d" }] }, "bullets": ["a", "b"] }, { "layout": "cards", "title": "카드", "diagram": { "type": "cards", "steps": [{ "label": "C", "desc": "d" }] }, "bullets": ["a", "b"] }, { "layout": "closing", "title": "끝" }] } },
+  { "id": "ppt-parse-4", "type": "ppt_parse", "input": { "title": "C", "theme": { "preset": "tech" }, "slides": [{ "layout": "twoColumn", "title": "비교", "bullets": ["왼쪽"], "bulletsRight": ["오른쪽"], "subtitle": "s" }, { "layout": "content", "title": "x", "bullets": ["1", "2", "3"] }, { "layout": "closing", "title": "end" }] } },
+  { "id": "ppt-parse-5", "type": "ppt_parse", "input": { "title": "D", "slides": [{ "layout": "content", "title": "t", "bullets": ["long bullet one here", "long bullet two here", "long bullet three"] }, { "layout": "content", "title": "t2", "bullets": ["a", "b", "c"] }, { "layout": "closing", "title": "end" }] } },
+  { "id": "ppt-parse-6", "type": "ppt_parse", "input": { "title": "E", "slides": [{ "layout": "agenda", "title": "목차", "bullets": ["1", "2", "3", "4", "5"] }, { "layout": "section", "title": "S" }, { "layout": "content", "title": "C", "bullets": ["x", "y", "z"] }, { "layout": "closing", "title": "Q" }] } },
+  { "id": "ppt-parse-7", "type": "ppt_parse", "input": { "title": "F", "slides": [{ "layout": "table", "title": "T", "table": { "headers": ["H1", "H2"], "rows": [["a", "b"], ["c", "d"], ["e", "f"]] }, "bullets": ["note"] }, { "layout": "content", "title": "c", "bullets": ["1", "2", "3"] }, { "layout": "closing", "title": "end" }] } },
+  { "id": "ppt-live-skip", "type": "live_skip", "note": "2-pass PPT generation requires API" }
+]

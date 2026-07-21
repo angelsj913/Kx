@@ -1,0 +1,7 @@
+[
+  { "id": "docx-1", "type": "docx_build", "markdown": "# 주간 보고\n\n## 업무\n- 항목 1\n- 항목 2\n\n## 계획\n다음 주 일정입니다." },
+  { "id": "docx-2", "type": "docx_build", "markdown": "# 제안서\n\n## 개요\n본 제안은 AI 워크스페이스 도입입니다.\n\n## 기대효과\n생산성 향상" },
+  { "id": "intent-ppt", "type": "intent", "text": "ppt 만들어줘 세포 분열", "expectedTool": "ppt" },
+  { "id": "intent-excel", "type": "intent", "text": "엑셀 표 만들어줘", "expectedTool": "excel" },
+  { "id": "intent-math", "type": "intent", "text": "이 문제 풀어줘 2x+3=7", "expectedTool": "math-solve" }
+]

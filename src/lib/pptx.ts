@@ -9,7 +9,7 @@ import {
   type SlideTable,
 } from "./fileTypes";
 
-const FONT = "Arial";
+const FONT = "Malgun Gothic";
 const W = 13.333;
 const H = 7.5;
 
