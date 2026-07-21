@@ -109,6 +109,33 @@ type MailResult = {
   error?: string;
 };
 
+function publicAppUrl(): string {
+  const configured = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) return configured.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "https://zeffai.com";
+}
+
+function otpEmailHtml(code: string, title: string, message: string, admin = false): string {
+  const logoUrl = `${publicAppUrl()}/logo-zeff.png`;
+  return `<div style="margin:0;padding:32px 16px;background:#f8fafc;font-family:Arial,'Apple SD Gothic Neo',sans-serif;color:#0f172a">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:440px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px">
+        <tr><td style="padding:28px 28px 12px">
+          <img src="${logoUrl}" width="42" height="42" alt="ZEFF AI" style="display:block;width:42px;height:42px;border:0;border-radius:10px;object-fit:contain" />
+          <p style="margin:16px 0 0;font-size:12px;font-weight:700;letter-spacing:.08em;color:#2563eb">ZEFF AI${admin ? " · ADMIN" : ""}</p>
+          <h1 style="margin:8px 0 0;font-size:20px;line-height:1.35">${title}</h1>
+          <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#64748b">${message}</p>
+        </td></tr>
+        <tr><td style="padding:12px 28px 28px">
+          <div style="border-radius:12px;background:#eff6ff;padding:18px;text-align:center;font-size:32px;font-weight:700;letter-spacing:7px;color:#1d4ed8">${code}</div>
+          <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#94a3b8">인증번호는 3분 동안 유효합니다. 요청하지 않았다면 이 메일을 무시하세요.</p>
+        </td></tr>
+      </table>
+    </td></tr></table>
+  </div>`;
+}
+
 async function sendEmailOtp(
   email: string,
   code: string,
@@ -126,14 +153,16 @@ async function sendEmailOtp(
     : is2fa
       ? `ZEFF AI 로그인 2단계 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 로그인하지 않았다면 비밀번호를 변경해 주세요.`
       : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
-  const html = isAdminPlan
-    ? `<div style="font-family:sans-serif;padding:24px;max-width:420px">
-        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#2563eb">ZEFF AI · 관리자</p>
-        <p style="margin:0 0 12px;font-size:15px;color:#0f172a">회원 요금제 변경 인증번호</p>
-        <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:6px;color:#0f172a">${code}</p>
-        <p style="margin:16px 0 0;font-size:13px;color:#64748b">3분 안에 관리자 패널에 입력해 주세요. 요청하지 않았다면 이 메일을 무시하세요.</p>
-      </div>`
-    : `<div style="font-family:sans-serif;padding:24px"><p>ZEFF AI 인증번호</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p style="color:#64748b">3분 안에 입력해 주세요.</p></div>`;
+  const html = otpEmailHtml(
+    code,
+    isAdminPlan ? "회원 요금제 변경 인증번호" : is2fa ? "로그인 2단계 인증번호" : "인증번호",
+    isAdminPlan
+      ? "관리자 패널에서 요금제를 변경하려면 아래 번호를 입력하세요."
+      : is2fa
+        ? "로그인을 계속하려면 아래 번호를 입력하세요."
+        : "ZEFF AI 인증을 완료하려면 아래 번호를 입력하세요.",
+    isAdminPlan,
+  );
 
   const result = await sendMail({ to: email, subject, text, html });
   if (result.sent) {

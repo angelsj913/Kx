@@ -56,16 +56,16 @@ export default function Hero() {
           : null;
 
   return (
-    <section id="about" className="relative overflow-hidden pb-8 pt-32 sm:pt-40">
+    <section id="about" className="relative overflow-hidden pb-14 pt-28 sm:pb-20 sm:pt-36">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-6 text-center">
+      <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
         <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
           <Sparkles className="h-3.5 w-3.5" />
           {t("hero.badge")}
         </span>
 
-        <h1 className="hero-fade-up hero-delay-1 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+        <h1 className="hero-fade-up hero-delay-1 max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
           {t("hero.title.line1")}
           <br />
           <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
@@ -82,7 +82,7 @@ export default function Hero() {
 
         <div
           id="download"
-          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-2xl scroll-mt-32 flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
         >
           <button
             type="button"
