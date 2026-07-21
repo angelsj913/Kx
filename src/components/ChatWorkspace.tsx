@@ -28,7 +28,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
-  downloadMarkdown,
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
@@ -348,6 +347,7 @@ export default function ChatWorkspace({
   const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const quickActionsRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -391,6 +391,20 @@ export default function ChatWorkspace({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, loading]);
+
+  useEffect(() => {
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (
+        quickActionsOpen &&
+        quickActionsRef.current &&
+        !quickActionsRef.current.contains(event.target as Node)
+      ) {
+        setQuickActionsOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [quickActionsOpen]);
 
   useEffect(() => {
     // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
@@ -565,7 +579,7 @@ export default function ChatWorkspace({
         throw new Error(errorMessage);
       }
       if (!sessionId && newSessionId) onSessionCreated(newSessionId);
-      if (doneMessage) {
+      if (doneMessage && (doneMessage.text?.trim() || doneMessage.outputType)) {
         const finalMessage: Msg = { ...doneMessage, interrupted: doneInterrupted };
         if (streamMsgId) {
           const id = streamMsgId;
@@ -1032,19 +1046,6 @@ export default function ChatWorkspace({
                         <button
                           type="button"
                           onClick={() =>
-                            downloadMarkdown(
-                              (m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "") || "zeff-note",
-                              m.text,
-                            )
-                          }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                        >
-                          <FileText className="h-3 w-3" />
-                          Markdown
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
                             downloadTextFile(
                               `${(m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "")}.txt`,
                               m.text,
@@ -1093,22 +1094,10 @@ export default function ChatWorkspace({
             ),
           )}
 
-          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 (스트리밍 말풍선이 뜬 뒤엔 중복 표시 안 함) */}
+          {/* AI 작업 중 — 응답이 시작되기 전에는 로고 스핀만 표시한다. */}
           {loading && !streamingId && (
-            <div className="flex gap-2.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-white shadow-sm dark:border-blue-400/20 dark:bg-slate-900">
-                <Logo size="sm" withWordmark={false} spin />
-              </div>
-              <div className="flex min-w-0 flex-col justify-center gap-1 rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <div className="flex items-center gap-2">
-                  <Logo size="sm" withWordmark spin className="!gap-1.5" />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {statusKey
-                    ? t(statusKey as Parameters<typeof t>[0])
-                    : t("chat.processing")}
-                </p>
-              </div>
+            <div className="flex h-10 items-center">
+              <Logo size="sm" withWordmark={false} spin />
             </div>
           )}
 
@@ -1232,7 +1221,7 @@ export default function ChatWorkspace({
           )}
 
           <div className="flex items-end gap-2">
-            <div className="relative shrink-0">
+            <div ref={quickActionsRef} className="relative shrink-0">
               <motion.button
                 type="button"
                 onClick={() => setQuickActionsOpen((v) => !v)}

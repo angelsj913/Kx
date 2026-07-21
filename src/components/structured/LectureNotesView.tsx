@@ -56,7 +56,7 @@ export default function LectureNotesView({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {/* 능동 회상 2단 레이아웃 */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-[minmax(18rem,0.85fr)_minmax(24rem,1.15fr)]">
           <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/40 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t("structured.lectureNotes.conceptsHeading")}</h3>
@@ -92,8 +92,8 @@ export default function LectureNotesView({
                     value={c.detail}
                     onChange={(e) => updateConcept(i, { detail: e.target.value })}
                     placeholder={t("structured.lectureNotes.detailPlaceholder")}
-                    rows={2}
-                    className="mt-2 w-full resize-y rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
+                    rows={4}
+                    className="mt-2 w-full min-h-24 resize-y rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 px-3 py-1.5 text-sm leading-relaxed text-slate-700 dark:text-slate-300 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
                   />
                 </div>
               ))}
@@ -111,7 +111,7 @@ export default function LectureNotesView({
               value={data.transcript}
               onChange={(e) => setData((d) => ({ ...d, transcript: e.target.value }))}
               rows={14}
-              className="w-full flex-1 resize-y rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 p-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
+              className="min-h-[28rem] w-full flex-1 resize-y rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 p-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300 outline-none transition-colors focus:border-[var(--mode-accent)]/70"
             />
           </div>
         </div>

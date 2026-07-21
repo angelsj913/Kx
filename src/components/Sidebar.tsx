@@ -8,6 +8,7 @@ import {
   BookOpen,
   Lightbulb,
   Database,
+  Headphones,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -30,16 +31,18 @@ export default function Sidebar({
   onOpenLibrary,
   onOpenInsight,
   onOpenRag,
+  onOpenInquiry,
 }: {
   sessions: SessionSummary[];
   activeSessionId: string | null;
-  activeView: "chat" | "library" | "insight" | "rag";
+  activeView: "chat" | "library" | "insight" | "rag" | "inquiry";
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenLibrary: () => void;
   onOpenInsight: () => void;
   onOpenRag: () => void;
+  onOpenInquiry: () => void;
 }) {
   const t = useT();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -92,15 +95,25 @@ export default function Sidebar({
       <WorkspaceSwitcher collapsed={isCollapsed} />
 
       <div className={`flex shrink-0 flex-col gap-1 ${isCollapsed ? "p-1.5" : "p-2"}`}>
-        <button
-          type="button"
-          onClick={onNewChat}
-          title={isCollapsed ? t("sidebar.newChat") : undefined}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md transition-all hover:brightness-105"
-        >
-          <Plus size={ICON} className="shrink-0" />
-          {!isCollapsed && <span className="font-semibold">{t("sidebar.newChat")}</span>}
-        </button>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={onNewChat}
+            title={t("sidebar.newChat")}
+            className="flex h-10 min-w-10 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md transition-all hover:brightness-105"
+          >
+            <Plus size={ICON} className="shrink-0" />
+            {!isCollapsed && <span className="font-semibold">{t("sidebar.newChat")}</span>}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenLibrary}
+            title={t("sidebar.library")}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--workspace-border)] text-[var(--workspace-text-secondary)] transition-colors hover:bg-[var(--workspace-bg)] hover:text-blue-600"
+          >
+            <BookOpen size={ICON} />
+          </button>
+        </div>
 
         <NavItem
           active={activeView === "library"}
@@ -128,6 +141,15 @@ export default function Sidebar({
           icon={<Database size={ICON} className="shrink-0" />}
         >
           {t("sidebar.knowledgeSearch")}
+        </NavItem>
+        <NavItem
+          active={activeView === "inquiry"}
+          collapsed={isCollapsed}
+          onClick={onOpenInquiry}
+          title="1:1 문의"
+          icon={<Headphones size={ICON} className="shrink-0" />}
+        >
+          1:1 문의
         </NavItem>
       </div>
 

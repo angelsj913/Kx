@@ -18,8 +18,9 @@ const ChatWorkspace = dynamic(() => import("@/components/ChatWorkspace"), {
 const LibraryView = dynamic(() => import("@/components/LibraryView"));
 const InsightBoardView = dynamic(() => import("@/components/InsightBoardView"));
 const RagView = dynamic(() => import("@/components/RagView"));
+const InquiryWorkspaceView = dynamic(() => import("@/components/InquiryWorkspaceView"));
 
-export type AppView = "chat" | "library" | "insight" | "rag";
+export type AppView = "chat" | "library" | "insight" | "rag" | "inquiry";
 
 export default function AppWorkspace() {
   const t = useT();
@@ -125,6 +126,10 @@ export default function AppWorkspace() {
             setView("rag");
             setMobileNav(false);
           }}
+          onOpenInquiry={() => {
+            setView("inquiry");
+            setMobileNav(false);
+          }}
         />
       </div>
 
@@ -172,6 +177,7 @@ export default function AppWorkspace() {
           )}
           {view === "insight" && <InsightBoardView />}
           {view === "rag" && <RagView />}
+          {view === "inquiry" && <InquiryWorkspaceView />}
         </div>
       </div>
     </div>

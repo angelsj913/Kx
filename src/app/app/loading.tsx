@@ -6,11 +6,8 @@ import Logo from "@/components/ui/Logo";
  */
 export default function AppLoading() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-950">
-      <Logo size="lg" withWordmark spin />
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        워크스페이스를 여는 중…
-      </p>
+    <div className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <Logo size="lg" withWordmark={false} spin />
     </div>
   );
 }

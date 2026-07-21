@@ -681,6 +681,9 @@ export async function POST(request: Request) {
               ? JSON.stringify({ citations: result.citations })
               : undefined;
 
+          if (!result.text.trim()) {
+            throw new Error("AI가 응답을 생성하지 못했습니다. 다시 시도해 주세요.");
+          }
           const assistantRow = await prisma.chatHistory.create({
             data: {
               sessionId: resolvedSessionId,
