@@ -9,6 +9,7 @@
     "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "prisma generate && node scripts/db-push-retry.mjs && next build",
+    "db:push": "node scripts/db-push-retry.mjs",
     "start": "next start",
     "lint": "eslint",
     "rag:index:zeff": "npx tsx scripts/index-zeff-rag.mjs",

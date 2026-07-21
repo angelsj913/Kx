@@ -22,7 +22,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "DATABASE_URL secret not set — skipping db push"
-            exit 0
+            echo "::error::DATABASE_URL GitHub Actions secret is not set."
+            echo "Add it at: Settings → Secrets and variables → Actions → New repository secret"
+            echo "Value: Neon Postgres connection string (same as Vercel DATABASE_URL)"
+            exit 1
           fi
           npx prisma db push --accept-data-loss
