@@ -18,6 +18,10 @@ import type { LandingLanguage } from "@/lib/landingI18n";
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
 
+// Figma 캡처용: scroll-triggered whileInView 애니메이션이 html-to-design 캡처에서
+// 콘텐츠를 통째로 누락시키는 경우가 있어, 캡처 중엔 최종 상태로 바로 렌더링한다.
+const CAPTURE_MODE = process.env.NEXT_PUBLIC_FIGMA_CAPTURE === "1";
+
 const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy } = {
   ko: {
     title: "이럴 때, Zeff",
@@ -518,7 +522,7 @@ export default function FeatureShowcase() {
             return (
               <motion.div
                 key={item.no}
-                initial={{ opacity: 0, y: 24 }}
+                initial={CAPTURE_MODE ? false : { opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
