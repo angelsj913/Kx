@@ -735,6 +735,9 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("chat stream error:", err);
+        if (err instanceof Error && err.stack) {
+          console.error("[zeff-pipeline] chat route stack:", err.stack.split("\n").slice(0, 6).join("\n"));
+        }
         await releaseReservations();
         send({ type: "error", sessionId: resolvedSessionId, message: friendlyError(err) });
       } finally {

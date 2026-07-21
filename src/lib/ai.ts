@@ -21,6 +21,7 @@ import {
   type ModelTier,
   type Provider,
 } from "./models";
+import { pipelineWarn } from "./pipelineLog";
 import {
   isProviderSkipped,
   markProviderHealthy,
@@ -165,6 +166,7 @@ async function runWithFallback(
       if (err instanceof SafetyRefusalError) throw err;
       lastErr = err;
       console.warn(`[ai] fail ${m.provider}/${m.model}:`, errorText(err).slice(0, 300));
+      pipelineWarn("vision/generate", `fail ${m.provider}/${m.model}`, err);
       noteProviderFailure(m.provider as Provider, err);
 
       if (m.provider === "openrouter" && isOpenRouterCreditsError(err) && !m.free) {

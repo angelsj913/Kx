@@ -139,6 +139,7 @@ export async function geminiGenerateImage(input: {
     return await run(input.prompt);
   } catch (err) {
     if (err instanceof SafetyRefusalError) throw err;
+    if (err instanceof MissingApiKeyError) throw err;
     await new Promise((r) => setTimeout(r, 800));
     const shorter =
       input.prompt.length > 80 ? input.prompt.slice(0, 80).trim() : input.prompt;

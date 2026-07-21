@@ -4,10 +4,16 @@ import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./a
 import { validateDeck, validateWorkbook } from "./pptValidate";
 import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
-import { geminiGenerateForTool, geminiGenerateImage, SafetyRefusalError } from "./gemini";
+import { geminiGenerateForTool, geminiGenerateImage, MissingApiKeyError, SafetyRefusalError } from "./gemini";
 import { openRouterGenerateImage } from "./openaiCompat";
 import { noteProviderFailure } from "./providerHealth";
 import { imageGenerationCandidates, type ModelTier } from "./models";
+import {
+  PipelineStageError,
+  pipelineError,
+  pipelineInfo,
+  pipelineWarn,
+} from "./pipelineLog";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
@@ -411,6 +417,7 @@ export async function runToolGeneration(
     let data = "";
     let mimeType = "image/png";
     let model = "";
+    let imageAttempts = 1;
     if (tool.id === "image-upscale") {
       const source = input.images?.[0];
       if (!source) throw new Error("확대할 이미지를 첨부해 주세요.");
@@ -421,8 +428,22 @@ export async function runToolGeneration(
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
       const prompt = input.text!.trim();
       const candidates = await imageGenerationCandidates();
+      if (candidates.length === 0) {
+        pipelineError("image-gen/candidates", "no providers with API keys");
+        throw new MissingApiKeyError(
+          "이미지 생성 API 키가 없습니다. GEMINI_API_KEY 또는 OPENROUTER_API_KEY를 설정해 주세요.",
+        );
+      }
+
       let lastError: unknown;
+      let attempt = 0;
       for (const candidate of candidates) {
+        attempt += 1;
+        pipelineInfo(
+          "image-gen/generate",
+          `try #${attempt}`,
+          `${candidate.provider}/${candidate.model}`,
+        );
         try {
           const img =
             candidate.provider === "gemini"
@@ -435,26 +456,59 @@ export async function runToolGeneration(
           mimeType = img.mimeType;
           model = candidate.model;
           lastError = null;
+          imageAttempts = attempt;
+          pipelineInfo(
+            "image-gen/generate",
+            "success",
+            `${candidate.provider}/${candidate.model} (#${attempt})`,
+          );
           break;
         } catch (err) {
           if (err instanceof SafetyRefusalError) throw err;
+          pipelineWarn(
+            "image-gen/generate",
+            `fail #${attempt} ${candidate.provider}/${candidate.model}`,
+            err,
+          );
           noteProviderFailure(candidate.provider, err);
           lastError = err;
         }
       }
       if (lastError) throw lastError;
       if (!data) throw new Error("이미지를 생성하지 못했습니다.");
-      data = await upscaleImage2x(data);
-      mimeType = "image/png";
-      model = `${model}+lanczos3-2x`;
+
+      try {
+        data = await upscaleImage2x(data);
+        mimeType = "image/png";
+        model = `${model}+lanczos3-2x`;
+        pipelineInfo("image-gen/upscale", "success", model);
+      } catch (err) {
+        pipelineError("image-gen/upscale", "lanczos 2x failed", err);
+        throw new PipelineStageError(
+          "image-gen/upscale",
+          "생성된 이미지 확대(2배)에 실패했습니다",
+          err,
+        );
+      }
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
-    const blob = await put(
-      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
-      Buffer.from(data, "base64"),
-      { access: "public", contentType: mimeType, addRandomSuffix: true },
-    );
+    let blob;
+    try {
+      blob = await put(
+        `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
+        Buffer.from(data, "base64"),
+        { access: "public", contentType: mimeType, addRandomSuffix: true },
+      );
+      pipelineInfo("image-gen/blob-upload", "success", blob.url);
+    } catch (err) {
+      pipelineError("image-gen/blob-upload", "Vercel Blob upload failed", err);
+      throw new PipelineStageError(
+        "image-gen/blob-upload",
+        "이미지 저장(업로드)에 실패했습니다. BLOB_READ_WRITE_TOKEN 설정을 확인해 주세요",
+        err,
+      );
+    }
     return {
       tool,
       outputType: "image",
@@ -462,7 +516,7 @@ export async function runToolGeneration(
       meta: {
         provider: tool.id === "image-upscale" ? "local" : model.startsWith("gemini") ? "gemini" : "openrouter",
         model,
-        attempts: 1,
+        attempts: imageAttempts,
       },
     };
   }

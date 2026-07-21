@@ -1,12 +1,28 @@
 import { MissingApiKeyError } from "./gemini";
 import { getProviderCooldownMinutes } from "./providerHealth";
+import { PipelineStageError } from "./pipelineLog";
 
 /** 원본 오류 → 사용자가 조치할 수 있는 한국어 메시지 */
 export function friendlyError(err: unknown): string {
   if (err instanceof MissingApiKeyError) return err.message;
+  if (err instanceof PipelineStageError) {
+    return err.message.replace(/^\[[^\]]+\]\s*/, "");
+  }
 
   const msg = err instanceof Error ? err.message : String(err ?? "");
   const lower = msg.toLowerCase();
+
+  if (
+    lower.includes("blob credentials") ||
+    lower.includes("blob_read_write_token") ||
+    lower.includes("image-gen/blob-upload")
+  ) {
+    return "이미지 저장(업로드)에 실패했습니다. 서버 BLOB_READ_WRITE_TOKEN 설정을 확인해 주세요.";
+  }
+
+  if (lower.includes("image-gen/upscale")) {
+    return "생성된 이미지 확대(2배)에 실패했습니다. 다시 시도해 주세요.";
+  }
 
   if (
     lower.includes("api key not valid") ||

@@ -24,6 +24,8 @@ import {
   getOpenRouterVisionModelsPaid,
   hasProviderKey,
 } from "./openaiCompat";
+import { isProviderSkipped } from "./providerHealth";
+import { pipelineInfo } from "./pipelineLog";
 
 export type Provider =
   | "gemini"
@@ -206,6 +208,21 @@ export function interleaveFreePaid(free: ModelDef[], paid: ModelDef[]): ModelDef
   return out;
 }
 
+/** API 키·쿨다운 상태로 실제 시도 가능한 모델만 남긴다. */
+export function filterAvailableCandidates(candidates: ModelDef[]): ModelDef[] {
+  return candidates.filter(
+    (m) => hasProviderKey(m.provider) && !isProviderSkipped(m.provider),
+  );
+}
+
+export function filterAvailableImageGenCandidates(
+  candidates: ImageGenCandidate[],
+): ImageGenCandidate[] {
+  return candidates.filter(
+    (c) => hasProviderKey(c.provider) && !isProviderSkipped(c.provider),
+  );
+}
+
 /**
  * 요금제별 후보 순서 — "먼저 성공하는 모델"이 아니라 "결제한 티어만큼 실제로
  * 다른 모델이 먼저 시도되도록" 차등화한다. 무료 소형 모델 풀은 어느 티어에서도
@@ -287,17 +304,23 @@ export async function buildVisionCandidates(): Promise<ModelDef[]> {
     ]);
     freePool.push(...orFreeModels.map((model) => orFree(model)));
     paidPool.push(...orPaidModels.map((model) => orPaid(model)));
-  } else {
-    freePool.push(...VISION_FALLBACK.filter((m) => m.provider === "openrouter"));
-    paidPool.push(...VISION_PAID_FALLBACK.filter((m) => m.provider === "openrouter"));
   }
 
-  freePool.push(GROQ_VISION);
-  if (!paidPool.some((m) => m.provider === "gemini")) {
+  if (hasProviderKey("groq")) {
+    freePool.push(GROQ_VISION);
+  }
+  if (hasProviderKey("gemini") && !paidPool.some((m) => m.provider === "gemini")) {
     paidPool.push(G_PRO);
   }
 
-  return interleaveFreePaid(freePool, paidPool);
+  const ordered = interleaveFreePaid(freePool, paidPool);
+  const available = filterAvailableCandidates(ordered);
+  pipelineInfo(
+    "vision/candidates",
+    `${available.length}/${ordered.length} available`,
+    available.map((m) => `${m.provider}/${m.model}`).join(" → "),
+  );
+  return available;
 }
 
 /** 이미지 생성 비용 순위 — rank 0 = gemini free, rank 1+ = OpenRouter paid. */
@@ -315,23 +338,37 @@ export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
  */
 export async function imageGenerationCandidates(): Promise<ImageGenCandidate[]> {
   const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
-  const base: ImageGenCandidate[] = [
-    { provider: "gemini", model: "gemini-2.5-flash-image", free: true },
-    { provider: "openrouter", model: primary },
-  ];
+  const base: ImageGenCandidate[] = [];
 
-  if (!hasProviderKey("openrouter")) {
-    return base.filter((c) => c.provider === "gemini");
+  if (hasProviderKey("gemini")) {
+    base.push({ provider: "gemini", model: "gemini-2.5-flash-image", free: true });
+  }
+  if (hasProviderKey("openrouter")) {
+    base.push({ provider: "openrouter", model: primary });
+    try {
+      const fallbacks = await getOpenRouterImageModels();
+      const seen = new Set(base.map((c) => c.model));
+      for (const model of fallbacks) {
+        if (seen.has(model)) continue;
+        seen.add(model);
+        base.push({ provider: "openrouter", model });
+      }
+    } catch (err) {
+      pipelineInfo(
+        "image-gen/candidates",
+        "OpenRouter fallback discovery skipped",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
 
-  const fallbacks = await getOpenRouterImageModels();
-  const seen = new Set(base.map((c) => c.model));
-  for (const model of fallbacks) {
-    if (seen.has(model)) continue;
-    seen.add(model);
-    base.push({ provider: "openrouter", model });
-  }
-  return base;
+  const available = filterAvailableImageGenCandidates(base);
+  pipelineInfo(
+    "image-gen/candidates",
+    `${available.length}/${base.length} available`,
+    available.map((c) => `${c.provider}/${c.model}`).join(" → "),
+  );
+  return available;
 }
 
 const TEXT_CHAIN = buildTextChain();
