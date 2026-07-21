@@ -243,8 +243,98 @@ function GeneralPanel() {
 
 function PrivacyPanel() {
   const t = useT();
+  const { settings, updateMemoryEnabled, updatePreferredTone } = useSettings();
+  const [memories, setMemories] = useState<{ id: string; content: string; category: string }[]>([]);
+
+  const loadMemories = useCallback(async () => {
+    const res = await fetch("/api/memories");
+    const data = await res.json();
+    if (res.ok) setMemories(data.memories ?? []);
+  }, []);
+
+  useEffect(() => {
+    void loadMemories().catch(() => {});
+  }, [loadMemories]);
+
+  async function removeMemory(id: string) {
+    const res = await fetch("/api/memories", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) setMemories((current) => current.filter((memory) => memory.id !== id));
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">대화 기억</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              대화에서 밝힌 장기 선호와 사실을 다음 세션에 반영합니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings?.memoryEnabled !== false}
+            onClick={() => void updateMemoryEnabled(settings?.memoryEnabled === false)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+              settings?.memoryEnabled !== false ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                settings?.memoryEnabled !== false ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+        <label className="mt-4 block text-xs font-medium text-slate-600 dark:text-slate-300">
+          AI 응답 성격
+          <select
+            value={settings?.preferredTone ?? "balanced"}
+            onChange={(event) =>
+              void updatePreferredTone(
+                event.target.value as NonNullable<typeof settings>["preferredTone"],
+              )
+            }
+            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="balanced">균형 잡힌 답변</option>
+            <option value="concise">간결하게</option>
+            <option value="friendly">친근하게</option>
+            <option value="professional">전문적으로</option>
+            <option value="teaching">차근차근 설명</option>
+          </select>
+        </label>
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">저장된 기억</p>
+          {memories.length === 0 ? (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50">
+              아직 저장된 기억이 없습니다.
+            </p>
+          ) : (
+            memories.map((memory) => (
+              <div
+                key={memory.id}
+                className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800"
+              >
+                <p className="text-xs leading-5 text-slate-700 dark:text-slate-200">{memory.content}</p>
+                <button
+                  type="button"
+                  onClick={() => void removeMemory(memory.id)}
+                  className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40"
+                  aria-label="저장된 기억 삭제"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
       <p className="text-sm text-slate-600 dark:text-slate-300">
         {t("settings.privacy.intro")}
       </p>

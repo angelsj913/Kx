@@ -5,6 +5,62 @@ import { cosine } from "@/lib/rag";
 export interface LearnedContext {
   qaPairs: { question: string; answer: string; score: number }[];
   profileHints: string[];
+  memories: string[];
+}
+
+const MEMORY_PATTERNS: { category: string; pattern: RegExp }[] = [
+  {
+    category: "preference",
+    pattern:
+      /(?:기억해|선호(?:해|합니다)?|좋아해|싫어해|항상|앞으로|prefer|remember|always|never|i like|i dislike)\s*[:,-]?\s*(.{4,180})/i,
+  },
+  {
+    category: "fact",
+    pattern:
+      /(?:저는|나는|제 |내 |my |i am |i work|i study)\s+(.{4,180})/i,
+  },
+];
+
+function normalizeMemory(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+/** 사용자 문장에서 명시적이고 재사용 가능한 장기 맥락만 보수적으로 저장한다. */
+export async function learnFromUserMessage(input: {
+  userId: string;
+  sessionId: string;
+  text: string;
+}): Promise<void> {
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: input.userId },
+    select: { memoryEnabled: true },
+  });
+  if (settings?.memoryEnabled === false) return;
+
+  const source = normalizeMemory(input.text);
+  if (source.length < 8 || source.length > 500) return;
+  const match = MEMORY_PATTERNS.map(({ category, pattern }) => {
+    const found = source.match(pattern);
+    return found ? { category, content: normalizeMemory(found[1] ?? source) } : null;
+  }).find(Boolean);
+  if (!match || match.content.length < 4) return;
+
+  const duplicate = await prisma.userMemory.findFirst({
+    where: { userId: input.userId, content: { equals: match.content, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (duplicate) {
+    await prisma.userMemory.update({ where: { id: duplicate.id }, data: { updatedAt: new Date() } });
+    return;
+  }
+  await prisma.userMemory.create({
+    data: {
+      userId: input.userId,
+      sourceSessionId: input.sessionId,
+      content: match.content,
+      category: match.category,
+    },
+  });
 }
 
 /** 피드백 집계 → UserAiProfile 업데이트 */
@@ -81,11 +137,24 @@ export async function retrieveLearnedContext(input: {
   k?: number;
 }): Promise<LearnedContext> {
   const k = input.k ?? 2;
-  const profile = await prisma.userAiProfile.findUnique({ where: { userId: input.userId } });
+  const [profile, settings, memories] = await Promise.all([
+    prisma.userAiProfile.findUnique({ where: { userId: input.userId } }),
+    prisma.userSettings.findUnique({
+      where: { userId: input.userId },
+      select: { memoryEnabled: true, preferredTone: true },
+    }),
+    prisma.userMemory.findMany({
+      where: { userId: input.userId },
+      orderBy: { updatedAt: "desc" },
+      take: 20,
+      select: { content: true },
+    }),
+  ]);
   const hints: string[] = [];
 
-  if (profile?.preferredTone) {
-    hints.push(`선호 톤: ${profile.preferredTone}`);
+  const preferredTone = settings?.preferredTone || profile?.preferredTone;
+  if (preferredTone && preferredTone !== "balanced") {
+    hints.push(`선호 톤: ${preferredTone}`);
   }
   if (profile?.negativePatterns && typeof profile.negativePatterns === "object") {
     const recent = (profile.negativePatterns as { recent?: string[] }).recent;
@@ -101,7 +170,8 @@ export async function retrieveLearnedContext(input: {
     select: { question: true, answer: true, embedding: true },
   });
 
-  if (!pairs.length) return { qaPairs: [], profileHints: hints };
+  const activeMemories = settings?.memoryEnabled === false ? [] : memories.map((memory) => memory.content);
+  if (!pairs.length) return { qaPairs: [], profileHints: hints, memories: activeMemories };
 
   const { vector } = await embedQuery(input.query);
   const ranked = pairs
@@ -114,7 +184,7 @@ export async function retrieveLearnedContext(input: {
     .sort((a, b) => b.score - a.score)
     .slice(0, k);
 
-  return { qaPairs: ranked, profileHints: hints };
+  return { qaPairs: ranked, profileHints: hints, memories: activeMemories };
 }
 
 /** 런타임 프롬프트에 학습 컨텍스트 주입 */
@@ -122,6 +192,14 @@ export function formatLearnedInstruction(ctx: LearnedContext): string {
   const parts: string[] = [];
   if (ctx.profileHints.length) {
     parts.push(`[사용자 선호]\n${ctx.profileHints.join("\n")}`);
+  }
+  if (ctx.memories.length) {
+    parts.push(
+      `[사용자가 저장한 장기 맥락]\n${ctx.memories
+        .slice(0, 8)
+        .map((memory) => `- ${memory}`)
+        .join("\n")}\n명시적으로 충돌하는 현재 요청이 있으면 현재 요청을 우선하세요.`,
+    );
   }
   if (ctx.qaPairs.length) {
     const examples = ctx.qaPairs

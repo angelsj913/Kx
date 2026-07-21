@@ -287,6 +287,12 @@ export async function POST(request: Request) {
             : undefined,
         },
       });
+      // 장기 맥락은 명시적인 선호·사실만 비동기로 추출한다. 실패해도 현재 대화는 막지 않는다.
+      void import("@/lib/userLearning")
+        .then(({ learnFromUserMessage }) =>
+          learnFromUserMessage({ userId, sessionId: resolvedSessionId, text }),
+        )
+        .catch((err) => console.warn("[chat route] memory learning skipped:", err));
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: {

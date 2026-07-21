@@ -60,6 +60,7 @@ model User {
   answerFeedbacks      AnswerFeedback[]
   aiProfile            UserAiProfile?
   learnedQaPairs       LearnedQaPair[]
+  memories             UserMemory[]
 }
 
 /** 친구 추천 성사 기록 — 추천인(referrer)이 피추천인(referred)을 데려온 1건. 피추천인당 1회. */
@@ -235,6 +236,22 @@ model LearnedQaPair {
   @@index([userId, createdAt])
 }
 
+/** 사용자가 대화에서 밝힌 장기 선호·사실. 사용자가 언제든 검토·삭제할 수 있다. */
+model UserMemory {
+  id              String   @id @default(cuid())
+  userId          String
+  content         String   @db.Text
+  category        String
+  confidence      Float    @default(0.8)
+  sourceSessionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
 model LibraryItem {
   id            String   @id @default(cuid())
   userId        String
@@ -401,6 +418,10 @@ model UserSettings {
   stripeCustomerId  String?
   /** 관리자가 사용자 AI 를 개별 차단할 때 true */
   aiDisabled        Boolean  @default(false)
+  /** 대화에서 장기 선호·사실을 자동 저장해 다음 세션에 반영할지 */
+  memoryEnabled     Boolean  @default(true)
+  /** 사용자가 직접 선택한 응답 성격. 자동 학습보다 우선한다. */
+  preferredTone     String   @default("balanced")
   /** 추천 보상 등 한시적 플랜 부여(유료 plan과 별개). 만료 후 자동 무시. */
   grantedPlan       String?
   grantedPlanUntil  DateTime?
