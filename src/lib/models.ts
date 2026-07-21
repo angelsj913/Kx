@@ -334,7 +334,8 @@ export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
 
 /**
  * 이미지 생성 후보 — 비용 오름차순 단일 폴백 체인.
- * rank 0: Gemini free → rank 1: OPENROUTER_IMAGE_MODEL → env fallbacks → API discovery.
+ * rank 0: Gemini free → rank 1: OPENROUTER_IMAGE_MODEL → env fallbacks(최대 2).
+ * OpenRouter API 카탈로그 전체는 넣지 않는다(크레딧 부족 시 연쇄 실패 방지).
  */
 export async function imageGenerationCandidates(): Promise<ImageGenCandidate[]> {
   const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";

@@ -1,6 +1,11 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
-import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
+import {
+  generateWithFallback,
+  isOpenRouterCreditsError,
+  type AttemptInfo,
+  type FallbackResult,
+} from "./ai";
 import { validateDeck, validateWorkbook } from "./pptValidate";
 import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
@@ -437,7 +442,10 @@ export async function runToolGeneration(
 
       let lastError: unknown;
       let attempt = 0;
+      let skipOpenRouter = false;
       for (const candidate of candidates) {
+        if (skipOpenRouter && candidate.provider === "openrouter") continue;
+
         attempt += 1;
         pipelineInfo(
           "image-gen/generate",
@@ -472,6 +480,15 @@ export async function runToolGeneration(
           );
           noteProviderFailure(candidate.provider, err);
           lastError = err;
+
+          // OpenRouter 크레딧 부족은 계정 단위 — 나머지 OR 모델 시도는 전부 동일 실패이므로 즉시 중단
+          if (candidate.provider === "openrouter" && isOpenRouterCreditsError(err)) {
+            skipOpenRouter = true;
+            pipelineWarn(
+              "image-gen/generate",
+              "OpenRouter credits depleted — skipping remaining OpenRouter image models",
+            );
+          }
         }
       }
       if (lastError) throw lastError;

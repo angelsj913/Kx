@@ -36,9 +36,17 @@ export function friendlyError(err: unknown): string {
 
   if (
     lower.includes("insufficient credits") ||
-    lower.includes("never purchased credits")
+    lower.includes("never purchased credits") ||
+    lower.includes("purchase more at https://openrouter.ai")
   ) {
-    return "OpenRouter 크레딧이 없습니다. free 모델·Groq·DeepSeek 키를 쓰거나 openrouter.ai에서 충전하세요.";
+    return "OpenRouter 크레딧이 없습니다. openrouter.ai/settings/credits 에서 충전하거나, GEMINI_API_KEY 이미지 생성 할당량을 확인해 주세요.";
+  }
+
+  if (
+    lower.includes("prepayment credits are depleted") ||
+    (lower.includes("resource_exhausted") && lower.includes("prepay"))
+  ) {
+    return "Gemini 선불 크레딧이 소진되었습니다. AI Studio(https://ai.studio/projects)에서 결제·할당량을 확인하거나 OpenRouter 크레딧을 충전한 뒤 다시 시도해 주세요.";
   }
 
   if (lower.includes("deepseek") && (lower.includes("balance") || lower.includes("insufficient"))) {

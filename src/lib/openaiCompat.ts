@@ -662,19 +662,30 @@ export async function getOpenRouterVisionModels(): Promise<string[]> {
   return getOpenRouterVisionModelsFree();
 }
 
-/** 비용 순서대로 OpenRouter 이미지 생성 폴백 모델 (primary 제외). */
+/**
+ * 비용 순서 OpenRouter 이미지 폴백 (primary 제외).
+ * API 카탈로그 전체를 쓰지 않는다 — 크레딧 부족 시 40+회 연쇄 실패를 막기 위해
+ * env에 명시한 모델만 최대 MAX_IMAGE_FALLBACKS개 사용한다.
+ */
+const MAX_IMAGE_FALLBACKS = 2;
+
 export async function getOpenRouterImageModels(): Promise<string[]> {
   const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
-  const preferred = configuredModels("OPENROUTER_IMAGE_FALLBACK_MODELS", []);
+  // 기본 폴백: 비교적 저가·널리 지원되는 모델 2개 (env로 교체 가능)
+  const preferred = configuredModels("OPENROUTER_IMAGE_FALLBACK_MODELS", [
+    "black-forest-labs/flux.2-klein-4b",
+    "google/gemini-2.5-flash-image",
+  ]).filter((model) => model !== primary);
+
   try {
-    const available = (await capabilities()).imageModels;
-    const ordered = [
-      ...preferred,
-      ...available.filter((model) => model !== primary && !preferred.includes(model)),
-    ];
-    return [...new Set(ordered)];
+    const available = new Set((await capabilities()).imageModels);
+    const filtered =
+      available.size === 0
+        ? preferred
+        : preferred.filter((model) => available.has(model));
+    return [...new Set(filtered)].slice(0, MAX_IMAGE_FALLBACKS);
   } catch {
-    return preferred;
+    return preferred.slice(0, MAX_IMAGE_FALLBACKS);
   }
 }
 
