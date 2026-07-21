@@ -115,24 +115,22 @@ export function needsToolOrchestration(text: string): boolean {
       t,
     ) || /(자료|문서|파일)\s*(에서|중에)\s*(찾|검색|요약)/.test(t);
 
+  // "최신" 단독은 "최신 버전으로 PPT" 같은 생성 요청을 훔치지 않도록,
+  // 뉴스·검색·시세 등 실제 웹 조회 단서와 묶일 때만 웹으로 본다.
   const wantsWeb =
-    /최신|오늘\s*기준|뉴스|시세|웹\s*검색|인터넷\s*검색|\b(latest|news|search\s*the\s*web|look\s*up\s*online)\b/i.test(
+    /오늘\s*기준|뉴스|시세|웹\s*검색|인터넷\s*검색|\b(latest|news|search\s*the\s*web|look\s*up\s*online)\b/i.test(
       t,
-    );
+    ) ||
+    (/최신/.test(t) && /(뉴스|정보|소식|시세|검색|조사|알아|찾아|동향)/.test(t));
 
   const wantsCalc =
     /\d+\s*[+*\-×÷/]\s*\d+/.test(t) &&
     /(계산|얼마|결과는|calculate|compute|what\s+is)/i.test(t);
 
   const createTool = detectQuickToolFromText(t);
-  const wantsResearchThenCreate =
-    !!createTool &&
-    (wantsKnowledge ||
-      wantsWeb ||
-      /찾[아아서여]|검색(해서|한\s*뒤|후)?|요약해서|바탕으로|기반으로|그걸로|그것으로/.test(t) ||
-      /\b(find|search|summarize).{0,40}\b(then|and)\b.{0,40}\b(make|create|build|generate)\b/i.test(
-        t,
-      ));
+  // 조사→생성은 서재/웹 등 실제 외부 소스가 필요할 때만. "요약해서 PPT"만으로는
+  // 퀵툴 직행이 충분하다(오케스트레이션 allowlist에 없는 도구도 훔치지 않음).
+  const wantsResearchThenCreate = !!createTool && (wantsKnowledge || wantsWeb);
 
   if (wantsResearchThenCreate) return true;
   if (wantsKnowledge || wantsWeb) return true;

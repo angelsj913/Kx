@@ -659,10 +659,12 @@ export default function ChatWorkspace({
     ]);
 
     const filesToUpload = spokenTurn ? [] : pending.map((p) => p.file);
-    const quickToolId = spokenTurn ? null : activeQuickTool?.id ?? null;
+    const quickToolId = activeQuickTool?.id ?? null;
     if (!spokenTurn) {
       setDraft("");
       setPending([]);
+      // 한 번 보내면 칩을 해제 — 다음 일반 채팅이 같은 퀵툴에 묶이지 않게 한다.
+      setActiveQuickTool(null);
     }
 
     await runGeneration(

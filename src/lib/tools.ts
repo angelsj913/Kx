@@ -678,7 +678,8 @@ export const TOOLS: ToolDef[] = [
     inputType: "audio",
     outputType: "markdown",
     systemInstruction: AUDIO_INSTRUCTION,
-    placeholder: "",
+    placeholder:
+      "수업·강의 녹음 파일을 첨부한 뒤 정리하기를 눌러 주세요.",
     submitLabel: "음성 정리하기",
     fileBaseName: "class-notes",
   },

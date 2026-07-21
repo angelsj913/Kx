@@ -84,9 +84,27 @@ export function detectQuickToolFromText(text: string): string | null {
     return "note-a4";
   }
 
-  // ── 시험지 ──
+  // ── 시험지 분석 / 유사도 (만들기에 앞서 판별) ──
+  const examNoun = /시험지|문제지|답안지|시험\s*사진|\b(exam|test)\s*(paper|sheet|photo)/i.test(t);
   if (
-    /시험지|문제지|퀴즈\s*(만들|작성|생성)|모의고사/i.test(t) ||
+    examNoun &&
+    (/유사도|비슷한\s*(시험|문제)|비교/.test(t) ||
+      /\b(similarit|compare|comparison)\b/i.test(t))
+  ) {
+    return "exam-similarity";
+  }
+  if (
+    examNoun &&
+    (/분석|채점|첨삭|피드백|틀린\s*문제/.test(t) ||
+      /\b(analy[sz]e|analysis|grade|feedback)\b/i.test(t))
+  ) {
+    return "exam-analysis";
+  }
+
+  // ── 시험지 만들기 ──
+  if (
+    (/시험지|문제지|퀴즈/.test(t) && /(만들|작성|생성)/.test(t)) ||
+    /모의고사|퀴즈\s*(만들|작성|생성)/i.test(t) ||
     // 영어: "practice exam/test", "quiz", "mock exam"
     /\b(practice\s*(exam|test)|mock\s*exam|quiz)\b/i.test(t)
   ) {
@@ -99,49 +117,59 @@ export function detectQuickToolFromText(text: string): string | null {
     /\b(translate|translation)\b/i.test(t);
   if (wantsTranslate) return "doc-translate";
 
-  // ── 이미지 생성 (math-graph의 "그려줘"와 겹치지 않도록 그림/이미지/사진 등
-  // 명시적 명사가 있을 때만 매칭한다) ──
-  const solidShapeNounEarly =
-    /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체/.test(t) ||
-    /\b(pyramid|cube|cuboid|prism|cylinder|cone|tetrahedron|polyhedron)\b/i.test(t);
+  // ── 수학 그래프 / 3D 도형 (이미지보다 먼저 — sin(x)/구 등이 그림으로 새지 않게) ──
+  const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
+  // "함수" 단독은 "함수형 이미지" 등에 오탐하므로 그래프/그리기 단서와 함께일 때만
+  const hasMathDrawCue =
+    /그래프|방정식|좌표|곡선|곡면|sin\s*\(|cos\s*\(|tan\s*\(|sqrt\s*\(/i.test(t) ||
+    /\b(plot|graph|equation|curve|surface)\b/i.test(t) ||
+    (/함수/.test(t) && /(그래프|그려|시각화|좌표|방정식|plot|graph)/i.test(t)) ||
+    (/\bfunction\b/i.test(t) && /\b(plot|graph|draw|visuali[sz]e)\b/i.test(t)) ||
+    hasEquationShape;
+  const wants3DExplicit = /\b3d\b/i.test(t) || /입체/.test(t) || /\bsolid\s*shape\b/i.test(t);
+  // "공" 단독은 공포/공간 등과 겹치므로 제외. "구"는 한글 음절 경계로만.
+  const solidShapeNoun =
+    /삼각뿔|사각뿔|각뿔|피라미드|정육면체|육면체|직육면체|각기둥|원기둥|원뿔|정사면체|다면체|구체|도넛|토러스|(?<![가-힣])구(?![가-힣])/.test(
+      t,
+    ) ||
+    /\b(pyramid|cube|cuboid|prism|cylinder|cone|tetrahedron|polyhedron|sphere|ball|torus|donut)\b/i.test(
+      t,
+    );
   const hasImageNoun =
-    /그림|이미지|사진|삽화|일러스트(레이션)?|아이콘|로고|캐릭터|고양이|강아지|풍경|인물/.test(t) ||
-    /\b(image|picture|photo|illustration|artwork|icon|logo|cat|dog|landscape|portrait)\b/i.test(t);
+    /그림|이미지|사진|삽화|일러스트(레이션)?|아이콘|로고|캐릭터|고양이|강아지|풍경|인물|포스터/.test(
+      t,
+    ) ||
+    /\b(image|picture|photo|illustration|artwork|icon|logo|cat|dog|landscape|portrait|poster)\b/i.test(
+      t,
+    );
+  const wantsDrawVerb =
+    /그려\s*줘|그려\s*주세요|그려줘|그리기|시각화|표현해|만들어\s*줘|생성해/.test(t) ||
+    /\b(plot|graph|visuali[sz]e|draw|make|create|generate|show)\b/i.test(t);
+  const wantsGraph =
+    /그래프/.test(t) ||
+    /\b(plot|graph)\b/i.test(t) ||
+    (hasMathDrawCue && wantsDrawVerb) ||
+    (hasEquationShape && wantsDrawVerb) ||
+    // 3D만으로 이미지 명사(고양이 3D 그려줘)를 훔치지 않음 — 입체 도형 명사/식과 함께일 때만
+    (wants3DExplicit && solidShapeNoun && wantsDrawVerb) ||
+    (wants3DExplicit && hasEquationShape) ||
+    (solidShapeNoun && wantsDrawVerb && !hasImageNoun);
+  if (wantsGraph) return "math-graph";
+
+  // ── 이미지 생성 ──
   const wantsImageGen =
     (hasImageNoun && /(그려|만들|생성|디자인)/.test(t)) ||
     /\b(draw|generate|create|make)\b.*\b(image|picture|photo|illustration|artwork|icon|logo)\b/i.test(
       t,
     ) ||
-    // "고양이 그려줘"처럼 그림 명사 없이 그려줘만 있어도, 그래프/수식/입체도형 단서가 없으면 이미지로
     (/(그려\s*줘|그려\s*주세요|그려줘)/.test(t) &&
-      !solidShapeNounEarly &&
-      !/그래프|함수|방정식|좌표|plot|graph|f\s*\(/i.test(t) &&
-      !/[a-zA-Z]\s*=\s*[^=]/.test(t));
+      !solidShapeNoun &&
+      !hasMathDrawCue &&
+      !hasEquationShape);
   if (wantsImageGen) return "image-gen";
 
-  // ── 수학 그래프 / 3D 도형 (그래프 요청이 더 구체적이므로 수학 풀이보다 먼저 판별) ──
-  const hasEquationShape = /[a-zA-Z]\s*=\s*[^=]/.test(t) || /f\s*\(\s*x/i.test(t);
-  const wants3DExplicit = /\b3d\b/i.test(t) || /입체/.test(t) || /\bsolid\s*shape\b/i.test(t);
-  // 삼각뿔·정육면체 등은 함수식이 없어도 그 자체로 3D 입체 요청이 명확한 명사들.
-  const solidShapeNoun = solidShapeNounEarly;
-  const wantsDrawVerb =
-    /그래프|그려\s*줘|그려\s*주세요|그리기|시각화/.test(t) ||
-    /\b(plot|graph|visuali[sz]e|draw)\b/i.test(t);
-  // "3D"/"입체" 단독(3D 프린터 등)은 제외 — 그래프·도형 단서와 함께일 때만
-  const wantsGraph =
-    /그래프/.test(t) ||
-    /\b(plot|graph|visuali[sz]e)\b/i.test(t) ||
-    (hasEquationShape && /(그려|시각화|보여|그리기)/.test(t)) ||
-    (hasEquationShape && /\b(plot|graph|draw|visuali[sz]e|show)\b/i.test(t)) ||
-    (wants3DExplicit && (wantsDrawVerb || solidShapeNoun || hasEquationShape)) ||
-    (solidShapeNoun && /(만들|그려|생성|보여|그리기)/.test(t)) ||
-    (solidShapeNoun && /\b(make|create|draw|generate|show|plot)\b/i.test(t));
-  if (wantsGraph) return "math-graph";
-
-  // ── 수학 풀이 (검산·교차검증이 붙는 전용 도구라, 자연스러운 표현도 최대한 걸리게 한다) ──
+  // ── 수학 풀이 ──
   // 뺄셈(-)은 날짜·전화번호·점수 표기와 겹쳐 오탐이 잦아 산술 패턴에서는 제외한다.
-  // "=" 앞뒤에 변수 계수(2x+3=7)처럼 붙어 있으면 hasEquationShape(변수= 형태)에 안
-  // 걸리니, "=이 있고 문자·숫자가 둘 다 있으면 방정식"이라는 더 넓은 신호를 추가한다.
   const hasArithmeticShape =
     hasEquationShape ||
     (/=/.test(t) && /[a-zA-Z]/.test(t) && /\d/.test(t)) ||
@@ -149,7 +177,6 @@ export function detectQuickToolFromText(text: string): string | null {
     /[a-zA-Z]\s*\^\s*\d/.test(t);
   const wantsSolveVerb =
     /풀어|풀이|구해|계산해|답\s*(은|이)?\s*(뭐|무엇)|얼마|몇\s*(이|인가|이야|야)/.test(t) ||
-    // 영어: "solve", "calculate", "what is the answer", "evaluate", "find x"
     /\b(solve|calculate|evaluate|compute)\b|\bwhat('?s|\s+is)\s+(the\s+)?answer\b|\bfind\s+[a-zA-Z]\b/i.test(
       t,
     );

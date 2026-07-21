@@ -404,9 +404,7 @@ export async function runToolGeneration(
       noteProviderFailure("gemini", err);
       // Gemini 쿼터/키 실패 시 키 없는 폴백으로 이어간다
       const { generateImageFallback } = await import("./imageFallback");
-      const fb = await generateImageFallback(
-        [tool.systemInstruction?.slice(0, 200), input.text!.trim()].filter(Boolean).join("\n"),
-      );
+      const fb = await generateImageFallback(input.text!.trim());
       data = fb.data;
       mimeType = fb.mimeType;
       provider = fb.provider;
