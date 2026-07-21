@@ -408,8 +408,8 @@ export async function runToolGeneration(
   }
 
   if (tool.outputType === "image") {
-    let data: string;
-    let mimeType: string;
+    let data = "";
+    let mimeType = "image/png";
     let model = "";
     if (tool.id === "image-upscale") {
       const source = input.images?.[0];
@@ -453,6 +453,7 @@ export async function runToolGeneration(
         }
         if (lastError) throw lastError;
       }
+      if (!data) throw new Error("이미지를 생성하지 못했습니다.");
       data = await upscaleImage2x(data);
       mimeType = "image/png";
       model = `${model}+lanczos3-2x`;
