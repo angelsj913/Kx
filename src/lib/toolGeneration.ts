@@ -5,9 +5,9 @@ import { validateDeck, validateWorkbook } from "./pptValidate";
 import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
 import { geminiGenerateForTool, geminiGenerateImage, SafetyRefusalError } from "./gemini";
-import { getOpenRouterImageModels, openRouterGenerateImage } from "./openaiCompat";
+import { openRouterGenerateImage } from "./openaiCompat";
 import { noteProviderFailure } from "./providerHealth";
-import type { ModelTier } from "./models";
+import { imageGenerationCandidates, type ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
@@ -420,39 +420,29 @@ export async function runToolGeneration(
     } else {
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
       const prompt = input.text!.trim();
-      try {
-        // 이미지 생성은 Gemini를 먼저 사용하고, 빈 결과·일시 오류에서만 OpenRouter로 넘어간다.
-        const img = await geminiGenerateImage({
-          prompt,
-          systemInstruction: tool.systemInstruction,
-        });
-        data = img.data;
-        mimeType = img.mimeType;
-        model = "gemini-2.5-flash-image";
-      } catch (err) {
-        if (err instanceof SafetyRefusalError) throw err;
-        noteProviderFailure("gemini", err);
-        const models = [
-          process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5",
-          ...(await getOpenRouterImageModels()),
-        ];
-        let lastError: unknown = err;
-        for (const candidate of [...new Set(models)]) {
-          try {
-            const img = await openRouterGenerateImage({ prompt, model: candidate });
-            data = img.data;
-            mimeType = img.mimeType;
-            model = img.model;
-            lastError = null;
-            break;
-          } catch (fallbackError) {
-            if (fallbackError instanceof SafetyRefusalError) throw fallbackError;
-            noteProviderFailure("openrouter", fallbackError);
-            lastError = fallbackError;
-          }
+      const candidates = await imageGenerationCandidates();
+      let lastError: unknown;
+      for (const candidate of candidates) {
+        try {
+          const img =
+            candidate.provider === "gemini"
+              ? await geminiGenerateImage({
+                  prompt,
+                  systemInstruction: tool.systemInstruction,
+                })
+              : await openRouterGenerateImage({ prompt, model: candidate.model });
+          data = img.data;
+          mimeType = img.mimeType;
+          model = candidate.model;
+          lastError = null;
+          break;
+        } catch (err) {
+          if (err instanceof SafetyRefusalError) throw err;
+          noteProviderFailure(candidate.provider, err);
+          lastError = err;
         }
-        if (lastError) throw lastError;
       }
+      if (lastError) throw lastError;
       if (!data) throw new Error("이미지를 생성하지 못했습니다.");
       data = await upscaleImage2x(data);
       mimeType = "image/png";

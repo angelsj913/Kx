@@ -10,13 +10,12 @@ import {
   compatChatReply,
   compatChatReplyStream,
   compatGenerateForTool,
-  getOpenRouterVisionModels,
   hasProviderKey,
   listConfiguredProviders,
 } from "./openaiCompat";
 import {
   FALLBACK_MODELS,
-  MULTIMODAL_MODELS,
+  buildVisionCandidates,
   modelsForTier,
   type ModelDef,
   type ModelTier,
@@ -86,17 +85,9 @@ export interface FallbackResult {
   attempts: number;
 }
 
-/** Gemini Flash → configured OpenRouter vision 1/2 → Groq vision. */
+/** Free→Paid→Free→Paid interleaved vision chain. */
 async function imageVisionCandidates(): Promise<ModelDef[]> {
-  const gemini = MULTIMODAL_MODELS.find((model) => model.provider === "gemini");
-  const groq = MULTIMODAL_MODELS.find((model) => model.provider === "groq");
-  const openRouter = hasProviderKey("openrouter")
-    ? (await getOpenRouterVisionModels()).map((model) => ({
-        provider: "openrouter" as const,
-        model,
-      }))
-    : [];
-  return [gemini, ...openRouter, groq].filter((model): model is ModelDef => !!model);
+  return buildVisionCandidates();
 }
 
 async function invokeModel(

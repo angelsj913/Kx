@@ -12,6 +12,7 @@ import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {
   modelsForTier,
   modelsForVerify,
+  buildVisionCandidates,
   type ModelDef,
   type ModelTier,
   type Provider,
@@ -136,7 +137,9 @@ export async function runBackendRoute(args: {
     agentId: AGENT_ID,
   });
 
-  const candidates = modelsForTier(tier, { multimodal: args.hasFiles });
+  const candidates = args.hasFiles
+    ? await buildVisionCandidates()
+    : modelsForTier(tier);
 
   // ── 2. generate ──
   stages.push("generate");

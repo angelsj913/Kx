@@ -619,37 +619,62 @@ async function capabilities(): Promise<OpenRouterCapabilityCache> {
   return openRouterCapabilitiesPending;
 }
 
-/** 환경변수 우선 순서를 보존하면서 현재 OpenRouter에서 제공하는 모델만 남긴다. */
-export async function getOpenRouterVisionModels(): Promise<string[]> {
+function filterVisionModels(preferred: string[], available: Set<string>): string[] {
+  const availableBase = new Set([...available].map((model) => model.replace(/:free$/, "")));
+  return preferred.filter(
+    (model) =>
+      available.size === 0 ||
+      available.has(model) ||
+      availableBase.has(model.replace(/:free$/, "")),
+  );
+}
+
+/** 무료 OpenRouter 비전 모델 — OPENROUTER_VISION_MODELS env, :free 접미사 우선. */
+export async function getOpenRouterVisionModelsFree(): Promise<string[]> {
   const preferred = configuredModels("OPENROUTER_VISION_MODELS", [
     "qwen/qwen2.5-vl-72b-instruct:free",
     "meta-llama/llama-3.2-11b-vision-instruct:free",
   ]);
   try {
     const available = new Set((await capabilities()).visionModels);
-    const availableBase = new Set([...available].map((model) => model.replace(/:free$/, "")));
-    return preferred
-      .filter(
-        (model) =>
-          available.size === 0 ||
-          available.has(model) ||
-          availableBase.has(model.replace(/:free$/, "")),
-      )
-      .slice(0, 2);
+    return filterVisionModels(preferred, available).slice(0, 2);
   } catch {
     return preferred.slice(0, 2);
   }
 }
 
+/** 유료 OpenRouter 비전 모델 — OPENROUTER_VISION_PAID_MODELS env. */
+export async function getOpenRouterVisionModelsPaid(): Promise<string[]> {
+  const preferred = configuredModels("OPENROUTER_VISION_PAID_MODELS", [
+    "qwen/qwen2.5-vl-72b-instruct",
+    "meta-llama/llama-3.2-11b-vision-instruct",
+  ]);
+  try {
+    const available = new Set((await capabilities()).visionModels);
+    return filterVisionModels(preferred, available).slice(0, 2);
+  } catch {
+    return preferred.slice(0, 2);
+  }
+}
+
+/** @deprecated Use getOpenRouterVisionModelsFree() for interleaved vision routing. */
+export async function getOpenRouterVisionModels(): Promise<string[]> {
+  return getOpenRouterVisionModelsFree();
+}
+
+/** 비용 순서대로 OpenRouter 이미지 생성 폴백 모델 (primary 제외). */
 export async function getOpenRouterImageModels(): Promise<string[]> {
+  const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
   const preferred = configuredModels("OPENROUTER_IMAGE_FALLBACK_MODELS", []);
   try {
     const available = (await capabilities()).imageModels;
-    const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
-    const ordered = [...preferred, ...available.filter((model) => model !== primary)];
-    return [...new Set(ordered)].slice(0, 2);
+    const ordered = [
+      ...preferred,
+      ...available.filter((model) => model !== primary && !preferred.includes(model)),
+    ];
+    return [...new Set(ordered)];
   } catch {
-    return preferred.slice(0, 2);
+    return preferred;
   }
 }
 
