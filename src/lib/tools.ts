@@ -869,6 +869,21 @@ export const TOOLS: ToolDef[] = [
     fileBaseName: "generated-image",
   },
   {
+    id: "image-upscale",
+    label: "이미지 고화질 확대",
+    short: "고화질 확대",
+    title: "이미지 고화질 확대",
+    description: "이미지를 2배 해상도로 확대해 다운로드할 수 있습니다.",
+    icon: ImagePlus,
+    inputType: "image",
+    outputType: "image",
+    systemInstruction: "",
+    placeholder: "확대할 이미지를 첨부하세요.",
+    submitLabel: "2배 확대",
+    fileBaseName: "upscaled-image",
+    acceptFiles: "image/*",
+  },
+  {
     // 에이전트는 일반 도구가 아니라, 챗 라우트가 quickToolId==="agent"로 가로채
     // 도구 오케스트레이션 루프(runAgentRoute)로 보낸다. runToolGeneration에는
     // 도달하지 않으므로 systemInstruction/outputType은 칩 렌더링용 형식값이다.

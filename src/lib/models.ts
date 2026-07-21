@@ -196,7 +196,9 @@ export const VISION_FALLBACK: ModelDef[] = [
 ];
 
 const TEXT_CHAIN = buildTextChain();
-const MULTI_CHAIN: ModelDef[] = [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
+// 이미지 입력은 OpenRouter 호환 비전 모델을 우선 사용한다. Gemini는 최후 수단이며
+// OPENROUTER_API_KEY만으로도 이미지 읽기 기능을 사용할 수 있어야 한다.
+const MULTI_CHAIN: ModelDef[] = [...VISION_FALLBACK, G_FLASH, G_FLASH_LITE, G_PRO];
 
 export const FALLBACK_MODELS: ModelDef[] = TEXT_CHAIN;
 export const MULTIMODAL_MODELS: ModelDef[] = MULTI_CHAIN;
@@ -206,9 +208,8 @@ export function modelsForTier(
   opts?: { multimodal?: boolean },
 ): ModelDef[] {
   if (opts?.multimodal) {
-    // Gemini 우선, 그다음 무료 비전 폴백(크레딧 소진 대비).
-    if (tier === "top") return [G_FLASH, G_PRO, G_FLASH_LITE, ...VISION_FALLBACK];
-    return [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
+    if (tier === "top") return [...VISION_FALLBACK, G_PRO, G_FLASH, G_FLASH_LITE];
+    return [...VISION_FALLBACK, G_FLASH, G_FLASH_LITE, G_PRO];
   }
   if (tier === "top") return buildTextChain(8, "top");
   if (tier === "priority") return buildTextChain(6, "priority");

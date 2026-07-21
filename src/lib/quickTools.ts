@@ -14,7 +14,7 @@ export const FEATURE_GROUPS: {
   {
     id: "create",
     label: "문서 · 파일",
-    toolIds: ["bizdoc", "word-doc", "ppt", "excel", "doc-convert", "note-a4", "image-gen", "doc-translate"],
+    toolIds: ["bizdoc", "word-doc", "ppt", "excel", "doc-convert", "note-a4", "image-gen", "image-upscale", "doc-translate"],
   },
   {
     id: "learn",

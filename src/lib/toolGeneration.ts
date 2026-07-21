@@ -1,9 +1,11 @@
 import { put } from "@vercel/blob";
+import sharp from "sharp";
 import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
 import { validateDeck, validateWorkbook } from "./pptValidate";
 import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
 import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
-import { geminiGenerateForTool, geminiGenerateImage } from "./gemini";
+import { geminiGenerateForTool } from "./gemini";
+import { openRouterGenerateImage } from "./openaiCompat";
 import { noteProviderFailure } from "./providerHealth";
 import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
@@ -43,7 +45,7 @@ export interface ToolGenerationInput {
 }
 
 interface Meta {
-  provider: FallbackResult["provider"];
+  provider: FallbackResult["provider"] | "local";
   model: FallbackResult["model"];
   attempts: number;
 }
@@ -172,13 +174,15 @@ async function verifyAndAnnotateMathSolve(
       };
     }
     try {
+      const excluded =
+        finalMeta.provider === "local" ? [] : [finalMeta.provider];
       const crossCheck = await generateWithFallback({
         tool,
         text: input.text,
         audio: input.audio,
         images: input.images,
         modelTier: input.modelTier,
-        excludeProviders: [finalMeta.provider],
+        excludeProviders: excluded,
       });
       const crossRaw = stripHanja(crossCheck.text);
       const primaryAnswer = extractFinalAnswer(finalRaw);
@@ -192,7 +196,7 @@ async function verifyAndAnnotateMathSolve(
             audio: input.audio,
             images: input.images,
             modelTier: input.modelTier,
-            excludeProviders: [finalMeta.provider, crossCheck.provider],
+            excludeProviders: [...excluded, crossCheck.provider],
           });
           const tieRaw = stripHanja(tieBreak.text);
           const tieAnswer = extractFinalAnswer(tieRaw);
@@ -394,19 +398,34 @@ export async function runToolGeneration(
   }
 
   if (tool.outputType === "image") {
-    if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
     let data: string;
     let mimeType: string;
-    try {
-      const img = await geminiGenerateImage({
-        prompt: input.text!.trim(),
-        systemInstruction: tool.systemInstruction,
-      });
-      data = img.data;
-      mimeType = img.mimeType;
-    } catch (err) {
-      noteProviderFailure("gemini", err);
-      throw err;
+    let model = "";
+    if (tool.id === "image-upscale") {
+      const source = input.images?.[0];
+      if (!source) throw new Error("확대할 이미지를 첨부해 주세요.");
+      const image = sharp(Buffer.from(source.data, "base64")).rotate();
+      const metadata = await image.metadata();
+      const width = Math.min((metadata.width ?? 1024) * 2, 4096);
+      const height = Math.min((metadata.height ?? 1024) * 2, 4096);
+      data = (await image.resize(width, height, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()).toString(
+        "base64",
+      );
+      mimeType = "image/png";
+      model = "lanczos3-2x";
+    } else {
+      if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
+      try {
+        const img = await openRouterGenerateImage({
+          prompt: input.text!.trim(),
+        });
+        data = img.data;
+        mimeType = img.mimeType;
+        model = img.model;
+      } catch (err) {
+        noteProviderFailure("openrouter", err);
+        throw err;
+      }
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
@@ -419,7 +438,7 @@ export async function runToolGeneration(
       tool,
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
-      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+      meta: { provider: tool.id === "image-upscale" ? "local" : "openrouter", model, attempts: 1 },
     };
   }
 

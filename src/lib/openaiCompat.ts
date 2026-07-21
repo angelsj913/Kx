@@ -14,6 +14,12 @@ export interface CompatProviderConfig {
   missingKeyMessage: string;
 }
 
+export interface GeneratedImage {
+  data: string;
+  mimeType: string;
+  model: string;
+}
+
 export const PROVIDER_CONFIG: Record<
   Exclude<Provider, "gemini">,
   CompatProviderConfig
@@ -488,6 +494,58 @@ export function hasProviderKey(provider: Provider): boolean {
   const cfg = PROVIDER_CONFIG[provider as Exclude<Provider, "gemini">];
   if (!cfg) return false;
   return !!process.env[cfg.envKey]?.trim();
+}
+
+/**
+ * OpenRouter의 OpenAI 호환 이미지 생성 엔드포인트.
+ * 모델은 배포 환경에서 OPENROUTER_IMAGE_MODEL로 교체할 수 있으며, Gemini 키에 의존하지 않는다.
+ */
+export async function openRouterGenerateImage(input: {
+  prompt: string;
+  model?: string;
+}): Promise<GeneratedImage> {
+  const cfg = PROVIDER_CONFIG.openrouter;
+  const key = requireKey(cfg);
+  const model = input.model || process.env.OPENROUTER_IMAGE_MODEL || "openai/gpt-image-1";
+  const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({
+      model,
+      prompt: input.prompt,
+      size: "1024x1024",
+      response_format: "b64_json",
+    }),
+  });
+  if (!res.ok) {
+    let detail = `OpenRouter 이미지 생성 오류 (${res.status})`;
+    try {
+      detail = extractErrorMessage(await res.json(), detail);
+    } catch {
+      /* keep status message */
+    }
+    throw new Error(detail);
+  }
+  const payload = await res.json();
+  const image = payload?.data?.[0];
+  if (typeof image?.b64_json === "string" && image.b64_json) {
+    return { data: image.b64_json, mimeType: "image/png", model };
+  }
+  if (typeof image?.url === "string" && image.url) {
+    const downloaded = await fetch(image.url);
+    if (!downloaded.ok) throw new Error("생성된 이미지를 가져오지 못했습니다.");
+    const type = downloaded.headers.get("content-type") || "image/png";
+    return {
+      data: Buffer.from(await downloaded.arrayBuffer()).toString("base64"),
+      mimeType: type,
+      model,
+    };
+  }
+  throw new Error("OpenRouter가 이미지 데이터를 반환하지 않았습니다.");
 }
 
 export function listConfiguredProviders(): {
