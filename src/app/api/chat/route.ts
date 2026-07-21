@@ -511,6 +511,31 @@ export async function POST(request: Request) {
             }
           }
 
+          // 문제 번호·교재명·학년 등 텍스트 메타만으로도 서재에서 해당 수학 문제를 찾는다.
+          // 사진이 있을 때는 사진 자체를 1차 근거로 두어 불필요한 검색 주입을 피한다.
+          if (quickToolId === "math-solve" && imageLike.length === 0 && text.trim()) {
+            try {
+              const { retrieveChunks } = await import("@/lib/ragSearch");
+              const found = await retrieveChunks({
+                userId,
+                workspaceId: chatSession.workspaceId ?? null,
+                query: text,
+                k: 3,
+              });
+              if (found.ranked.length) {
+                toolText = [
+                  "[서재에서 찾은 문제/교재 근거 — 번호·메타가 일치하는지 확인한 뒤에만 사용]",
+                  ...found.ranked.map((chunk) => `${chunk.title}\n${chunk.content}`),
+                  "",
+                  "[사용자 요청]",
+                  text,
+                ].join("\n\n");
+              }
+            } catch (err) {
+              console.warn("[chat route] math metadata search skipped:", err);
+            }
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text: toolText,

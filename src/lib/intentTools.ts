@@ -145,6 +145,7 @@ export function detectQuickToolFromText(text: string): string | null {
     );
   if (
     /수학\s*풀이|문제\s*풀어|방정식\s*풀/i.test(t) ||
+    /(?:문제|교재|단원)\s*\d+(?:-\d+)?\s*(?:번)?\s*(?:풀어|풀이|답|해설|찾아)/i.test(t) ||
     /\b(solve\s*this\s*equation|math\s*problem)\b/i.test(t) ||
     (hasArithmeticShape && wantsSolveVerb)
   ) {
@@ -160,7 +161,7 @@ export function toolIntentLabel(toolId: string): string {
     ppt: "PPT 파일 생성",
     excel: "엑셀 파일 생성",
     "word-doc": "문서 작성",
-    presentation: "발표문 작성",
+    presentation: "과제 작성",
     "video-summary": "영상 요약",
     "note-a4": "A4 노트",
     "exam-maker": "시험지",

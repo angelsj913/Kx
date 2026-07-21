@@ -45,6 +45,7 @@ export function validateDeck(deck: Deck): PptValidationResult {
 
   let emptyBulletSlides = 0;
   let visualSlides = 0;
+  const layouts = new Set<string>();
 
   deck.slides.forEach((s, i) => {
     if (!s.title?.trim()) {
@@ -69,13 +70,21 @@ export function validateDeck(deck: Deck): PptValidationResult {
     }
 
     if (hasVisual(s)) visualSlides++;
+    if (s.layout) layouts.add(s.layout);
   });
 
   const visualRatio = visualSlides / deck.slides.length;
-  if (visualRatio < 0.15 && deck.slides.length >= 5) {
+  if (visualRatio < 0.3 && deck.slides.length >= 5) {
     issues.push({
       code: "low_visual_ratio",
-      message: "표·다이어그램 슬라이드 비율이 낮습니다 (15% 미만).",
+      message: "표·다이어그램 슬라이드 비율이 낮습니다 (30% 미만).",
+    });
+  }
+
+  if (deck.slides.length >= 6 && layouts.size < 3) {
+    issues.push({
+      code: "repetitive_layouts",
+      message: "슬라이드 레이아웃이 반복적입니다 (최소 3종 필요).",
     });
   }
 
