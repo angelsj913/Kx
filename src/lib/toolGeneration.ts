@@ -1,6 +1,9 @@
 import { put } from "@vercel/blob";
 import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
-import { geminiGenerateImage } from "./gemini";
+import { validateDeck, validateWorkbook } from "./pptValidate";
+import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
+import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
+import { geminiGenerateForTool, geminiGenerateImage } from "./gemini";
 import { noteProviderFailure } from "./providerHealth";
 import type { ModelTier } from "./models";
 import { getTool, type ToolDef } from "./tools";
@@ -72,6 +75,13 @@ export type ToolGenerationResult =
     }
   | {
       tool: ToolDef;
+      outputType: "docx";
+      text: string;
+      file: { url: string; filename: string; mimeType: string };
+      meta: Meta;
+    }
+  | {
+      tool: ToolDef;
       outputType: "image";
       file: { url: string; filename: string; mimeType: string };
       meta: Meta;
@@ -81,7 +91,6 @@ const MD_EXPORT_TOOLS = new Set([
   "note-a4",
   "video-summary",
   "exam-maker",
-  "word-doc",
   "math-solve",
   "doc-translate",
 ]);
@@ -470,13 +479,70 @@ export async function runToolGeneration(
 
   if (tool.outputType === "pptx") {
     let deck;
+    let pptRaw = raw;
+
+    // 2-pass: outline → fill (품질·구조 안정화)
     try {
-      deck = parseDeck(raw);
+      const outlineTool: ToolDef = {
+        ...tool,
+        systemInstruction: PPT_OUTLINE_INSTRUCTION,
+      };
+      const outlineText = await geminiGenerateForTool({
+        tool: outlineTool,
+        text: input.text,
+        images: input.images,
+      });
+      const fillTool: ToolDef = {
+        ...tool,
+        systemInstruction: `${tool.systemInstruction}\n\n${PPT_FILL_INSTRUCTION_PREFIX}\n\n[아웃라인]\n${outlineText}`,
+      };
+      const filled = await generateWithFallback({
+        tool: fillTool,
+        text: input.text,
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+        onAttempt: input.onAttempt,
+      });
+      pptRaw = filled.text;
+      meta = { provider: filled.provider, model: filled.model, attempts: meta.attempts + filled.attempts };
+    } catch (err) {
+      console.warn("[toolGeneration] ppt 2-pass fallback to single pass", err);
+    }
+
+    try {
+      deck = parseDeck(pptRaw);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
-      console.error("[toolGeneration] pptx parse", msg, raw.slice(0, 400));
+      console.error("[toolGeneration] pptx parse", msg, pptRaw.slice(0, 400));
       throw new Error(msg);
     }
+
+    let validation = validateDeck(deck);
+    if (!validation.ok) {
+      try {
+        const retryTool: ToolDef = {
+          ...tool,
+          systemInstruction: `${tool.systemInstruction}\n\n[검증 실패 — 아래 문제를 고쳐 다시 JSON만 출력]\n${validation.issues.map((i) => i.message).join("\n")}`,
+        };
+        const retry = await generateWithFallback({
+          tool: retryTool,
+          text: input.text,
+          modelTier: input.modelTier,
+          onAttempt: input.onAttempt,
+        });
+        deck = parseDeck(retry.text);
+        meta = {
+          provider: retry.provider,
+          model: retry.model,
+          attempts: meta.attempts + retry.attempts,
+        };
+        validation = validateDeck(deck);
+      } catch (retryErr) {
+        console.warn("[toolGeneration] ppt validate retry failed", retryErr);
+      }
+    }
+
     input.onUploadStart?.();
     const base64 = await buildPptxBase64(deck);
     const safeName = (deck.title || tool.fileBaseName)
@@ -512,6 +578,10 @@ export async function runToolGeneration(
     if (!wb.sheets.length) {
       throw new Error("엑셀 시트가 비어 있습니다. 요청을 더 구체적으로 적어 주세요.");
     }
+    const xlsxValidation = validateWorkbook(wb);
+    if (!xlsxValidation.ok) {
+      throw new Error(xlsxValidation.issues[0]?.message ?? "엑셀 구조 검증 실패");
+    }
     input.onUploadStart?.();
     let base64: string;
     try {
@@ -538,6 +608,26 @@ export async function runToolGeneration(
         filename: `${safeName}.xlsx`,
         mimeType: XLSX_MIME,
       },
+      meta,
+    };
+  }
+
+  // word-doc: real .docx export
+  if (tool.id === "word-doc") {
+    input.onUploadStart?.();
+    const doc = parseMarkdownSections(raw);
+    const base64 = await buildDocxBase64(doc);
+    const safeName = doc.title.replace(/[\\/:*?"<>|]+/g, "").slice(0, 40) || tool.fileBaseName;
+    const blob = await put(
+      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.docx`,
+      Buffer.from(base64, "base64"),
+      { access: "public", contentType: DOCX_MIME, addRandomSuffix: true },
+    );
+    return {
+      tool,
+      outputType: "docx",
+      text: raw,
+      file: { url: blob.url, filename: `${safeName}.docx`, mimeType: DOCX_MIME },
       meta,
     };
   }

@@ -25,7 +25,7 @@ import {
 import type { StructuredKind } from "./structured";
 
 export type InputType = "text" | "url" | "audio" | "image" | "chat" | "mixed";
-export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image";
+export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image" | "docx";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
@@ -815,10 +815,10 @@ export const TOOLS: ToolDef[] = [
     label: "워드 문서 작성",
     short: "워드",
     title: "워드 문서 작성",
-    description: "워드에 바로 붙여넣을 수 있는 완성 문서를 마크다운 구조로 작성합니다.",
+    description: "워드에 바로 쓸 수 있는 .docx 파일을 생성합니다.",
     icon: FileText,
     inputType: "text",
-    outputType: "markdown",
+    outputType: "docx",
     systemInstruction: WORD_DOC_INSTRUCTION,
     placeholder: "예) 주간 업무 보고 문서 / 제안서 초안 …",
     submitLabel: "문서 작성",

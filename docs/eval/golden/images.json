@@ -1,0 +1,10 @@
+[
+  { "id": "img-intent-1", "type": "intent", "text": "고양이 그림 그려줘", "expectedTool": "image-gen" },
+  { "id": "img-intent-2", "type": "intent", "text": "이미지 생성해줘 일몰 풍경", "expectedTool": "image-gen" },
+  { "id": "img-intent-3", "type": "intent", "text": "일러스트 만들어줘", "expectedTool": "image-gen" },
+  { "id": "img-live-1", "type": "live_skip", "note": "image-gen smoke requires GEMINI_API_KEY" },
+  { "id": "img-live-2", "type": "live_skip", "note": "attach vision requires multimodal API" },
+  { "id": "img-hybrid-1", "type": "hybrid_score", "query": "이미지 생성", "content": "gemini-2.5-flash-image 모델로 텍스트에서 이미지 생성", "vectorScore": 0.3, "expectPass": true },
+  { "id": "img-hybrid-2", "type": "hybrid_score", "query": "첨부 재생성", "content": "regenerate 시 Blob URL에서 base64 재로드", "vectorScore": 0.35, "expectPass": true },
+  { "id": "img-hybrid-3", "type": "hybrid_score", "query": "20MB 한도", "content": "클라이언트와 서버 업로드 한도 20MB 통일", "vectorScore": 0.28, "expectPass": true }
+]

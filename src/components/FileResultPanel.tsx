@@ -55,6 +55,23 @@ export default function FileResultPanel({
                 )}
               </div>
             )}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {deck.slides.map((s, i) => (
+                <div
+                  key={`thumb-${i}`}
+                  className="aspect-video overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-slate-100 to-slate-200 p-2 dark:border-slate-700 dark:from-slate-800 dark:to-slate-900"
+                  title={s.title}
+                >
+                  <p className="text-[9px] font-bold text-slate-500">{i + 1}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold text-slate-800 dark:text-slate-100">
+                    {s.title}
+                  </p>
+                  {s.bullets?.[0] && (
+                    <p className="mt-1 line-clamp-2 text-[9px] text-slate-500">{s.bullets[0]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
             <ol className="space-y-3">
               {deck.slides.map((s, i) => (
                 <li

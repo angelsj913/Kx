@@ -18,6 +18,8 @@ import {
 } from "./models";
 import type { ChatMessage } from "./gemini";
 import { listConfiguredProviders } from "./openaiCompat";
+import { chatVerifyLight, chatVerifyDeep, chatBaseSystem } from "./prompts/registry";
+import type { RankedChunk } from "./ragSearch";
 
 export type RouteStage = "classify" | "generate" | "verify" | "complete";
 
@@ -44,23 +46,13 @@ export interface BackendRouteResult {
   providersTried?: string[];
   /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 (스트리밍 전용) */
   interrupted?: boolean;
+  /** RAG 출처 (ChatWorkspace citation cards) */
+  citations?: RankedChunk[];
 }
 
-const VERIFY_LIGHT = `너는 답변 품질을 가볍게 검수하는 에디터다.
-[초안]을 다듬어 **최종 답변만** 출력하라. 메타 코멘트 금지.
-오타·어색한 문장·빠진 핵심만 고치고, 구조를 크게 바꾸지 마라. 날조 금지.`;
-
-const VERIFY_DEEP = `너는 시니어 에디터·검증 에이전트다.
-[초안]을 엄격히 검수해 **최종 답변만** 출력하라. 과정·메타 금지.
-1) 사실·논리 오류 수정  2) 빠진 핵심 보강  3) 구체화  4) 구조 정리  5) 한국어 자연화
-날조 금지. 초안이 이미 좋으면 소폭 다듬기만.`;
-
-const ZEFF_BASE = `너는 ZEFF 워크스페이스 AI 어시스턴트다.
-- 한국어로 명확·친절하게 답한다.
-- 한자(漢字)를 절대 섞지 마라. 한자어 단어는 반드시 한글로만 표기한다(예: "落地 지점" (X) → "착지 지점" (O)).
-- PPT·엑셀·파일 요청이면 긴 텍스트 초안 대신 핵심 구성만 (실제 파일은 전용 경로).
-- 불확실하면 한계를 말한다.
-- 바로 쓸 수 있게 구조화한다.`;
+const VERIFY_LIGHT = chatVerifyLight;
+const VERIFY_DEEP = chatVerifyDeep;
+const ZEFF_BASE = chatBaseSystem;
 
 /**
  * 자유 채팅 시스템 프롬프트.
@@ -121,6 +113,7 @@ export async function runBackendRoute(args: {
   messages: ChatMessage[];
   modelTier?: ModelTier;
   extraSystemInstruction?: string;
+  citations?: RankedChunk[];
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: string; stage: RouteStage }) => void;
   /** 자유 채팅 초안 생성 델타를 실시간 중계한다(퀵툴 경로는 호출하지 않음). */
@@ -202,13 +195,18 @@ export async function runBackendRoute(args: {
   // top/priority(결제 플랜)만 검증 — standard는 지연 최소화를 위해 스킵.
   // top은 엄격 검수(VERIFY_DEEP), priority는 가벼운 교정(VERIFY_LIGHT)만 받는다.
   // 중단된(interrupted) 초안은 이미 불완전하므로 검증하지 않고 그대로 마무리한다.
+  const looksNumeric =
+    /\d{2,}/.test(draft.text) ||
+    /%|통계|평균|비율|계산|수치/.test(draft.text);
   const shouldVerify =
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
     !draft.interrupted &&
-    (tier === "top" || tier === "priority") &&
     draftLen > 600 &&
-    !looksStructured;
+    !looksStructured &&
+    (tier === "top" ||
+      tier === "priority" ||
+      (tier === "standard" && looksNumeric));
 
   if (shouldVerify) {
     stages.push("verify");
@@ -294,5 +292,6 @@ export async function runBackendRoute(args: {
     intentTool,
     providersTried: [...providersTried],
     interrupted: draft.interrupted,
+    citations: args.citations,
   };
 }

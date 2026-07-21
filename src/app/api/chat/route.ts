@@ -15,7 +15,13 @@ import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
-import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
+import { buildZeffRuntimeContext } from "@/lib/zeffContext";
+import {
+  loadInlineFromStored,
+  parseStoredAttachments,
+} from "@/lib/attachmentLoader";
+import { embedTexts } from "@/lib/embeddings";
+import { isProviderSkipped } from "@/lib/providerHealth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +30,15 @@ interface StoredAttachment {
   url: string;
   filename: string;
   mimeType: string;
+}
+
+async function reloadAttachmentsFromMessage(
+  attachments: unknown,
+): Promise<{ stored: StoredAttachment[]; inline: { data: string; mimeType: string }[] }> {
+  const stored = parseStoredAttachments(attachments);
+  if (!stored.length) return { stored: [], inline: [] };
+  const inline = await loadInlineFromStored(stored);
+  return { stored, inline };
 }
 
 type StreamEvent =
@@ -203,6 +218,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
       }
       text = lastUser.text;
+      const reloaded = await reloadAttachmentsFromMessage(lastUser.attachments);
+      storedAttachments = reloaded.stored;
+      inlineFiles = reloaded.inline;
       const lastAssistant = await prisma.chatHistory.findFirst({
         where: { sessionId: resolvedSessionId, role: "model" },
         orderBy: { createdAt: "desc" },
@@ -228,6 +246,9 @@ export async function POST(request: Request) {
         where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
       });
       await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
+      const reloaded = await reloadAttachmentsFromMessage(target.attachments);
+      storedAttachments = reloaded.stored;
+      inlineFiles = reloaded.inline;
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: { updatedAt: new Date() },
@@ -324,6 +345,14 @@ export async function POST(request: Request) {
             role: m.role === "model" ? "model" : "user",
             text: m.text,
           }));
+          if (inlineFiles.length) {
+            for (let i = agentMessages.length - 1; i >= 0; i--) {
+              if (agentMessages[i]?.role === "user") {
+                agentMessages[i] = { ...agentMessages[i]!, files: inlineFiles };
+                break;
+              }
+            }
+          }
 
           const agentResult = await runAgentRoute({
             text,
@@ -406,6 +435,7 @@ export async function POST(request: Request) {
 
           // 영상 요약: YouTube oEmbed 메타 보강
           let toolText = text;
+          let videoTranscriptBadge: string | null = null;
           if (quickToolId === "video-summary") {
             send({
               type: "status",
@@ -414,6 +444,42 @@ export async function POST(request: Request) {
             });
             const enriched = await enrichVideoSummaryPrompt(text);
             toolText = enriched.enrichedText;
+            videoTranscriptBadge = enriched.meta?.hasTranscript
+              ? "🟢 자막 기반 분석"
+              : enriched.meta?.hasTranscript === false
+                ? "🟡 자막 없음 — 추측 요약 금지"
+                : null;
+
+            if (enriched.meta?.hasTranscript && enriched.transcript && enriched.transcriptChunks.length) {
+              const title =
+                enriched.meta.title ?? `YouTube ${enriched.meta.videoId ?? "video"}`;
+              const libItem = await prisma.libraryItem.create({
+                data: {
+                  userId,
+                  workspaceId: chatSession.workspaceId,
+                  title: `[자막] ${title}`.slice(0, 120),
+                  fileUrl: enriched.meta.url,
+                  fileName: `${enriched.meta.videoId ?? "video"}.txt`,
+                  mimeType: "text/plain",
+                  extractedText: enriched.transcript.fullText,
+                },
+              });
+              const { chunkText } = await import("@/lib/rag");
+              const chunks = chunkText(enriched.transcript.fullText, 900, 150);
+              const { vectors } = await embedTexts(chunks.map((c) => c.content));
+              await prisma.documentChunk.deleteMany({ where: { libraryItemId: libItem.id } });
+              await prisma.documentChunk.createMany({
+                data: chunks.map((c, i) => ({
+                  libraryItemId: libItem.id,
+                  userId,
+                  workspaceId: chatSession.workspaceId,
+                  idx: c.idx,
+                  content: c.content,
+                  embedding: vectors[i] ?? [],
+                  provider: process.env.GEMINI_API_KEY ? "gemini" : "local",
+                })),
+              });
+            }
           }
 
           // 대화 맥락 자동 이어받기: 최근 대화를 참고 컨텍스트로 덧붙이고,
@@ -472,6 +538,9 @@ export async function POST(request: Request) {
 
           if (result.outputType === "markdown") {
             replyText = result.text;
+            if (videoTranscriptBadge) {
+              replyText = `${videoTranscriptBadge}\n\n${replyText}`;
+            }
             if (result.file) {
               fileUrl = result.file.url;
               fileName = result.file.filename;
@@ -490,6 +559,10 @@ export async function POST(request: Request) {
             replyText =
               "엑셀 파일(.xlsx)을 만들었어요. 아래에서 확인하고 다운로드하세요.";
             resultData = result.resultData;
+            fileUrl = result.file.url;
+            fileName = result.file.filename;
+          } else if (result.outputType === "docx") {
+            replyText = "워드 문서(.docx)를 만들었어요. 아래에서 다운로드할 수 있어요.";
             fileUrl = result.file.url;
             fileName = result.file.filename;
           } else if (result.outputType === "image") {
@@ -549,7 +622,19 @@ export async function POST(request: Request) {
             files: i === history.length - 1 && inlineFiles.length ? inlineFiles : undefined,
           }));
 
-          const extraSystemInstruction = await buildZeffRuntimeInstruction({
+          const hasPdf = inlineFiles.some((f) => f.mimeType === "application/pdf");
+          const needsGeminiVision =
+            hasPdf || inlineFiles.some((f) => !f.mimeType.startsWith("image/"));
+          if (
+            needsGeminiVision &&
+            (!process.env.GEMINI_API_KEY || isProviderSkipped("gemini"))
+          ) {
+            throw new Error(
+              "PDF·문서 첨부 분석은 Gemini가 필요합니다. GEMINI_API_KEY를 설정하거나 잠시 후 다시 시도해 주세요.",
+            );
+          }
+
+          const extraSystemInstruction = await buildZeffRuntimeContext({
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
@@ -561,7 +646,8 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
-            extraSystemInstruction,
+            extraSystemInstruction: extraSystemInstruction.instruction,
+            citations: extraSystemInstruction.citations,
             signal: request.signal,
             onDelta: (delta) => {
               send({ type: "delta", sessionId: resolvedSessionId, text: delta });
@@ -584,6 +670,11 @@ export async function POST(request: Request) {
             },
           });
 
+          const citationPayload =
+            result.citations && result.citations.length
+              ? JSON.stringify({ citations: result.citations })
+              : undefined;
+
           const assistantRow = await prisma.chatHistory.create({
             data: {
               sessionId: resolvedSessionId,
@@ -593,6 +684,7 @@ export async function POST(request: Request) {
               provider: result.provider,
               modelName: result.model,
               attempts: result.attempts,
+              resultData: citationPayload,
             },
           });
           await prisma.chatSession.update({

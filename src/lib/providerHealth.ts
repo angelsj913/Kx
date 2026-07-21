@@ -37,6 +37,16 @@ export function markProviderHealthy(provider: Provider): void {
   health[provider] = { skipUntil: 0, reason: "" };
 }
 
+export function getProviderCooldownMinutes(provider: Provider): number | null {
+  const until = health[provider]?.skipUntil ?? 0;
+  if (Date.now() >= until) return null;
+  return Math.ceil((until - Date.now()) / 60_000);
+}
+
+export function getProviderSkipReason(provider: Provider): string {
+  return health[provider]?.reason ?? "";
+}
+
 export function noteProviderFailure(provider: Provider, err: unknown): void {
   const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
 

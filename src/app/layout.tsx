@@ -2,23 +2,27 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
-import { SessionProvider } from "next-auth/react";   // ← 추가
+import RootSessionProvider from "@/components/RootSessionProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const notoSansKr = Noto_Sans_KR({
   variable: "--font-noto-kr",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -97,10 +101,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <SessionProvider>           {/* ← 추가 */}
+        <RootSessionProvider>
           <ThemeProvider>{children}</ThemeProvider>
-        </SessionProvider>
-        {/* Vercel Speed Insights — 실사용 성능 지표 수집 */}
+        </RootSessionProvider>
         <SpeedInsights />
       </body>
     </html>
