@@ -255,7 +255,7 @@ async function callCompatTools(
   return { content, toolCalls };
 }
 
-/** 제공자 하나로 에이전트 턴 1회 실행 (폴백은 상위 agentRoute가 담당). */
+/** 제공자 하나로 도구 호출 턴 1회 실행 (폴백은 상위 오케스트레이션이 담당). */
 export async function compatAgentTurn(opts: {
   provider: Exclude<Provider, "gemini">;
   model?: string;

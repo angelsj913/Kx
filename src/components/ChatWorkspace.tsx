@@ -69,27 +69,54 @@ const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
 const CHAT_MIN = 320;
 
-/** 에이전트 작업 단계 (status key → 계획 단계) */
+/** 백엔드 라우트 / 도구 오케스트레이션 단계 (status key → 계획 단계) */
 const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
   {
     id: "select",
     label: "status.pipeline.select",
-    keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
+    keys: [
+      "status.agent.selecting",
+      "status.analyzing",
+      "status.routing",
+      "status.route.start",
+      "status.route.classify",
+    ],
   },
   {
     id: "research",
     label: "status.pipeline.research",
-    keys: ["status.researching", "status.context", "status.reading"],
+    keys: [
+      "status.researching",
+      "status.context",
+      "status.reading",
+      "status.route.orchestrate",
+      "status.route.orchestrate.tool",
+    ],
   },
   {
     id: "generate",
     label: "status.pipeline.generate",
-    keys: ["status.generating", "status.writing", "status.tool", "status.building"],
+    keys: [
+      "status.generating",
+      "status.writing",
+      "status.tool",
+      "status.building",
+      "status.route.generate",
+      "status.route.generate.try",
+    ],
   },
   {
     id: "finalize",
     label: "status.pipeline.finalize",
-    keys: ["status.finalizing", "status.saving", "status.done"],
+    keys: [
+      "status.finalizing",
+      "status.saving",
+      "status.done",
+      "status.route.verify.light",
+      "status.route.verify.deep",
+      "status.route.complete",
+      "status.route.complete.refined",
+    ],
   },
 ];
 
@@ -601,6 +628,14 @@ export default function ChatWorkspace({
     if (spokenTurn && !text) return;
     if (!spokenTurn && ((!text && pending.length === 0) || loading)) return;
     if (requiresAttachment && pending.length === 0) return;
+    if (
+      !spokenTurn &&
+      activeQuickTool?.id === "exam-similarity" &&
+      pending.filter((p) => p.file.type.startsWith("image/")).length < 2
+    ) {
+      setError(t("chat.examSimilarityNeedTwo"));
+      return;
+    }
     // mixed/url: 텍스트·첨부 중 하나는 있어야 함 (위에서 이미 검사)
 
     pushTerminal(`$ zeff run — "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}"`, "info");
@@ -624,10 +659,12 @@ export default function ChatWorkspace({
     ]);
 
     const filesToUpload = spokenTurn ? [] : pending.map((p) => p.file);
-    const quickToolId = spokenTurn ? null : activeQuickTool?.id ?? null;
+    const quickToolId = activeQuickTool?.id ?? null;
     if (!spokenTurn) {
       setDraft("");
       setPending([]);
+      // 한 번 보내면 칩을 해제 — 다음 일반 채팅이 같은 퀵툴에 묶이지 않게 한다.
+      setActiveQuickTool(null);
     }
 
     await runGeneration(
@@ -692,8 +729,12 @@ export default function ChatWorkspace({
 
   const requiresAttachment =
     activeQuickTool != null && toolRequiresAttachment(activeQuickTool);
+  const examSimilarityReady =
+    activeQuickTool?.id !== "exam-similarity" ||
+    pending.filter((p) => p.file.type.startsWith("image/")).length >= 2;
   const canSend =
     !loading &&
+    examSimilarityReady &&
     (requiresAttachment
       ? pending.length > 0
       : draft.trim().length > 0 || pending.length > 0);
@@ -1128,6 +1169,11 @@ export default function ChatWorkspace({
               {activeQuickTool.id === "exam-maker" && (
                 <span className="text-[11px] text-slate-500">
                   {t("quicktool.examMaker.placeholder")}
+                </span>
+              )}
+              {activeQuickTool.id === "exam-similarity" && (
+                <span className="text-[11px] text-slate-500">
+                  {t("chat.examSimilarityNeedTwo")}
                 </span>
               )}
             </div>

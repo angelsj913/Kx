@@ -13,6 +13,7 @@ import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption }
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
+import { needsToolOrchestration } from "@/lib/toolOrchestration";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
 import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
@@ -24,6 +25,82 @@ interface StoredAttachment {
   url: string;
   filename: string;
   mimeType: string;
+}
+
+function parseQuickToolFromAgentId(agentId: string | null | undefined): string | null {
+  if (!agentId) return null;
+  if (agentId.startsWith("quicktool:")) {
+    const id = agentId.slice("quicktool:".length).trim();
+    return id || null;
+  }
+  if (agentId === "agent" || agentId.startsWith("agent:")) return "agent";
+  return null;
+}
+
+function parseStoredAttachments(raw: unknown): StoredAttachment[] {
+  if (!Array.isArray(raw)) return [];
+  const out: StoredAttachment[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.url !== "string" || typeof o.filename !== "string") continue;
+    out.push({
+      url: o.url,
+      filename: o.filename,
+      mimeType: typeof o.mimeType === "string" ? o.mimeType : "application/octet-stream",
+    });
+  }
+  return out;
+}
+
+const EXT_MIME: Record<string, string> = {
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  webm: "audio/webm",
+  flac: "audio/flac",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  pdf: "application/pdf",
+};
+
+function inferMimeFromFilename(filename: string, fallback = "application/octet-stream"): string {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_MIME[ext] ?? fallback;
+}
+
+function resolveUploadMime(file: File): string {
+  const t = file.type?.trim();
+  if (t && t !== "application/octet-stream") return t;
+  return inferMimeFromFilename(file.name, t || "application/octet-stream");
+}
+
+async function loadInlineFromStored(
+  atts: StoredAttachment[],
+): Promise<{ data: string; mimeType: string }[]> {
+  const loaded = await Promise.all(
+    atts.map(async (a) => {
+      try {
+        const res = await fetch(a.url);
+        if (!res.ok) return null;
+        const buf = Buffer.from(await res.arrayBuffer());
+        let mimeType = a.mimeType || res.headers.get("content-type") || "application/octet-stream";
+        if (mimeType === "application/octet-stream" || !mimeType.includes("/")) {
+          mimeType = inferMimeFromFilename(a.filename, mimeType);
+        }
+        return { data: buf.toString("base64"), mimeType };
+      } catch (err) {
+        console.warn("[chat route] failed to reload attachment:", a.filename, err);
+        return null;
+      }
+    }),
+  );
+  return loaded.filter((x): x is { data: string; mimeType: string } => x != null);
 }
 
 type StreamEvent =
@@ -91,13 +168,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
-  const autoDetectedTool = !quickToolId && text ? detectQuickToolFromText(text) : null;
-  if (autoDetectedTool) {
-    quickToolId = autoDetectedTool;
-  }
-
   // 전역 AI 킬스위치 · 일일 한도 · 사용자 차단 · 쿼터 · 설정 병렬
+  // 재생성/편집은 텍스트·퀵툴·첨부를 먼저 복원한 뒤 쿼터를 잡아야 올바른 feature가 차감된다.
   const { isAiGloballyEnabled, reserveAiDailySlot, refundAiDailySlot } = await import(
     "@/lib/aiControl"
   );
@@ -120,6 +192,119 @@ export async function POST(request: Request) {
         console.warn("[chat route] daily slot refund failed:", e),
       );
     }
+  }
+
+  const isNewSession = !sessionId;
+  let chatSession;
+  let storedAttachments: StoredAttachment[] = [];
+  let inlineFiles: { data: string; mimeType: string }[] = [];
+  let historyPrepared = false;
+
+  try {
+    if (sessionId) {
+      // 공유 워크스페이스 세션이면 멤버 누구나 이어서 대화할 수 있다.
+      chatSession = await prisma.chatSession.findFirst({
+        where: { id: sessionId, ...(await itemAccessWhere(userId)) },
+      });
+      if (!chatSession) {
+        return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
+      }
+    } else if (!regenerate && !editMessageId) {
+      let scope;
+      try {
+        scope = await resolveScope(request, userId);
+      } catch (err) {
+        if (err instanceof WorkspaceError) {
+          return NextResponse.json({ error: err.message }, { status: err.status });
+        }
+        throw err;
+      }
+      chatSession = await prisma.chatSession.create({
+        data: { userId, workspaceId: scope.workspaceId },
+      });
+    } else {
+      return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    const resolvedSessionIdEarly = chatSession.id;
+
+    if (regenerate) {
+      // 재생성: 마지막 사용자 메시지 텍스트·첨부 + 직전 assistant의 quickToolId를 복원
+      const lastUser = await prisma.chatHistory.findFirst({
+        where: { sessionId: resolvedSessionIdEarly, role: "user" },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!lastUser) {
+        return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
+      }
+      text = lastUser.text;
+      storedAttachments = parseStoredAttachments(lastUser.attachments);
+      if (storedAttachments.length) {
+        inlineFiles = await loadInlineFromStored(storedAttachments);
+      }
+      const lastAssistant = await prisma.chatHistory.findFirst({
+        where: { sessionId: resolvedSessionIdEarly, role: "model" },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!quickToolId) {
+        quickToolId = parseQuickToolFromAgentId(lastAssistant?.agentId);
+      }
+      if (lastAssistant) {
+        await prisma.chatHistory.delete({ where: { id: lastAssistant.id } });
+      }
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionIdEarly },
+        data: { updatedAt: new Date() },
+      });
+      historyPrepared = true;
+    } else if (editMessageId) {
+      // 편집: 첨부는 유지, 이후 기록 삭제 전에 직후 assistant의 도구 ID를 복원
+      const target = await prisma.chatHistory.findFirst({
+        where: { id: editMessageId, sessionId: resolvedSessionIdEarly, role: "user" },
+      });
+      if (!target) {
+        return NextResponse.json({ error: "수정할 메시지를 찾을 수 없습니다." }, { status: 404 });
+      }
+      if (!quickToolId) {
+        const nextAssistant = await prisma.chatHistory.findFirst({
+          where: {
+            sessionId: resolvedSessionIdEarly,
+            role: "model",
+            createdAt: { gt: target.createdAt },
+          },
+          orderBy: { createdAt: "asc" },
+        });
+        quickToolId = parseQuickToolFromAgentId(nextAssistant?.agentId);
+      }
+      storedAttachments = parseStoredAttachments(target.attachments);
+      if (storedAttachments.length) {
+        inlineFiles = await loadInlineFromStored(storedAttachments);
+      }
+      await prisma.chatHistory.deleteMany({
+        where: { sessionId: resolvedSessionIdEarly, createdAt: { gt: target.createdAt } },
+      });
+      await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionIdEarly },
+        data: { updatedAt: new Date() },
+      });
+      historyPrepared = true;
+    }
+  } catch (err) {
+    if (isNewSession && chatSession) {
+      await prisma.chatSession.delete({ where: { id: chatSession.id } }).catch(() => {});
+    }
+    console.error("[chat route] history restore failed:", err);
+    return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
+  }
+
+  // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
+  // 조사+생성 등 오케스트레이션이 필요한 복합 요청은 퀵툴 자동감지를 건너뛰고
+  // 백엔드 라우트 도구 루프로 보낸다. 단순 "PPT 만들어줘"는 기존처럼 퀵툴 직행.
+  // (+) 메뉴의 에이전트 항목은 숨겼지만, quickToolId=agent 강제 모드는 계속 지원.
+  const autoDetectedTool = !quickToolId && text ? detectQuickToolFromText(text) : null;
+  if (autoDetectedTool && !(text && needsToolOrchestration(text))) {
+    quickToolId = autoDetectedTool;
   }
 
   try {
@@ -151,6 +336,9 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     await releaseReservations();
+    if (isNewSession && chatSession && !historyPrepared) {
+      await prisma.chatSession.delete({ where: { id: chatSession.id } }).catch(() => {});
+    }
     if (err instanceof QuotaError) {
       return NextResponse.json({ error: err.message, code: "QUOTA" }, { status: 402 });
     }
@@ -160,84 +348,19 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  const isNewSession = !sessionId;
-  let chatSession;
-  if (sessionId) {
-    // 공유 워크스페이스 세션이면 멤버 누구나 이어서 대화할 수 있다.
-    chatSession = await prisma.chatSession.findFirst({
-      where: { id: sessionId, ...(await itemAccessWhere(userId)) },
-    });
-    if (!chatSession) {
-      await releaseReservations();
-      return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
-    }
-  } else {
-    let scope;
-    try {
-      scope = await resolveScope(request, userId);
-    } catch (err) {
-      await releaseReservations();
-      if (err instanceof WorkspaceError) {
-        return NextResponse.json({ error: err.message }, { status: err.status });
-      }
-      throw err;
-    }
-    chatSession = await prisma.chatSession.create({
-      data: { userId, workspaceId: scope.workspaceId },
-    });
+  if (!chatSession) {
+    await releaseReservations();
+    return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
   }
   const resolvedSessionId = chatSession.id;
 
-  let storedAttachments: StoredAttachment[] = [];
-  let inlineFiles: { data: string; mimeType: string }[] = [];
   try {
-    if (regenerate) {
-      // 재생성: 새 사용자 메시지 없이, 마지막 사용자 메시지를 그대로 재사용해
-      // 마지막 assistant 응답만 지우고 다시 생성한다.
-      const lastUser = await prisma.chatHistory.findFirst({
-        where: { sessionId: resolvedSessionId, role: "user" },
-        orderBy: { createdAt: "desc" },
-      });
-      if (!lastUser) {
-        await releaseReservations();
-        return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
-      }
-      text = lastUser.text;
-      const lastAssistant = await prisma.chatHistory.findFirst({
-        where: { sessionId: resolvedSessionId, role: "model" },
-        orderBy: { createdAt: "desc" },
-      });
-      if (lastAssistant) {
-        await prisma.chatHistory.delete({ where: { id: lastAssistant.id } });
-      }
-      await prisma.chatSession.update({
-        where: { id: resolvedSessionId },
-        data: { updatedAt: new Date() },
-      });
-    } else if (editMessageId) {
-      // 편집: 해당 사용자 메시지 이후 생긴 모든 기록을 지우고, 그 메시지 자체를
-      // 수정된 텍스트로 교체한다 — 이후 대화는 이 지점부터 새로 갈라져 나간다.
-      const target = await prisma.chatHistory.findFirst({
-        where: { id: editMessageId, sessionId: resolvedSessionId, role: "user" },
-      });
-      if (!target) {
-        await releaseReservations();
-        return NextResponse.json({ error: "수정할 메시지를 찾을 수 없습니다." }, { status: 404 });
-      }
-      await prisma.chatHistory.deleteMany({
-        where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
-      });
-      await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
-      await prisma.chatSession.update({
-        where: { id: resolvedSessionId },
-        data: { updatedAt: new Date() },
-      });
-    } else {
+    if (!historyPrepared) {
       // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
       const uploaded = await Promise.all(
         uploads.map(async (file, i) => {
           const buf = Buffer.from(await file.arrayBuffer());
-          const mimeType = file.type || "application/octet-stream";
+          const mimeType = resolveUploadMime(file);
           const blob = await put(
             `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
             buf,
@@ -304,7 +427,8 @@ export async function POST(request: Request) {
 
       try {
         if (quickToolId === "agent") {
-          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 ──
+          // ── 강제 도구 모드: 도구를 스스로 골라 연쇄 호출 ──
+          // (+) 메뉴에는 노출하지 않지만 API/레거시 칩은 계속 동작한다.
           send({
             type: "status",
             key: "status.route.start",
@@ -391,6 +515,7 @@ export async function POST(request: Request) {
           const quickTool = getTool(quickToolId);
           // 첨부 파일을 오디오 / 이미지·문서 파트로 분리 (mixed·url·image 도구 지원)
           const audioFile = inlineFiles.find((f) => f.mimeType.startsWith("audio/"));
+          const imageFiles = inlineFiles.filter((f) => f.mimeType.startsWith("image/"));
           const imageLike = inlineFiles.filter(
             (f) =>
               f.mimeType.startsWith("image/") ||
@@ -398,15 +523,24 @@ export async function POST(request: Request) {
               f.mimeType === "application/pdf" ||
               f.mimeType.startsWith("text/"),
           );
+          // 유사도 분석은 시험지 사진만 인정 (PDF/텍스트로 개수 채우지 않음)
+          const toolImages =
+            quickToolId === "exam-similarity" || quickToolId === "exam-analysis"
+              ? imageFiles
+              : imageLike;
           const useMixed =
             quickTool?.inputType === "mixed" ||
             quickTool?.inputType === "url" ||
             quickTool?.inputType === "image" ||
             quickTool?.inputType === "audio";
 
-          // 영상 요약: YouTube oEmbed 메타 보강
+          // 영상 URL 도구: YouTube oEmbed 메타 보강
           let toolText = text;
-          if (quickToolId === "video-summary") {
+          if (
+            quickToolId === "video-summary" ||
+            quickToolId === "lecture" ||
+            quickToolId === "lecture-chat"
+          ) {
             send({
               type: "status",
               key: "status.quicktool.generating",
@@ -416,9 +550,10 @@ export async function POST(request: Request) {
             toolText = enriched.enrichedText;
           }
 
-          // 대화 맥락 자동 이어받기: 최근 대화를 참고 컨텍스트로 덧붙이고,
-          // 요청이 이를 가리키면 반영·아니면 무시하도록 모델이 스스로 판단하게 한다.
-          if (text) {
+          // 대화 맥락 자동 이어받기: 이미지 생성은 프롬프트 오염을 피하기 위해 제외.
+          // 그 외 도구는 최근 대화를 참고 컨텍스트로 덧붙이고, 요청이 이를 가리키면
+          // 반영·아니면 무시하도록 모델이 스스로 판단하게 한다.
+          if (text && quickToolId !== "image-gen") {
             const prior = await prisma.chatHistory.findMany({
               where: { sessionId: resolvedSessionId },
               orderBy: { createdAt: "desc" },
@@ -446,16 +581,18 @@ export async function POST(request: Request) {
             modelTier,
             audio:
               quickTool?.inputType === "audio"
-                ? inlineFiles[0]
+                ? audioFile ?? inlineFiles.find((f) => f.mimeType.startsWith("audio/"))
                 : useMixed
                   ? audioFile
                   : undefined,
             images:
               quickTool?.inputType === "image"
-                ? inlineFiles
+                ? toolImages.length
+                  ? toolImages
+                  : imageFiles
                 : useMixed
-                  ? imageLike.length
-                    ? imageLike
+                  ? toolImages.length
+                    ? toolImages
                     : undefined
                   : undefined,
             onAttempt: () =>
@@ -561,6 +698,8 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
             extraSystemInstruction,
             signal: request.signal,
             onDelta: (delta) => {
@@ -584,15 +723,24 @@ export async function POST(request: Request) {
             },
           });
 
+          const art = result.artifact;
+          const toolsSuffix = result.toolsUsed?.length
+            ? `+tools:${result.toolsUsed.join(",")}`
+            : "";
           const assistantRow = await prisma.chatHistory.create({
             data: {
               sessionId: resolvedSessionId,
               role: "model",
               text: result.text,
-              agentId: `route:${result.agentId}${result.refined ? "+verify" : ""}`,
+              agentId: `route:${result.agentId}${result.refined ? "+verify" : ""}${toolsSuffix}`,
               provider: result.provider,
               modelName: result.model,
               attempts: result.attempts,
+              outputType: art?.outputType,
+              structuredKind: art?.structuredKind,
+              resultData: art?.resultData,
+              fileUrl: art?.fileUrl,
+              fileName: art?.fileName,
             },
           });
           await prisma.chatSession.update({

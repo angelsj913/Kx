@@ -678,7 +678,8 @@ export const TOOLS: ToolDef[] = [
     inputType: "audio",
     outputType: "markdown",
     systemInstruction: AUDIO_INSTRUCTION,
-    placeholder: "",
+    placeholder:
+      "수업·강의 녹음 파일을 첨부한 뒤 정리하기를 눌러 주세요.",
     submitLabel: "음성 정리하기",
     fileBaseName: "class-notes",
   },
@@ -869,9 +870,8 @@ export const TOOLS: ToolDef[] = [
     fileBaseName: "generated-image",
   },
   {
-    // 에이전트는 일반 도구가 아니라, 챗 라우트가 quickToolId==="agent"로 가로채
-    // 도구 오케스트레이션 루프(runAgentRoute)로 보낸다. runToolGeneration에는
-    // 도달하지 않으므로 systemInstruction/outputType은 칩 렌더링용 형식값이다.
+    // (+) 메뉴(FEATURE_GROUPS)에는 넣지 않음 — 강제 도구 모드용 정의만 유지.
+    // 챗 라우트가 quickToolId==="agent"면 도구 오케스트레이션 루프로 보낸다.
     id: "agent",
     label: "에이전트",
     short: "에이전트",

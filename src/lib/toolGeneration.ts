@@ -1,8 +1,8 @@
 import { put } from "@vercel/blob";
-import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
+import { generateWithFallback, type AttemptInfo } from "./ai";
 import { geminiGenerateImage } from "./gemini";
 import { noteProviderFailure } from "./providerHealth";
-import type { ModelTier } from "./models";
+import type { ModelTier, Provider } from "./models";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
@@ -40,8 +40,8 @@ export interface ToolGenerationInput {
 }
 
 interface Meta {
-  provider: FallbackResult["provider"];
-  model: FallbackResult["model"];
+  provider: string;
+  model: string;
   attempts: number;
 }
 
@@ -169,7 +169,7 @@ async function verifyAndAnnotateMathSolve(
         audio: input.audio,
         images: input.images,
         modelTier: input.modelTier,
-        excludeProviders: [finalMeta.provider],
+        excludeProviders: [finalMeta.provider as Provider],
       });
       const crossRaw = stripHanja(crossCheck.text);
       const primaryAnswer = extractFinalAnswer(finalRaw);
@@ -183,7 +183,7 @@ async function verifyAndAnnotateMathSolve(
             audio: input.audio,
             images: input.images,
             modelTier: input.modelTier,
-            excludeProviders: [finalMeta.provider, crossCheck.provider],
+            excludeProviders: [finalMeta.provider as Provider, crossCheck.provider],
           });
           const tieRaw = stripHanja(tieBreak.text);
           const tieAnswer = extractFinalAnswer(tieRaw);
@@ -376,6 +376,9 @@ export async function runToolGeneration(
     if (!hasAudio) throw new Error("오디오 파일을 첨부해 주세요.");
   } else if (tool.inputType === "image") {
     if (!hasImages) throw new Error("이미지 파일을 첨부해 주세요.");
+    if (tool.id === "exam-similarity" && (input.images?.length ?? 0) < 2) {
+      throw new Error("유사도 분석에는 시험지 사진이 2장 이상 필요해요.");
+    }
   } else if (tool.inputType === "mixed" || tool.inputType === "url") {
     if (!hasText && !hasImages && !hasAudio) {
       throw new Error("URL·텍스트를 입력하거나 파일을 첨부해 주세요.");
@@ -388,6 +391,8 @@ export async function runToolGeneration(
     if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
     let data: string;
     let mimeType: string;
+    let provider = "gemini";
+    let model = "gemini-2.5-flash-image";
     try {
       const img = await geminiGenerateImage({
         prompt: input.text!.trim(),
@@ -397,7 +402,13 @@ export async function runToolGeneration(
       mimeType = img.mimeType;
     } catch (err) {
       noteProviderFailure("gemini", err);
-      throw err;
+      // Gemini 쿼터/키 실패 시 키 없는 폴백으로 이어간다
+      const { generateImageFallback } = await import("./imageFallback");
+      const fb = await generateImageFallback(input.text!.trim());
+      data = fb.data;
+      mimeType = fb.mimeType;
+      provider = fb.provider;
+      model = "pollinations";
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
@@ -410,7 +421,7 @@ export async function runToolGeneration(
       tool,
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
-      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+      meta: { provider, model, attempts: 1 },
     };
   }
 
