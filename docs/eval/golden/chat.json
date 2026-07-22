@@ -1,0 +1,50 @@
+[
+  {
+    "id": "chat-skill-code",
+    "type": "skill_pack",
+    "text": "TypeScript에서 debounce 함수 구현해줘",
+    "expectedSkills": ["code"]
+  },
+  {
+    "id": "chat-skill-research",
+    "type": "skill_pack",
+    "text": "최신 AI 에이전트 트렌드 조사해서 비교 요약해줘",
+    "expectedSkills": ["research"]
+  },
+  {
+    "id": "chat-skill-writing",
+    "type": "skill_pack",
+    "text": "고객에게 보낼 정중한 이메일 초안 써줘",
+    "expectedSkills": ["writing"]
+  },
+  {
+    "id": "chat-skill-tutoring",
+    "type": "skill_pack",
+    "text": "이차방정식 개념을 중학생에게 설명해줘",
+    "expectedSkills": ["tutoring"]
+  },
+  {
+    "id": "chat-skill-docs",
+    "type": "skill_pack",
+    "text": "발표용 PPT 슬라이드 구성 잡아줘",
+    "expectedSkills": ["docs"]
+  },
+  {
+    "id": "agent-escalate-1",
+    "type": "agent_escalate",
+    "text": "웹에서 찾아서 정리해줘 최신 뉴스",
+    "expectedEscalate": true
+  },
+  {
+    "id": "agent-escalate-2",
+    "type": "agent_escalate",
+    "text": "안녕",
+    "expectedEscalate": false
+  },
+  {
+    "id": "verify-risk-numeric",
+    "type": "verify_risk",
+    "text": "연구에 따르면 평균 전환율은 32%이며 통계적으로 유의미하다. https://example.com",
+    "minRisk": 3
+  }
+]

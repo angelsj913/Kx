@@ -576,9 +576,16 @@ export default function FeatureShowcase() {
   if (reducedMotion) return <StaticShowcase copy={copy} />;
 
   return (
-    <section ref={sectionRef} className="relative h-[440vh]">
-      <div className="sticky top-0 flex min-h-[100svh] items-center py-20">
-        <div className="mx-auto w-full max-w-5xl px-6">
+    <section
+      ref={sectionRef}
+      className="relative h-[440vh] bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"
+    >
+      <div className="sticky top-0 flex min-h-[100svh] items-center overflow-hidden py-20 sm:py-24">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(37,99,235,0.10),transparent_38%)] dark:bg-[radial-gradient(circle_at_75%_45%,rgba(59,130,246,0.14),transparent_38%)]"
+        />
+        <div className="relative mx-auto w-full max-w-5xl px-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">{copy.title}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>

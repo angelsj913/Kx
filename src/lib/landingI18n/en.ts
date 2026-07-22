@@ -13,12 +13,12 @@ const en: Record<keyof typeof ko, string> = {
   "header.homeAria": "ZEFF AI Home",
   "header.menuAria": "Menu",
 
-  "hero.badge": "Next-generation AI workspace",
-  "hero.title.line1": "AI that works at the",
+  "hero.badge": "An AI workspace for study and work",
+  "hero.title.line1": "Everything you need to study and work,",
   "hero.title.line2": "",
-  "hero.title.line2Prefix": "speed of thought,",
+  "hero.title.line2Prefix": "connected in",
   "hero.subtitle":
-    "ZEFF AI is a personal AI workspace built to finish complex work the fastest way possible. Download it now and experience it yourself.",
+    "Organize lecture material and create drafts for documents, slides, and spreadsheets. ZEFF AI keeps your conversations and files connected as your work moves forward.",
   "hero.download.windows": "Download for Windows",
   "hero.download.mac": "Download for Mac",
   "hero.download.android": "Android",
@@ -37,25 +37,25 @@ const en: Record<keyof typeof ko, string> = {
   "hero.modal.androidComingSoon": "Google Play listing is being prepared. Use the web app (zeffai.com) or Windows for now.",
   "hero.download.soon": "Soon",
 
-  "workspace.title": "No lag in computation. Reasoning that pushes past the limits.",
-  "workspace.subtitle": "See ZEFF AI's real performance for yourself.",
+  "workspace.title": "Keep the flow from question to finished work",
+  "workspace.subtitle": "Organize material, find answers, and continue working in one ZEFF AI workspace.",
   "workspace.video1": "Math problem-solving demo",
   "workspace.video2": "Output generation demo",
   "workspace.videoPlaceholder": "Video coming soon",
   "workspace.videoPlay": "Play demo",
-  "workspace.feature1.title": "Overwhelming speed",
-  "workspace.feature1.desc": "Solves complex equations and logic in real time, without delay.",
+  "workspace.feature1.title": "Quick responses",
+  "workspace.feature1.desc": "Breaks down complex questions and returns answers that are easy to follow.",
   "workspace.feature1.detail":
-    "It explores tens of thousands of computation paths at once, yet keeps response latency imperceptible.",
-  "workspace.feature2.title": "Accurate results",
+    "It considers your files and conversation together to find what matters.",
+  "workspace.feature2.title": "Answers you can check",
   "workspace.feature2.desc":
-    "Provides both the reasoning process and the final output so you can trust the answer.",
+    "Shows the useful steps and evidence alongside the conclusion.",
   "workspace.feature2.detail":
-    "Every reasoning step is self-verified along the way, giving the output an extra layer of reliability.",
-  "workspace.feature3.title": "Seamless experience",
-  "workspace.feature3.desc": "Powered by a responsive AI engine that runs reliably in any environment.",
+    "Numbers and important claims receive an additional review when needed.",
+  "workspace.feature3.title": "Connected work",
+  "workspace.feature3.desc": "Keeps the context from your conversation and files as you move to the next task.",
   "workspace.feature3.detail":
-    "Built to hold onto your working context even through unstable network conditions.",
+    "Turn organized material into a document or presentation draft without starting over.",
 
   "office.title": "Office productivity that changes how fast real work moves",
   "office.subtitle":

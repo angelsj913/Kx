@@ -151,6 +151,19 @@ export const AGENT_MODELS: ModelDef[] = [
   { provider: "deepseek", model: "deepseek-chat", cheap: true },
 ];
 
+/** Pro/Professional은 DeepSeek(툴콜 안정)·강한 무료 모델을 앞으로. */
+export function agentModelsForTier(tier: ModelTier = "standard"): ModelDef[] {
+  const base = AGENT_MODELS;
+  if (tier === "standard") return base;
+  const deepseek = base.filter((m) => m.provider === "deepseek");
+  const rest = base.filter((m) => m.provider !== "deepseek");
+  if (tier === "top") {
+    return [...deepseek, ...rest];
+  }
+  // priority: deepseek chat 우선, 이어서 무료 풀
+  return [...deepseek, ...rest];
+}
+
 export const MAX_FREE_ATTEMPTS = 6;
 
 /**

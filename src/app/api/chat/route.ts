@@ -15,7 +15,8 @@ import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
-import { buildZeffRuntimeContext } from "@/lib/zeffContext";
+import { assembleRuntimeContext } from "@/lib/zeffContext";
+import { shouldEscalateToAgent } from "@/lib/skills";
 import {
   loadInlineFromStored,
   parseStoredAttachments,
@@ -330,13 +331,13 @@ export async function POST(request: Request) {
       }
 
       try {
-        if (quickToolId === "agent") {
-          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 ──
+        if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
+          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 (멀티스텝 자동 승격 포함) ──
           send({
             type: "status",
             key: "status.route.start",
             sessionId: resolvedSessionId,
-            detail: "agent",
+            detail: quickToolId === "agent" ? "agent" : "agent-auto",
           });
 
           const AGENT_HISTORY_LIMIT = 16;
@@ -360,12 +361,20 @@ export async function POST(request: Request) {
             }
           }
 
+          const agentContext = await assembleRuntimeContext({
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
+            query: text,
+            language: userLanguage,
+          });
+
           const agentResult = await runAgentRoute({
             text,
             messages: agentMessages,
             modelTier,
             userId,
             workspaceId: chatSession.workspaceId ?? null,
+            extraSystemInstruction: agentContext.instruction,
             signal: request.signal,
             onDelta: (delta) =>
               send({ type: "delta", sessionId: resolvedSessionId, text: delta }),
@@ -667,7 +676,7 @@ export async function POST(request: Request) {
             );
           }
 
-          const extraSystemInstruction = await buildZeffRuntimeContext({
+          const extraSystemInstruction = await assembleRuntimeContext({
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,

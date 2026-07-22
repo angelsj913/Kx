@@ -58,7 +58,14 @@ export default function Pricing() {
   const professionalHref = `/checkout?plan=professional${annual ? "&interval=year" : ""}`;
 
   return (
-    <section id="pricing" className="relative scroll-mt-24 pb-20 pt-8">
+    <section
+      id="pricing"
+      className="relative scroll-mt-24 overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/40 to-white pb-28 pt-20 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-white dark:to-slate-950"
+      />
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">

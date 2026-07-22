@@ -21,6 +21,10 @@ import type { ChatMessage } from "./gemini";
 import { listConfiguredProviders } from "./openaiCompat";
 import { chatVerifyLight, chatVerifyDeep, chatBaseSystem } from "./prompts/registry";
 import type { RankedChunk } from "./ragSearch";
+import {
+  formatSkillPackInstruction,
+  selectSkillPacks,
+} from "./skills";
 
 export type RouteStage = "classify" | "generate" | "verify" | "complete";
 
@@ -81,7 +85,11 @@ function tierRouteLabel(tier: ModelTier): string {
   return "route:standard · multi-provider";
 }
 
-function systemFor(tier: ModelTier, intentTool: string | null): string {
+function systemFor(
+  tier: ModelTier,
+  intentTool: string | null,
+  skillInstruction?: string,
+): string {
   const tierHint =
     tier === "top"
       ? "깊게 추론하고 근거·단계를 분명히 하라."
@@ -93,12 +101,25 @@ function systemFor(tier: ModelTier, intentTool: string | null): string {
     ? `\n[의도 힌트] 사용자가 ${toolIntentLabel(intentTool)} 를 원할 수 있다. 채팅 경로라면 핵심만 안내하고 파일 생성은 전용 도구가 처리한다.`
     : "";
 
+  const skills = skillInstruction?.trim() ? `\n\n${skillInstruction.trim()}` : "";
+
   return `${ZEFF_BASE}
 
-${AGENT_SYSTEM_INSTRUCTION}
+${AGENT_SYSTEM_INSTRUCTION}${skills}
 
 [품질 · ${tier}]
 ${tierHint}${intentHint}`;
+}
+
+/** 구조화 여부가 아니라 리스크(숫자·주장·인용 공백)로 검증 필요를 판단 */
+export function draftVerifyRiskScore(text: string): number {
+  let score = 0;
+  if (text.length > 800) score += 1;
+  if (/\d{2,}/.test(text) || /%|통계|평균|비율|연구|논문/.test(text)) score += 2;
+  if (/반드시|확실|증명|절대|최고|유일한/.test(text)) score += 1;
+  if (/https?:\/\//.test(text) || /\[\d+\]/.test(text)) score += 1;
+  if ((text.match(/\n/g)?.length ?? 0) < 3 && text.length > 600) score += 1;
+  return score;
 }
 
 function availableProviderSummary(): string {
@@ -128,12 +149,15 @@ export async function runBackendRoute(args: {
   // ── 1. classify ──
   stages.push("classify");
   const intentTool = detectQuickToolFromText(args.text);
+  const skillPacks = selectSkillPacks(args.text);
+  const skillInstruction = formatSkillPackInstruction(skillPacks);
   const pool = availableProviderSummary() || "none";
+  const skillIds = skillPacks.map((p) => p.id).join("+") || "none";
 
   args.onStage?.({
     stage: "classify",
     key: "status.route.classify",
-    detail: `${AGENT_ID}${intentTool ? ` · intent:${intentTool}` : ""} · keys:${pool}`,
+    detail: `${AGENT_ID} · skills:${skillIds}${intentTool ? ` · intent:${intentTool}` : ""} · keys:${pool}`,
     agentId: AGENT_ID,
   });
 
@@ -153,7 +177,7 @@ export async function runBackendRoute(args: {
   let draftAttempts = 0;
   const draft = await chatReplyWithFallbackStream({
     systemInstruction: [
-      systemFor(tier, intentTool),
+      systemFor(tier, intentTool, skillInstruction),
       args.extraSystemInstruction?.trim() ? args.extraSystemInstruction.trim() : "",
     ]
       .filter(Boolean)
@@ -161,8 +185,6 @@ export async function runBackendRoute(args: {
     messages: args.messages,
     candidates,
     signal: args.signal,
-    // 스트리밍 중계도 최종본과 동일하게 한자 제거를 적용해, 실시간으로 보여준 내용과
-    // done 이벤트로 저장되는 최종 텍스트가 어긋나지 않게 한다.
     onDelta: (delta) => args.onDelta?.(stripHanja(delta)),
     onAttempt: (info) => {
       draftAttempts = info.attemptNumber;
@@ -187,29 +209,17 @@ export async function runBackendRoute(args: {
   let verifyAttempts = 0;
 
   // ── 3. verify ──
-  // 토큰 비증가 + 지연 최소화: standard 무검증, priority/top 도 구조화·중간 길이 초안은 스킵
   const draftLen = draft.text.trim().length;
-  const looksStructured =
-    draft.text.includes("\n## ") ||
-    draft.text.includes("\n- ") ||
-    draft.text.includes("```") ||
-    draft.text.includes("1.") ||
-    (draft.text.match(/\n/g)?.length ?? 0) >= 4;
-  // top/priority(결제 플랜)만 검증 — standard는 지연 최소화를 위해 스킵.
-  // top은 엄격 검수(VERIFY_DEEP), priority는 가벼운 교정(VERIFY_LIGHT)만 받는다.
-  // 중단된(interrupted) 초안은 이미 불완전하므로 검증하지 않고 그대로 마무리한다.
-  const looksNumeric =
-    /\d{2,}/.test(draft.text) ||
-    /%|통계|평균|비율|계산|수치/.test(draft.text);
+  const risk = draftVerifyRiskScore(draft.text);
   const shouldVerify =
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
     !draft.interrupted &&
     draftLen > 600 &&
-    !looksStructured &&
     (tier === "top" ||
       tier === "priority" ||
-      (tier === "standard" && looksNumeric));
+      (tier === "standard" && risk >= 3)) &&
+    (tier === "top" ? risk >= 1 : risk >= 2);
 
   if (shouldVerify) {
     stages.push("verify");

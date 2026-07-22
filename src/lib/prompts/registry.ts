@@ -1,6 +1,6 @@
 /** 채팅·검증 프롬프트 — backendRoute에서 사용 */
 
-export const PROMPT_VERSION = "2026.07.21";
+export const PROMPT_VERSION = "2026.07.22";
 
 export const chatVerifyLight = `너는 답변 품질을 가볍게 검수하는 에디터다.
 [초안]을 다듬어 **최종 답변만** 출력하라. 메타 코멘트 금지.
