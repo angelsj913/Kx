@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import RootSessionProvider from "@/components/RootSessionProvider";
@@ -25,6 +25,13 @@ const notoSansKr = Noto_Sans_KR({
   preload: true,
 });
 
+/** Landing display — expressive serif; not Inter/system default */
+const landingDisplay = Fraunces({
+  variable: "--font-landing-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+});
 export const metadata: Metadata = {
   metadataBase: new URL("https://zeffai.com"),
   title: {
@@ -98,7 +105,7 @@ export default function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} ${landingDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <RootSessionProvider>
