@@ -589,3 +589,46 @@ model BackupRecord {
   @@index([startedAt])
   @@index([status, startedAt])
 }
+
+/** 규칙 기반 위험 이벤트 — append-only */
+model SecurityThreatEvent {
+  id         String    @id @default(cuid())
+  type       String
+  severity   String    @default("medium")
+  title      String
+  summary    String    @db.Text
+  source     String?
+  meta       Json?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([severity, createdAt])
+  @@index([type, createdAt])
+}
+
+/** AI/OSS 취약점 스캔 이력 */
+model VulnerabilityScan {
+  id          String    @id @default(cuid())
+  status      String    @default("pending")
+  trigger     String    @default("manual")
+  fileName    String?
+  reportJson  Json?
+  error       String?   @db.Text
+  adminEmail  String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([startedAt])
+}
+
+/** 관리자 RBAC 역할 (allowlist 보조) */
+model AdminRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String   @default("readonly")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
