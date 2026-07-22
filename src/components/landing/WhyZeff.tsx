@@ -8,6 +8,10 @@ import type { LandingLanguage } from "@/lib/landingI18n";
 type Pillar = { title: string; desc: string };
 type Copy = { eyebrow: string; title: string; subtitle: string; pillars: [Pillar, Pillar, Pillar] };
 
+// Figma 캡처용: scroll-triggered whileInView 애니메이션이 html-to-design 캡처에서
+// 콘텐츠를 통째로 누락시키는 경우가 있어, 캡처 중엔 최종 상태로 바로 렌더링한다.
+const CAPTURE_MODE = process.env.NEXT_PUBLIC_FIGMA_CAPTURE === "1";
+
 // 경쟁 서비스(학습 전용 도구) 대비 차별점을 한 화면에 요약한다. 로컬 카피 + en 폴백.
 const COPY: Partial<Record<LandingLanguage, Copy>> & { en: Copy } = {
   ko: {
@@ -78,7 +82,7 @@ export default function WhyZeff() {
             return (
               <motion.div
                 key={p.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={CAPTURE_MODE ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.45, delay: i * 0.08, ease: [0.4, 0, 0.2, 1] }}
