@@ -20,6 +20,7 @@
     var(--landing-bg) 100%
   );
   --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.08), transparent 60%);
+  --landing-header-bg: color-mix(in srgb, var(--landing-bg) 82%, transparent);
 }
 :root.dark {
   color-scheme: dark;
@@ -32,6 +33,7 @@
     var(--landing-bg) 100%
   );
   --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 60%);
+  --landing-header-bg: color-mix(in srgb, var(--landing-bg) 82%, transparent);
 }
 
 body {

@@ -279,7 +279,7 @@ function TextLine({ w, tone = "base" }: { w: string; tone?: "base" | "faint" | "
   return <div className={`h-1.5 rounded-full ${bg}`} style={{ width: w }} />;
 }
 
-function MockSummary() {
+function MockSummary({ progress = 1 }: { progress?: number }) {
   const summaryTabs = [
     { Icon: FileText, active: true },
     { Icon: ListChecks, active: false },
@@ -332,9 +332,12 @@ function MockSummary() {
             {["96%", "88%", "92%", "78%"].map((w, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <Check className="h-2.5 w-2.5 shrink-0 text-blue-500" />
-                <TextLine w={w} />
+                <TextLine w={w} tone={i === 1 ? "accent" : "base"} />
               </div>
             ))}
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${progress * 100}%` }} />
+            </div>
           </div>
         </div>
       </div>
@@ -342,7 +345,7 @@ function MockSummary() {
   );
 }
 
-function MockLecture() {
+function MockLecture({ progress = 0.65 }: { progress?: number }) {
   // 파형(오디오) — 높이가 다른 막대로 실제 음성 트랙처럼 보이게.
   const wave = [30, 55, 40, 70, 90, 60, 45, 75, 50, 85, 65, 40, 55, 80, 60, 35, 50, 72];
   return (
@@ -356,7 +359,7 @@ function MockLecture() {
         </span>
         {/* 하단 진행바 */}
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
-          <div className="h-full w-2/3 bg-blue-500" />
+          <div className="h-full bg-blue-500" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
       {/* 파형 + 자막 노트 */}
@@ -365,7 +368,7 @@ function MockLecture() {
           {wave.map((h, i) => (
             <span
               key={i}
-              className={`w-full rounded-full ${i < 12 ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
+              className={`w-full rounded-full ${i < Math.floor(progress * wave.length) ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
               style={{ height: `${h}%` }}
             />
           ))}
@@ -388,7 +391,7 @@ function MockLecture() {
   );
 }
 
-function MockDocs() {
+function MockDocs({ slideIndex = 0 }: { slideIndex?: number }) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="grid grid-cols-2 gap-2.5">
@@ -429,7 +432,7 @@ function MockDocs() {
             {[45, 70, 55, 90, 65].map((h, i) => (
               <div
                 key={i}
-                className="flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400"
+                className={`flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 ${i === slideIndex % 5 ? "ring-2 ring-blue-300" : ""}`}
                 style={{ height: `${h}%` }}
               />
             ))}
@@ -487,6 +490,40 @@ function MockLibrary() {
 
 const MOCKS = [MockSummary, MockLecture, MockDocs, MockLibrary];
 
+function ProgressRing({ index, active, done, progress }: { index: number; active: boolean; done: boolean; progress: number }) {
+  const pct = active ? progress * 100 : done ? 100 : 0;
+  const r = 18;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative flex h-11 w-11 items-center justify-center">
+      <svg className="-rotate-90" width="44" height="44" aria-hidden>
+        <circle cx="22" cy="22" r={r} fill="none" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="3" />
+        <circle
+          cx="22"
+          cy="22"
+          r={r}
+          fill="none"
+          className="stroke-blue-600 dark:stroke-blue-400"
+          strokeWidth="3"
+          strokeDasharray={c}
+          strokeDashoffset={c - (c * pct) / 100}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className={`absolute text-[10px] font-bold ${active ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`}>
+        {String(index + 1).padStart(2, "0")}
+      </span>
+    </div>
+  );
+}
+
+function MockWithProgress({ index, localP }: { index: number; localP: number }) {
+  if (index === 0) return <MockSummary progress={localP} />;
+  if (index === 1) return <MockLecture progress={localP} />;
+  if (index === 2) return <MockDocs slideIndex={Math.floor(localP * 5)} />;
+  return <MockLibrary />;
+}
+
 function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
   return (
     <section className="py-20">
@@ -524,7 +561,7 @@ export default function FeatureShowcase() {
   const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const activeIndex = sceneIndex(p, MOCKS.length);
   const item = copy.items[activeIndex]!;
-  const Mock = MOCKS[activeIndex];
+  const localP = MOCKS.length > 1 ? (p * MOCKS.length) % 1 : p;
 
   if (reducedMotion) return <StaticShowcase copy={copy} />;
 
@@ -544,15 +581,41 @@ export default function FeatureShowcase() {
               </div>
               <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">{item.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
-              <div className="mt-7 flex gap-2" aria-hidden>
+              <div className="mt-7 flex gap-3" aria-hidden>
                 {copy.items.map((scene, index) => (
-                  <span key={scene.no} className={`h-1.5 rounded-full transition-all ${index === activeIndex ? "w-8 bg-blue-600 dark:bg-blue-400" : "w-3 bg-slate-300 dark:bg-slate-700"}`} />
+                  <ProgressRing
+                    key={scene.no}
+                    index={index}
+                    active={index === activeIndex}
+                    done={index < activeIndex}
+                    progress={index === activeIndex ? localP : 0}
+                  />
                 ))}
               </div>
             </motion.div>
-            <motion.div key={`mock-${item.no}`} initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1 }} className="landing-card rounded-2xl p-3 sm:p-4">
-              <Mock />
-            </motion.div>
+
+            <div className="relative h-[min(22rem,50vh)] min-h-[16rem]">
+              {MOCKS.map((_, i) => {
+                const offset = i - activeIndex;
+                const isPast = i < activeIndex;
+                const isActive = i === activeIndex;
+                if (offset > 2 || offset < -1) return null;
+                return (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      opacity: isActive ? 1 : isPast ? 0 : 0.35,
+                      scale: isActive ? 1 : 0.94 - Math.abs(offset) * 0.02,
+                      y: offset * 14,
+                      zIndex: 10 - Math.abs(offset),
+                    }}
+                    className={`absolute inset-x-0 top-0 landing-card rounded-2xl p-3 sm:p-4 ${!isActive ? "pointer-events-none blur-[1px]" : "shadow-xl"}`}
+                  >
+                    <MockWithProgress index={i} localP={isActive ? localP : 1} />
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

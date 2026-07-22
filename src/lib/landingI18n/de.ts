@@ -42,6 +42,7 @@ const de: Record<keyof typeof ko, string> = {
   "workspace.video1": "Demo: Lösen mathematischer Probleme",
   "workspace.video2": "Demo: Ergebniserstellung",
   "workspace.videoPlaceholder": "Video in Vorbereitung",
+  "workspace.videoPlay": "Demo abspielen",
   "workspace.feature1.title": "Überwältigende Geschwindigkeit",
   "workspace.feature1.desc": "Auch komplexe Formeln und Logikoperationen werden verzögerungsfrei in Echtzeit gelöst.",
   "workspace.feature1.detail":
@@ -98,6 +99,14 @@ const de: Record<keyof typeof ko, string> = {
   "grid.cta": "Anmelden und loslegen",
 
   "pricing.title": "Preise",
+  "pricing.lead.title": "Lernen und Arbeit — ein Workspace",
+  "pricing.lead.subtitle": "Von Free über Pro bis Professional — nach Nutzung, KI-Modellen und Bibliothek wählen.",
+  "pricing.lead.pill1.title": "Mehr Nutzung",
+  "pricing.lead.pill1.desc": "Chat, Dokumente und PPT/Excel skalieren mit dem Tarif.",
+  "pricing.lead.pill2.title": "Stärkere KI",
+  "pricing.lead.pill2.desc": "Höhere Tarife erhalten leistungsfähigere Modelle zuerst.",
+  "pricing.lead.pill3.title": "Dateien & Bibliothek",
+  "pricing.lead.pill3.desc": "Vorschau und Speicher wachsen mit dem Plan.",
   "pricing.subtitle": "Wählen Sie den passenden Plan.",
   "pricing.free.name": "free",
   "pricing.free.desc":

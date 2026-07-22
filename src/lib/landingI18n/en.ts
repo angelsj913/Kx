@@ -42,6 +42,7 @@ const en: Record<keyof typeof ko, string> = {
   "workspace.video1": "Math problem-solving demo",
   "workspace.video2": "Output generation demo",
   "workspace.videoPlaceholder": "Video coming soon",
+  "workspace.videoPlay": "Play demo",
   "workspace.feature1.title": "Overwhelming speed",
   "workspace.feature1.desc": "Solves complex equations and logic in real time, without delay.",
   "workspace.feature1.detail":
@@ -99,6 +100,15 @@ const en: Record<keyof typeof ko, string> = {
   "grid.cta": "Log in to get started",
 
   "pricing.title": "Pricing",
+  "pricing.lead.title": "Study and work, one workspace",
+  "pricing.lead.subtitle":
+    "From Free for light exploration to Pro for daily depth and Professional for exams and analysis — plans differ by usage allowance, AI models, and library limits.",
+  "pricing.lead.pill1.title": "Generous usage",
+  "pricing.lead.pill1.desc": "Chat, document generation, and PPT/Excel tasks scale up with each plan.",
+  "pricing.lead.pill2.title": "Stronger AI models",
+  "pricing.lead.pill2.desc": "Higher tiers get more capable models first, plus priority and precision routing.",
+  "pricing.lead.pill3.title": "Files & library",
+  "pricing.lead.pill3.desc": "Preview generated artifacts and expand knowledge-base storage as you upgrade.",
   "pricing.subtitle": "Choose the plan that fits your needs.",
   "pricing.free.name": "free",
   "pricing.free.desc":

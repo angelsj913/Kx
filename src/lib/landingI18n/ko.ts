@@ -40,6 +40,7 @@ const ko = {
   "workspace.video1": "수학 문제 풀이 데모",
   "workspace.video2": "결과물 생성 데모",
   "workspace.videoPlaceholder": "영상 준비 중",
+  "workspace.videoPlay": "데모 재생",
   "workspace.feature1.title": "압도적인 처리 속도",
   "workspace.feature1.desc": "복잡한 수식과 논리 연산도 지연 없이 실시간으로 풀어냅니다.",
   "workspace.feature1.detail":
@@ -94,6 +95,15 @@ const ko = {
   "grid.cta": "로그인하고 시작하기",
 
   "pricing.title": "요금제",
+  "pricing.lead.title": "공부와 업무, 한 워크스페이스로",
+  "pricing.lead.subtitle":
+    "가볍게 시작하는 Free부터 매일 깊게 쓰는 Pro, 시험·분석까지 넓히는 Professional까지 — 사용량과 AI 모델, 문서·서재 한도만 다릅니다.",
+  "pricing.lead.pill1.title": "넉넉한 이용량",
+  "pricing.lead.pill1.desc": "채팅·문서 생성·PPT·엑셀 작업 횟수가 플랜마다 단계적으로 늘어납니다.",
+  "pricing.lead.pill2.title": "더 강한 AI 모델",
+  "pricing.lead.pill2.desc": "상위 플랜일수록 더 강력한 모델과 우선 처리·정밀 검수 라우트를 먼저 씁니다.",
+  "pricing.lead.pill3.title": "문서·서재 확장",
+  "pricing.lead.pill3.desc": "생성한 자료 미리보기와 지식 베이스 저장 공간이 플랜에 맞게 확장됩니다.",
   "pricing.subtitle": "필요에 맞는 플랜을 선택하세요.",
   "pricing.free.name": "free",
   "pricing.free.desc":

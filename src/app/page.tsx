@@ -10,8 +10,9 @@ const WorkspaceIntro = dynamic(() => import("@/components/landing/WorkspaceIntro
 const WorkLectureScroll = dynamic(() => import("@/components/landing/WorkLectureScroll"));
 const FeatureGrid = dynamic(() => import("@/components/landing/FeatureGrid"));
 const WhyZeff = dynamic(() => import("@/components/landing/WhyZeff"));
-const Pricing = dynamic(() => import("@/components/landing/Pricing"));
 const FeatureShowcase = dynamic(() => import("@/components/landing/FeatureShowcase"));
+const PricingLead = dynamic(() => import("@/components/landing/PricingLead"));
+const Pricing = dynamic(() => import("@/components/landing/Pricing"));
 
 export default function Landing() {
   return (
@@ -27,8 +28,9 @@ export default function Landing() {
           <WorkLectureScroll />
           <FeatureGrid />
           <WhyZeff />
-          <Pricing />
           <FeatureShowcase />
+          <PricingLead />
+          <Pricing />
         </main>
         <Footer />
       </div>

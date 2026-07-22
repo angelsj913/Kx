@@ -56,7 +56,7 @@ export default function Hero() {
           : null;
 
   return (
-    <section id="about" className="relative overflow-hidden pb-14 pt-28 sm:pb-20 sm:pt-36">
+    <section id="about" className="relative overflow-hidden bg-transparent pb-14 pt-28 sm:pb-20 sm:pt-36">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
       <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">

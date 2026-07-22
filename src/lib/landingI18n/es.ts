@@ -42,6 +42,7 @@ const es: Record<keyof typeof ko, string> = {
   "workspace.video1": "Demo de resolución de problemas matemáticos",
   "workspace.video2": "Demo de generación de resultados",
   "workspace.videoPlaceholder": "Video en preparación",
+  "workspace.videoPlay": "Reproducir demo",
   "workspace.feature1.title": "Velocidad impresionante",
   "workspace.feature1.desc": "Resuelve ecuaciones y operaciones lógicas complejas en tiempo real, sin demora.",
   "workspace.feature1.detail":
@@ -98,6 +99,14 @@ const es: Record<keyof typeof ko, string> = {
   "grid.cta": "Inicia sesión para empezar",
 
   "pricing.title": "Precios",
+  "pricing.lead.title": "Estudio y trabajo, un solo espacio",
+  "pricing.lead.subtitle": "De Free a Pro y Professional — según uso, modelos de IA y biblioteca.",
+  "pricing.lead.pill1.title": "Más uso",
+  "pricing.lead.pill1.desc": "Chat, documentos y PPT/Excel crecen con cada plan.",
+  "pricing.lead.pill2.title": "IA más potente",
+  "pricing.lead.pill2.desc": "Los planes superiores acceden primero a modelos más capaces.",
+  "pricing.lead.pill3.title": "Archivos y biblioteca",
+  "pricing.lead.pill3.desc": "Vista previa y almacenamiento se amplían con el plan.",
   "pricing.subtitle": "Elige el plan que se adapte a tus necesidades.",
   "pricing.free.name": "free",
   "pricing.free.desc":
