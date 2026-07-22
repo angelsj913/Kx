@@ -42,13 +42,7 @@ export default function Header() {
   const session = sessionResult?.data ?? null;
   const status = sessionResult?.status ?? "unauthenticated";
   const isLoggedIn = status === "authenticated";
-  // 세션의 isAdmin (Google/이메일 공통) + 이메일 fallback
-  const sessionEmail = (session?.user?.email ?? "").toLowerCase();
-  const isAdmin =
-    isLoggedIn &&
-    (!!session?.user?.isAdmin ||
-      sessionEmail === "zeff@zeffai.com" ||
-      sessionEmail === "kxeung9@gmail.com");
+  const isAdmin = isLoggedIn && session?.user?.isAdmin === true;
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);

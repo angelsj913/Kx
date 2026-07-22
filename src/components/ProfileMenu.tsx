@@ -72,12 +72,7 @@ export default function ProfileMenu({
 
   const plan = settingsHook.settings?.plan ?? "free";
   const user = session?.user;
-  const sessionEmail = (user?.email ?? "").trim().toLowerCase();
-  // 세션 플래그 + 기본 관리자 이메일 fallback (Header 와 동일)
-  const isAdmin =
-    !!(user as { isAdmin?: boolean } | undefined)?.isAdmin ||
-    sessionEmail === "zeff@zeffai.com" ||
-    sessionEmail === "kxeung9@gmail.com";
+  const isAdmin = (user as { isAdmin?: boolean } | undefined)?.isAdmin === true;
   const label = displayName(user, t("profile.defaultUser"));
 
   async function handleLogout() {

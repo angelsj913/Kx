@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { GEO_COOKIE } from "@/lib/constants";
+import { isAdminEmail } from "@/lib/admin";
+
+function isAdminAuth(authData: { user?: { email?: string | null; isAdmin?: boolean } } | null) {
+  if (!authData?.user) return false;
+  if (authData.user.isAdmin === true) return true;
+  return isAdminEmail(authData.user.email);
+}
 
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
+
+  // /admin — 관리자만 (비관리자 → 공홈)
+  if (pathname.startsWith("/admin")) {
+    if (!req.auth?.user) {
+      const loginUrl = new URL("/login", req.nextUrl);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (!isAdminAuth(req.auth)) {
+      return NextResponse.redirect(new URL("/", req.nextUrl));
+    }
+  }
 
   // /app 보호 (기존 동작 유지)
   const isLoggedIn = !!req.auth;

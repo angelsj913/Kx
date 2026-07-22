@@ -558,3 +558,34 @@ model SavedInsight {
   @@index([userId, pinned, createdAt])
   @@index([workspaceId])
 }
+
+/** 관리자 보안 콘솔 감사 로그 — append-only */
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  adminEmail String?
+  action     String
+  target     String?
+  meta       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+}
+
+/** 암호화 백업 이력 */
+model BackupRecord {
+  id          String    @id @default(cuid())
+  status      String    @default("pending")
+  trigger     String    @default("manual")
+  sizeBytes   BigInt?
+  fileName    String?
+  error       String?   @db.Text
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  adminEmail  String?
+
+  @@index([startedAt])
+  @@index([status, startedAt])
+}

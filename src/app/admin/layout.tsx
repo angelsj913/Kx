@@ -1,14 +1,21 @@
 import Link from "next/link";
-import { LayoutDashboard, MessageSquare, CreditCard, Users, ArrowLeft, Bot } from "lucide-react";
-import { auth } from "@/auth";
-import { isAdminEmail } from "@/lib/admin";
-import AdminAccessDenied from "@/components/admin/AdminAccessDenied";
+import {
+  LayoutDashboard,
+  MessageSquare,
+  CreditCard,
+  Users,
+  ArrowLeft,
+  Bot,
+  Shield,
+} from "lucide-react";
+import { requireAdminPage } from "@/lib/requireAdmin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "개발자 관리 · ZEFF AI" };
 
 const NAV = [
   { href: "/admin", label: "대시보드", icon: LayoutDashboard },
+  { href: "/admin/security", label: "보안·백업", icon: Shield },
   { href: "/admin/ai", label: "AI 관리", icon: Bot },
   { href: "/admin/inquiries", label: "1:1 문의", icon: MessageSquare },
   { href: "/admin/orders", label: "주문·결제", icon: CreditCard },
@@ -16,20 +23,8 @@ const NAV = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  const email = session?.user?.email ?? null;
-  // isAdmin 플래그 + 이메일 allowlist 둘 다 허용 (Google 세션 불일치 방지)
-  const allowed =
-    !!session?.user &&
-    (session.user.isAdmin === true || isAdminEmail(email));
-
-  // 조용히 홈으로 튕기지 않음 — 원인(미로그인/권한없음)을 화면에 표시
-  if (!session?.user) {
-    return <AdminAccessDenied reason="unauthenticated" />;
-  }
-  if (!allowed) {
-    return <AdminAccessDenied reason="forbidden" email={email} />;
-  }
+  const session = await requireAdminPage();
+  const email = session.user.email ?? null;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">

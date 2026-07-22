@@ -1,6 +1,7 @@
-const { app, BrowserWindow, shell, session } = require("electron");
+const { app, BrowserWindow, shell, session, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const backup = require("./backup");
 
 // ── logging ──────────────────────────────────────────────
 const logFile = path.join(path.dirname(process.execPath), "app.log");
@@ -62,6 +63,25 @@ const DESKTOP_CHROME_UA =
   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
 let mainWindow = null;
+let backupScheduler = null;
+
+function registerBackupIpc() {
+  ipcMain.handle("backup:listDrives", () => backup.listRemovableDrives());
+  ipcMain.handle("backup:setTargetPath", (_e, targetPath) => {
+    backup.setTargetPath(targetPath);
+  });
+  ipcMain.handle("backup:getTargetPath", () => backup.getTargetPath());
+  ipcMain.handle("backup:writeBackupFile", (_e, fileName, base64) => {
+    const out = backup.writeBackupFile(fileName, base64);
+    backup.markRun();
+    return out;
+  });
+  ipcMain.handle("backup:getLastRunAt", () => backup.getLastRunAt());
+  ipcMain.handle("backup:runScheduledCheck", () => ({
+    ok: backup.shouldRunScheduled(),
+    message: backup.shouldRunScheduled() ? "due" : "not due",
+  }));
+}
 
 /** 브랜드 로고 3조각 분리→합체 로딩 화면 (설치 후 앱 기동 시에도 동일 모션) */
 function loadingHtml() {
@@ -252,6 +272,7 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -324,7 +345,13 @@ async function createWindow() {
 }
 
 app.setName("ZEFF AI");
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  registerBackupIpc();
+  createWindow().then(() => {
+    backupScheduler = backup.createScheduler(mainWindow, APP_ORIGIN);
+    backupScheduler.start();
+  });
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
