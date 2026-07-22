@@ -6,13 +6,15 @@ import Footer from "@/components/landing/Footer";
 import AdminDeniedBanner from "@/components/landing/AdminDeniedBanner";
 import LandingViewportScale from "@/components/landing/LandingViewportScale";
 
-/** Below-the-fold — lazy load to keep first paint light */
-const ScrollStory = dynamic(() => import("@/components/landing/ScrollStory"));
-const Proof = dynamic(() => import("@/components/landing/Proof"));
-const HowItWorks = dynamic(() => import("@/components/landing/HowItWorks"));
-const UseCases = dynamic(() => import("@/components/landing/UseCases"));
+/** Below-the-fold sections — lazy load to shrink initial JS and speed first paint */
+const WorkspaceIntro = dynamic(() => import("@/components/landing/WorkspaceIntro"));
+const OfficeFeatures = dynamic(() => import("@/components/landing/OfficeFeatures"));
+const LectureAnalysis = dynamic(() => import("@/components/landing/LectureAnalysis"));
+const FeatureGrid = dynamic(() => import("@/components/landing/FeatureGrid"));
 const WhyZeff = dynamic(() => import("@/components/landing/WhyZeff"));
 const Pricing = dynamic(() => import("@/components/landing/Pricing"));
+const FeatureShowcase = dynamic(() => import("@/components/landing/FeatureShowcase"));
+const Team = dynamic(() => import("@/components/landing/Team"));
 
 export default function Landing() {
   return (
@@ -24,12 +26,14 @@ export default function Landing() {
         </Suspense>
         <main>
           <Hero />
-          <ScrollStory />
-          <Proof />
-          <HowItWorks />
-          <UseCases />
+          <WorkspaceIntro />
+          <OfficeFeatures />
+          <LectureAnalysis />
+          <FeatureGrid />
           <WhyZeff />
           <Pricing />
+          <FeatureShowcase />
+          <Team />
         </main>
         <Footer />
       </div>

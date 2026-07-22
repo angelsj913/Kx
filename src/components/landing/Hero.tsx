@@ -1,61 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Download, Apple, Smartphone, X } from "lucide-react";
+import { Download, Apple, Smartphone, Sparkles, X } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
   MAC_DOWNLOAD_URL,
   PLAY_STORE_URL,
 } from "@/lib/constants";
 import { useLandingT } from "@/lib/landingI18n";
-import { useLocalCopy } from "@/lib/useLocalCopy";
-import type { LandingLanguage } from "@/lib/landingI18n";
 import Logo from "@/components/ui/Logo";
 
 type OS = "windows" | "mac" | "android";
-
-type HeroCopy = {
-  headline: string;
-  support: string;
-  ctaPrimary: string;
-  ctaPricing: string;
-  ctaDownload: string;
-};
-
-const COPY: Partial<Record<LandingLanguage, HeroCopy>> & { en: HeroCopy } = {
-  ko: {
-    headline: "공부와 일을, 한 워크스페이스에서",
-    support:
-      "강의 요약부터 PPT·엑셀·워드까지. 매번 다시 설명하지 않아도, ZEFF가 맥락을 이어 받습니다.",
-    ctaPrimary: "웹에서 시작하기",
-    ctaPricing: "요금제 보기",
-    ctaDownload: "앱 다운로드",
-  },
-  en: {
-    headline: "Study and work, in one workspace",
-    support:
-      "From lecture notes to PPT, Excel, and Word — ZEFF keeps your context so you don’t re-explain every time.",
-    ctaPrimary: "Start in browser",
-    ctaPricing: "See pricing",
-    ctaDownload: "Download apps",
-  },
-  ja: {
-    headline: "勉強も仕事も、ひとつのワークスペースで",
-    support:
-      "講義まとめから PPT・Excel・Word まで。毎回説明し直さなくても、ZEFF が文脈を引き継ぎます。",
-    ctaPrimary: "ブラウザで始める",
-    ctaPricing: "料金を見る",
-    ctaDownload: "アプリを入手",
-  },
-  zh: {
-    headline: "学习与工作，都在一个工作区",
-    support: "从讲座笔记到 PPT、Excel、Word——ZEFF 记住上下文，不必每次重新说明。",
-    ctaPrimary: "在网页开始",
-    ctaPricing: "查看套餐",
-    ctaDownload: "下载应用",
-  },
-};
 
 function WindowsIcon({ className }: { className?: string }) {
   return (
@@ -67,9 +22,8 @@ function WindowsIcon({ className }: { className?: string }) {
 
 export default function Hero() {
   const t = useLandingT();
-  const copy = useLocalCopy(COPY);
   const [selected, setSelected] = useState<OS | null>(null);
-  const [showDownloads, setShowDownloads] = useState(false);
+
   const playReady = Boolean(PLAY_STORE_URL);
 
   const info =
@@ -92,7 +46,9 @@ export default function Hero() {
         : selected === "android"
           ? {
               title: t("hero.modal.androidTitle"),
-              note: playReady ? t("hero.modal.androidNote") : t("hero.modal.androidComingSoon"),
+              note: playReady
+                ? t("hero.modal.androidNote")
+                : t("hero.modal.androidComingSoon"),
               url: PLAY_STORE_URL || "#",
               ready: playReady,
               downloadAttr: undefined,
@@ -100,164 +56,132 @@ export default function Hero() {
           : null;
 
   return (
-    <section
-      id="about"
-      className="relative min-h-[100svh] overflow-hidden pb-16 pt-24 sm:pb-24 sm:pt-28"
-    >
-      {/* Full-bleed atmosphere — not a flat single color */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 70% 20%, rgba(37,99,235,0.22), transparent 55%), radial-gradient(ellipse 50% 40% at 10% 80%, rgba(14,165,233,0.12), transparent 50%), linear-gradient(165deg, #0b1220 0%, #111827 42%, #0f172a 100%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        aria-hidden
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E\")",
-        }}
-      />
+    <section id="about" className="relative overflow-hidden pb-14 pt-28 sm:pb-20 sm:pt-36">
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
-        <div className="text-left">
-          <div className="hero-fade-up">
-            <Logo size="lg" className="!items-start brightness-110" />
-          </div>
-          <h1 className="hero-fade-up hero-delay-1 mt-8 max-w-xl font-[family-name:var(--font-landing-display)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-[3.25rem]">
-            {copy.headline}
-          </h1>
-          <p className="hero-fade-up hero-delay-2 mt-5 max-w-md text-base leading-relaxed text-slate-300 sm:text-lg">
-            {copy.support}
-          </p>
-          <div className="hero-fade-up hero-delay-3 mt-9 flex flex-wrap items-center gap-3">
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-lg shadow-blue-900/30 transition hover:bg-slate-100"
-            >
-              {copy.ctaPrimary}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href="#pricing"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 py-3.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/10"
-            >
-              {copy.ctaPricing}
-            </a>
-            <button
-              type="button"
-              onClick={() => setShowDownloads((v) => !v)}
-              className="inline-flex items-center gap-2 px-2 py-3.5 text-sm text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
-            >
-              {copy.ctaDownload}
-            </button>
-          </div>
+      <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
+        <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
+          <Sparkles className="h-3.5 w-3.5" />
+          {t("hero.badge")}
+        </span>
 
-          {showDownloads && (
-            <div
-              id="download"
-              className="hero-fade-up mt-5 flex scroll-mt-32 flex-wrap gap-2"
-            >
-              <button
-                type="button"
-                onClick={() => setSelected("windows")}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200"
-              >
-                <WindowsIcon className="h-4 w-4" />
-                {t("hero.download.windows")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelected("android")}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200"
-              >
-                <Smartphone className="h-4 w-4" />
-                {t("hero.download.android")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelected("mac")}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200"
-              >
-                <Apple className="h-4 w-4" />
-                {t("hero.download.mac")}
-              </button>
-            </div>
-          )}
+        <h1 className="hero-fade-up hero-delay-1 max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+          {t("hero.title.line1")}
+          <br />
+          <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
+            <span className="text-4xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+              {t("hero.title.line2Prefix")}
+            </span>
+            <Logo size="hero" className="!items-center" />
+          </span>
+        </h1>
+
+        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
+          {t("hero.subtitle")}
+        </p>
+
+        <div
+          id="download"
+          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
+        >
+          <button
+            type="button"
+            onClick={() => setSelected("windows")}
+            className="group flex w-full items-center justify-center gap-3 whitespace-nowrap rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] md:w-auto md:min-w-[11rem] md:flex-1"
+          >
+            <WindowsIcon className="h-6 w-6" />
+            {t("hero.download.windows")}
+            <Download className="ml-1 h-4 w-4 opacity-70 transition-transform duration-300 group-hover:translate-y-0.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected("android")}
+            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-emerald-500/40 bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] md:w-auto md:min-w-[12.5rem] md:flex-1"
+          >
+            <Smartphone className="h-6 w-6" />
+            {t("hero.download.android")}
+            {!playReady && (
+              <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-50">
+                {t("hero.download.soon")}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected("mac")}
+            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 md:w-auto md:min-w-[12.5rem] md:flex-1"
+          >
+            <Apple className="h-6 w-6" />
+            {t("hero.download.mac")}
+            <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              {t("hero.download.soon")}
+            </span>
+          </button>
         </div>
 
-        {/* Dominant product visual plane */}
-        <div className="hero-fade-up hero-delay-2 relative mx-auto w-full max-w-lg lg:max-w-none">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-950 shadow-2xl shadow-blue-950/50">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.35),transparent_50%)]" />
-            <div className="absolute left-4 right-4 top-4 flex items-center gap-2 rounded-lg bg-slate-950/70 px-3 py-2 text-[11px] text-slate-400 backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              ZEFF workspace
-            </div>
-            <div className="absolute inset-x-4 bottom-4 top-14 grid grid-cols-[0.9fr_1.1fr] gap-3">
-              <div className="rounded-xl border border-white/10 bg-slate-900/80 p-3">
-                <div className="h-2 w-16 rounded bg-slate-600/80" />
-                <div className="mt-3 space-y-2">
-                  <div className="h-8 rounded-lg bg-blue-500/25 ring-1 ring-blue-400/30" />
-                  <div className="h-8 rounded-lg bg-slate-800" />
-                  <div className="h-8 rounded-lg bg-slate-800" />
-                </div>
-              </div>
-              <div className="flex flex-col rounded-xl border border-white/10 bg-slate-900/60 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-slate-500">Chat</div>
-                <div className="mt-2 flex-1 space-y-2">
-                  <div className="ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-blue-600/80 px-2.5 py-1.5 text-[11px] text-white">
-                    강의 요약 + PPT로
-                  </div>
-                  <div className="max-w-[90%] rounded-lg rounded-bl-sm bg-slate-800 px-2.5 py-1.5 text-[11px] text-slate-200">
-                    아웃라인 12장 구성 완료. 미리보기 열었어요.
-                  </div>
-                </div>
-                <div className="mt-2 h-8 rounded-lg border border-white/10 bg-slate-950/80" />
-              </div>
-            </div>
-          </div>
-        </div>
+        <p className="hero-fade-up hero-delay-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
+          {t("hero.download.note")}
+        </p>
       </div>
 
       {info && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
-              onClick={() => setSelected(null)}
-              className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="close"
+              onClick={() => setSelected(null)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
-            <h3 className="pr-8 text-lg font-bold text-slate-900 dark:text-slate-50">{info.title}</h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{info.note}</p>
+
+            <div className="flex justify-center">
+              <Logo size="lg" />
+            </div>
+            <h3 className="mt-4 text-center text-lg font-semibold text-slate-900 dark:text-slate-50">
+              {info.title}
+            </h3>
+            <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-300">{info.note}</p>
             {info.ready ? (
-              <a
-                href={info.url}
-                {...(info.downloadAttr ? { download: info.downloadAttr } : {})}
-                className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
-              >
-                <Download className="h-4 w-4" />
-                {selected === "android" ? t("hero.modal.androidOpen") : t("hero.modal.confirm")}
-              </a>
+              <>
+                <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                  {selected === "android"
+                    ? t("hero.modal.androidNote")
+                    : t("hero.modal.instruction")}
+                </p>
+                {/* GitHub 릴리스 URL은 교차 출처라 download 속성이 무시된다(GitHub이
+                    Content-Disposition으로 강제 다운로드). 새 탭으로 열어 인앱 브라우저
+                    (인스타그램 등)에서도 시스템 브라우저로 넘어가 받을 확률을 높인다. */}
+                <a
+                  href={info.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
+                >
+                  <Download className="h-4 w-4" />
+                  {selected === "android"
+                    ? t("hero.modal.androidOpen")
+                    : t("hero.modal.confirm")}
+                </a>
+              </>
             ) : (
-              <button
-                type="button"
-                disabled
-                className="mt-5 w-full rounded-xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-500 dark:bg-slate-800"
-              >
-                {t("hero.download.soon")}
-              </button>
+              <p className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                {info.note}
+              </p>
             )}
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="mt-2 w-full py-2 text-sm text-slate-500"
+              className="mt-3 flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-600 transition-colors hover:border-blue-500/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
               {t("hero.modal.cancel")}
             </button>

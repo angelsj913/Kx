@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
+import { useScrollProgress } from "@/lib/landingScroll";
 
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
@@ -21,61 +22,61 @@ type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
 const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy } = {
   ko: {
     title: "이럴 때, Zeff",
-    subtitle: "화면 안에서 실제로 매일 쓰이는 기능만 골라 담았습니다.",
+    subtitle: "매일 자주 쓰는 기능을 실제 작업 흐름에 맞춰 보여드립니다.",
     items: [
       {
         no: "01",
         tag: "AI 요약",
         title: "자료를 넣으면, 핵심만 남습니다",
-        desc: "수업 자료나 PDF를 올리면 시험에 나올 법한 핵심을 정리해 요약본으로 돌려줍니다. 요약 옆의 퀴즈·개념·메모 탭으로 복습까지 자연스럽게 이어집니다.",
+        desc: "수업 자료나 PDF를 올리면 중요한 내용을 읽기 쉽게 정리합니다. 요약 옆에서 퀴즈를 풀고 개념과 메모를 확인하며 바로 복습할 수 있습니다.",
       },
       {
         no: "02",
         tag: "강의 분석",
         title: "영상과 음성을, 한 장의 노트로",
-        desc: "강의 영상 링크 하나면 충분합니다. 화면 속 판서와 말소리를 함께 읽어 하나의 정리된 노트로 묶어 드립니다.",
+        desc: "강의 영상 링크를 붙여 넣으면 화면 속 판서와 설명을 함께 읽어 한 장의 노트로 정리합니다.",
       },
       {
         no: "03",
         tag: "문서 · 발표자료",
-        title: "핵심만 던지면, 초안이 완성됩니다",
-        desc: "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열어 미리볼 수 있습니다. 표와 서식까지 고려해 받은 그대로 다듬어 쓰기 좋습니다.",
+        title: "필요한 내용을 적으면 초안이 만들어집니다",
+        desc: "워드·PPT·엑셀 초안을 만들고 우측 패널에서 바로 확인할 수 있습니다. 표와 서식이 잡혀 있어 필요한 부분만 다듬어 쓰면 됩니다.",
       },
       {
         no: "04",
         tag: "공유 서재",
         title: "내 자료와 팀 자료를 한곳에서",
-        desc: "개인 서재와 팀 워크스페이스 공유 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
+        desc: "개인 자료와 팀 자료를 나눠 관리하고, Book Chat에서 필요한 문서를 열어 바로 질문할 수 있습니다.",
       },
     ],
   },
   en: {
-    title: "This is where Zeff fits",
-    subtitle: "We picked only the features people actually reach for every day.",
+    title: "Where Zeff helps",
+    subtitle: "See how the features people use every day fit into a real workflow.",
     items: [
       {
         no: "01",
         tag: "AI Summary",
-        title: "Drop in the material, keep only what matters",
-        desc: "Upload lecture notes or a PDF and get back a summary of the points most likely to show up on a test. Quiz, concept, and memo tabs sit right beside it, so review flows on naturally.",
+        title: "Upload material and find what matters",
+        desc: "Upload lecture notes or a PDF and get a clear summary of the important points. Review with quizzes, concepts, and memos right beside it.",
       },
       {
         no: "02",
         tag: "Lecture Analysis",
-        title: "Video and audio, into a single note",
-        desc: "One lecture link is enough. Zeff reads the writing on screen and the spoken words together and ties them into one organized note.",
+        title: "Turn video and audio into one note",
+        desc: "Paste a lecture link and Zeff combines the writing on screen with the spoken explanation in one organized note.",
       },
       {
         no: "03",
         tag: "Docs · Slides",
-        title: "Give the gist, get a draft",
-        desc: "Tell it just what you need and get Word, PPT, or Excel drafts — then open them in the right-hand panel to preview. Formatting and tables included, ready to polish as-is.",
+        title: "Describe what you need and start with a draft",
+        desc: "Create a Word, PPT, or Excel draft and review it in the side panel. Tables and formatting are already in place, ready for your final edits.",
       },
       {
         no: "04",
         tag: "Shared Library",
-        title: "Personal and team materials, together",
-        desc: "Keep a personal library and a team workspace shared library, then chat with any document through Book Chat.",
+        title: "Keep personal and team materials together",
+        desc: "Organize personal and shared team files separately, then open any document and ask questions in Book Chat.",
       },
     ],
   },
@@ -486,9 +487,7 @@ function MockLibrary() {
 
 const MOCKS = [MockSummary, MockLecture, MockDocs, MockLibrary];
 
-export default function FeatureShowcase() {
-  const copy = useLocalCopy(COPY);
-
+function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/80 to-slate-50 py-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
       {/* 위 요금제 섹션에서 이어지는 상단 페이드 */}
@@ -546,6 +545,90 @@ export default function FeatureShowcase() {
               </motion.div>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function FeatureShowcase() {
+  const copy = useLocalCopy(COPY);
+  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({
+    topOffset: 72,
+  });
+  const activeIndex = Math.min(MOCKS.length - 1, Math.floor(p * MOCKS.length));
+  const item = copy.items[activeIndex];
+  const Mock = MOCKS[activeIndex];
+
+  if (reducedMotion) return <StaticShowcase copy={copy} />;
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative h-[360vh] bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"
+    >
+      <div className="sticky top-0 flex min-h-[100svh] items-center overflow-hidden py-20 sm:py-24">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(37,99,235,0.10),transparent_38%)] dark:bg-[radial-gradient(circle_at_75%_45%,rgba(59,130,246,0.14),transparent_38%)]"
+        />
+
+        <div className="relative mx-auto w-full max-w-5xl px-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+              {copy.title}
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">
+              {copy.subtitle}
+            </p>
+          </div>
+
+          <div className="mt-10 grid items-center gap-8 md:mt-14 md:grid-cols-[0.88fr_1.12fr] md:gap-12">
+            <motion.div
+              key={item.no}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">
+                  {item.no}
+                </span>
+                <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">
+                  {item.tag}
+                </span>
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
+                {item.desc}
+              </p>
+
+              <div className="mt-7 flex items-center gap-2" aria-hidden>
+                {copy.items.map((scene, index) => (
+                  <span
+                    key={scene.no}
+                    className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${
+                      index === activeIndex
+                        ? "w-8 bg-blue-600 dark:bg-blue-400"
+                        : "w-3 bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              key={`mock-${item.no}`}
+              initial={{ opacity: 0, scale: 0.985 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-xl shadow-slate-900/10 backdrop-blur-sm sm:p-4 dark:border-slate-700/80 dark:bg-slate-900/70 dark:shadow-black/20"
+            >
+              <Mock />
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>
