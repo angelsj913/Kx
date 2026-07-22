@@ -76,8 +76,8 @@ export default function Header() {
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
           scrolled
-            ? "border-b border-slate-200/60 bg-[var(--landing-header-bg)] shadow-sm backdrop-blur-md dark:border-slate-800/60"
-            : "border-b border-transparent bg-transparent"
+            ? "border-b border-slate-200/40 bg-[var(--landing-header-bg-scrolled)] shadow-sm backdrop-blur-md dark:border-slate-800/50"
+            : "border-b border-transparent bg-[var(--landing-header-bg)] backdrop-blur-[2px]"
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">

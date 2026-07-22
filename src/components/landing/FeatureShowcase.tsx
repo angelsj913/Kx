@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
-import { useScrollProgress, sceneIndex } from "@/lib/landingScroll";
+import { useScrollProgress, stickySceneIndex, sceneLocalProgress } from "@/lib/landingScroll";
 
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
@@ -559,14 +560,23 @@ function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
 export default function FeatureShowcase() {
   const copy = useLocalCopy(COPY);
   const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
-  const activeIndex = sceneIndex(p, MOCKS.length);
+  const count = MOCKS.length;
+  const prevIdx = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const next = stickySceneIndex(p, count, 0.1, prevIdx.current);
+    prevIdx.current = next;
+    setActiveIndex(next);
+  }, [p, count]);
+
   const item = copy.items[activeIndex]!;
-  const localP = MOCKS.length > 1 ? (p * MOCKS.length) % 1 : p;
+  const localP = sceneLocalProgress(p, count, activeIndex);
 
   if (reducedMotion) return <StaticShowcase copy={copy} />;
 
   return (
-    <section ref={sectionRef} className="relative h-[360vh]">
+    <section ref={sectionRef} className="relative h-[440vh]">
       <div className="sticky top-0 flex min-h-[100svh] items-center py-20">
         <div className="mx-auto w-full max-w-5xl px-6">
           <div className="text-center">

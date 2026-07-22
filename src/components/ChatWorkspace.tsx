@@ -1104,7 +1104,7 @@ export default function ChatWorkspace({
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
                 <activeQuickTool.icon className="h-3.5 w-3.5" />
-                {activeQuickTool.short}
+                {toolUiLabel(activeQuickTool, t)}
                 <button
                   type="button"
                   onClick={() => setActiveQuickTool(null)}

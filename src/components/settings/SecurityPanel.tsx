@@ -11,6 +11,8 @@ type SecCopy = {
   pwCurrent: string;
   pwNew: string;
   pwSubmit: string;
+  pwConfirm: string;
+  pwCodeSent: string;
   pwSuccess: string;
   pwGoogleOnly: string;
   twoFaTitle: string;
@@ -38,10 +40,12 @@ type SecCopy = {
 const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy } = {
   ko: {
     pwTitle: "비밀번호 변경",
-    pwDesc: "현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿉니다.",
+    pwDesc: "현재 비밀번호와 새 비밀번호를 입력한 뒤, 이메일 인증으로 변경을 완료합니다.",
     pwCurrent: "현재 비밀번호",
     pwNew: "새 비밀번호",
-    pwSubmit: "비밀번호 변경",
+    pwSubmit: "인증번호 받기",
+    pwConfirm: "인증 후 변경",
+    pwCodeSent: "이메일로 인증번호를 보냈어요. 3분 안에 입력해 주세요.",
     pwSuccess: "비밀번호가 변경되었습니다.",
     pwGoogleOnly: "구글 로그인 계정입니다. 비밀번호는 구글 계정에서 관리해 주세요.",
     twoFaTitle: "2단계 인증",
@@ -65,10 +69,12 @@ const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy }
   },
   en: {
     pwTitle: "Change password",
-    pwDesc: "Confirm your current password, then set a new one.",
+    pwDesc: "Enter your current and new password, then confirm with an email code.",
     pwCurrent: "Current password",
     pwNew: "New password",
-    pwSubmit: "Change password",
+    pwSubmit: "Send verification code",
+    pwConfirm: "Verify and change",
+    pwCodeSent: "We emailed you a code. Enter it within 3 minutes.",
     pwSuccess: "Your password has been changed.",
     pwGoogleOnly: "This is a Google account. Manage your password in your Google account.",
     twoFaTitle: "Two-factor authentication",
@@ -141,8 +147,11 @@ export default function SecurityPanel() {
   // 비밀번호 변경
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  const [pwCode, setPwCode] = useState("");
+  const [pwMode, setPwMode] = useState<"form" | "code">("form");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwDone, setPwDone] = useState(false);
+  const [pwNotice, setPwNotice] = useState("");
 
   // 2FA 설정
   const [twoFaMode, setTwoFaMode] = useState<"idle" | "code">("idle");
@@ -167,7 +176,34 @@ export default function SecurityPanel() {
     void load();
   }, [load]);
 
-  async function onChangePassword(e: React.FormEvent) {
+  async function onRequestPasswordOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setPwDone(false);
+    setPwNotice("");
+    if (!curPw.trim() || !newPw.trim()) return;
+    setPwBusy(true);
+    try {
+      const res = await fetch("/api/account/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: "request", currentPassword: curPw, newPassword: newPw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || c.genericError);
+        return;
+      }
+      setPwMode("code");
+      setPwNotice(data?.devCode ? `${c.pwCodeSent} (${data.devCode})` : c.pwCodeSent);
+    } catch {
+      setError(c.genericError);
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
+  async function onConfirmPasswordChange(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setPwDone(false);
@@ -176,7 +212,12 @@ export default function SecurityPanel() {
       const res = await fetch("/api/account/password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }),
+        body: JSON.stringify({
+          step: "confirm",
+          currentPassword: curPw,
+          newPassword: newPw,
+          code: pwCode.trim(),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -186,6 +227,9 @@ export default function SecurityPanel() {
       setPwDone(true);
       setCurPw("");
       setNewPw("");
+      setPwCode("");
+      setPwMode("form");
+      setPwNotice("");
     } catch {
       setError(c.genericError);
     } finally {
@@ -286,12 +330,19 @@ export default function SecurityPanel() {
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">{c.pwTitle}</h3>
         </div>
         {state.hasPassword ? (
-          <form className="mt-3 space-y-2.5" onSubmit={onChangePassword}>
+          <form
+            className="mt-3 space-y-2.5"
+            onSubmit={pwMode === "code" ? onConfirmPasswordChange : onRequestPasswordOtp}
+          >
             <p className="text-xs text-slate-500 dark:text-slate-400">{c.pwDesc}</p>
             <input
               type="password"
               value={curPw}
-              onChange={(e) => setCurPw(e.target.value)}
+              onChange={(e) => {
+                setCurPw(e.target.value);
+                setPwMode("form");
+                setPwCode("");
+              }}
               required
               autoComplete="current-password"
               placeholder={c.pwCurrent}
@@ -300,23 +351,66 @@ export default function SecurityPanel() {
             <input
               type="password"
               value={newPw}
-              onChange={(e) => setNewPw(e.target.value)}
+              onChange={(e) => {
+                setNewPw(e.target.value);
+                setPwMode("form");
+                setPwCode("");
+              }}
               required
               autoComplete="new-password"
               placeholder={c.pwNew}
               className={inputCls}
             />
+            {pwMode === "code" && (
+              <>
+                {pwNotice && (
+                  <p className="text-xs text-blue-600 dark:text-blue-300">{pwNotice}</p>
+                )}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={pwCode}
+                  onChange={(e) => setPwCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                  maxLength={6}
+                  placeholder={c.codePlaceholder}
+                  className={inputCls}
+                />
+              </>
+            )}
             {pwDone && (
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{c.pwSuccess}</p>
             )}
-            <button
-              type="submit"
-              disabled={pwBusy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
-            >
-              {pwBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {c.pwSubmit}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={
+                  pwBusy ||
+                  !curPw.trim() ||
+                  !newPw.trim() ||
+                  (pwMode === "code" && pwCode.trim().length !== 6)
+                }
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {pwBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {pwMode === "code" ? c.pwConfirm : c.pwSubmit}
+              </button>
+              {pwMode === "code" && (
+                <button
+                  type="button"
+                  disabled={pwBusy}
+                  onClick={() => {
+                    setPwMode("form");
+                    setPwCode("");
+                    setPwNotice("");
+                  }}
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                >
+                  {c.cancel}
+                </button>
+              )}
+            </div>
           </form>
         ) : (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{c.pwGoogleOnly}</p>

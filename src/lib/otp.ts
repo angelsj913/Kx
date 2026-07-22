@@ -8,7 +8,8 @@ export type OtpPurpose =
   | "find-password"
   | "workspace-delete"
   | "admin-plan-change"
-  | "login-2fa";
+  | "login-2fa"
+  | "password-change";
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
@@ -134,24 +135,37 @@ async function sendEmailOtp(
 ): Promise<MailResult> {
   const isAdminPlan = purpose === "admin-plan-change";
   const is2fa = purpose === "login-2fa";
+  const isPwChange = purpose === "password-change";
   const subject = isAdminPlan
     ? "[ZEFF AI] 관리자 · 요금제 변경 인증번호"
     : is2fa
       ? "[ZEFF AI] 로그인 2단계 인증번호"
-      : "[ZEFF AI] 인증번호";
+      : isPwChange
+        ? "[ZEFF AI] 비밀번호 변경 인증번호"
+        : "[ZEFF AI] 인증번호";
   const text = isAdminPlan
     ? `ZEFF AI 관리자 요금제 변경 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 요청하지 않았다면 무시하세요.`
     : is2fa
       ? `ZEFF AI 로그인 2단계 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 로그인하지 않았다면 비밀번호를 변경해 주세요.`
-      : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
+      : isPwChange
+        ? `ZEFF AI 비밀번호 변경 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요. 본인이 요청하지 않았다면 즉시 비밀번호를 확인하고 이 메일을 무시하세요.`
+        : `ZEFF AI 인증번호는 ${code} 입니다. 3분 안에 입력해 주세요.`;
   const html = otpEmailHtml(
     code,
-    isAdminPlan ? "회원 요금제 변경 인증번호" : is2fa ? "로그인 2단계 인증번호" : "인증번호",
+    isAdminPlan
+      ? "회원 요금제 변경 인증번호"
+      : is2fa
+        ? "로그인 2단계 인증번호"
+        : isPwChange
+          ? "비밀번호 변경 인증번호"
+          : "인증번호",
     isAdminPlan
       ? "관리자 패널에서 요금제를 변경하려면 아래 번호를 입력하세요."
       : is2fa
         ? "로그인을 계속하려면 아래 번호를 입력하세요."
-        : "ZEFF AI 인증을 완료하려면 아래 번호를 입력하세요.",
+        : isPwChange
+          ? "비밀번호를 변경하려면 아래 번호를 입력하세요."
+          : "ZEFF AI 인증을 완료하려면 아래 번호를 입력하세요.",
     isAdminPlan,
   );
 

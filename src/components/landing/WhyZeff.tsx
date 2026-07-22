@@ -1,10 +1,22 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Video, FileSpreadsheet, Layers, FileText, Presentation, Table2, MessageSquare, Sparkles } from "lucide-react";
+import {
+  Video,
+  FileSpreadsheet,
+  Layers,
+  FileText,
+  Presentation,
+  Table2,
+  MessageSquare,
+  Sparkles,
+  Link2,
+  Play,
+} from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
-import { useScrollProgress, sceneIndex } from "@/lib/landingScroll";
+import { useScrollProgress, stickySceneIndex, sceneLocalProgress } from "@/lib/landingScroll";
 
 type Pillar = { title: string; desc: string };
 type Copy = { eyebrow: string; title: string; subtitle: string; pillars: [Pillar, Pillar, Pillar] };
@@ -54,23 +66,44 @@ const COPY: Partial<Record<LandingLanguage, Copy>> & { en: Copy } = {
 
 const RAIL_ICONS = [Video, FileSpreadsheet, Layers];
 
-function PanelLecture() {
-  const bars = [35, 60, 45, 80, 70, 55, 90, 40];
+/** 실제 앱 강의 영상 요약 UI를 닮은 목업 (막대그래프 placeholder 대체) */
+function PanelLecture({ progress = 0.7 }: { progress?: number }) {
+  const wave = [28, 52, 38, 72, 88, 58, 44, 78, 48, 82, 62, 36, 54, 76, 58, 32];
+  const active = Math.floor(progress * wave.length);
   return (
-    <div className="space-y-4 p-2">
-      <div className="rounded-xl bg-gradient-to-br from-indigo-950 to-slate-900 p-4">
-        <div className="flex h-24 items-end gap-1">
-          {bars.map((h, i) => (
-            <span key={i} className="flex-1 rounded-t bg-blue-400/70" style={{ height: `${h}%` }} />
-          ))}
-        </div>
-        <p className="mt-3 text-[11px] text-blue-100/80">Lecture track · vision + audio merged</p>
+    <div className="space-y-3 p-4">
+      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-slate-700 dark:bg-slate-900/50">
+        <Link2 className="h-3.5 w-3.5 text-blue-600" />
+        <span className="flex-1 truncate text-[11px] text-slate-500">youtube.com/watch?v=…</span>
+        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-semibold text-white">분석</span>
       </div>
-      <div className="space-y-2">
-        {[1, 2, 3].map((n) => (
-          <div key={n} className="h-2 rounded-full bg-slate-200 dark:bg-slate-700" style={{ width: `${100 - n * 12}%` }} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-800">
+          <Play className="h-6 w-6 text-white/90" fill="currentColor" />
+          <span className="absolute left-2 top-2 rounded bg-black/45 px-1.5 py-0.5 text-[8px] text-white/90">판서</span>
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/15">
+            <div className="h-full bg-blue-500" style={{ width: `${Math.max(12, progress * 100)}%` }} />
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-200 p-2.5 dark:border-slate-700">
+          <p className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">한 장 노트</p>
+          <ul className="mt-2 space-y-1.5 text-[10px] leading-snug text-slate-600 dark:text-slate-300">
+            <li className="rounded bg-slate-50 px-1.5 py-1 dark:bg-slate-800/70">학습 목표 2–3개 추출</li>
+            <li className="rounded bg-slate-50 px-1.5 py-1 dark:bg-slate-800/70">판서 + 설명 병합</li>
+            <li className="rounded bg-slate-50 px-1.5 py-1 dark:bg-slate-800/70">복습 질문 자동 생성</li>
+          </ul>
+        </div>
+      </div>
+      <div className="flex h-9 items-end gap-[2px] rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-slate-900/40">
+        {wave.map((h, i) => (
+          <span
+            key={i}
+            className={`w-full rounded-full ${i < active ? "bg-blue-500/80" : "bg-slate-200 dark:bg-slate-700"}`}
+            style={{ height: `${h}%` }}
+          />
         ))}
       </div>
+      <p className="text-[10px] text-slate-500">비전(화면) + 음성 → 구조화 노트</p>
     </div>
   );
 }
@@ -114,15 +147,21 @@ function PanelUnified() {
   );
 }
 
-const PANELS = [PanelLecture, PanelDocs, PanelUnified];
-
 export default function WhyZeff() {
   const copy = useLocalCopy(COPY);
   const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
-  const idx = sceneIndex(p, copy.pillars.length);
-  const localP = copy.pillars.length > 1 ? (p * copy.pillars.length) % 1 : p;
-  const lineFill = ((idx + localP) / (copy.pillars.length - 1)) * 100;
-  const Panel = PANELS[idx]!;
+  const count = copy.pillars.length;
+  const prevIdx = useRef(0);
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const next = stickySceneIndex(p, count, 0.1, prevIdx.current);
+    prevIdx.current = next;
+    setIdx(next);
+  }, [p, count]);
+
+  const localP = sceneLocalProgress(p, count, idx);
+  const lineFill = Math.min(100, (p / Math.max(0.001, (count - 1) / count)) * 100);
 
   if (reducedMotion) {
     return (
@@ -149,7 +188,7 @@ export default function WhyZeff() {
   }
 
   return (
-    <section ref={sectionRef} className="relative h-[260vh]">
+    <section ref={sectionRef} className="relative h-[360vh]">
       <div className="sticky top-0 flex min-h-[100svh] items-center py-16">
         <div className="mx-auto w-full max-w-6xl px-6">
           <div className="mb-10 text-center">
@@ -163,7 +202,7 @@ export default function WhyZeff() {
               <div className="absolute bottom-2 left-[1.125rem] top-2 w-px bg-slate-200 dark:bg-slate-700" />
               <div
                 className="absolute left-[1.125rem] top-2 w-px origin-top bg-blue-600 dark:bg-blue-400"
-                style={{ height: `${Math.min(100, lineFill)}%` }}
+                style={{ height: `${lineFill}%` }}
               />
               <ol className="space-y-10">
                 {copy.pillars.map((pillar, i) => {
@@ -201,7 +240,9 @@ export default function WhyZeff() {
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{copy.pillars[idx]!.title}</p>
                 <p className="mt-1 text-xs text-slate-500 lg:hidden">{copy.pillars[idx]!.desc}</p>
               </div>
-              <Panel />
+              {idx === 0 && <PanelLecture progress={localP} />}
+              {idx === 1 && <PanelDocs />}
+              {idx === 2 && <PanelUnified />}
             </motion.div>
           </div>
         </div>

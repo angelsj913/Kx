@@ -185,7 +185,7 @@ export default function SettingsModal({
 
 function GeneralPanel() {
   const t = useT();
-  const { settings, updateLanguage, updatePlan } = useSettings();
+  const { settings, updateLanguage } = useSettings();
   // 서버 설정이 진실 소스 (effect로 로컬 state 동기화하지 않음)
   const lang: AppLanguage =
     settings?.language && LANGUAGE_ORDER.includes(settings.language as AppLanguage)
@@ -228,19 +228,6 @@ function GeneralPanel() {
         <p className="mt-2 text-xs text-slate-400">
           {t("settings.plan.changeHint")}
         </p>
-        {/* 개발/테스트용 빠른 전환 */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(Object.keys(PLANS) as PlanId[]).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => updatePlan(id)}
-              className="rounded-lg border border-dashed border-slate-300 px-2.5 py-1 text-[11px] text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600"
-            >
-              {t("settings.plan.testPrefix")}{PLANS[id].name}
-            </button>
-          ))}
-        </div>
       </section>
     </div>
   );
@@ -270,6 +257,8 @@ function PrivacyPanel() {
     if (res.ok) setMemories((current) => current.filter((memory) => memory.id !== id));
   }
 
+  const memoryOn = settings?.memoryEnabled !== false;
+
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
@@ -283,61 +272,65 @@ function PrivacyPanel() {
           <button
             type="button"
             role="switch"
-            aria-checked={settings?.memoryEnabled !== false}
-            onClick={() => void updateMemoryEnabled(settings?.memoryEnabled === false)}
+            aria-checked={memoryOn}
+            onClick={() => void updateMemoryEnabled(!memoryOn)}
             className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              settings?.memoryEnabled !== false ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"
+              memoryOn ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"
             }`}
           >
             <span
-              className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                settings?.memoryEnabled !== false ? "translate-x-6" : "translate-x-1"
+              className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                memoryOn ? "translate-x-5" : "translate-x-0"
               }`}
             />
           </button>
         </div>
-        <label className="mt-4 block text-xs font-medium text-slate-600 dark:text-slate-300">
-          AI 응답 성격
-          <select
-            value={settings?.preferredTone ?? "balanced"}
-            onChange={(event) =>
-              void updatePreferredTone(
-                event.target.value as NonNullable<typeof settings>["preferredTone"],
-              )
-            }
-            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          >
-            <option value="balanced">균형 잡힌 답변</option>
-            <option value="concise">간결하게</option>
-            <option value="friendly">친근하게</option>
-            <option value="professional">전문적으로</option>
-            <option value="teaching">차근차근 설명</option>
-          </select>
-        </label>
-        <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">저장된 기억</p>
-          {memories.length === 0 ? (
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50">
-              아직 저장된 기억이 없습니다.
-            </p>
-          ) : (
-            memories.map((memory) => (
-              <div
-                key={memory.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800"
-              >
-                <p className="text-xs leading-5 text-slate-700 dark:text-slate-200">{memory.content}</p>
-                <button
-                  type="button"
-                  onClick={() => void removeMemory(memory.id)}
-                  className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40"
-                  aria-label="저장된 기억 삭제"
+        <div className={`mt-4 space-y-4 ${memoryOn ? "" : "pointer-events-none opacity-45"}`}>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+            AI 응답 성격
+            <select
+              value={settings?.preferredTone ?? "balanced"}
+              disabled={!memoryOn}
+              onChange={(event) =>
+                void updatePreferredTone(
+                  event.target.value as NonNullable<typeof settings>["preferredTone"],
+                )
+              }
+              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="balanced">균형 잡힌 답변</option>
+              <option value="concise">간결하게</option>
+              <option value="friendly">친근하게</option>
+              <option value="professional">전문적으로</option>
+              <option value="teaching">차근차근 설명</option>
+            </select>
+          </label>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">저장된 기억</p>
+            {memories.length === 0 ? (
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50">
+                아직 저장된 기억이 없습니다.
+              </p>
+            ) : (
+              memories.map((memory) => (
+                <div
+                  key={memory.id}
+                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))
-          )}
+                  <p className="text-xs leading-5 text-slate-700 dark:text-slate-200">{memory.content}</p>
+                  <button
+                    type="button"
+                    onClick={() => void removeMemory(memory.id)}
+                    disabled={!memoryOn}
+                    className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:hover:bg-red-950/40"
+                    aria-label="저장된 기억 삭제"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </section>
       <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -738,20 +731,41 @@ function DataPanel() {
       {usage && (
         <section>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("settings.data.usage")}</h3>
+          <p className="mt-1 text-xs text-slate-500">{t("settings.data.usagePercentHint")}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {Object.entries(usage.usage).map(([key, v]) => (
-              <div
-                key={key}
-                className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700"
-              >
-                <p className="text-xs text-slate-500">{key}</p>
-                <p className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  {v.used}
-                  {v.max != null ? ` / ${v.max}` : ""}
-                  {v.period ? ` (${v.period})` : ""}
-                </p>
-              </div>
-            ))}
+            {Object.entries(usage.usage).map(([key, v]) => {
+              const labelKey = `settings.data.metric.${key}` as Parameters<typeof t>[0];
+              const label = t(labelKey);
+              const displayLabel =
+                !label || label === labelKey || label.startsWith("settings.data.metric.")
+                  ? key
+                  : label;
+              const pct =
+                v.max == null || v.max <= 0
+                  ? null
+                  : Math.min(100, Math.round((v.used / v.max) * 100));
+              return (
+                <div
+                  key={key}
+                  className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700"
+                >
+                  <p className="text-xs text-slate-500">{displayLabel}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {pct == null ? t("settings.data.usageUnlimited") : `${pct}%`}
+                  </p>
+                  {pct != null && (
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-blue-600"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

@@ -15,12 +15,14 @@
   --landing-bg-soft: #f8fafc;
   --landing-gradient: linear-gradient(
     180deg,
-    var(--landing-bg) 0%,
+    #f0f5ff 0%,
     var(--landing-bg-soft) 45%,
     var(--landing-bg) 100%
   );
-  --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.08), transparent 60%);
-  --landing-header-bg: color-mix(in srgb, var(--landing-bg) 82%, transparent);
+  --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.1), transparent 60%);
+  /* 헤더: 히어로 상단 soft blue wash와 이어지도록 (순수 흰색 띠 제거) */
+  --landing-header-bg: color-mix(in srgb, #eef4ff 72%, transparent);
+  --landing-header-bg-scrolled: color-mix(in srgb, #f5f8ff 78%, transparent);
 }
 :root.dark {
   color-scheme: dark;
@@ -28,12 +30,13 @@
   --landing-bg-soft: #0f172a;
   --landing-gradient: linear-gradient(
     180deg,
-    var(--landing-bg) 0%,
+    #0c1528 0%,
     var(--landing-bg-soft) 50%,
     var(--landing-bg) 100%
   );
-  --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 60%);
-  --landing-header-bg: color-mix(in srgb, var(--landing-bg) 82%, transparent);
+  --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(59, 130, 246, 0.14), transparent 60%);
+  --landing-header-bg: color-mix(in srgb, #0c1528 70%, transparent);
+  --landing-header-bg-scrolled: color-mix(in srgb, #0a1120 75%, transparent);
 }
 
 body {

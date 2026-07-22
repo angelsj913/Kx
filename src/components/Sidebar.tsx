@@ -25,6 +25,8 @@ export default function Sidebar({
 }) {
   const t = useT();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const pendingSession = sessions.find((s) => s.id === pendingDeleteId);
 
   return (
     <aside
@@ -107,8 +109,16 @@ export default function Sidebar({
                     tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDeleteSession(s.id);
+                      setPendingDeleteId(s.id);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPendingDeleteId(s.id);
+                      }
+                    }}
+                    aria-label={t("sidebar.deleteChat")}
                     className="shrink-0 opacity-0 group-hover:opacity-100 hover:text-red-500"
                   >
                     <Trash2 size={ICON} />
@@ -123,6 +133,50 @@ export default function Sidebar({
       <div className="mt-auto shrink-0 border-t border-[var(--workspace-border)]">
         <ProfileMenu collapsed={isCollapsed} />
       </div>
+
+      {pendingDeleteId && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-chat-title"
+          onClick={() => setPendingDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-chat-title" className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+              {t("sidebar.deleteConfirmTitle")}
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              {t("sidebar.deleteConfirmBody").replace(
+                "{title}",
+                pendingSession?.title || t("sidebar.newChat"),
+              )}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteId(null)}
+                className="flex-1 rounded-xl border border-slate-200 py-2 text-sm font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200"
+              >
+                {t("sidebar.deleteCancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteSession(pendingDeleteId);
+                  setPendingDeleteId(null);
+                }}
+                className="flex-1 rounded-xl bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-500"
+              >
+                {t("sidebar.deleteConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

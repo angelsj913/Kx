@@ -2,10 +2,21 @@
  * 친구 추천(리퍼럴) — 추천 성사 시 추천인·피추천인 양쪽에 "Pro 7일"을 한시 부여한다.
  * 한시 부여는 UserSettings.grantedPlan/grantedPlanUntil 로 저장되고, 실제 권한 판정은
  * usage.ts 의 getUserPlanId 한 곳에서 유료 plan 과 비교해 더 높은 쪽을 적용한다.
+ *
+ * 악용 방지:
+ * - 이메일 인증 완료자만 코드 사용
+ * - 자기 코드 / 자기 계정 불가
+ * - 피추천인당 1회만
+ * - 추천인당 성사 상한 (REFERRAL_MAX_PER_REFERRER)
+ * - 추천 보상으로 쌓을 수 있는 Pro 잔여일 상한 (REFERRAL_MAX_GRANT_DAYS)
  */
 import { prisma } from "@/lib/prisma";
 
 export const REFERRAL_REWARD_DAYS = 7;
+/** 추천인 1명이 보상받을 수 있는 최대 성사 건수 */
+export const REFERRAL_MAX_PER_REFERRER = 20;
+/** 추천 보상으로 누적 가능한 최대 잔여일 (무한 스택 방지) */
+export const REFERRAL_MAX_GRANT_DAYS = 28;
 
 /** 사람이 읽고 입력하기 쉬운 8자리 코드(혼동 문자 O/0/I/1/L 제외). */
 function randomCode(): string {
@@ -29,7 +40,6 @@ export async function getOrCreateReferralCode(userId: string): Promise<string> {
       await prisma.user.update({ where: { id: userId }, data: { referralCode: code } });
       return code;
     } catch {
-      // unique 충돌 시 재시도. 그사이 다른 요청이 코드를 심었으면 그 값을 사용.
       const again = await prisma.user.findUnique({
         where: { id: userId },
         select: { referralCode: true },
@@ -40,10 +50,13 @@ export async function getOrCreateReferralCode(userId: string): Promise<string> {
   throw new Error("추천 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.");
 }
 
-/** grantedPlanUntil 을 현재 기준 +days 만큼 연장(이미 미래면 그 위에 누적). */
-function extendedUntil(current: Date | null, days: number): Date {
-  const base = current && current.getTime() > Date.now() ? current.getTime() : Date.now();
-  return new Date(base + days * 24 * 60 * 60 * 1000);
+/** grantedPlanUntil 을 +days 연장하되, 지금부터 MAX_GRANT_DAYS 를 넘지 않게 캡. */
+function extendedUntilCapped(current: Date | null, days: number, maxDays: number): Date {
+  const now = Date.now();
+  const base = current && current.getTime() > now ? current.getTime() : now;
+  const proposed = base + days * 24 * 60 * 60 * 1000;
+  const cap = now + maxDays * 24 * 60 * 60 * 1000;
+  return new Date(Math.min(proposed, cap));
 }
 
 async function grantProDays(userId: string, days: number): Promise<void> {
@@ -51,7 +64,7 @@ async function grantProDays(userId: string, days: number): Promise<void> {
     where: { userId },
     select: { grantedPlanUntil: true },
   });
-  const until = extendedUntil(s?.grantedPlanUntil ?? null, days);
+  const until = extendedUntilCapped(s?.grantedPlanUntil ?? null, days, REFERRAL_MAX_GRANT_DAYS);
   await prisma.userSettings.upsert({
     where: { userId },
     create: { userId, grantedPlan: "pro", grantedPlanUntil: until },
@@ -65,18 +78,22 @@ export type RedeemResult =
 
 /**
  * 피추천인(userId)이 추천 코드(code)를 입력했을 때의 처리.
- * 남용 방지: 자기 코드 불가 · 이메일 인증 완료자만 · 피추천인당 1회만.
  */
 export async function redeemReferral(userId: string, codeRaw: string): Promise<RedeemResult> {
   const code = codeRaw.trim().toUpperCase();
   if (!code) return { ok: false, error: "추천 코드를 입력해 주세요." };
+  if (code.length < 4 || code.length > 8) {
+    return { ok: false, error: "올바른 추천 코드 형식이 아닙니다." };
+  }
+  if (!/^[A-Z0-9]+$/.test(code)) {
+    return { ok: false, error: "올바른 추천 코드 형식이 아닙니다." };
+  }
 
   const me = await prisma.user.findUnique({
     where: { id: userId },
     select: { referralCode: true, emailVerified: true },
   });
   if (!me) return { ok: false, error: "로그인이 필요합니다." };
-  // 계정 존재 여부·자동가입 남용을 막기 위해 이메일 인증 완료자만 보상 대상.
   if (!me.emailVerified) {
     return { ok: false, error: "이메일 인증을 완료한 뒤 추천 코드를 입력할 수 있어요." };
   }
@@ -93,9 +110,16 @@ export async function redeemReferral(userId: string, codeRaw: string): Promise<R
     return { ok: false, error: "본인의 추천 코드는 사용할 수 없습니다." };
   }
 
-  // 피추천인당 1회 — 이미 추천을 받았으면 거절.
   const already = await prisma.referral.findUnique({ where: { referredUserId: userId } });
   if (already) return { ok: false, error: "이미 추천 코드를 사용했습니다." };
+
+  const referrerCount = await prisma.referral.count({ where: { referrerId: referrer.id } });
+  if (referrerCount >= REFERRAL_MAX_PER_REFERRER) {
+    return {
+      ok: false,
+      error: `이 추천 코드는 초대 한도(${REFERRAL_MAX_PER_REFERRER}명)에 도달했습니다.`,
+    };
+  }
 
   await prisma.referral.create({
     data: { referrerId: referrer.id, referredUserId: userId },
@@ -108,7 +132,7 @@ export async function redeemReferral(userId: string, codeRaw: string): Promise<R
   return { ok: true, rewardDays: REFERRAL_REWARD_DAYS };
 }
 
-/** 추천 현황(내 코드·성사 건수·현재 부여된 Pro 만료일). */
+/** 추천 현황(내 코드·성사 건수·한도·현재 부여된 Pro 만료일). */
 export async function getReferralStatus(userId: string) {
   const code = await getOrCreateReferralCode(userId);
   const [count, settings] = await Promise.all([
@@ -122,5 +146,13 @@ export async function getReferralStatus(userId: string) {
     settings?.grantedPlan && settings.grantedPlanUntil && settings.grantedPlanUntil.getTime() > Date.now()
       ? { plan: settings.grantedPlan, until: settings.grantedPlanUntil }
       : null;
-  return { code, referredCount: count, activeGrant };
+  return {
+    code,
+    referredCount: count,
+    maxReferrals: REFERRAL_MAX_PER_REFERRER,
+    remainingInvites: Math.max(0, REFERRAL_MAX_PER_REFERRER - count),
+    rewardDays: REFERRAL_REWARD_DAYS,
+    maxGrantDays: REFERRAL_MAX_GRANT_DAYS,
+    activeGrant,
+  };
 }

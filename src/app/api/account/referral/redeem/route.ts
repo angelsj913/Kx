@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { redeemReferral } from "@/lib/referral";
-import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
     }
-    // 코드 대입 시도 제한.
-    await assertRateLimit("referral-redeem:user", session.user.id, { max: 10, windowSeconds: 600 });
+    await assertRateLimit("referral-redeem:user", session.user.id, { max: 8, windowSeconds: 600 });
+    await assertRateLimit("referral-redeem:ip", clientIp(request), { max: 20, windowSeconds: 600 });
 
     const body = await request.json().catch(() => ({}));
     const code = String(body?.code ?? "");
