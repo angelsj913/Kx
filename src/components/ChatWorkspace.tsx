@@ -26,6 +26,7 @@ import {
   Pencil,
   Check,
   RotateCcw,
+  BookOpen,
 } from "lucide-react";
 import {
   downloadTextFile,
@@ -56,9 +57,9 @@ import { markdownCodeComponents } from "@/components/CodeBlockPre";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
-  type PlanStep,
   type TerminalLine,
 } from "./ChatRightPanel";
+import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -70,6 +71,25 @@ const PANEL_MIN = 240;
 const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
 const CHAT_MIN = 320;
+
+const ATTACH_FORMATS: {
+  id: string;
+  labelKey: AppDictKey;
+  accept: string;
+  icon: typeof ImageIcon;
+}[] = [
+  { id: "image", labelKey: "chat.attach.image", accept: "image/*", icon: ImageIcon },
+  { id: "pdf", labelKey: "chat.attach.pdf", accept: "application/pdf,.pdf", icon: FileText },
+  {
+    id: "doc",
+    labelKey: "chat.attach.document",
+    accept:
+      ".doc,.docx,.txt,.md,.hwp,.hwpx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    icon: FileText,
+  },
+  { id: "audio", labelKey: "chat.attach.audio", accept: "audio/*,.mp3,.wav,.m4a", icon: Mic },
+  { id: "other", labelKey: "chat.attach.other", accept: "*/*", icon: Paperclip },
+];
 
 function feedbackToolId(agentId?: string | null, outputType?: string): string | null {
   if (agentId?.startsWith("quicktool:")) return agentId.replace("quicktool:", "");
@@ -99,30 +119,6 @@ function ModelFeedback({
     />
   );
 }
-
-/** 에이전트 작업 단계 (status key → 계획 단계) */
-const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
-  {
-    id: "select",
-    label: "status.pipeline.select",
-    keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
-  },
-  {
-    id: "research",
-    label: "status.pipeline.research",
-    keys: ["status.researching", "status.context", "status.reading"],
-  },
-  {
-    id: "generate",
-    label: "status.pipeline.generate",
-    keys: ["status.generating", "status.writing", "status.tool", "status.building"],
-  },
-  {
-    id: "finalize",
-    label: "status.pipeline.finalize",
-    keys: ["status.finalizing", "status.saving", "status.done"],
-  },
-];
 
 interface StoredAttachment {
   url: string;
@@ -180,9 +176,9 @@ function readStoredWidth(): number {
 }
 
 function readStoredOpen(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   const v = window.localStorage.getItem(PANEL_OPEN_KEY);
-  if (v === null) return true;
+  if (v === null) return window.matchMedia("(min-width: 768px)").matches;
   return v !== "0";
 }
 
@@ -284,48 +280,16 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
   return list.reverse();
 }
 
-function buildPlanSteps(
-  loading: boolean,
-  statusKey: string | null,
-  t: (key: AppDictKey) => string,
-): PlanStep[] {
-  if (!loading && !statusKey) {
-    // 유휴: 파이프라인 미리보기
-    return PLAN_PIPELINE.map((p) => ({
-      id: p.id,
-      label: t(p.label as AppDictKey),
-      status: "pending" as const,
-    }));
-  }
-
-  let activeIdx = 0;
-  if (statusKey) {
-    const found = PLAN_PIPELINE.findIndex((p) => p.keys.includes(statusKey));
-    if (found >= 0) activeIdx = found;
-    else if (loading) activeIdx = 0;
-  }
-
-  return PLAN_PIPELINE.map((p, i) => ({
-    id: p.id,
-    label: t(p.label as AppDictKey),
-    status: !loading && i <= activeIdx
-      ? ("done" as const)
-      : i < activeIdx
-        ? ("done" as const)
-        : i === activeIdx && loading
-          ? ("active" as const)
-          : ("pending" as const),
-  }));
-}
-
 export default function ChatWorkspace({
   sessionId,
   onSessionCreated,
   onTurnSaved,
+  onOpenBookChat,
 }: {
   sessionId: string | null;
   onSessionCreated: (id: string) => void;
   onTurnSaved: () => void;
+  onOpenBookChat: (sessionId: string) => void;
 }) {
   const t = useT();
   const uiLang = useAppLanguage();
@@ -346,8 +310,13 @@ export default function ChatWorkspace({
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
   const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [attachAccept, setAttachAccept] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
+  const kbRef = useRef<HTMLDivElement | null>(null);
+  const attachMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -394,17 +363,24 @@ export default function ChatWorkspace({
 
   useEffect(() => {
     function closeOnOutsidePointer(event: PointerEvent) {
+      const target = event.target as Node;
       if (
         quickActionsOpen &&
         quickActionsRef.current &&
-        !quickActionsRef.current.contains(event.target as Node)
+        !quickActionsRef.current.contains(target)
       ) {
         setQuickActionsOpen(false);
+      }
+      if (kbOpen && kbRef.current && !kbRef.current.contains(target)) {
+        setKbOpen(false);
+      }
+      if (attachMenuOpen && attachMenuRef.current && !attachMenuRef.current.contains(target)) {
+        setAttachMenuOpen(false);
       }
     }
     document.addEventListener("pointerdown", closeOnOutsidePointer);
     return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
-  }, [quickActionsOpen]);
+  }, [quickActionsOpen, kbOpen, attachMenuOpen]);
 
   useEffect(() => {
     // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
@@ -495,7 +471,6 @@ export default function ChatWorkspace({
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
-    setPanelTab((tab) => (tab === "files" ? "plan" : tab));
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -756,10 +731,6 @@ export default function ChatWorkspace({
   }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
-  const planSteps = useMemo(
-    () => buildPlanSteps(loading, statusKey, t),
-    [loading, statusKey, t],
-  );
 
   function scrollToMessage(id?: string) {
     if (!id) return;
@@ -777,7 +748,7 @@ export default function ChatWorkspace({
     <div ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
       <div className="flex min-w-0 flex-1 flex-col px-3 py-3 sm:px-5 sm:py-4">
-        <div className="mb-2 flex items-center justify-end sm:hidden">
+        <div className="mb-2 flex items-center justify-end md:hidden">
           <button
             type="button"
             onClick={() => setMobileSheet(true)}
@@ -1220,11 +1191,15 @@ export default function ChatWorkspace({
             </div>
           )}
 
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-1.5 sm:gap-2">
             <div ref={quickActionsRef} className="relative shrink-0">
               <motion.button
                 type="button"
-                onClick={() => setQuickActionsOpen((v) => !v)}
+                onClick={() => {
+                  setKbOpen(false);
+                  setAttachMenuOpen(false);
+                  setQuickActionsOpen((v) => !v);
+                }}
                 disabled={loading}
                 whileTap={{ scale: 0.96 }}
                 title={t("chat.quickActions")}
@@ -1240,7 +1215,7 @@ export default function ChatWorkspace({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 8 }}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
+                    className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                   >
                     {featureGroups.map((g) => (
                       <QuickToolGroup
@@ -1258,19 +1233,74 @@ export default function ChatWorkspace({
               </AnimatePresence>
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={loading}
-              title={t("chat.attach")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
-            >
-              <Paperclip className="h-5 w-5" />
-            </button>
+            <div ref={kbRef} className="relative shrink-0">
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setQuickActionsOpen(false);
+                  setAttachMenuOpen(false);
+                  setKbOpen((v) => !v);
+                }}
+                disabled={loading}
+                whileTap={{ scale: 0.96 }}
+                title={t("sidebar.myLibrary")}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
+              >
+                <BookOpen className="h-5 w-5" />
+              </motion.button>
+              <KnowledgeBaseSheet
+                open={kbOpen}
+                onClose={() => setKbOpen(false)}
+                onOpenBookChat={onOpenBookChat}
+              />
+            </div>
+
+            <div ref={attachMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickActionsOpen(false);
+                  setKbOpen(false);
+                  setAttachMenuOpen((v) => !v);
+                }}
+                disabled={loading}
+                title={t("chat.attach")}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
+              >
+                <Paperclip className="h-5 w-5" />
+              </button>
+              <AnimatePresence>
+                {attachMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="absolute bottom-full left-0 z-20 mb-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40"
+                  >
+                    {ATTACH_FORMATS.map(({ id, labelKey, accept, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setAttachAccept(accept);
+                          setAttachMenuOpen(false);
+                          window.setTimeout(() => fileRef.current?.click(), 0);
+                        }}
+                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                      >
+                        <Icon className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                        {t(labelKey)}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <input
               ref={fileRef}
               type="file"
-              accept={toolAcceptAttr(activeQuickTool)}
+              accept={attachAccept || toolAcceptAttr(activeQuickTool)}
               multiple
               onChange={onPickFiles}
               className="hidden"
@@ -1355,7 +1385,7 @@ export default function ChatWorkspace({
 
       {/* 우측 작업 패널 */}
       <div
-        className="hidden h-full shrink-0 sm:block"
+        className="hidden h-full shrink-0 md:block"
         style={panelOpen ? { width: panelWidth } : undefined}
       >
         <ChatRightPanel
@@ -1364,7 +1394,6 @@ export default function ChatWorkspace({
           tab={panelTab}
           onTabChange={setPanelTab}
           artifacts={artifacts}
-          planSteps={planSteps}
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
@@ -1379,7 +1408,7 @@ export default function ChatWorkspace({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
             onClick={() => setMobileSheet(false)}
           >
             <motion.div
@@ -1396,7 +1425,6 @@ export default function ChatWorkspace({
                 tab={panelTab}
                 onTabChange={setPanelTab}
                 artifacts={artifacts}
-                planSteps={planSteps}
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {
@@ -1426,14 +1454,24 @@ export default function ChatWorkspace({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {previewArtifact.url && (
-                  <a
-                    href={previewArtifact.url}
-                    download={previewArtifact.fileName ?? undefined}
-                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {t("chat.download")}
-                  </a>
+                  <>
+                    <a
+                      href={previewArtifact.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                    >
+                      {t("chat.openNewTab")}
+                    </a>
+                    <a
+                      href={previewArtifact.url}
+                      download={previewArtifact.fileName ?? undefined}
+                      className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {t("chat.download")}
+                    </a>
+                  </>
                 )}
                 <button
                   type="button"

@@ -16,10 +16,12 @@ import {
   Check,
   Trash2,
   Plus,
+  MessageCircle,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
 import ReferralCard from "@/components/settings/ReferralCard";
+import InquiryWorkspaceView from "@/components/InquiryWorkspaceView";
 import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
 import { LANGUAGE_ORDER, LANGUAGE_LABELS } from "@/lib/languages";
 import {
@@ -37,6 +39,7 @@ type Tab =
   | "billing"
   | "data"
   | "plan"
+  | "support"
   | "about";
 
 const TABS: { id: Tab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
@@ -46,6 +49,7 @@ const TABS: { id: Tab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
   { id: "billing", labelKey: "settings.tab.billing", icon: CreditCard },
   { id: "data", labelKey: "settings.tab.data", icon: Database },
   { id: "plan", labelKey: "settings.tab.plan", icon: Sparkles },
+  { id: "support", labelKey: "settings.tab.support", icon: MessageCircle },
   { id: "about", labelKey: "settings.tab.about", icon: Info },
 ];
 
@@ -168,6 +172,7 @@ export default function SettingsModal({
                   <PlanPanel />
                 </>
               )}
+              {tab === "support" && <InquiryWorkspaceView embedded />}
               {tab === "about" && <AboutPanel />}
             </div>
           </div>

@@ -8,19 +8,17 @@ import {
   Table2,
   File,
   Download,
-  ListTodo,
   Terminal,
   FolderOpen,
   ChevronRight,
-  CheckCircle2,
-  Circle,
   Loader2,
   Paperclip,
   Eye,
   ImageIcon,
+  ExternalLink,
 } from "lucide-react";
 
-export type PanelTab = "files" | "plan" | "terminal";
+export type PanelTab = "files" | "terminal";
 
 export interface ChatArtifact {
   id: string;
@@ -34,13 +32,6 @@ export interface ChatArtifact {
   messageId?: string;
 }
 
-export interface PlanStep {
-  id: string;
-  label: string;
-  /** pending | active | done */
-  status: "pending" | "active" | "done";
-}
-
 export interface TerminalLine {
   id: string;
   time: string;
@@ -50,7 +41,6 @@ export interface TerminalLine {
 
 const TAB_META: { id: PanelTab; labelKey: AppDictKey; icon: typeof FolderOpen }[] = [
   { id: "files", labelKey: "panel.tab.files", icon: FolderOpen },
-  { id: "plan", labelKey: "panel.tab.plan", icon: ListTodo },
   { id: "terminal", labelKey: "panel.tab.terminal", icon: Terminal },
 ];
 
@@ -97,7 +87,6 @@ export default function ChatRightPanel({
   tab,
   onTabChange,
   artifacts,
-  planSteps,
   terminalLines,
   loading,
   onSelectArtifact,
@@ -108,7 +97,6 @@ export default function ChatRightPanel({
   tab: PanelTab;
   onTabChange: (t: PanelTab) => void;
   artifacts: ChatArtifact[];
-  planSteps: PlanStep[];
   terminalLines: TerminalLine[];
   loading: boolean;
   onSelectArtifact?: (a: ChatArtifact) => void;
@@ -116,14 +104,12 @@ export default function ChatRightPanel({
   isAdmin?: boolean;
 }) {
   const t = useT();
-  // 터미널 탭은 관리자 전용 — 일반 사용자에겐 메뉴 자체를 숨긴다.
   const visibleTabs = useMemo(
     () => TAB_META.filter((m) => m.id !== "terminal" || isAdmin),
     [isAdmin],
   );
   const emptyHint = useMemo(() => {
     if (tab === "files") return t("panel.emptyHint.files");
-    if (tab === "plan") return t("panel.emptyHint.plan");
     return t("panel.emptyHint.terminal");
   }, [tab, t]);
 
@@ -238,16 +224,25 @@ export default function ChatRightPanel({
                           {t("chat.openFile")}
                         </button>
                         {a.url && (
-                          <a
-                            href={a.url}
-                            download={a.fileName ?? undefined}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
-                          >
-                            <Download className="h-3 w-3" />
-                            {t("chat.download")}
-                          </a>
+                          <>
+                            <a
+                              href={a.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {t("chat.openNewTab")}
+                            </a>
+                            <a
+                              href={a.url}
+                              download={a.fileName ?? undefined}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
+                            >
+                              <Download className="h-3 w-3" />
+                              {t("chat.download")}
+                            </a>
+                          </>
                         )}
                       </div>
                     </div>
@@ -255,51 +250,6 @@ export default function ChatRightPanel({
                 );
               })}
             </ul>
-          )
-        )}
-
-        {tab === "plan" && (
-          planSteps.length === 0 ? (
-            <EmptyState text={emptyHint} />
-          ) : (
-            <ol className="space-y-2">
-              {planSteps.map((step, i) => (
-                <li
-                  key={step.id}
-                  className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${
-                    step.status === "active"
-                      ? "border-blue-500/40 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-950/30"
-                      : step.status === "done"
-                        ? "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"
-                        : "border-slate-200/80 bg-slate-50/80 dark:border-slate-800/60 dark:bg-slate-900/20"
-                  }`}
-                >
-                  <span className="mt-0.5 shrink-0">
-                    {step.status === "done" ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    ) : step.status === "active" ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                    )}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[11px] font-medium text-slate-400">
-                      {t("panel.stepPrefix")} {i + 1}
-                    </span>
-                    <span
-                      className={`block text-sm ${
-                        step.status === "pending"
-                          ? "text-slate-400 dark:text-slate-500"
-                          : "text-slate-800 dark:text-slate-100"
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ol>
           )
         )}
 

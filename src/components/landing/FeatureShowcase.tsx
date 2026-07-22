@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
+import { useScrollProgress, sceneIndex } from "@/lib/landingScroll";
 
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
@@ -486,66 +487,73 @@ function MockLibrary() {
 
 const MOCKS = [MockSummary, MockLecture, MockDocs, MockLibrary];
 
-export default function FeatureShowcase() {
-  const copy = useLocalCopy(COPY);
-
+function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/80 to-slate-50 py-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
-      {/* 위 요금제 섹션에서 이어지는 상단 페이드 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/0 via-white/40 to-transparent dark:from-slate-950 dark:via-slate-950/80 dark:to-transparent"
-      />
-      {/* 아래 「만드는 사람들」과 경계 없이 이어지는 하단 페이드 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-slate-50 dark:to-slate-950"
-      />
-      <div className="relative mx-auto max-w-5xl px-6">
+    <section className="py-20">
+      <div className="mx-auto max-w-5xl px-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
-            {copy.title}
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">
-            {copy.subtitle}
-          </p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">{copy.title}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>
         </div>
-
         <div className="mt-16 space-y-16">
           {copy.items.map((item, i) => {
             const Mock = MOCKS[i];
             const reversed = i % 2 === 1;
             return (
-              <motion.div
-                key={item.no}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                className="grid items-center gap-8 md:grid-cols-2"
-              >
+              <motion.div key={item.no} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="grid items-center gap-8 md:grid-cols-2">
                 <div className={reversed ? "md:order-2" : ""}>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">
-                      {item.no}
-                    </span>
-                    <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
-                      {item.tag}
-                    </span>
+                    <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
+                    <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{item.tag}</span>
                   </div>
-                  <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">
-                    {item.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
-                    {item.desc}
-                  </p>
+                  <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
                 </div>
-                <div className={reversed ? "md:order-1" : ""}>
-                  <Mock />
-                </div>
+                <div className={reversed ? "md:order-1" : ""}><Mock /></div>
               </motion.div>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function FeatureShowcase() {
+  const copy = useLocalCopy(COPY);
+  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const activeIndex = sceneIndex(p, MOCKS.length);
+  const item = copy.items[activeIndex]!;
+  const Mock = MOCKS[activeIndex];
+
+  if (reducedMotion) return <StaticShowcase copy={copy} />;
+
+  return (
+    <section ref={sectionRef} className="relative h-[360vh]">
+      <div className="sticky top-0 flex min-h-[100svh] items-center py-20">
+        <div className="mx-auto w-full max-w-5xl px-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">{copy.title}</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>
+          </div>
+          <div className="mt-10 grid items-center gap-8 md:mt-14 md:grid-cols-[0.88fr_1.12fr] md:gap-12">
+            <motion.div key={item.no} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
+                <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{item.tag}</span>
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">{item.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
+              <div className="mt-7 flex gap-2" aria-hidden>
+                {copy.items.map((scene, index) => (
+                  <span key={scene.no} className={`h-1.5 rounded-full transition-all ${index === activeIndex ? "w-8 bg-blue-600 dark:bg-blue-400" : "w-3 bg-slate-300 dark:bg-slate-700"}`} />
+                ))}
+              </div>
+            </motion.div>
+            <motion.div key={`mock-${item.no}`} initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1 }} className="landing-card rounded-2xl p-3 sm:p-4">
+              <Mock />
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>
