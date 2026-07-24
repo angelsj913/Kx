@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { getMembership, itemAccessWhere, roleAtLeast } from "@/lib/workspace";
 import { dueDateFrom, schedule, type ReviewGrade } from "@/lib/srs";
@@ -14,10 +14,8 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const grade = body?.grade as ReviewGrade;
@@ -26,7 +24,7 @@ export async function POST(
   }
 
   const card = await prisma.reviewCard.findFirst({
-    where: { id, ...(await itemAccessWhere(session.user.id)) },
+    where: { id, ...(await itemAccessWhere(userId)) },
   });
   if (!card) {
     return NextResponse.json({ error: "카드를 찾을 수 없습니다." }, { status: 404 });
@@ -58,11 +56,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
 
   const card = await prisma.reviewCard.findFirst({

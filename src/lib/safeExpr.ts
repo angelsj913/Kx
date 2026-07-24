@@ -7,15 +7,10 @@ const math = create(all, {});
 
 export type CompiledExpr = ReturnType<MathNode["compile"]>;
 
-/** AI/expr-eval 관습(^ 지수)을 mathjs에 맞게 유지 — mathjs도 ^ 지원 */
-function normalizeExpr(expr: string): string {
-  return expr.trim();
-}
-
 export function compileExpr(expr: string): CompiledExpr | null {
   if (!expr.trim()) return null;
   try {
-    return math.parse(normalizeExpr(expr)).compile();
+    return math.parse(expr.trim()).compile();
   } catch {
     return null;
   }
@@ -26,7 +21,7 @@ export function evaluateExpr(
   variables: Record<string, number> = {},
 ): number | null {
   try {
-    const value = math.evaluate(normalizeExpr(expr), {
+    const value = math.evaluate(expr.trim(), {
       ...variables,
       pi: Math.PI,
       e: Math.E,

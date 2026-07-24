@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { auth } from "@/auth";
 import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 
 export const runtime = "nodejs";
@@ -13,11 +13,8 @@ export const dynamic = "force-dynamic";
  * 서버는 완결(JSON) 요청만 받는다(/api/library POST의 JSON 분기).
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const body = (await request.json()) as HandleUploadBody;
   try {

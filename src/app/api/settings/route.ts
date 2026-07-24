@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { LANGUAGE_ORDER } from "@/lib/languages";
 
@@ -12,25 +12,21 @@ const LANGUAGES: readonly string[] = LANGUAGE_ORDER;
 const TONES = ["balanced", "concise", "friendly", "professional", "teaching"] as const;
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const settings = await prisma.userSettings.upsert({
-    where: { userId: session.user.id },
+    where: { userId: userId },
     update: {},
-    create: { userId: session.user.id },
+    create: { userId: userId },
   });
 
   return NextResponse.json({ settings });
 }
 
 export async function PATCH(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const body = await request.json().catch(() => ({}));
   const data: {
@@ -72,9 +68,9 @@ export async function PATCH(request: Request) {
   }
 
   const settings = await prisma.userSettings.upsert({
-    where: { userId: session.user.id },
+    where: { userId: userId },
     update: data,
-    create: { userId: session.user.id, ...data },
+    create: { userId: userId, ...data },
   });
 
   return NextResponse.json({ settings });

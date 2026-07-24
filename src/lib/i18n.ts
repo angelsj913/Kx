@@ -485,6 +485,18 @@ const KO = {
   "structured.weeklyReport.emptyItems": "항목이 없습니다.",
   "structured.mathGraph.defaultTitle": "수학 그래프",
   "structured.mathGraph.renderError": "그래프를 표시하는 중 문제가 발생했어요. 새로고침하거나 다시 요청해 주세요.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "결제창을 준비하는 중...",
+  "checkout.subscribe": "구독",
+  "checkout.perMonth": "/ 월",
+  "checkout.orderSummary": "주문 요약",
+  "checkout.stubNote": "결제 플랫폼 연동 전입니다. 아래 버튼으로 결제 완료를 시뮬레이션하면 선택한 요금제 권한이 계정에 자동 부여됩니다.",
+  "checkout.completeSim": "결제 완료 처리하기",
+  "checkout.moving": "이동 중…",
+  "checkout.canceled": "결제가 취소되었습니다.",
+  "checkout.retry": "다시 시도",
+  "checkout.unknownPlan": "알 수 없는 요금제입니다.",
+  "checkout.prepareFail": "결제 준비에 실패했습니다.",
 } as const;
 
 const EN: Record<keyof typeof KO, string> = {
@@ -954,6 +966,18 @@ const EN: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "No items yet.",
   "structured.mathGraph.defaultTitle": "Math graph",
   "structured.mathGraph.renderError": "Something went wrong while displaying the graph. Please refresh or try again.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "Preparing checkout...",
+  "checkout.subscribe": "Subscribe",
+  "checkout.perMonth": "/ mo",
+  "checkout.orderSummary": "Order summary",
+  "checkout.stubNote": "Payment platform is not fully connected yet. Completing below will simulate payment and apply the plan to your account.",
+  "checkout.completeSim": "Complete payment (simulate)",
+  "checkout.moving": "Redirecting…",
+  "checkout.canceled": "Payment was canceled.",
+  "checkout.retry": "Try again",
+  "checkout.unknownPlan": "Unknown plan.",
+  "checkout.prepareFail": "Failed to prepare checkout.",
 };
 
 const JA: Record<keyof typeof KO, string> = {
@@ -1402,6 +1426,18 @@ const JA: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "項目がありません。",
   "structured.mathGraph.defaultTitle": "数学グラフ",
   "structured.mathGraph.renderError": "グラフの表示中に問題が発生しました。更新するか、もう一度お試しください。",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "決済画面を準備しています...",
+  "checkout.subscribe": "購読",
+  "checkout.perMonth": "/ 月",
+  "checkout.orderSummary": "注文概要",
+  "checkout.stubNote": "決済プラットフォーム連携前です。下のボタンで決済完了をシミュレートすると、選択したプランの権限が自動的にアカウントに付与されます。",
+  "checkout.completeSim": "決済完了処理する",
+  "checkout.moving": "移動中…",
+  "checkout.canceled": "決済がキャンセルされました。",
+  "checkout.retry": "再試行",
+  "checkout.unknownPlan": "不明なプランです。",
+  "checkout.prepareFail": "決済の準備に失敗しました。",
 };
 
 const ZH: Record<keyof typeof KO, string> = {
@@ -1850,6 +1886,18 @@ const ZH: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "暂无事项。",
   "structured.mathGraph.defaultTitle": "数学图表",
   "structured.mathGraph.renderError": "显示图表时出现问题。请刷新页面或重新请求。",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "正在准备结算页面...",
+  "checkout.subscribe": "订阅",
+  "checkout.perMonth": "/ 月",
+  "checkout.orderSummary": "订单摘要",
+  "checkout.stubNote": "支付平台尚未完全接入。点击下方按钮模拟完成支付，将自动为您的账户授予所选套餐权限。",
+  "checkout.completeSim": "模拟完成支付",
+  "checkout.moving": "跳转中…",
+  "checkout.canceled": "支付已取消。",
+  "checkout.retry": "重试",
+  "checkout.unknownPlan": "未知的套餐。",
+  "checkout.prepareFail": "结算准备失败。",
 };
 
 const RU: Record<keyof typeof KO, string> = {
@@ -2298,6 +2346,18 @@ const RU: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "Пока нет пунктов.",
   "structured.mathGraph.defaultTitle": "Математический график",
   "structured.mathGraph.renderError": "Не удалось отобразить график. Обновите страницу или повторите запрос.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "Подготовка оформления заказа...",
+  "checkout.subscribe": "Подписаться",
+  "checkout.perMonth": "/ мес",
+  "checkout.orderSummary": "Сводка заказа",
+  "checkout.stubNote": "Платёжная платформа ещё не подключена. Нажатие кнопки ниже симулирует завершение оплаты и автоматически применит выбранный тариф к вашему аккаунту.",
+  "checkout.completeSim": "Симулировать оплату",
+  "checkout.moving": "Переход…",
+  "checkout.canceled": "Оплата отменена.",
+  "checkout.retry": "Повторить",
+  "checkout.unknownPlan": "Неизвестный тариф.",
+  "checkout.prepareFail": "Не удалось подготовить оформление заказа.",
 };
 
 const DE: Record<keyof typeof KO, string> = {
@@ -2746,6 +2806,18 @@ const DE: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "Noch keine Einträge.",
   "structured.mathGraph.defaultTitle": "Mathe-Diagramm",
   "structured.mathGraph.renderError": "Beim Anzeigen des Diagramms ist ein Fehler aufgetreten. Bitte aktualisieren oder erneut versuchen.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "Checkout wird vorbereitet...",
+  "checkout.subscribe": "Abonnieren",
+  "checkout.perMonth": "/ Monat",
+  "checkout.orderSummary": "Bestellübersicht",
+  "checkout.stubNote": "Die Zahlungsplattform ist noch nicht vollständig angebunden. Mit der Schaltfläche unten wird die Zahlung simuliert und der gewählte Plan automatisch Ihrem Konto zugewiesen.",
+  "checkout.completeSim": "Zahlung simulieren",
+  "checkout.moving": "Weiterleitung…",
+  "checkout.canceled": "Die Zahlung wurde storniert.",
+  "checkout.retry": "Erneut versuchen",
+  "checkout.unknownPlan": "Unbekannter Plan.",
+  "checkout.prepareFail": "Vorbereitung des Checkouts fehlgeschlagen.",
 };
 
 const FR: Record<keyof typeof KO, string> = {
@@ -3194,6 +3266,18 @@ const FR: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "Aucun élément pour le moment.",
   "structured.mathGraph.defaultTitle": "Graphique mathématique",
   "structured.mathGraph.renderError": "Un problème est survenu lors de l'affichage du graphique. Actualisez ou réessayez.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "Préparation du paiement...",
+  "checkout.subscribe": "S'abonner",
+  "checkout.perMonth": "/ mois",
+  "checkout.orderSummary": "Résumé de la commande",
+  "checkout.stubNote": "La plateforme de paiement n'est pas encore entièrement connectée. Le bouton ci-dessous simule le paiement et applique automatiquement le forfait choisi à votre compte.",
+  "checkout.completeSim": "Simuler le paiement",
+  "checkout.moving": "Redirection…",
+  "checkout.canceled": "Le paiement a été annulé.",
+  "checkout.retry": "Réessayer",
+  "checkout.unknownPlan": "Forfait inconnu.",
+  "checkout.prepareFail": "Échec de la préparation du paiement.",
 };
 
 const ES: Record<keyof typeof KO, string> = {
@@ -3642,6 +3726,18 @@ const ES: Record<keyof typeof KO, string> = {
   "structured.weeklyReport.emptyItems": "Aún no hay elementos.",
   "structured.mathGraph.defaultTitle": "Gráfico matemático",
   "structured.mathGraph.renderError": "Se produjo un problema al mostrar el gráfico. Actualiza la página o vuelve a intentarlo.",
+  // --- 결제 페이지 (src/app/checkout/page.tsx) ---
+  "checkout.preparing": "Preparando el pago...",
+  "checkout.subscribe": "Suscribirse",
+  "checkout.perMonth": "/ mes",
+  "checkout.orderSummary": "Resumen del pedido",
+  "checkout.stubNote": "La plataforma de pago aún no está totalmente conectada. El botón de abajo simula el pago y aplica automáticamente el plan elegido a tu cuenta.",
+  "checkout.completeSim": "Simular pago completado",
+  "checkout.moving": "Redirigiendo…",
+  "checkout.canceled": "El pago fue cancelado.",
+  "checkout.retry": "Reintentar",
+  "checkout.unknownPlan": "Plan desconocido.",
+  "checkout.prepareFail": "No se pudo preparar el pago.",
 };
 
 export type AppDictKey = keyof typeof KO;

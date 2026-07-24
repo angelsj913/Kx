@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { checkPasswordStrength } from "@/lib/password";
 import { friendlyError } from "@/lib/errors";
@@ -17,11 +17,9 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-    }
-    await assertRateLimit("account-password:user", session.user.id, { max: 10, windowSeconds: 600 });
+    const userId = await requireUserId();
+    if (userId instanceof NextResponse) return userId;
+    await assertRateLimit("account-password:user", userId, { max: 10, windowSeconds: 600 });
 
     const body = await request.json().catch(() => ({}));
     const step = String(body?.step ?? "confirm");
@@ -36,7 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user?.passwordHash) {
       return NextResponse.json(
         { error: "이 계정은 비밀번호 로그인을 사용하지 않습니다(구글 로그인)." },
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     if (step === "request") {
-      await assertRateLimit("account-password-otp:user", session.user.id, {
+      await assertRateLimit("account-password-otp:user", userId, {
         max: 5,
         windowSeconds: 600,
       });

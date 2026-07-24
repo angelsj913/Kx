@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { markdownCodeComponents } from "@/components/CodeBlockPre";
+import PanelShell from "@/components/structured/PanelShell";
 
 function LoadingSkeleton() {
   return (
@@ -81,13 +82,11 @@ export default function ResultPanel({
   const hasResult = !!content && !loading;
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <Sparkles className="h-4 w-4 text-[var(--mode-accent)]" />
-          {t("fileResult.defaultTitle")}
-        </h2>
-        {hasResult && (
+    <PanelShell
+      icon={<Sparkles className="h-4 w-4 text-[var(--mode-accent)]" />}
+      title={t("fileResult.defaultTitle")}
+      actions={
+        hasResult && (
           <div className="flex items-center gap-1.5">
             <div className="mr-1 flex items-center overflow-hidden rounded-lg border border-slate-300 dark:border-slate-700">
               <button
@@ -140,9 +139,9 @@ export default function ResultPanel({
               {t("resultPanel.saveTxt")}
             </button>
           </div>
-        )}
-      </div>
-
+        )
+      }
+    >
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {error ? (
           <div
@@ -180,6 +179,6 @@ export default function ResultPanel({
           </div>
         )}
       </div>
-    </div>
+    </PanelShell>
   );
 }

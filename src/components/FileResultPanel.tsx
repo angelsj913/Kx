@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles, Download, FileText, Presentation, Table2 } from "lucide-react";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
 import { useT } from "@/lib/i18n";
+import PanelShell from "@/components/structured/PanelShell";
 
 export default function FileResultPanel({
   outputType,
@@ -24,13 +25,13 @@ export default function FileResultPanel({
   const selectedSlide = deck?.slides[activeSlide];
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />
-          <span className="truncate">{title || t("fileResult.defaultTitle")}</span>
-        </h2>
-        {file && (
+    <PanelShell
+      icon={<Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />}
+      title={<span className="truncate">{title || t("fileResult.defaultTitle")}</span>}
+      headerClassName="gap-2"
+      titleClassName="min-w-0"
+      actions={
+        file && (
           <a
             href={file.url}
             download={file.filename}
@@ -39,9 +40,9 @@ export default function FileResultPanel({
             <Download className="h-3.5 w-3.5" />
             {isPptx ? t("fileResult.downloadPpt") : t("fileResult.downloadExcel")}
           </a>
-        )}
-      </div>
-
+        )
+      }
+    >
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {isPptx && deck ? (
           <div className="space-y-3">
@@ -250,6 +251,6 @@ export default function FileResultPanel({
           </div>
         )}
       </div>
-    </div>
+    </PanelShell>
   );
 }

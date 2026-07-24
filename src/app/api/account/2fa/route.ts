@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { verifyOtp } from "@/lib/otp";
 
@@ -8,17 +8,15 @@ export const dynamic = "force-dynamic";
 
 /** 2단계 인증 켜기/끄기 — 이메일로 받은 코드 확인 후 반영(켜든 끄든 본인 확인 요구). */
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const body = await request.json().catch(() => ({}));
   const enable = body?.enable === true;
   const code = String(body?.code ?? "").trim();
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     select: { email: true, passwordHash: true },
   });
   if (!user?.email) {
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   await prisma.user.update({
-    where: { id: session.user.id },
+    where: { id: userId },
     data: { twoFactorEnabled: enable },
   });
   return NextResponse.json({ ok: true, twoFactorEnabled: enable });

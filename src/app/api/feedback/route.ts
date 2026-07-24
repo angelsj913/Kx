@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { onPositiveFeedback } from "@/lib/userLearning";
@@ -83,10 +84,8 @@ export async function POST(request: Request) {
 
 /** 특정 메시지들의 피드백 조회 */
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const { searchParams } = new URL(request.url);
   const ids = searchParams.get("ids")?.split(",").filter(Boolean) ?? [];
@@ -95,7 +94,7 @@ export async function GET(request: Request) {
   }
 
   const feedbacks = await prisma.answerFeedback.findMany({
-    where: { userId: session.user.id, chatHistoryId: { in: ids } },
+    where: { userId: userId, chatHistoryId: { in: ids } },
     select: { chatHistoryId: true, rating: true, reason: true },
   });
 

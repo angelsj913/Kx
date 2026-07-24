@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Plus, Trash2, BookMarked, List } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
+import PanelShell from "./PanelShell";
 import type { ResearchDraft } from "@/lib/structured";
 import { useT } from "@/lib/i18n";
 
@@ -61,20 +62,18 @@ export default function ResearchDraftView({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 dark:border-slate-800 bg-white shadow-sm dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <BookMarked className="h-4 w-4 text-[var(--mode-accent)]" />
-          {t("structured.researchDraft.title")}
-        </h2>
+    <PanelShell
+      icon={<BookMarked className="h-4 w-4 text-[var(--mode-accent)]" />}
+      title={t("structured.researchDraft.title")}
+      actions={
         <div className="flex items-center gap-3">
           <span className="text-xs tabular-nums text-slate-500">
             {charCount.toLocaleString()}{t("structured.researchDraft.charCountSuffix")}
           </span>
           <SaveIndicator status={status} />
         </div>
-      </div>
-
+      }
+    >
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,11rem)_1fr] overflow-hidden sm:grid-cols-[minmax(0,13rem)_1fr]">
         {/* 아웃라인 사이드바 */}
         <nav className="min-h-0 overflow-y-auto border-r border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/30 p-3">
@@ -221,6 +220,6 @@ export default function ResearchDraftView({
           </div>
         </div>
       </div>
-    </div>
+    </PanelShell>
   );
 }
