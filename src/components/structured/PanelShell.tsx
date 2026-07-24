@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** structured/*View.tsx + ResultPanel/FileResultPanel이 공유하는 카드 셸(테두리+헤더 행). */
+/** structured/*View.tsx + FileResultPanel이 공유하는 카드 셸(테두리+헤더 행). */
 export default function PanelShell({
   icon,
   title,
