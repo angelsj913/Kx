@@ -13,30 +13,32 @@
   color-scheme: light;
   --landing-bg: #ffffff;
   --landing-bg-soft: #f8fafc;
+  --landing-gradient-start: #f0f5ff;
   --landing-gradient: linear-gradient(
     180deg,
-    #f0f5ff 0%,
+    var(--landing-gradient-start) 0%,
     var(--landing-bg-soft) 45%,
     var(--landing-bg) 100%
   );
   --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.1), transparent 60%);
-  /* 헤더: 히어로 상단 soft blue wash와 이어지도록 (순수 흰색 띠 제거) */
-  --landing-header-bg: color-mix(in srgb, #eef4ff 72%, transparent);
-  --landing-header-bg-scrolled: color-mix(in srgb, #f5f8ff 78%, transparent);
+  /* 헤더: 그라데이션 상단 색과 같은 값에서 파생 — 스크롤해도 색상 자체는 안 바뀌고 진해지기만 함 */
+  --landing-header-bg: color-mix(in srgb, var(--landing-gradient-start) 72%, transparent);
+  --landing-header-bg-scrolled: color-mix(in srgb, var(--landing-gradient-start) 90%, transparent);
 }
 :root.dark {
   color-scheme: dark;
   --landing-bg: #0a1120;
   --landing-bg-soft: #0f172a;
+  --landing-gradient-start: #0c1528;
   --landing-gradient: linear-gradient(
     180deg,
-    #0c1528 0%,
+    var(--landing-gradient-start) 0%,
     var(--landing-bg-soft) 50%,
     var(--landing-bg) 100%
   );
   --landing-glow: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(59, 130, 246, 0.14), transparent 60%);
-  --landing-header-bg: color-mix(in srgb, #0c1528 70%, transparent);
-  --landing-header-bg-scrolled: color-mix(in srgb, #0a1120 75%, transparent);
+  --landing-header-bg: color-mix(in srgb, var(--landing-gradient-start) 70%, transparent);
+  --landing-header-bg-scrolled: color-mix(in srgb, var(--landing-gradient-start) 88%, transparent);
 }
 
 body {
@@ -141,7 +143,7 @@ body {
   background: var(--landing-glow);
   z-index: 0;
 }
-.landing-shell > * {
+.landing-shell > *:not(header) {
   position: relative;
   z-index: 1;
 }
