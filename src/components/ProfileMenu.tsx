@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Settings, UserRound, Sun, Moon, Home, Wrench } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
@@ -229,11 +230,12 @@ function Avatar({
 }) {
   if (user?.image) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         key={user.image}
         src={user.image}
         alt=""
+        width={32}
+        height={32}
         className="h-8 w-8 shrink-0 rounded-full border border-slate-200 dark:border-slate-700/60"
       />
     );

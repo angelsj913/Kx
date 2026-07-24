@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 
 type LogoSize = "sm" | "md" | "lg" | "xl" | "hero";

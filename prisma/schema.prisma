@@ -61,6 +61,8 @@ model User {
   aiProfile            UserAiProfile?
   learnedQaPairs       LearnedQaPair[]
   memories             UserMemory[]
+
+  @@index([accountStatus, lastActiveAt])
 }
 
 /** 친구 추천 성사 기록 — 추천인(referrer)이 피추천인(referred)을 데려온 1건. 피추천인당 1회. */

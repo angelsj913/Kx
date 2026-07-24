@@ -1,12 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-// 수식 렌더링 스타일 — 루트 레이아웃이 아니라 KaTeX를 실제로 쓰는 라우트에서만 로드
-import "katex/dist/katex.min.css";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -53,13 +48,15 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
-import { markdownCodeComponents } from "@/components/CodeBlockPre";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
   type TerminalLine,
 } from "./ChatRightPanel";
 import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
+
+// react-markdown + remark/rehype-katex 체인을 초기 번들에서 분리
+const ChatMarkdown = dynamic(() => import("./ChatMarkdown"));
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -956,13 +953,7 @@ export default function ChatWorkspace({
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={markdownCodeComponents}
-                      >
-                        {m.text}
-                      </ReactMarkdown>
+                      <ChatMarkdown text={m.text} />
                       {!m.streaming && (
                         <CitationCards citations={parseCitationsFromResultData(m.resultData)} />
                       )}
@@ -1594,13 +1585,7 @@ function ArtifactPreview({
   if (msg?.text) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-          components={markdownCodeComponents}
-        >
-          {msg.text}
-        </ReactMarkdown>
+        <ChatMarkdown text={msg.text} />
       </div>
     );
   }

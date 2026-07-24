@@ -6,10 +6,19 @@ export const AI_CONFIG_KEYS = {
   dailyRequestCap: "ai.dailyRequestCap",
 } as const;
 
+// 채팅마다 호출되는 값이라 짧게 메모이즈 — 관리자 설정은 자주 안 바뀌고, 바뀔 때는
+// setAiGloballyEnabled/setAiDailyRequestCap에서 캐시를 즉시 무효화한다.
+const configCache = new Map<string, { value: string | null; expiresAt: number }>();
+const CONFIG_CACHE_TTL_MS = 30_000;
+
 async function getConfig(key: string): Promise<string | null> {
+  const cached = configCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
   try {
     const row = await prisma.systemConfig.findUnique({ where: { key } });
-    return row?.value ?? null;
+    const value = row?.value ?? null;
+    configCache.set(key, { value, expiresAt: Date.now() + CONFIG_CACHE_TTL_MS });
+    return value;
   } catch {
     // 테이블 미적용 환경에서는 기본 활성
     return null;
@@ -28,6 +37,7 @@ export async function setAiGloballyEnabled(enabled: boolean): Promise<void> {
     create: { key: AI_CONFIG_KEYS.enabled, value: enabled ? "1" : "0" },
     update: { value: enabled ? "1" : "0" },
   });
+  configCache.delete(AI_CONFIG_KEYS.enabled);
 }
 
 export async function getAiDailyRequestCap(): Promise<number | null> {
@@ -44,6 +54,7 @@ export async function setAiDailyRequestCap(cap: number | null): Promise<void> {
     create: { key: AI_CONFIG_KEYS.dailyRequestCap, value },
     update: { value },
   });
+  configCache.delete(AI_CONFIG_KEYS.dailyRequestCap);
 }
 
 const AI_DAILY_FEATURE = "ai-daily";
