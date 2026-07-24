@@ -13,6 +13,7 @@ type SecCopy = {
   pwSubmit: string;
   pwSuccess: string;
   pwGoogleOnly: string;
+  pwReauth: string;
   twoFaTitle: string;
   twoFaDesc: string;
   statusOn: string;
@@ -42,8 +43,9 @@ const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy }
     pwCurrent: "현재 비밀번호",
     pwNew: "새 비밀번호",
     pwSubmit: "비밀번호 변경",
-    pwSuccess: "비밀번호가 변경되었습니다.",
+    pwSuccess: "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
     pwGoogleOnly: "구글 로그인 계정입니다. 비밀번호는 구글 계정에서 관리해 주세요.",
+    pwReauth: "보안을 위해 다시 로그인합니다.",
     twoFaTitle: "2단계 인증",
     twoFaDesc: "로그인할 때 이메일로 받은 6자리 코드를 추가로 입력합니다.",
     statusOn: "사용 중",
@@ -69,8 +71,9 @@ const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy }
     pwCurrent: "Current password",
     pwNew: "New password",
     pwSubmit: "Change password",
-    pwSuccess: "Your password has been changed.",
+    pwSuccess: "Your password has been changed. Please sign in again.",
     pwGoogleOnly: "This is a Google account. Manage your password in your Google account.",
+    pwReauth: "Signing you out for security.",
     twoFaTitle: "Two-factor authentication",
     twoFaDesc: "Enter a 6-digit code emailed to you each time you sign in.",
     statusOn: "On",
@@ -186,6 +189,11 @@ export default function SecurityPanel() {
       setPwDone(true);
       setCurPw("");
       setNewPw("");
+      if (data?.reauth) {
+        setTwoFaNotice(c.pwReauth);
+        await signOut({ callbackUrl: "/login" });
+        return;
+      }
     } catch {
       setError(c.genericError);
     } finally {

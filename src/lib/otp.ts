@@ -1,3 +1,4 @@
+import { randomInt, timingSafeEqual } from "node:crypto";
 import { prisma } from "./prisma";
 import { sendMail, friendlyResendError } from "./mail";
 
@@ -12,15 +13,23 @@ export type OtpPurpose =
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 
+/** 암호학적으로 안전한 6자리(100000–999999) OTP. */
 export function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
+}
+
+function codesEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 export type IssueOtpResult = {
   /** 실제 발송 성공 여부 */
   sent: boolean;
   mode: "smtp" | "resend" | "dev-log" | "none";
-  /** 개발 또는 메일 미설정/실패 시 화면에 보여줄 코드 (admin 폴백 포함) */
+  /** 개발 또는 명시적 break-glass 시에만 응답에 포함 */
   devCode?: string;
   /** 발송 실패 사유 (있으면) */
   mailError?: string;
@@ -44,13 +53,17 @@ export async function issueOtp(
 
   const mail = await sendEmailOtp(identifier, code, purpose);
 
-  // 메일이 안 나갔을 때: 개발 환경이거나 관리자 요금제 변경이면 코드를 응답에 포함
-  // (운영에서 메일 키 미설정/Resend 제한으로 막혀도 관리 작업이 가능하도록)
+  // 인라인 코드: 비프로덕션 DX, 또는 ADMIN_OTP_INLINE=1 break-glass만.
+  // admin-plan-change도 프로덕션 기본은 메일 전용 — JSON으로 OTP를 내리지 않는다.
+  const breakGlass = process.env.ADMIN_OTP_INLINE === "1";
   const allowInlineCode =
-    !mail.sent &&
-    (process.env.NODE_ENV !== "production" ||
-      purpose === "admin-plan-change" ||
-      process.env.ADMIN_OTP_INLINE === "1");
+    !mail.sent && (process.env.NODE_ENV !== "production" || breakGlass);
+
+  if (breakGlass && !mail.sent && process.env.NODE_ENV === "production") {
+    console.warn(
+      `[otp] ADMIN_OTP_INLINE=1: returning inline code for purpose=${purpose} (mail failed)`,
+    );
+  }
 
   return {
     sent: mail.sent,
@@ -72,7 +85,7 @@ export async function verifyOtp(
   });
   if (!row) return false;
   if (row.expiresAt.getTime() < Date.now()) return false;
-  if (row.code !== code) return false;
+  if (!codesEqual(row.code, code)) return false;
 
   await prisma.verificationCode.update({
     where: { id: row.id },

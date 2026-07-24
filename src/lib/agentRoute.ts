@@ -1,17 +1,9 @@
 import type { ChatMessage } from "@/lib/gemini";
-import type { ModelTier, Provider } from "@/lib/models";
+import type { ModelTier } from "@/lib/models";
 import { AGENT_MODELS } from "@/lib/models";
-import {
-  compatAgentTurn,
-  type OAIToolMessage,
-  type AgentTurnResult,
-} from "@/lib/openaiCompat";
-import {
-  filterCandidatesByAvailableKeys,
-  chatReplyWithFallbackStream,
-  type AttemptInfo,
-} from "@/lib/ai";
-import { markProviderHealthy, noteProviderFailure } from "@/lib/providerHealth";
+import { type OAIToolMessage } from "@/lib/openaiCompat";
+import { chatReplyWithFallbackStream, type AttemptInfo } from "@/lib/ai";
+import { agentTurnWithFallback } from "@/lib/agentTurnLoop";
 import { stripHanja } from "@/lib/textSanitize";
 import {
   buildAgentTools,
@@ -55,43 +47,6 @@ function toToolMessages(history: ChatMessage[], text: string): OAIToolMessage[] 
     if (text) msgs.push({ role: "user", content: text });
   }
   return msgs;
-}
-
-/** AGENT_MODELS를 순회하며 툴 턴 1회 성공시킨다(제공자 폴백). */
-async function agentTurnWithFallback(
-  messages: OAIToolMessage[],
-  tools: ReturnType<typeof toOpenAITools>,
-  signal: AbortSignal | undefined,
-  onAttempt: ((info: AttemptInfo) => void) | undefined,
-): Promise<AgentTurnResult & { attempts: number }> {
-  const candidates = filterCandidatesByAvailableKeys(AGENT_MODELS);
-  if (candidates.length === 0) {
-    throw new Error(
-      "에이전트를 실행할 AI 키가 없습니다. GROQ / CEREBRAS / MISTRAL / SAMBANOVA / DEEPSEEK 키 중 하나 이상을 설정하세요.",
-    );
-  }
-  let attempt = 0;
-  let lastErr: unknown = null;
-  for (const m of candidates) {
-    if (signal?.aborted) break;
-    attempt++;
-    onAttempt?.({ provider: m.provider, model: m.model, attemptNumber: attempt });
-    try {
-      const result = await compatAgentTurn({
-        provider: m.provider as Exclude<Provider, "gemini">,
-        model: m.model,
-        messages,
-        tools,
-        signal,
-      });
-      markProviderHealthy(m.provider as Provider);
-      return { ...result, attempts: attempt };
-    } catch (err) {
-      lastErr = err;
-      noteProviderFailure(m.provider as Provider, err);
-    }
-  }
-  throw lastErr ?? new Error("에이전트 모델 호출에 모두 실패했습니다.");
 }
 
 /** 최종 답변을 문장/토막 단위로 흘려보낸다(Variant A — 추가 모델 호출 없음). */
@@ -139,7 +94,16 @@ export async function runAgentRoute(args: {
       };
     }
 
-    const turn = await agentTurnWithFallback(msgs, toolSchemas, args.signal, args.onAttempt);
+    const turn = await agentTurnWithFallback({
+      messages: msgs,
+      tools: toolSchemas,
+      candidates: AGENT_MODELS,
+      signal: args.signal,
+      onAttempt: args.onAttempt,
+      noKeyErrorMessage:
+        "에이전트를 실행할 AI 키가 없습니다. GROQ / CEREBRAS / MISTRAL / SAMBANOVA / DEEPSEEK 키 중 하나 이상을 설정하세요.",
+      allFailedErrorMessage: "에이전트 모델 호출에 모두 실패했습니다.",
+    });
     totalAttempts += turn.attempts;
     lastProvider = turn.provider;
     lastModel = turn.model;

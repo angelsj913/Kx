@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "curated": [
+    {
+      "id": "testing-api-authentication-weaknesses",
+      "title": "API Authentication Weaknesses",
+      "description": "Broken authentication, session management, OTP and credential controls.",
+      "domain": "api-security",
+      "tags": ["authentication", "owasp", "session"],
+      "checkIds": [
+        "auth.session_revoke_on_reset",
+        "auth.otp_uses_csprng",
+        "deps.next_auth_min_version",
+        "env.auth_secret_present"
+      ]
+    },
+    {
+      "id": "testing-for-broken-access-control",
+      "title": "Broken Access Control",
+      "description": "Privilege and admin allowlist controls.",
+      "domain": "web-application-security",
+      "tags": ["access-control", "admin"],
+      "checkIds": ["auth.admin_emails_configured"]
+    },
+    {
+      "id": "testing-for-xss-vulnerabilities",
+      "title": "XSS / CSP Controls",
+      "description": "Content Security Policy and related browser hardening.",
+      "domain": "web-application-security",
+      "tags": ["xss", "csp", "hsts"],
+      "checkIds": ["http.csp_present", "http.hsts_present"]
+    },
+    {
+      "id": "testing-for-sensitive-data-exposure",
+      "title": "Sensitive Data Exposure",
+      "description": "Upload auth, cron secrets, Stripe webhook secrets.",
+      "domain": "web-application-security",
+      "tags": ["uploads", "secrets", "stripe"],
+      "checkIds": [
+        "upload.inquiry_requires_login",
+        "cron.query_secret_disabled_in_prod",
+        "env.stripe_webhook_secret_present",
+        "env.cron_secret_present"
+      ]
+    },
+    {
+      "id": "testing-api-security-with-owasp-top-10",
+      "title": "OWASP API Security Top 10",
+      "description": "Baseline API and dependency hygiene mapped to product checks.",
+      "domain": "api-security",
+      "tags": ["owasp", "dependencies", "npm"],
+      "checkIds": [
+        "deps.next_auth_min_version",
+        "deps.npm_audit_critical_high",
+        "upload.inquiry_requires_login"
+      ]
+    }
+  ]
+}

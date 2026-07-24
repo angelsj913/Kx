@@ -348,6 +348,7 @@ const zh: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "验证失败。",
   "auth.otp.devCodePrefix": "（开发用）验证码：",
   "support.inquiry.errors.submitFailed": "提交咨询失败。",
+  "support.inquiry.errors.loginRequired": "提交咨询前请先登录。",
 
   "legal.disclaimer": "本文件以韩语原文作为具有法律效力的版本。以下内容仅供参考。",
   "legal.effectiveDate": "生效日期：",

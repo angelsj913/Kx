@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { checkPasswordStrength } from "@/lib/password";
+import { BCRYPT_COST, checkPasswordStrength } from "@/lib/password";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** 로그인 상태에서 현재 비밀번호 확인 후 새 비밀번호로 변경. */
+/** 로그인 상태에서 현재 비밀번호 확인 후 새 비밀번호로 변경. 모든 세션을 무효화한다. */
 export async function POST(request: Request) {
   try {
     const session = await auth();
@@ -40,12 +40,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: strength.reason }, { status: 400 });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+    });
 
-    // 참고: 현재 세션을 유지하기 위해 여기서 sessionVersion을 올리지 않는다. 다른 기기를
-    // 끊고 싶으면 "모든 기기에서 로그아웃"을 사용한다(logout-all).
-    return NextResponse.json({ ok: true });
+    // JWT sessionVersion이 올라갔으므로 클라이언트는 재로그인이 필요하다.
+    return NextResponse.json({ ok: true, reauth: true });
   } catch (err) {
     if (err instanceof RateLimitError) {
       return NextResponse.json({ error: err.message }, { status: 429 });

@@ -197,7 +197,7 @@ const ko = {
   "support.tab.legal": "이용약관 · 개인정보처리방침",
   "support.nav.history": "문의 내역",
   "support.inquiry.type.account": "계정 문의",
-  "support.inquiry.intro": "궁금한 점이나 불편한 점을 남겨 주시면 입력하신 이메일로 답변드립니다.",
+  "support.inquiry.intro": "로그인한 뒤 궁금한 점이나 불편한 점을 남겨 주시면 입력하신 이메일로 답변드립니다.",
   "support.inquiry.viewHistory": "문의 내역 보기",
   "support.inquiry.fileLabel": "파일 첨부 (선택)",
   "support.inquiry.fileHint": "이미지 또는 문서 첨부",
@@ -355,6 +355,7 @@ const ko = {
   "auth.errors.verifyFailed": "인증에 실패했습니다.",
   "auth.otp.devCodePrefix": "(개발용) 인증번호: ",
   "support.inquiry.errors.submitFailed": "접수에 실패했습니다.",
+  "support.inquiry.errors.loginRequired": "문의하려면 로그인이 필요합니다.",
 
   "legal.disclaimer": "이 문서는 법적 효력을 위해 한국어 원문을 기준으로 합니다. 아래 내용은 참고용입니다.",
   "legal.effectiveDate": "시행일:",

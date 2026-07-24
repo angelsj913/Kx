@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { hasRecentVerifiedOtp } from "@/lib/otp";
-import { checkPasswordStrength } from "@/lib/password";
+import { BCRYPT_COST, checkPasswordStrength } from "@/lib/password";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
@@ -40,8 +40,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "이메일 인증을 먼저 완료해 주세요." }, { status: 400 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    // 비밀번호 재설정 = 신뢰 경계 초기화. 기존 JWT(sessionVersion)를 함께 무효화한다.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

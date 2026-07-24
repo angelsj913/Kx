@@ -354,6 +354,7 @@ const ja: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "認証に失敗しました。",
   "auth.otp.devCodePrefix": "（開発用）認証番号: ",
   "support.inquiry.errors.submitFailed": "お問い合わせの送信に失敗しました。",
+  "support.inquiry.errors.loginRequired": "お問い合わせにはログインが必要です。",
 
   "legal.disclaimer": "本文書は法的効力について韓国語原文を基準とします。以下の内容は参考用です。",
   "legal.effectiveDate": "施行日:",

@@ -359,6 +359,7 @@ const es: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "Error de verificación.",
   "auth.otp.devCodePrefix": "(dev) código de verificación: ",
   "support.inquiry.errors.submitFailed": "No se pudo enviar tu consulta.",
+  "support.inquiry.errors.loginRequired": "Inicia sesión para enviar una consulta.",
 
   "legal.disclaimer": "El texto original en coreano es la versión con validez legal. El contenido siguiente se ofrece solo como referencia.",
   "legal.effectiveDate": "Fecha de entrada en vigor:",
