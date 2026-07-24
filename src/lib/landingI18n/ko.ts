@@ -377,6 +377,22 @@ const ko = {
   "legal.bizInfo.mailOrderNo": "통신판매업 신고번호:",
   "legal.bizInfo.privacyOfficer": "개인정보 보호책임자:",
   "legal.bizInfo.contact": "문의:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "ZEFF AI 다운로드",
+  "downloadPage.subtitle": "설치 파일을 내려받아 실행하면 바로 사용할 수 있습니다.",
+  "downloadPage.recommended": "현재 기기에 권장",
+  "downloadPage.windows": "Windows용 다운로드",
+  "downloadPage.mac": "macOS용 다운로드",
+  "downloadPage.fileLabel": "설치 파일",
+  "downloadPage.reqTitle": "시스템 요구사항",
+  "downloadPage.reqOs": "운영체제",
+  "downloadPage.reqCpu": "프로세서",
+  "downloadPage.reqRam": "메모리",
+  "downloadPage.reqDisk": "저장공간",
+  "downloadPage.howto": "내려받은 설치 파일을 실행하고 화면 안내에 따라 설치하세요. Windows는 .exe, macOS는 .dmg 파일입니다.",
+  "downloadPage.version": "버전",
+  "downloadPage.smartScreenTitle": "설치 중 보안 경고가 뜨나요?",
+  "downloadPage.smartScreen": "Windows에서 'Windows의 PC 보호'(SmartScreen)나 '알 수 없는 게시자' 경고가 보이면 [추가 정보] → [실행]을 눌러 설치하세요. 아직 코드 서명 인증서 적용 전이라 표시되는 정상 경고입니다. macOS에서 '확인되지 않은 개발자' 경고가 나오면 파일을 마우스 오른쪽 클릭 → [열기]를 선택하세요.",
 } as const;
 
 export default ko;

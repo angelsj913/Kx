@@ -369,6 +369,22 @@ const zh: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "通信销售业申报号：",
   "legal.bizInfo.privacyOfficer": "个人信息保护负责人：",
   "legal.bizInfo.contact": "联系方式：",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "下载 ZEFF AI",
+  "downloadPage.subtitle": "下载安装程序并运行，即可立即使用。",
+  "downloadPage.recommended": "推荐用于此设备",
+  "downloadPage.windows": "下载 Windows 版",
+  "downloadPage.mac": "下载 macOS 版",
+  "downloadPage.fileLabel": "安装程序",
+  "downloadPage.reqTitle": "系统要求",
+  "downloadPage.reqOs": "操作系统",
+  "downloadPage.reqCpu": "处理器",
+  "downloadPage.reqRam": "内存",
+  "downloadPage.reqDisk": "存储空间",
+  "downloadPage.howto": "运行下载的安装程序，按照屏幕提示进行安装。Windows 为 .exe 文件，macOS 为 .dmg 文件。",
+  "downloadPage.version": "版本",
+  "downloadPage.smartScreenTitle": "安装时出现安全警告？",
+  "downloadPage.smartScreen": "如果 Windows 显示“Windows 已保护你的电脑”(SmartScreen) 或“未知发布者”警告，请点击“更多信息”→“仍要运行”进行安装。这只是因为应用尚未进行代码签名，可放心继续。在 macOS 上如果出现“无法验证开发者”警告，请右键点击文件→“打开”。",
 };
 
 export default zh;

@@ -380,6 +380,22 @@ const ru: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Номер регистрации дистанционной торговли:",
   "legal.bizInfo.privacyOfficer": "Ответственный за защиту персональных данных:",
   "legal.bizInfo.contact": "Контакты:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "Скачать ZEFF AI",
+  "downloadPage.subtitle": "Скачайте установщик, запустите его — и можно сразу начинать работу.",
+  "downloadPage.recommended": "Рекомендуется для вашего устройства",
+  "downloadPage.windows": "Скачать для Windows",
+  "downloadPage.mac": "Скачать для macOS",
+  "downloadPage.fileLabel": "Установщик",
+  "downloadPage.reqTitle": "Системные требования",
+  "downloadPage.reqOs": "ОС",
+  "downloadPage.reqCpu": "Процессор",
+  "downloadPage.reqRam": "Память",
+  "downloadPage.reqDisk": "Накопитель",
+  "downloadPage.howto": "Запустите скачанный установщик и следуйте инструкциям на экране. Для Windows — файл .exe, для macOS — файл .dmg.",
+  "downloadPage.version": "Версия",
+  "downloadPage.smartScreenTitle": "Предупреждение безопасности при установке?",
+  "downloadPage.smartScreen": "Если Windows показывает предупреждение «Система Windows защитила ваш компьютер» (SmartScreen) или «неизвестный издатель», нажмите «Подробнее» → «Выполнить в любом случае». Оно появляется лишь потому, что приложение ещё не подписано сертификатом, и продолжать безопасно. В macOS при предупреждении «неопознанный разработчик» щёлкните файл правой кнопкой → «Открыть».",
 };
 
 export default ru;

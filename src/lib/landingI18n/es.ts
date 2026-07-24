@@ -380,6 +380,22 @@ const es: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Número de registro de venta a distancia:",
   "legal.bizInfo.privacyOfficer": "Responsable de protección de datos:",
   "legal.bizInfo.contact": "Contacto:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "Descargar ZEFF AI",
+  "downloadPage.subtitle": "Descarga el instalador, ejecútalo y podrás empezar a usarlo enseguida.",
+  "downloadPage.recommended": "Recomendado para este dispositivo",
+  "downloadPage.windows": "Descargar para Windows",
+  "downloadPage.mac": "Descargar para macOS",
+  "downloadPage.fileLabel": "Instalador",
+  "downloadPage.reqTitle": "Requisitos del sistema",
+  "downloadPage.reqOs": "Sistema operativo",
+  "downloadPage.reqCpu": "Procesador",
+  "downloadPage.reqRam": "Memoria",
+  "downloadPage.reqDisk": "Almacenamiento",
+  "downloadPage.howto": "Ejecuta el instalador descargado y sigue las instrucciones en pantalla. Windows usa un archivo .exe, macOS un archivo .dmg.",
+  "downloadPage.version": "Versión",
+  "downloadPage.smartScreenTitle": "¿Aparece una advertencia de seguridad al instalar?",
+  "downloadPage.smartScreen": "Si Windows muestra una advertencia «Windows protegió tu PC» (SmartScreen) o «editor desconocido», haz clic en Más información → Ejecutar de todas formas. Aparece solo porque la app aún no está firmada con certificado, y es seguro continuar. En macOS, si ves una advertencia de «desarrollador no identificado», haz clic derecho en el archivo → Abrir.",
 };
 
 export default es;
