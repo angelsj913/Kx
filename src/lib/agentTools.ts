@@ -236,6 +236,14 @@ function toArtifact(result: Awaited<ReturnType<typeof runToolGeneration>>): Arti
       fileName: result.file.filename,
     };
   }
+  if (result.outputType === "docx") {
+    return {
+      ...base,
+      replyText: "워드 문서(.docx)를 만들었어요. 아래에서 다운로드할 수 있어요.",
+      fileUrl: result.file.url,
+      fileName: result.file.filename,
+    };
+  }
   // pptx | xlsx
   return {
     ...base,

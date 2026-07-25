@@ -13,12 +13,12 @@ const en: Record<keyof typeof ko, string> = {
   "header.homeAria": "ZEFF AI Home",
   "header.menuAria": "Menu",
 
-  "hero.badge": "Next-generation AI workspace",
-  "hero.title.line1": "AI that works at the",
+  "hero.badge": "An AI workspace for study and work",
+  "hero.title.line1": "Everything you need to study and work,",
   "hero.title.line2": "",
-  "hero.title.line2Prefix": "speed of thought,",
+  "hero.title.line2Prefix": "connected in",
   "hero.subtitle":
-    "ZEFF AI is a personal AI workspace built to finish complex work the fastest way possible. Download it now and experience it yourself.",
+    "Organize lecture material and create drafts for documents, slides, and spreadsheets. ZEFF AI keeps your conversations and files connected as your work moves forward.",
   "hero.download.windows": "Download for Windows",
   "hero.download.mac": "Download for Mac",
   "hero.download.android": "Android",
@@ -37,24 +37,25 @@ const en: Record<keyof typeof ko, string> = {
   "hero.modal.androidComingSoon": "Google Play listing is being prepared. Use the web app (zeffai.com) or Windows for now.",
   "hero.download.soon": "Soon",
 
-  "workspace.title": "No lag in computation. Reasoning that pushes past the limits.",
-  "workspace.subtitle": "See ZEFF AI's real performance for yourself.",
+  "workspace.title": "Keep the flow from question to finished work",
+  "workspace.subtitle": "Organize material, find answers, and continue working in one ZEFF AI workspace.",
   "workspace.video1": "Math problem-solving demo",
   "workspace.video2": "Output generation demo",
   "workspace.videoPlaceholder": "Video coming soon",
-  "workspace.feature1.title": "Overwhelming speed",
-  "workspace.feature1.desc": "Solves complex equations and logic in real time, without delay.",
+  "workspace.videoPlay": "Play demo",
+  "workspace.feature1.title": "Quick responses",
+  "workspace.feature1.desc": "Breaks down complex questions and returns answers that are easy to follow.",
   "workspace.feature1.detail":
-    "It explores tens of thousands of computation paths at once, yet keeps response latency imperceptible.",
-  "workspace.feature2.title": "Accurate results",
+    "It considers your files and conversation together to find what matters.",
+  "workspace.feature2.title": "Answers you can check",
   "workspace.feature2.desc":
-    "Provides both the reasoning process and the final output so you can trust the answer.",
+    "Shows the useful steps and evidence alongside the conclusion.",
   "workspace.feature2.detail":
-    "Every reasoning step is self-verified along the way, giving the output an extra layer of reliability.",
-  "workspace.feature3.title": "Seamless experience",
-  "workspace.feature3.desc": "Powered by a responsive AI engine that runs reliably in any environment.",
+    "Numbers and important claims receive an additional review when needed.",
+  "workspace.feature3.title": "Connected work",
+  "workspace.feature3.desc": "Keeps the context from your conversation and files as you move to the next task.",
   "workspace.feature3.detail":
-    "Built to hold onto your working context even through unstable network conditions.",
+    "Turn organized material into a document or presentation draft without starting over.",
 
   "office.title": "Office productivity that changes how fast real work moves",
   "office.subtitle":
@@ -99,6 +100,15 @@ const en: Record<keyof typeof ko, string> = {
   "grid.cta": "Log in to get started",
 
   "pricing.title": "Pricing",
+  "pricing.lead.title": "Study and work, one workspace",
+  "pricing.lead.subtitle":
+    "From Free for light exploration to Pro for daily depth and Professional for exams and analysis — plans differ by usage allowance, AI models, and library limits.",
+  "pricing.lead.pill1.title": "Generous usage",
+  "pricing.lead.pill1.desc": "Chat, document generation, and PPT/Excel tasks scale up with each plan.",
+  "pricing.lead.pill2.title": "Stronger AI models",
+  "pricing.lead.pill2.desc": "Higher tiers get more capable models first, plus priority and precision routing.",
+  "pricing.lead.pill3.title": "Files & library",
+  "pricing.lead.pill3.desc": "Preview generated artifacts and expand knowledge-base storage as you upgrade.",
   "pricing.subtitle": "Choose the plan that fits your needs.",
   "pricing.free.name": "free",
   "pricing.free.desc":
@@ -373,6 +383,22 @@ const en: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Mail-order business no.:",
   "legal.bizInfo.privacyOfficer": "Privacy officer:",
   "legal.bizInfo.contact": "Contact:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "Download ZEFF AI",
+  "downloadPage.subtitle": "Download the installer, run it, and you're ready to go.",
+  "downloadPage.recommended": "Recommended for your device",
+  "downloadPage.windows": "Download for Windows",
+  "downloadPage.mac": "Download for macOS",
+  "downloadPage.fileLabel": "Installer",
+  "downloadPage.reqTitle": "System requirements",
+  "downloadPage.reqOs": "OS",
+  "downloadPage.reqCpu": "Processor",
+  "downloadPage.reqRam": "Memory",
+  "downloadPage.reqDisk": "Storage",
+  "downloadPage.howto": "Run the downloaded installer and follow the on-screen steps. Windows uses a .exe file, macOS a .dmg file.",
+  "downloadPage.version": "Version",
+  "downloadPage.smartScreenTitle": "Seeing a security warning during install?",
+  "downloadPage.smartScreen": "If Windows shows a 'Windows protected your PC' (SmartScreen) or 'unknown publisher' warning, click More info → Run anyway. It appears only because the app isn't code-signed yet and is safe to proceed. On macOS, if you see an 'unidentified developer' warning, right-click the file → Open.",
 };
 
 export default en;

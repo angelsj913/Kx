@@ -11,12 +11,12 @@ const ko = {
   "header.homeAria": "ZEFF AI 홈",
   "header.menuAria": "메뉴",
 
-  "hero.badge": "차세대 AI 워크스페이스",
-  "hero.title.line1": "생각의 속도로",
+  "hero.badge": "공부와 일을 위한 AI 워크스페이스",
+  "hero.title.line1": "공부와 일에 필요한 것,",
   "hero.title.line2": "",
-  "hero.title.line2Prefix": "일하는 AI,",
+  "hero.title.line2Prefix": "한곳에서 이어주는",
   "hero.subtitle":
-    "ZEFF AI는 복잡한 작업을 가장 빠른 방식으로 끝내는 개인용 AI 워크스페이스입니다. 지금 다운로드하고 바로 경험해보세요.",
+    "강의 자료를 정리하고, 문서·슬라이드·표 초안을 만들어 보세요. ZEFF AI가 대화와 자료의 맥락을 이어서 다음 작업까지 도와드립니다.",
   "hero.download.windows": "윈도우 다운",
   "hero.download.mac": "맥 다운",
   "hero.download.android": "안드로이드",
@@ -35,23 +35,24 @@ const ko = {
   "hero.modal.androidComingSoon": "Google Play 등록을 준비 중입니다. 지금은 웹(zeffai.com) 또는 Windows 앱을 이용해 주세요.",
   "hero.download.soon": "준비 중",
 
-  "workspace.title": "지연 없는 연산, 한계를 넘어서는 추론 엔진.",
-  "workspace.subtitle": "ZEFF AI의 가동 성능을 직접 확인해 보세요.",
+  "workspace.title": "질문부터 결과물까지, 흐름을 끊지 마세요",
+  "workspace.subtitle": "자료를 정리하고 답을 찾는 과정을 ZEFF AI 한곳에서 이어갑니다.",
   "workspace.video1": "수학 문제 풀이 데모",
   "workspace.video2": "결과물 생성 데모",
   "workspace.videoPlaceholder": "영상 준비 중",
-  "workspace.feature1.title": "압도적인 처리 속도",
-  "workspace.feature1.desc": "복잡한 수식과 논리 연산도 지연 없이 실시간으로 풀어냅니다.",
+  "workspace.videoPlay": "데모 재생",
+  "workspace.feature1.title": "빠른 응답",
+  "workspace.feature1.desc": "복잡한 질문도 핵심을 나눠 살펴보고 이해하기 쉽게 답합니다.",
   "workspace.feature1.detail":
-    "복잡한 문제도 여러 방식으로 나눠 계산해, 기다림이 거의 느껴지지 않도록 다듬었습니다.",
-  "workspace.feature2.title": "정확한 결과물",
-  "workspace.feature2.desc": "풀이 과정과 최종 결과물을 함께 제공해 신뢰할 수 있는 답을 제공합니다.",
+    "자료와 대화의 맥락을 함께 살펴 필요한 내용을 빠르게 찾습니다.",
+  "workspace.feature2.title": "확인하기 쉬운 답변",
+  "workspace.feature2.desc": "결론만 제시하지 않고, 필요한 과정과 근거를 함께 보여드립니다.",
   "workspace.feature2.detail":
-    "매 단계의 추론 과정을 스스로 검증하는 구조라, 결과물의 신뢰도를 한 번 더 담보합니다.",
-  "workspace.feature3.title": "끊김 없는 경험",
-  "workspace.feature3.desc": "어떤 환경에서도 안정적으로 동작하는 반응형 AI 엔진을 사용합니다.",
+    "숫자와 주요 주장처럼 확인이 필요한 내용은 한 번 더 검토합니다.",
+  "workspace.feature3.title": "이어지는 작업",
+  "workspace.feature3.desc": "대화와 자료의 맥락을 유지해 다음 작업으로 자연스럽게 이어갑니다.",
   "workspace.feature3.detail":
-    "네트워크 환경이 불안정한 순간에도 작업 맥락을 잃지 않도록 설계됐습니다.",
+    "요약한 자료를 바탕으로 문서나 발표자료 초안까지 계속 만들 수 있습니다.",
 
   "office.title": "실무의 속도를 바꾸는 오피스 생산성",
   "office.subtitle": "문서, 슬라이드, 표 작업까지 — 손이 가던 반복 업무를 ZEFF AI가 대신합니다.",
@@ -94,6 +95,15 @@ const ko = {
   "grid.cta": "로그인하고 시작하기",
 
   "pricing.title": "요금제",
+  "pricing.lead.title": "공부와 업무, 한 워크스페이스로",
+  "pricing.lead.subtitle":
+    "가볍게 시작하는 Free부터 매일 깊게 쓰는 Pro, 시험·분석까지 넓히는 Professional까지 — 사용량과 AI 모델, 문서·서재 한도만 다릅니다.",
+  "pricing.lead.pill1.title": "넉넉한 이용량",
+  "pricing.lead.pill1.desc": "채팅·문서 생성·PPT·엑셀 작업 횟수가 플랜마다 단계적으로 늘어납니다.",
+  "pricing.lead.pill2.title": "더 강한 AI 모델",
+  "pricing.lead.pill2.desc": "상위 플랜일수록 더 강력한 모델과 우선 처리·정밀 검수 라우트를 먼저 씁니다.",
+  "pricing.lead.pill3.title": "문서·서재 확장",
+  "pricing.lead.pill3.desc": "생성한 자료 미리보기와 지식 베이스 저장 공간이 플랜에 맞게 확장됩니다.",
   "pricing.subtitle": "필요에 맞는 플랜을 선택하세요.",
   "pricing.free.name": "free",
   "pricing.free.desc":
@@ -368,6 +378,22 @@ const ko = {
   "legal.bizInfo.mailOrderNo": "통신판매업 신고번호:",
   "legal.bizInfo.privacyOfficer": "개인정보 보호책임자:",
   "legal.bizInfo.contact": "문의:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "ZEFF AI 다운로드",
+  "downloadPage.subtitle": "설치 파일을 내려받아 실행하면 바로 사용할 수 있습니다.",
+  "downloadPage.recommended": "현재 기기에 권장",
+  "downloadPage.windows": "Windows용 다운로드",
+  "downloadPage.mac": "macOS용 다운로드",
+  "downloadPage.fileLabel": "설치 파일",
+  "downloadPage.reqTitle": "시스템 요구사항",
+  "downloadPage.reqOs": "운영체제",
+  "downloadPage.reqCpu": "프로세서",
+  "downloadPage.reqRam": "메모리",
+  "downloadPage.reqDisk": "저장공간",
+  "downloadPage.howto": "내려받은 설치 파일을 실행하고 화면 안내에 따라 설치하세요. Windows는 .exe, macOS는 .dmg 파일입니다.",
+  "downloadPage.version": "버전",
+  "downloadPage.smartScreenTitle": "설치 중 보안 경고가 뜨나요?",
+  "downloadPage.smartScreen": "Windows에서 'Windows의 PC 보호'(SmartScreen)나 '알 수 없는 게시자' 경고가 보이면 [추가 정보] → [실행]을 눌러 설치하세요. 아직 코드 서명 인증서 적용 전이라 표시되는 정상 경고입니다. macOS에서 '확인되지 않은 개발자' 경고가 나오면 파일을 마우스 오른쪽 클릭 → [열기]를 선택하세요.",
 } as const;
 
 export default ko;

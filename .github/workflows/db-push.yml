@@ -1,0 +1,35 @@
+name: Database schema push
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  prisma-db-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Secret is stored in GitHub Environment "DATABASE_URL" (not repo-level secret)
+    environment: DATABASE_URL
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: prisma db push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DB_URL: ${{ vars.DATABASE_URL }}
+        run: |
+          URL="${DATABASE_URL:-${NEON_DATABASE_URL:-$DB_URL}}"
+          if [ -z "$URL" ]; then
+            echo "::error::DATABASE_URL is not available to this workflow."
+            echo "Add a repository secret named DATABASE_URL (Settings → Secrets and variables → Actions)."
+            echo "If you added an environment secret, add environment: <name> to the workflow job."
+            exit 1
+          fi
+          DATABASE_URL="$URL" npx prisma db push --accept-data-loss

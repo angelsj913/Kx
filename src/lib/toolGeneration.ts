@@ -1,8 +1,26 @@
 import { put } from "@vercel/blob";
-import { generateWithFallback, type AttemptInfo, type FallbackResult } from "./ai";
-import { geminiGenerateImage } from "./gemini";
+import sharp from "sharp";
+import {
+  generateWithFallback,
+  isOpenRouterCreditsError,
+  type AttemptInfo,
+  type FallbackResult,
+} from "./ai";
+import { validateDeck, validateWorkbook } from "./pptValidate";
+import { buildDocxBase64, parseMarkdownSections, DOCX_MIME } from "./docx";
+import { PPT_OUTLINE_INSTRUCTION, PPT_FILL_INSTRUCTION_PREFIX } from "./prompts/registry";
+import { geminiGenerateForTool, geminiGenerateImage, MissingApiKeyError, SafetyRefusalError } from "./gemini";
+import { openRouterGenerateImage } from "./openaiCompat";
+import { pollinationsGenerateImage } from "./pollinations";
+import { buildImagePrompt } from "./imagePrompt";
 import { noteProviderFailure } from "./providerHealth";
-import type { ModelTier } from "./models";
+import { imageGenerationCandidates, type ModelTier, type Provider } from "./models";
+import {
+  PipelineStageError,
+  pipelineError,
+  pipelineInfo,
+  pipelineWarn,
+} from "./pipelineLog";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
@@ -40,9 +58,19 @@ export interface ToolGenerationInput {
 }
 
 interface Meta {
-  provider: FallbackResult["provider"];
+  provider: Provider | "local" | "pollinations";
   model: FallbackResult["model"];
   attempts: number;
+}
+
+async function upscaleImage2x(data: string): Promise<string> {
+  const image = sharp(Buffer.from(data, "base64")).rotate();
+  const metadata = await image.metadata();
+  const width = Math.min((metadata.width ?? 1024) * 2, 4096);
+  const height = Math.min((metadata.height ?? 1024) * 2, 4096);
+  return (await image.resize(width, height, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()).toString(
+    "base64",
+  );
 }
 
 export type ToolGenerationResult =
@@ -72,6 +100,13 @@ export type ToolGenerationResult =
     }
   | {
       tool: ToolDef;
+      outputType: "docx";
+      text: string;
+      file: { url: string; filename: string; mimeType: string };
+      meta: Meta;
+    }
+  | {
+      tool: ToolDef;
       outputType: "image";
       file: { url: string; filename: string; mimeType: string };
       meta: Meta;
@@ -81,7 +116,6 @@ const MD_EXPORT_TOOLS = new Set([
   "note-a4",
   "video-summary",
   "exam-maker",
-  "word-doc",
   "math-solve",
   "doc-translate",
 ]);
@@ -163,13 +197,17 @@ async function verifyAndAnnotateMathSolve(
       };
     }
     try {
+      const excluded =
+        finalMeta.provider === "local" || finalMeta.provider === "pollinations"
+          ? []
+          : [finalMeta.provider];
       const crossCheck = await generateWithFallback({
         tool,
         text: input.text,
         audio: input.audio,
         images: input.images,
         modelTier: input.modelTier,
-        excludeProviders: [finalMeta.provider],
+        excludeProviders: excluded,
       });
       const crossRaw = stripHanja(crossCheck.text);
       const primaryAnswer = extractFinalAnswer(finalRaw);
@@ -183,7 +221,7 @@ async function verifyAndAnnotateMathSolve(
             audio: input.audio,
             images: input.images,
             modelTier: input.modelTier,
-            excludeProviders: [finalMeta.provider, crossCheck.provider],
+            excludeProviders: [...excluded, crossCheck.provider],
           });
           const tieRaw = stripHanja(tieBreak.text);
           const tieAnswer = extractFinalAnswer(tieRaw);
@@ -385,32 +423,139 @@ export async function runToolGeneration(
   }
 
   if (tool.outputType === "image") {
-    if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
-    let data: string;
-    let mimeType: string;
-    try {
-      const img = await geminiGenerateImage({
-        prompt: input.text!.trim(),
-        systemInstruction: tool.systemInstruction,
-      });
-      data = img.data;
-      mimeType = img.mimeType;
-    } catch (err) {
-      noteProviderFailure("gemini", err);
-      throw err;
+    let data = "";
+    let mimeType = "image/png";
+    let model = "";
+    let imageAttempts = 1;
+    if (tool.id === "image-upscale") {
+      const source = input.images?.[0];
+      if (!source) throw new Error("확대할 이미지를 첨부해 주세요.");
+      data = await upscaleImage2x(source.data);
+      mimeType = "image/png";
+      model = "lanczos3-2x";
+    } else {
+      if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
+      const prompt = buildImagePrompt(input.text!.trim());
+      pipelineInfo("image-gen/generate", "prompt", prompt.slice(0, 200));
+      const candidates = await imageGenerationCandidates();
+      if (candidates.length === 0) {
+        pipelineError("image-gen/candidates", "no providers with API keys");
+        throw new MissingApiKeyError(
+          "이미지 생성 API 키가 없습니다. GEMINI_API_KEY 또는 OPENROUTER_API_KEY를 설정해 주세요.",
+        );
+      }
+
+      let lastError: unknown;
+      let attempt = 0;
+      let skipOpenRouter = false;
+      for (const candidate of candidates) {
+        if (skipOpenRouter && candidate.provider === "openrouter") continue;
+
+        attempt += 1;
+        pipelineInfo(
+          "image-gen/generate",
+          `try #${attempt}`,
+          `${candidate.provider}/${candidate.model}`,
+        );
+        try {
+          let img: { data: string; mimeType: string; model?: string };
+          if (candidate.provider === "pollinations") {
+            img = await pollinationsGenerateImage({
+              prompt,
+              model: candidate.model,
+            });
+          } else if (candidate.provider === "gemini") {
+            img = await geminiGenerateImage({
+              prompt,
+              systemInstruction: tool.systemInstruction,
+            });
+          } else {
+            img = await openRouterGenerateImage({ prompt, model: candidate.model });
+          }
+          data = img.data;
+          mimeType = img.mimeType;
+          model = img.model || candidate.model;
+          lastError = null;
+          imageAttempts = attempt;
+          pipelineInfo(
+            "image-gen/generate",
+            "success",
+            `${candidate.provider}/${candidate.model} (#${attempt})`,
+          );
+          break;
+        } catch (err) {
+          if (err instanceof SafetyRefusalError) throw err;
+          pipelineWarn(
+            "image-gen/generate",
+            `fail #${attempt} ${candidate.provider}/${candidate.model}`,
+            err,
+          );
+          if (candidate.provider !== "pollinations") {
+            noteProviderFailure(candidate.provider as Provider, err);
+          }
+          lastError = err;
+
+          // OpenRouter 크레딧 부족은 계정 단위 — 나머지 OR 모델 시도는 전부 동일 실패이므로 즉시 중단
+          if (candidate.provider === "openrouter" && isOpenRouterCreditsError(err)) {
+            skipOpenRouter = true;
+            pipelineWarn(
+              "image-gen/generate",
+              "OpenRouter credits depleted — skipping remaining OpenRouter image models",
+            );
+          }
+        }
+      }
+      if (lastError) throw lastError;
+      if (!data) throw new Error("이미지를 생성하지 못했습니다.");
+
+      try {
+        data = await upscaleImage2x(data);
+        mimeType = "image/png";
+        model = `${model}+lanczos3-2x`;
+        pipelineInfo("image-gen/upscale", "success", model);
+      } catch (err) {
+        pipelineError("image-gen/upscale", "lanczos 2x failed", err);
+        throw new PipelineStageError(
+          "image-gen/upscale",
+          "생성된 이미지 확대(2배)에 실패했습니다",
+          err,
+        );
+      }
     }
     input.onUploadStart?.();
     const ext = mimeType.split("/")[1]?.split("+")[0] || "png";
-    const blob = await put(
-      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
-      Buffer.from(data, "base64"),
-      { access: "public", contentType: mimeType, addRandomSuffix: true },
-    );
+    let blob;
+    try {
+      blob = await put(
+        `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
+        Buffer.from(data, "base64"),
+        { access: "public", contentType: mimeType, addRandomSuffix: true },
+      );
+      pipelineInfo("image-gen/blob-upload", "success", blob.url);
+    } catch (err) {
+      pipelineError("image-gen/blob-upload", "Vercel Blob upload failed", err);
+      throw new PipelineStageError(
+        "image-gen/blob-upload",
+        "이미지 저장(업로드)에 실패했습니다. BLOB_READ_WRITE_TOKEN 설정을 확인해 주세요",
+        err,
+      );
+    }
     return {
       tool,
       outputType: "image",
       file: { url: blob.url, filename: `${tool.fileBaseName}.${ext}`, mimeType },
-      meta: { provider: "gemini", model: "gemini-2.5-flash-image", attempts: 1 },
+      meta: {
+        provider:
+          tool.id === "image-upscale"
+            ? "local"
+            : model.startsWith("pollinations")
+              ? "pollinations"
+              : model.startsWith("gemini")
+                ? "gemini"
+                : "openrouter",
+        model,
+        attempts: imageAttempts,
+      },
     };
   }
 
@@ -470,13 +615,70 @@ export async function runToolGeneration(
 
   if (tool.outputType === "pptx") {
     let deck;
+    let pptRaw = raw;
+
+    // 2-pass: outline → fill (품질·구조 안정화)
     try {
-      deck = parseDeck(raw);
+      const outlineTool: ToolDef = {
+        ...tool,
+        systemInstruction: PPT_OUTLINE_INSTRUCTION,
+      };
+      const outlineText = await geminiGenerateForTool({
+        tool: outlineTool,
+        text: input.text,
+        images: input.images,
+      });
+      const fillTool: ToolDef = {
+        ...tool,
+        systemInstruction: `${tool.systemInstruction}\n\n${PPT_FILL_INSTRUCTION_PREFIX}\n\n[아웃라인]\n${outlineText}`,
+      };
+      const filled = await generateWithFallback({
+        tool: fillTool,
+        text: input.text,
+        audio: input.audio,
+        images: input.images,
+        modelTier: input.modelTier,
+        onAttempt: input.onAttempt,
+      });
+      pptRaw = filled.text;
+      meta = { provider: filled.provider, model: filled.model, attempts: meta.attempts + filled.attempts };
+    } catch (err) {
+      console.warn("[toolGeneration] ppt 2-pass fallback to single pass", err);
+    }
+
+    try {
+      deck = parseDeck(pptRaw);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
-      console.error("[toolGeneration] pptx parse", msg, raw.slice(0, 400));
+      console.error("[toolGeneration] pptx parse", msg, pptRaw.slice(0, 400));
       throw new Error(msg);
     }
+
+    let validation = validateDeck(deck);
+    if (!validation.ok) {
+      try {
+        const retryTool: ToolDef = {
+          ...tool,
+          systemInstruction: `${tool.systemInstruction}\n\n[검증 실패 — 아래 문제를 고쳐 다시 JSON만 출력]\n${validation.issues.map((i) => i.message).join("\n")}`,
+        };
+        const retry = await generateWithFallback({
+          tool: retryTool,
+          text: input.text,
+          modelTier: input.modelTier,
+          onAttempt: input.onAttempt,
+        });
+        deck = parseDeck(retry.text);
+        meta = {
+          provider: retry.provider,
+          model: retry.model,
+          attempts: meta.attempts + retry.attempts,
+        };
+        validation = validateDeck(deck);
+      } catch (retryErr) {
+        console.warn("[toolGeneration] ppt validate retry failed", retryErr);
+      }
+    }
+
     input.onUploadStart?.();
     const base64 = await buildPptxBase64(deck);
     const safeName = (deck.title || tool.fileBaseName)
@@ -512,6 +714,10 @@ export async function runToolGeneration(
     if (!wb.sheets.length) {
       throw new Error("엑셀 시트가 비어 있습니다. 요청을 더 구체적으로 적어 주세요.");
     }
+    const xlsxValidation = validateWorkbook(wb);
+    if (!xlsxValidation.ok) {
+      throw new Error(xlsxValidation.issues[0]?.message ?? "엑셀 구조 검증 실패");
+    }
     input.onUploadStart?.();
     let base64: string;
     try {
@@ -538,6 +744,26 @@ export async function runToolGeneration(
         filename: `${safeName}.xlsx`,
         mimeType: XLSX_MIME,
       },
+      meta,
+    };
+  }
+
+  // word-doc: real .docx export
+  if (tool.id === "word-doc") {
+    input.onUploadStart?.();
+    const doc = parseMarkdownSections(raw);
+    const base64 = await buildDocxBase64(doc);
+    const safeName = doc.title.replace(/[\\/:*?"<>|]+/g, "").slice(0, 40) || tool.fileBaseName;
+    const blob = await put(
+      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.docx`,
+      Buffer.from(base64, "base64"),
+      { access: "public", contentType: DOCX_MIME, addRandomSuffix: true },
+    );
+    return {
+      tool,
+      outputType: "docx",
+      text: raw,
+      file: { url: blob.url, filename: `${safeName}.docx`, mimeType: DOCX_MIME },
       meta,
     };
   }

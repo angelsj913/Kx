@@ -1,0 +1,17 @@
+[
+  { "id": "rag-hybrid-1", "type": "hybrid_score", "query": "세포 분열 과정", "content": "체세포 분열은 간기, 전기, 중기, 후기, 말기로 진행됩니다.", "vectorScore": 0.4, "expectPass": true },
+  { "id": "rag-hybrid-2", "type": "hybrid_score", "query": "광합성", "content": "오늘 날씨가 맑습니다.", "vectorScore": 0.05, "expectPass": false },
+  { "id": "rag-hybrid-3", "type": "hybrid_score", "query": "RAG 검색 임계값", "content": "MIN_RETRIEVAL_SCORE 환경변수로 근거 부족 시 거절합니다.", "vectorScore": 0.35, "expectPass": true },
+  { "id": "rag-hybrid-4", "type": "hybrid_score", "query": "워크스페이스 협업", "content": "팀 워크스페이스에서 서재와 채팅을 공유할 수 있습니다.", "vectorScore": 0.3, "expectPass": true },
+  { "id": "rag-hybrid-5", "type": "hybrid_score", "query": "결제 Stripe", "content": "Stripe 웹훅으로 주문 상태를 갱신합니다.", "vectorScore": 0.25, "expectPass": true },
+  { "id": "rag-hybrid-6", "type": "hybrid_score", "query": "임베딩 provider", "content": "Gemini embedding-2를 우선 사용하고 로컬은 dev fallback입니다.", "vectorScore": 0.28, "expectPass": true },
+  { "id": "rag-hybrid-7", "type": "hybrid_score", "query": "무관한 질의", "content": "완전히 다른 주제의 텍스트입니다.", "vectorScore": 0.02, "expectPass": false },
+  { "id": "rag-hybrid-8", "type": "hybrid_score", "query": "문서 청크", "content": "DocumentChunk에 embedding Float 배열이 저장됩니다.", "vectorScore": 0.32, "expectPass": true },
+  { "id": "rag-hybrid-9", "type": "hybrid_score", "query": "하이브리드 검색", "content": "벡터 점수와 키워드 바이그램을 가중 합산합니다.", "vectorScore": 0.38, "expectPass": true },
+  { "id": "rag-hybrid-10", "type": "hybrid_score", "query": "양자역학", "content": "청크 5000 초과 시 pgvector 검토", "vectorScore": 0.05, "expectPass": false },
+  { "id": "rag-hybrid-11", "type": "hybrid_score", "query": "서재 인덱싱", "content": "libraryItem extractedText를 chunkText로 나눠 인덱싱", "vectorScore": 0.33, "expectPass": true },
+  { "id": "rag-hybrid-12", "type": "hybrid_score", "query": "cosine 유사도", "content": "topK로 코사인 유사도 상위 k개를 반환", "vectorScore": 0.36, "expectPass": true },
+  { "id": "rag-hybrid-13", "type": "hybrid_score", "query": "근거 부족", "content": "점수 미달 시 빈 결과와 거절 메시지", "vectorScore": 0.22, "expectPass": true },
+  { "id": "rag-hybrid-14", "type": "hybrid_score", "query": "한국어 토큰", "content": "한국어 바이그램 키워드 매칭", "vectorScore": 0.18, "expectPass": true },
+  { "id": "rag-hybrid-15", "type": "hybrid_score", "query": "zeff context", "content": "buildZeffRuntimeInstruction에서 RAG 주입", "vectorScore": 0.29, "expectPass": true }
+]

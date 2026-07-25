@@ -42,13 +42,7 @@ export default function Header() {
   const session = sessionResult?.data ?? null;
   const status = sessionResult?.status ?? "unauthenticated";
   const isLoggedIn = status === "authenticated";
-  // 세션의 isAdmin (Google/이메일 공통) + 이메일 fallback
-  const sessionEmail = (session?.user?.email ?? "").toLowerCase();
-  const isAdmin =
-    isLoggedIn &&
-    (!!session?.user?.isAdmin ||
-      sessionEmail === "zeff@zeffai.com" ||
-      sessionEmail === "kxeung9@gmail.com");
+  const isAdmin = isLoggedIn && session?.user?.isAdmin === true;
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -73,9 +67,13 @@ export default function Header() {
 
   return (
     <>
-      <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        scrolled ? "border-b border-slate-200/80 bg-slate-50/80 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/80" : "border-b border-transparent bg-transparent"
-      }`}>
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          scrolled
+            ? "border-b border-slate-200/40 bg-[var(--landing-header-bg-scrolled)] shadow-sm backdrop-blur-md dark:border-slate-800/50"
+            : "border-b border-transparent bg-[var(--landing-header-bg)] backdrop-blur-[2px]"
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <button type="button" aria-label={t("header.menuAria")} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
@@ -154,7 +152,7 @@ export default function Header() {
 
         <AnimatePresence>
           {menuOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-200 bg-slate-50/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-200/60 bg-[var(--landing-header-bg)] backdrop-blur-md dark:border-slate-800/60">
               <nav className="mx-auto flex max-w-6xl flex-col px-6 py-4">
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">

@@ -42,6 +42,7 @@ const ja: Record<keyof typeof ko, string> = {
   "workspace.video1": "数学問題解決デモ",
   "workspace.video2": "成果物生成デモ",
   "workspace.videoPlaceholder": "動画準備中",
+  "workspace.videoPlay": "デモを再生",
   "workspace.feature1.title": "圧倒的な処理速度",
   "workspace.feature1.desc": "複雑な数式や論理演算も、遅延なくリアルタイムに解決します。",
   "workspace.feature1.detail": "何万もの計算経路を同時に探索しながらも、応答遅延を感じさせないレベルまで抑えています。",
@@ -93,6 +94,14 @@ const ja: Record<keyof typeof ko, string> = {
   "grid.cta": "ログインして始める",
 
   "pricing.title": "料金プラン",
+  "pricing.lead.title": "勉強も仕事も、ひとつのワークスペースで",
+  "pricing.lead.subtitle": "FreeからPro、Professionalまで — 利用量・AIモデル・書庫容量で選べます。",
+  "pricing.lead.pill1.title": "十分な利用量",
+  "pricing.lead.pill1.desc": "チャット・文書生成・PPT/Excelの回数がプランごとに増えます。",
+  "pricing.lead.pill2.title": "より強力なAI",
+  "pricing.lead.pill2.desc": "上位プランほど高性能モデルと優先処理を先に使えます。",
+  "pricing.lead.pill3.title": "文書・書庫の拡張",
+  "pricing.lead.pill3.desc": "生成物のプレビューとナレッジベース保存がプランに応じて広がります。",
   "pricing.subtitle": "ニーズに合ったプランをお選びください。",
   "pricing.free.name": "free",
   "pricing.free.desc":
@@ -367,6 +376,22 @@ const ja: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "通信販売業申告番号:",
   "legal.bizInfo.privacyOfficer": "個人情報保護責任者:",
   "legal.bizInfo.contact": "お問い合わせ:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "ZEFF AI ダウンロード",
+  "downloadPage.subtitle": "インストーラーをダウンロードして実行するだけで、すぐに使い始められます。",
+  "downloadPage.recommended": "このデバイスにおすすめ",
+  "downloadPage.windows": "Windows版をダウンロード",
+  "downloadPage.mac": "macOS版をダウンロード",
+  "downloadPage.fileLabel": "インストーラー",
+  "downloadPage.reqTitle": "システム要件",
+  "downloadPage.reqOs": "OS",
+  "downloadPage.reqCpu": "プロセッサ",
+  "downloadPage.reqRam": "メモリ",
+  "downloadPage.reqDisk": "ストレージ",
+  "downloadPage.howto": "ダウンロードしたインストーラーを実行し、画面の指示に従ってインストールしてください。Windowsは.exe、macOSは.dmgファイルです。",
+  "downloadPage.version": "バージョン",
+  "downloadPage.smartScreenTitle": "インストール中にセキュリティ警告が出ますか？",
+  "downloadPage.smartScreen": "Windowsで「WindowsによってPCが保護されました」(SmartScreen)や「不明な発行元」の警告が出た場合は、[詳細情報]→[実行]を押してインストールしてください。まだコード署名証明書を適用していないため表示される正常な警告です。macOSで「未確認の開発元」警告が出た場合は、ファイルを右クリック→[開く]を選択してください。",
 };
 
 export default ja;

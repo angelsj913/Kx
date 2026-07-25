@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Sparkles, Download, FileText, Presentation, Table2 } from "lucide-react";
 import type { Deck, Workbook, GeneratedFile } from "@/lib/fileTypes";
 import { useT } from "@/lib/i18n";
+import PanelShell from "@/components/structured/PanelShell";
 
 export default function FileResultPanel({
   outputType,
@@ -19,15 +21,17 @@ export default function FileResultPanel({
   const isPptx = outputType === "pptx";
   const title = isPptx ? deck?.title : workbook?.title;
   const HeaderIcon = isPptx ? Presentation : Table2;
+  const [activeSlide, setActiveSlide] = useState(0);
+  const selectedSlide = deck?.slides[activeSlide];
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />
-          <span className="truncate">{title || t("fileResult.defaultTitle")}</span>
-        </h2>
-        {file && (
+    <PanelShell
+      icon={<Sparkles className="h-4 w-4 shrink-0 text-[var(--mode-accent)]" />}
+      title={<span className="truncate">{title || t("fileResult.defaultTitle")}</span>}
+      headerClassName="gap-2"
+      titleClassName="min-w-0"
+      actions={
+        file && (
           <a
             href={file.url}
             download={file.filename}
@@ -36,9 +40,9 @@ export default function FileResultPanel({
             <Download className="h-3.5 w-3.5" />
             {isPptx ? t("fileResult.downloadPpt") : t("fileResult.downloadExcel")}
           </a>
-        )}
-      </div>
-
+        )
+      }
+    >
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {isPptx && deck ? (
           <div className="space-y-3">
@@ -53,6 +57,43 @@ export default function FileResultPanel({
                 {deck.subtitle && (
                   <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{deck.subtitle}</p>
                 )}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {deck.slides.map((s, i) => (
+                <button
+                  type="button"
+                  key={`thumb-${i}`}
+                  onClick={() => setActiveSlide(i)}
+                  className={`aspect-video overflow-hidden rounded-lg border bg-gradient-to-br p-2 text-left transition ${
+                    activeSlide === i
+                      ? "border-blue-500 ring-2 ring-blue-500/30 dark:border-blue-400"
+                      : "border-slate-200 from-slate-100 to-slate-200 hover:border-blue-300 dark:border-slate-700 dark:from-slate-800 dark:to-slate-900"
+                  }`}
+                  title={s.title}
+                >
+                  <p className="text-[9px] font-bold text-slate-500">{i + 1}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold text-slate-800 dark:text-slate-100">
+                    {s.title}
+                  </p>
+                  {s.bullets?.[0] && (
+                    <p className="mt-1 line-clamp-2 text-[9px] text-slate-500">{s.bullets[0]}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+            {selectedSlide && (
+              <div className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm duration-300 dark:border-slate-700 dark:bg-slate-950/40">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--mode-accent)]">
+                  Slide {activeSlide + 1} · {selectedSlide.layout ?? "content"}
+                </p>
+                <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">{selectedSlide.title}</h3>
+                {selectedSlide.subtitle && <p className="mt-1 text-sm text-slate-500">{selectedSlide.subtitle}</p>}
+                {selectedSlide.bullets?.length ? (
+                  <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                    {selectedSlide.bullets.map((bullet, index) => <li key={index}>{bullet}</li>)}
+                  </ul>
+                ) : null}
               </div>
             )}
             <ol className="space-y-3">
@@ -210,6 +251,6 @@ export default function FileResultPanel({
           </div>
         )}
       </div>
-    </div>
+    </PanelShell>
   );
 }

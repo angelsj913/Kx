@@ -1,7 +1,7 @@
 /**
  * OpenAI 호환 Chat Completions — 다중 제공자.
  */
-import { MissingApiKeyError, type ChatMessage } from "./gemini";
+import { MissingApiKeyError, SafetyRefusalError, type ChatMessage } from "./gemini";
 import type { ToolDef } from "./tools";
 import type { Provider } from "./models";
 
@@ -12,6 +12,31 @@ export interface CompatProviderConfig {
   defaultModel: string;
   extraHeaders?: Record<string, string>;
   missingKeyMessage: string;
+}
+
+export interface GeneratedImage {
+  data: string;
+  mimeType: string;
+  model: string;
+}
+
+type OpenRouterCapabilityCache = {
+  expiresAt: number;
+  visionModels: string[];
+  imageModels: string[];
+};
+
+let openRouterCapabilities: OpenRouterCapabilityCache | null = null;
+let openRouterCapabilitiesPending: Promise<OpenRouterCapabilityCache> | null = null;
+const CAPABILITY_CACHE_MS = 10 * 60 * 1000;
+
+function configuredModels(name: string, fallback: string[]): string[] {
+  const raw = process.env[name]?.trim();
+  return raw ? raw.split(",").map((model) => model.trim()).filter(Boolean) : fallback;
+}
+
+function safetyRefusal(message: string): boolean {
+  return /(?:safety|content policy|moderation|policy violation|blocked)/i.test(message);
 }
 
 export const PROVIDER_CONFIG: Record<
@@ -488,6 +513,180 @@ export function hasProviderKey(provider: Provider): boolean {
   const cfg = PROVIDER_CONFIG[provider as Exclude<Provider, "gemini">];
   if (!cfg) return false;
   return !!process.env[cfg.envKey]?.trim();
+}
+
+/**
+ * OpenRouter의 OpenAI 호환 이미지 생성 엔드포인트.
+ * 모델은 배포 환경에서 OPENROUTER_IMAGE_MODEL로 교체할 수 있으며, Gemini 키에 의존하지 않는다.
+ */
+export async function openRouterGenerateImage(input: {
+  prompt: string;
+  model?: string;
+}): Promise<GeneratedImage> {
+  const cfg = PROVIDER_CONFIG.openrouter;
+  const key = requireKey(cfg);
+  const model = input.model || process.env.OPENROUTER_IMAGE_MODEL || "openai/gpt-image-1";
+  const res = await fetch("https://openrouter.ai/api/v1/images", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(cfg.extraHeaders ?? {}),
+    },
+    body: JSON.stringify({
+      model,
+      prompt: input.prompt,
+      resolution: "1K",
+      output_format: "png",
+    }),
+  });
+  if (!res.ok) {
+    let detail = `OpenRouter 이미지 생성 오류 (${res.status})`;
+    try {
+      detail = extractErrorMessage(await res.json(), detail);
+    } catch {
+      /* keep status message */
+    }
+    if (safetyRefusal(detail)) throw new SafetyRefusalError(detail);
+    throw new Error(detail);
+  }
+  const payload = await res.json();
+  const image = payload?.data?.[0];
+  if (typeof image?.b64_json === "string" && image.b64_json) {
+    return { data: image.b64_json, mimeType: "image/png", model };
+  }
+  if (typeof image?.url === "string" && image.url) {
+    const downloaded = await fetch(image.url);
+    if (!downloaded.ok) throw new Error("생성된 이미지를 가져오지 못했습니다.");
+    const type = downloaded.headers.get("content-type") || "image/png";
+    return {
+      data: Buffer.from(await downloaded.arrayBuffer()).toString("base64"),
+      mimeType: type,
+      model,
+    };
+  }
+  throw new Error("OpenRouter가 이미지 데이터를 반환하지 않았습니다.");
+}
+
+async function discoverOpenRouterCapabilities(): Promise<OpenRouterCapabilityCache> {
+  const cfg = PROVIDER_CONFIG.openrouter;
+  const key = requireKey(cfg);
+  const headers = {
+    Authorization: `Bearer ${key}`,
+    ...(cfg.extraHeaders ?? {}),
+  };
+  const [visionResult, imageResult] = await Promise.allSettled([
+    fetch("https://openrouter.ai/api/v1/models?input_modalities=image", {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    }),
+    fetch("https://openrouter.ai/api/v1/images/models", {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    }),
+  ]);
+  const ids = async (result: PromiseSettledResult<Response>): Promise<string[]> => {
+    if (result.status !== "fulfilled" || !result.value.ok) return [];
+    const data = await result.value.json().catch(() => ({}));
+    const rows = Array.isArray(data?.data) ? data.data : [];
+    return rows
+      .map((row: { id?: unknown; slug?: unknown }) =>
+        typeof row.id === "string" ? row.id : typeof row.slug === "string" ? row.slug : "",
+      )
+      .filter(Boolean);
+  };
+  return {
+    expiresAt: Date.now() + CAPABILITY_CACHE_MS,
+    visionModels: await ids(visionResult),
+    imageModels: await ids(imageResult),
+  };
+}
+
+async function capabilities(): Promise<OpenRouterCapabilityCache> {
+  if (openRouterCapabilities && openRouterCapabilities.expiresAt > Date.now()) {
+    return openRouterCapabilities;
+  }
+  if (!openRouterCapabilitiesPending) {
+    openRouterCapabilitiesPending = discoverOpenRouterCapabilities()
+      .then((result) => {
+        openRouterCapabilities = result;
+        return result;
+      })
+      .finally(() => {
+        openRouterCapabilitiesPending = null;
+      });
+  }
+  return openRouterCapabilitiesPending;
+}
+
+function filterVisionModels(preferred: string[], available: Set<string>): string[] {
+  const availableBase = new Set([...available].map((model) => model.replace(/:free$/, "")));
+  return preferred.filter(
+    (model) =>
+      available.size === 0 ||
+      available.has(model) ||
+      availableBase.has(model.replace(/:free$/, "")),
+  );
+}
+
+/** 무료 OpenRouter 비전 모델 — OPENROUTER_VISION_MODELS env, :free 접미사 우선. */
+export async function getOpenRouterVisionModelsFree(): Promise<string[]> {
+  const preferred = configuredModels("OPENROUTER_VISION_MODELS", [
+    "qwen/qwen2.5-vl-72b-instruct:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
+  ]);
+  try {
+    const available = new Set((await capabilities()).visionModels);
+    return filterVisionModels(preferred, available).slice(0, 2);
+  } catch {
+    return preferred.slice(0, 2);
+  }
+}
+
+/** 유료 OpenRouter 비전 모델 — OPENROUTER_VISION_PAID_MODELS env. */
+export async function getOpenRouterVisionModelsPaid(): Promise<string[]> {
+  const preferred = configuredModels("OPENROUTER_VISION_PAID_MODELS", [
+    "qwen/qwen2.5-vl-72b-instruct",
+    "meta-llama/llama-3.2-11b-vision-instruct",
+  ]);
+  try {
+    const available = new Set((await capabilities()).visionModels);
+    return filterVisionModels(preferred, available).slice(0, 2);
+  } catch {
+    return preferred.slice(0, 2);
+  }
+}
+
+/** @deprecated Use getOpenRouterVisionModelsFree() for interleaved vision routing. */
+export async function getOpenRouterVisionModels(): Promise<string[]> {
+  return getOpenRouterVisionModelsFree();
+}
+
+/**
+ * 비용 순서 OpenRouter 이미지 폴백 (primary 제외).
+ * API 카탈로그 전체를 쓰지 않는다 — 크레딧 부족 시 40+회 연쇄 실패를 막기 위해
+ * env에 명시한 모델만 최대 MAX_IMAGE_FALLBACKS개 사용한다.
+ */
+const MAX_IMAGE_FALLBACKS = 2;
+
+export async function getOpenRouterImageModels(): Promise<string[]> {
+  const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
+  // 기본 폴백: 비교적 저가·널리 지원되는 모델 2개 (env로 교체 가능)
+  const preferred = configuredModels("OPENROUTER_IMAGE_FALLBACK_MODELS", [
+    "black-forest-labs/flux.2-klein-4b",
+    "google/gemini-2.5-flash-image",
+  ]).filter((model) => model !== primary);
+
+  try {
+    const available = new Set((await capabilities()).imageModels);
+    const filtered =
+      available.size === 0
+        ? preferred
+        : preferred.filter((model) => available.has(model));
+    return [...new Set(filtered)].slice(0, MAX_IMAGE_FALLBACKS);
+  } catch {
+    return preferred.slice(0, MAX_IMAGE_FALLBACKS);
+  }
 }
 
 export function listConfiguredProviders(): {

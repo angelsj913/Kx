@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { getMembership, itemAccessWhere, roleAtLeast } from "@/lib/workspace";
 
@@ -10,14 +10,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
 
   const item = await prisma.libraryItem.findFirst({
-    where: { id, ...(await itemAccessWhere(session.user.id)) },
+    where: { id, ...(await itemAccessWhere(userId)) },
   });
   if (!item) {
     return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 });
@@ -30,11 +28,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
 
   const item = await prisma.libraryItem.findFirst({

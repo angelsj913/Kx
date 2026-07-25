@@ -1,0 +1,12 @@
+[
+  { "id": "math-1", "type": "math_verify", "text": "풀이...\n**답:** 42\n```verify\n{\"checks\":[{\"expr\":\"40+2\",\"expected\":42}]}\n```", "expectOk": true },
+  { "id": "math-2", "type": "math_verify", "text": "**답:** 10\n```verify\n{\"checks\":[{\"expr\":\"5*2\",\"expected\":10}]}\n```", "expectOk": true },
+  { "id": "math-3", "type": "math_verify", "text": "**답:** 3.142857\n```verify\n{\"checks\":[{\"expr\":\"22/7\",\"expected\":3.142857}]}\n```", "expectOk": true },
+  { "id": "math-4", "type": "math_verify", "text": "**답:** 100\n```verify\n{\"checks\":[{\"expr\":\"10^2\",\"expected\":99}]}\n```", "expectOk": false },
+  { "id": "math-5", "type": "math_verify", "text": "**답:** 0\n```verify\n{\"checks\":[{\"expr\":\"0\",\"expected\":0}]}\n```", "expectOk": true },
+  { "id": "math-6", "type": "math_verify", "text": "**답:** 15\n```verify\n{\"checks\":[{\"expr\":\"3+4*3\",\"expected\":15}]}\n```", "expectOk": true },
+  { "id": "math-7", "type": "math_verify", "text": "**답:** 2\n```verify\n{\"checks\":[{\"expr\":\"sqrt(4)\",\"expected\":2}]}\n```", "expectOk": true },
+  { "id": "math-8", "type": "math_verify", "text": "**답:** 1\n```verify\n{\"checks\":[{\"expr\":\"sin(0)\",\"expected\":1}]}\n```", "expectOk": false },
+  { "id": "math-9", "type": "math_verify", "text": "**답:** 256\n```verify\n{\"checks\":[{\"expr\":\"2^8\",\"expected\":256}]}\n```", "expectOk": true },
+  { "id": "math-10", "type": "math_verify", "text": "**답:** 7\n```verify\n{\"checks\":[{\"expr\":\"3+4\",\"expected\":7}]}\n```", "expectOk": true }
+]

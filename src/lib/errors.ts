@@ -1,11 +1,28 @@
 import { MissingApiKeyError } from "./gemini";
+import { getProviderCooldownMinutes } from "./providerHealth";
+import { PipelineStageError } from "./pipelineLog";
 
 /** 원본 오류 → 사용자가 조치할 수 있는 한국어 메시지 */
 export function friendlyError(err: unknown): string {
   if (err instanceof MissingApiKeyError) return err.message;
+  if (err instanceof PipelineStageError) {
+    return err.message.replace(/^\[[^\]]+\]\s*/, "");
+  }
 
   const msg = err instanceof Error ? err.message : String(err ?? "");
   const lower = msg.toLowerCase();
+
+  if (
+    lower.includes("blob credentials") ||
+    lower.includes("blob_read_write_token") ||
+    lower.includes("image-gen/blob-upload")
+  ) {
+    return "이미지 저장(업로드)에 실패했습니다. 서버 BLOB_READ_WRITE_TOKEN 설정을 확인해 주세요.";
+  }
+
+  if (lower.includes("image-gen/upscale")) {
+    return "생성된 이미지 확대(2배)에 실패했습니다. 다시 시도해 주세요.";
+  }
 
   if (
     lower.includes("api key not valid") ||
@@ -19,9 +36,17 @@ export function friendlyError(err: unknown): string {
 
   if (
     lower.includes("insufficient credits") ||
-    lower.includes("never purchased credits")
+    lower.includes("never purchased credits") ||
+    lower.includes("purchase more at https://openrouter.ai")
   ) {
-    return "OpenRouter 크레딧이 없습니다. free 모델·Groq·DeepSeek 키를 쓰거나 openrouter.ai에서 충전하세요.";
+    return "OpenRouter 크레딧이 없습니다. openrouter.ai/settings/credits 에서 충전하거나, GEMINI_API_KEY 이미지 생성 할당량을 확인해 주세요.";
+  }
+
+  if (
+    lower.includes("prepayment credits are depleted") ||
+    (lower.includes("resource_exhausted") && lower.includes("prepay"))
+  ) {
+    return "Gemini 선불 크레딧이 소진되었습니다. AI Studio(https://ai.studio/projects)에서 결제·할당량을 확인하거나 OpenRouter 크레딧을 충전한 뒤 다시 시도해 주세요.";
   }
 
   if (lower.includes("deepseek") && (lower.includes("balance") || lower.includes("insufficient"))) {
@@ -33,7 +58,16 @@ export function friendlyError(err: unknown): string {
     lower.includes("generate_content_free_tier") ||
     (lower.includes("gemini") && lower.includes("quota"))
   ) {
-    return "Gemini 무료 할당량이 없습니다. OpenRouter 키로 자동 전환됩니다. Google AI Studio에서 할당량/결제를 열면 Gemini도 다시 쓸 수 있습니다.";
+    const mins = getProviderCooldownMinutes("gemini");
+    const cooldown =
+      mins != null && mins > 0
+        ? ` 약 ${mins}분 후 Gemini 이미지·PDF 분석을 다시 시도할 수 있습니다.`
+        : "";
+    return (
+      "Gemini 무료 할당량이 소진되었습니다. Google AI Studio에서 할당량을 확인하거나, 잠시 후 다시 시도해 주세요." +
+      cooldown +
+      " (텍스트 채팅은 다른 제공자로 자동 전환될 수 있습니다.)"
+    );
   }
 
   if (

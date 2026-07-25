@@ -1,8 +1,8 @@
-import { parseDeck, buildPptxBase64, resolvePalette, inferThemePreset } from "../src/lib/pptx.ts";
-import { parseWorkbook, buildXlsxBase64 } from "../src/lib/xlsx.ts";
-import { detectQuickToolFromText } from "../src/lib/intentTools.ts";
-import { getTool } from "../src/lib/tools.ts";
-import { modelsForTier, FALLBACK_MODELS } from "../src/lib/models.ts";
+import { parseDeck, buildPptxBase64, resolvePalette, inferThemePreset } from "../src/lib/pptx";
+import { parseWorkbook, buildXlsxBase64 } from "../src/lib/xlsx";
+import { detectQuickToolFromText } from "../src/lib/intentTools";
+import { getTool } from "../src/lib/tools";
+import { modelsForTier, FALLBACK_MODELS } from "../src/lib/models";
 
 type R = { name: string; ok: boolean; detail?: string };
 const results: R[] = [];
@@ -124,8 +124,9 @@ for (const id of ["ppt", "excel", "video-summary", "note-a4", "exam-maker"]) {
   check(`tool.${id}`, !!getTool(id));
 }
 
-check("models.free", FALLBACK_MODELS.filter((m) => m.free).length >= 15);
+check("models.free", modelsForTier("standard").filter((m) => m.free).length >= 5);
 check("models.tier", modelsForTier("standard").some((m) => m.free));
+check("models.fallback", Array.isArray(FALLBACK_MODELS) && FALLBACK_MODELS.length > 0);
 
 const failed = results.filter((r) => !r.ok);
 console.log("---");

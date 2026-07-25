@@ -58,8 +58,10 @@ export default function Pricing() {
   const professionalHref = `/checkout?plan=professional${annual ? "&interval=year" : ""}`;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/40 to-white pb-28 pt-20 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950">
-      {/* 아래 섹션(이럴 때 Zeff)과 경계가 끊기지 않도록 하단 페이드 */}
+    <section
+      id="pricing"
+      className="relative scroll-mt-24 overflow-hidden bg-gradient-to-b from-slate-50 via-slate-100/40 to-white pb-28 pt-20 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-white dark:to-slate-950"

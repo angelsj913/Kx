@@ -1,4 +1,10 @@
-/** 영상 URL 파싱 및 메타 보강 (YouTube oEmbed 등) */
+/** 영상 URL 파싱 및 메타·자막 보강 */
+
+import {
+  fetchYoutubeTranscript,
+  chunkTranscript,
+  type TranscriptResult,
+} from "./youtubeTranscript";
 
 const URL_RE = /https?:\/\/[^\s<>"')\]]+/gi;
 
@@ -35,16 +41,23 @@ export interface VideoMeta {
   title?: string;
   author?: string;
   thumbnail?: string;
+  /** 자막 기반 분석 가능 여부 */
+  hasTranscript?: boolean;
+  transcriptLanguage?: string;
+}
+
+export interface VideoEnrichment {
+  enrichedText: string;
+  meta: VideoMeta | null;
+  transcript: TranscriptResult | null;
+  transcriptChunks: { idx: number; content: string; startSec: number }[];
 }
 
 /**
- * 텍스트 속 URL을 찾아 메타를 붙인 프롬프트로 확장.
- * 네트워크 실패 시 원문 + URL 힌트만 반환.
+ * 텍스트 속 URL을 찾아 oEmbed 메타 + YouTube 자막을 붙인 프롬프트로 확장.
+ * 자막 없으면 추측 금지 지시를 강화한다.
  */
-export async function enrichVideoSummaryPrompt(userText: string): Promise<{
-  enrichedText: string;
-  meta: VideoMeta | null;
-}> {
+export async function enrichVideoSummaryPrompt(userText: string): Promise<VideoEnrichment> {
   const url = extractFirstUrl(userText);
   if (!url) {
     return {
@@ -52,6 +65,8 @@ export async function enrichVideoSummaryPrompt(userText: string): Promise<{
         ? userText
         : "첨부된 오디오·이미지·대본을 바탕으로 영상/강의 요약을 작성해 주세요.",
       meta: null,
+      transcript: null,
+      transcriptChunks: [],
     };
   }
 
@@ -61,6 +76,8 @@ export async function enrichVideoSummaryPrompt(userText: string): Promise<{
     platform: ytId ? "youtube" : "other",
     videoId: ytId ?? undefined,
   };
+
+  let transcript: TranscriptResult | null = null;
 
   if (ytId) {
     try {
@@ -82,7 +99,21 @@ export async function enrichVideoSummaryPrompt(userText: string): Promise<{
     } catch {
       /* oEmbed 실패 시 무시 */
     }
+
+    try {
+      transcript = await fetchYoutubeTranscript(ytId);
+      if (transcript) {
+        meta.hasTranscript = true;
+        meta.transcriptLanguage = transcript.language;
+      } else {
+        meta.hasTranscript = false;
+      }
+    } catch {
+      meta.hasTranscript = false;
+    }
   }
+
+  const transcriptChunks = transcript ? chunkTranscript(transcript.segments) : [];
 
   const lines = [
     userText.trim() || "아래 영상을 시스템 지침에 따라 학습 노트 형식으로 요약·정리해 주세요.",
@@ -94,15 +125,39 @@ export async function enrichVideoSummaryPrompt(userText: string): Promise<{
     meta.title ? `제목: ${meta.title}` : null,
     meta.author ? `채널/작성자: ${meta.author}` : null,
     meta.thumbnail ? `썸네일: ${meta.thumbnail}` : null,
+    meta.hasTranscript === true
+      ? `자막: 있음 (${meta.transcriptLanguage ?? "unknown"}) — 아래 본문을 최우선 근거로 사용`
+      : meta.hasTranscript === false
+        ? "자막: 없음 — **제목·메타만으로 본문을 추측·날조하지 마세요.** 한계를 명시하고 첨부 자료만 사용"
+        : null,
     "",
-    "[작성 지시]",
-    "- 제목·채널에서 주제를 읽고 섹션형 학습 노트로 풍부하게 작성하세요.",
-    "- 영상 본문/자막에 직접 접근할 수 없으면 상단에 한계를 한 줄 명시하되, 빈 요약은 금지.",
-    "- 핵심 키워드·섹션별 요점·복습 질문·한 페이지 요약을 채우세요.",
-    "- 첨부 대본·오디오·이미지가 있으면 그것을 최우선 근거로 사용하세요.",
   ].filter((x) => x !== null);
 
-  return { enrichedText: lines.join("\n"), meta };
+  if (transcript?.fullText) {
+    const excerpt = transcript.fullText.slice(0, 12000);
+    lines.push(
+      "[자막 본문 — 인용·요약의 1차 근거]",
+      excerpt,
+      transcript.fullText.length > 12000 ? `\n...(자막 ${transcript.fullText.length}자 중 앞 12000자)` : "",
+      "",
+    );
+  }
+
+  lines.push(
+    "[작성 지시]",
+    meta.hasTranscript
+      ? "- 자막 본문을 섹션형 학습 노트로 풍부하게 작성하고, 핵심 구절을 인용하세요."
+      : "- 자막·첨부·오디오가 없으면 '본문 분석 불가'를 명시하고 메타 기반 추측 요약을 하지 마세요.",
+    "- 핵심 키워드·섹션별 요점·복습 질문·한 페이지 요약을 채우세요.",
+    "- 첨부 대본·오디오·이미지가 있으면 자막과 함께 교차 검증하세요.",
+  );
+
+  return {
+    enrichedText: lines.join("\n"),
+    meta,
+    transcript,
+    transcriptChunks,
+  };
 }
 
 /** 마크다운 파일로 저장할 때 붙일 헤더 */

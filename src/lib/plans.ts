@@ -21,6 +21,13 @@ export interface PlanDef {
   bullets: string[];
   /** 월 문서/채팅 생성 상한 (null = 플랜 정책상 별도) */
   monthlyDocuments: number | null;
+  /** 월 일반 채팅 메시지 상한 */
+  monthlyMessages: number | null;
+  /** 이미지 생성·고화질 확대 월 상한 */
+  imageGenerationMonthly: number | null;
+  imageUpscaleMonthly: number | null;
+  /** 서재 저장 용량(MB) */
+  storageMaxMb: number;
   /** 동시 활성 세션 */
   concurrentSessions: number;
   /** PPT/엑셀: free=주 1, pro=월 20, professional=월 여유 */
@@ -52,6 +59,7 @@ export const PLANS: Record<PlanId, PlanDef> = {
     description: "가볍게 시작해 보는 기본 플랜",
     bullets: [
       "기본 AI 채팅",
+      "월 30회 AI 메시지",
       "월 5회 문서 생성",
       "PPT · 엑셀 체험 (주 1회)",
       "표준 모델 사용",
@@ -59,6 +67,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
       "서재 저장 5개",
     ],
     monthlyDocuments: 5,
+    monthlyMessages: 30,
+    imageGenerationMonthly: 3,
+    imageUpscaleMonthly: 5,
+    storageMaxMb: 100,
     concurrentSessions: 1,
     pptxXlsxLimit: { period: "week", max: 1 },
     libraryMax: 5,
@@ -82,6 +94,7 @@ export const PLANS: Record<PlanId, PlanDef> = {
     bullets: [
       "실무에 맞춘 확장 작업 환경",
       "무료 대비 약 30배 이용량",
+      "월 2,000회 AI 메시지",
       "우선 처리 큐 배정",
       "더 강력한 AI 모델 우선 사용",
       "PPT · 엑셀 · 문서 생성",
@@ -89,6 +102,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
       "이메일 우선 지원",
     ],
     monthlyDocuments: 150,
+    monthlyMessages: 2000,
+    imageGenerationMonthly: 100,
+    imageUpscaleMonthly: 200,
+    storageMaxMb: 5_000,
     concurrentSessions: 5,
     pptxXlsxLimit: { period: "month", max: 20 },
     libraryMax: 100,
@@ -112,6 +129,7 @@ export const PLANS: Record<PlanId, PlanDef> = {
     bullets: [
       "Pro 기능 + 확장 한도",
       "무료 대비 약 100배 이용량",
+      "월 10,000회 AI 메시지",
       "최상급 AI 모델 우선 사용 + 정밀 검수",
       "시험지 분석 · 유사문제 생성 확대 한도",
       "전담 지원 채널",
@@ -119,6 +137,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
       "팀 계정 연동 (준비 중)",
     ],
     monthlyDocuments: 500,
+    monthlyMessages: 10_000,
+    imageGenerationMonthly: 500,
+    imageUpscaleMonthly: 1_000,
+    storageMaxMb: 25_000,
     concurrentSessions: 20,
     pptxXlsxLimit: { period: "month", max: 100 },
     libraryMax: 500,
@@ -154,11 +176,13 @@ export function newMerchantUid(): string {
 
 /** 퀵툴 id → 쿼터 feature 키 */
 export function featureForTool(toolId: string | null | undefined): string {
-  if (!toolId || toolId === "chat") return "document";
+  if (!toolId || toolId === "chat") return "chat";
   if (toolId === "ppt" || toolId === "presentation" || toolId === "pptx") return "pptx";
   if (toolId === "excel" || toolId === "xlsx") return "xlsx";
   if (toolId === "exam-analysis") return "exam-analysis";
   if (toolId === "similar-problems" || toolId === "exam-similarity") return "similar-problems";
   if (toolId === "exam-maker") return "exam-maker";
+  if (toolId === "image-gen") return "image-generation";
+  if (toolId === "image-upscale") return "image-upscale";
   return "document";
 }

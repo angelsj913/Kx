@@ -25,7 +25,7 @@ import {
 import type { StructuredKind } from "./structured";
 
 export type InputType = "text" | "url" | "audio" | "image" | "chat" | "mixed";
-export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image";
+export type OutputType = "markdown" | "pptx" | "xlsx" | "structured" | "image" | "docx";
 
 export interface ToolDef {
   /** 안정적인 고유 식별자 (히스토리 저장에도 사용) */
@@ -133,7 +133,8 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
    - 전문 용어 + 쉬운 비유를 같이.
 5) notes: 발표자가 그대로 읽을 수 있는 3~5문장 대본(각 슬라이드마다), 청중 질문 예상 1개 포함 가능.
 6) 모든 텍스트 한국어. 빈 slides/빈 bullets/빈 table 금지. bullets가 비면 안 된다.
-7) JSON 외 문자 금지.`;
+7) 같은 레이아웃을 연속 2장 이상 반복하지 말고, 각 장에 대비·흐름·비교·강조 중 하나의 시각적 리듬을 넣는다.
+8) JSON 외 문자 금지.`;
 
 const EXCEL_INSTRUCTION = `너는 대기업 사무 전문가이다. 사용자가 원하는 보고서/표 요구사항을 입력하면, 엑셀로 바로 저장할 수 있는 표 데이터를 설계해야 한다.
 
@@ -184,10 +185,12 @@ const LECTURE_INSTRUCTION = `너는 학생의 학습을 돕는 유능한 조교�
 [출력 포맷 지침]
 - 마크다운 문법(제목, 굵게, 목록)을 활용해 구조화하라.
 - 다음 순서로 정리하라.
-  1. **한 줄 요약**: 영상의 핵심 주제를 한 문장으로.
-  2. **핵심 내용 정리**: 중요한 개념과 설명을 항목별로 정리.
-  3. **꼭 기억할 포인트**: 시험이나 복습에 중요한 부분을 강조.
-  4. **예상 질문**: 이해도를 점검할 수 있는 질문 2~3개.
+  1. **학습 목표**: 이 강의를 끝내고 설명할 수 있어야 할 것 2~3개.
+  2. **강의 흐름**: 개념이 어떤 순서와 인과관계로 전개되는지.
+  3. **핵심 개념 카드**: 정의·예시·헷갈리기 쉬운 점을 세트로.
+  4. **시험 대비 체크**: 출제될 만한 포인트와 오답 유발 요소.
+  5. **셀프 퀴즈**: 정답을 바로 보지 않아도 되는 회상 질문 3개.
+- 일반 영상 리뷰·메타·액션 아이템을 쓰지 말고, 반드시 수업 복습 자료처럼 작성한다.
 - 모든 내용은 한국어로 작성한다.`;
 
 const AUDIO_INSTRUCTION = `너는 학생의 학습을 돕는 유능한 조교이다. 제공된 수업/강의 녹음 오디오를 듣고, 학생이 복습하기 좋게 필기 형태로 정리해야 한다.
@@ -815,10 +818,10 @@ export const TOOLS: ToolDef[] = [
     label: "워드 문서 작성",
     short: "워드",
     title: "워드 문서 작성",
-    description: "워드에 바로 붙여넣을 수 있는 완성 문서를 마크다운 구조로 작성합니다.",
+    description: "워드에 바로 쓸 수 있는 .docx 파일을 생성합니다.",
     icon: FileText,
     inputType: "text",
-    outputType: "markdown",
+    outputType: "docx",
     systemInstruction: WORD_DOC_INSTRUCTION,
     placeholder: "예) 주간 업무 보고 문서 / 제안서 초안 …",
     submitLabel: "문서 작성",
@@ -867,6 +870,21 @@ export const TOOLS: ToolDef[] = [
     placeholder: "예) 파란 하늘 아래 놓인 노트북과 커피잔, 수채화 스타일",
     submitLabel: "이미지 생성",
     fileBaseName: "generated-image",
+  },
+  {
+    id: "image-upscale",
+    label: "이미지 고화질 확대",
+    short: "고화질 확대",
+    title: "이미지 고화질 확대",
+    description: "이미지를 2배 해상도로 확대해 다운로드할 수 있습니다.",
+    icon: ImagePlus,
+    inputType: "image",
+    outputType: "image",
+    systemInstruction: "",
+    placeholder: "확대할 이미지를 첨부하세요.",
+    submitLabel: "2배 확대",
+    fileBaseName: "upscaled-image",
+    acceptFiles: "image/*",
   },
   {
     // 에이전트는 일반 도구가 아니라, 챗 라우트가 quickToolId==="agent"로 가로채

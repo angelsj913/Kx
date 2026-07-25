@@ -57,6 +57,12 @@ model User {
   assignedBoardTasks   WorkBoardTask[]       @relation("WorkBoardAssignee")
   savedInsights        SavedInsight[]
   loginEvents          LoginEvent[]
+  answerFeedbacks      AnswerFeedback[]
+  aiProfile            UserAiProfile?
+  learnedQaPairs       LearnedQaPair[]
+  memories             UserMemory[]
+
+  @@index([accountStatus, lastActiveAt])
 }
 
 /** 친구 추천 성사 기록 — 추천인(referrer)이 피추천인(referred)을 데려온 1건. 피추천인당 1회. */
@@ -184,6 +190,68 @@ model ChatHistory {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
+}
+
+// ── AI 답변 피드백 (품질 측정·학습 루프) ──
+model AnswerFeedback {
+  id            String   @id @default(cuid())
+  userId        String
+  chatHistoryId String?
+  sessionId     String?
+  toolId        String?
+  rating        Int
+  reason        String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatHistoryId])
+  @@index([userId, createdAt])
+  @@index([toolId, rating])
+}
+
+// ── 사용자별 AI 선호 (자동 학습 1차) ──
+model UserAiProfile {
+  userId            String   @id
+  preferredTone     String?
+  preferredLanguage String?  @default("ko")
+  commonToolIds     String[] @default([])
+  negativePatterns  Json?
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── thumbs-up / 수정 답변 기반 학습 Q&A ──
+model LearnedQaPair {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String?
+  question    String   @db.Text
+  answer      String   @db.Text
+  source      String
+  embedding   Float[]
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/** 사용자가 대화에서 밝힌 장기 선호·사실. 사용자가 언제든 검토·삭제할 수 있다. */
+model UserMemory {
+  id              String   @id @default(cuid())
+  userId          String
+  content         String   @db.Text
+  category        String
+  confidence      Float    @default(0.8)
+  sourceSessionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
 }
 
 model LibraryItem {
@@ -352,6 +420,10 @@ model UserSettings {
   stripeCustomerId  String?
   /** 관리자가 사용자 AI 를 개별 차단할 때 true */
   aiDisabled        Boolean  @default(false)
+  /** 대화에서 장기 선호·사실을 자동 저장해 다음 세션에 반영할지 */
+  memoryEnabled     Boolean  @default(true)
+  /** 사용자가 직접 선택한 응답 성격. 자동 학습보다 우선한다. */
+  preferredTone     String   @default("balanced")
   /** 추천 보상 등 한시적 플랜 부여(유료 plan과 별개). 만료 후 자동 무시. */
   grantedPlan       String?
   grantedPlanUntil  DateTime?
@@ -556,4 +628,76 @@ model SecurityProgramSettings {
   notifyOnCritical  Boolean  @default(true)
   updatedAt         DateTime @updatedAt
   updatedById       String?
+/** 관리자 보안 콘솔 감사 로그 — append-only */
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  adminEmail String?
+  action     String
+  target     String?
+  meta       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+}
+
+/** 암호화 백업 이력 */
+model BackupRecord {
+  id          String    @id @default(cuid())
+  status      String    @default("pending")
+  trigger     String    @default("manual")
+  sizeBytes   BigInt?
+  fileName    String?
+  error       String?   @db.Text
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  adminEmail  String?
+
+  @@index([startedAt])
+  @@index([status, startedAt])
+}
+
+/** 규칙 기반 위험 이벤트 — append-only */
+model SecurityThreatEvent {
+  id         String    @id @default(cuid())
+  type       String
+  severity   String    @default("medium")
+  title      String
+  summary    String    @db.Text
+  source     String?
+  meta       Json?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([severity, createdAt])
+  @@index([type, createdAt])
+}
+
+/** AI/OSS 취약점 스캔 이력 */
+model VulnerabilityScan {
+  id          String    @id @default(cuid())
+  status      String    @default("pending")
+  trigger     String    @default("manual")
+  fileName    String?
+  reportJson  Json?
+  error       String?   @db.Text
+  adminEmail  String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([startedAt])
+}
+
+/** 관리자 RBAC 역할 (allowlist 보조) */
+model AdminRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String   @default("readonly")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
 }

@@ -1,3 +1,32 @@
+/**
+ * ZEFF AI 모델 라우팅
+ *
+ * ── 라우팅 규칙 (2026-07) ──
+ *
+ * 1. 비전/이미지 인식 (free-capable)
+ *    BEFORE: Gemini free → OR free block → Groq free (전부 무료, 유료 없음)
+ *    AFTER:  Free → Paid → Free → Paid 교차 (interleaveFreePaid)
+ *    경로: buildVisionCandidates() — ai.ts, backendRoute(hasFiles), toolGeneration
+ *
+ * 2. 이미지 생성
+ *    BEFORE: Gemini try/catch → OpenRouter 루프 (비용 순서 미정)
+ *    AFTER:  imageGenerationCandidates() — 비용 오름차순 단일 폴백 루프
+ *    순서: Pollinations(무료,키불필요) → Gemini → OPENROUTER_IMAGE_MODEL → env fallbacks
+ *
+ * 3. 복잡/고급 작업 (변경 없음)
+ *    - buildTextChain tier chains (standard/priority/top)
+ *    - backendRoute verify stage, agentRoute AGENT_MODELS
+ *    - PPT/math cross-validation orchestration
+ */
+import {
+  getOpenRouterImageModels,
+  getOpenRouterVisionModelsFree,
+  getOpenRouterVisionModelsPaid,
+  hasProviderKey,
+} from "./openaiCompat";
+import { isProviderSkipped } from "./providerHealth";
+import { pipelineInfo } from "./pipelineLog";
+
 export type Provider =
   | "gemini"
   | "openrouter"
@@ -17,6 +46,12 @@ export interface ModelDef {
 
 export type ModelTier = "standard" | "priority" | "top";
 
+export interface ImageGenCandidate {
+  provider: "pollinations" | "gemini" | "openrouter";
+  model: string;
+  free?: boolean;
+}
+
 // ── Gemini ──
 const G_FLASH: ModelDef = { provider: "gemini", model: "gemini-2.0-flash", free: true };
 const G_FLASH_LITE: ModelDef = {
@@ -28,6 +63,10 @@ const G_PRO: ModelDef = { provider: "gemini", model: "gemini-2.5-pro" };
 
 function orFree(model: string): ModelDef {
   return { provider: "openrouter", model, free: true };
+}
+
+function orPaid(model: string): ModelDef {
+  return { provider: "openrouter", model };
 }
 
 // ── Groq free ──
@@ -112,6 +151,19 @@ export const AGENT_MODELS: ModelDef[] = [
   { provider: "deepseek", model: "deepseek-chat", cheap: true },
 ];
 
+/** Pro/Professional은 DeepSeek(툴콜 안정)·강한 무료 모델을 앞으로. */
+export function agentModelsForTier(tier: ModelTier = "standard"): ModelDef[] {
+  const base = AGENT_MODELS;
+  if (tier === "standard") return base;
+  const deepseek = base.filter((m) => m.provider === "deepseek");
+  const rest = base.filter((m) => m.provider !== "deepseek");
+  if (tier === "top") {
+    return [...deepseek, ...rest];
+  }
+  // priority: deepseek chat 우선, 이어서 무료 풀
+  return [...deepseek, ...rest];
+}
+
 export const MAX_FREE_ATTEMPTS = 6;
 
 /**
@@ -137,6 +189,52 @@ export function interleaveByProvider(groups: ModelDef[][]): ModelDef[] {
     }
   }
   return out;
+}
+
+/**
+ * 무료·유료 모델 교차 배치 — Free → Paid → Free → Paid …
+ * 한쪽 풀이 먼저 소진되면 나머지를 이어 붙인다.
+ */
+export function interleaveFreePaid(free: ModelDef[], paid: ModelDef[]): ModelDef[] {
+  const out: ModelDef[] = [];
+  const seen = new Set<string>();
+  let fi = 0;
+  let pi = 0;
+  while (fi < free.length || pi < paid.length) {
+    if (fi < free.length) {
+      const m = free[fi++];
+      const key = `${m.provider}:${m.model}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(m);
+      }
+    }
+    if (pi < paid.length) {
+      const m = paid[pi++];
+      const key = `${m.provider}:${m.model}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(m);
+      }
+    }
+  }
+  return out;
+}
+
+/** API 키·쿨다운 상태로 실제 시도 가능한 모델만 남긴다. */
+export function filterAvailableCandidates(candidates: ModelDef[]): ModelDef[] {
+  return candidates.filter(
+    (m) => hasProviderKey(m.provider) && !isProviderSkipped(m.provider),
+  );
+}
+
+export function filterAvailableImageGenCandidates(
+  candidates: ImageGenCandidate[],
+): ImageGenCandidate[] {
+  return candidates.filter((c) => {
+    if (c.provider === "pollinations") return true; // API 키 불필요
+    return hasProviderKey(c.provider) && !isProviderSkipped(c.provider);
+  });
 }
 
 /**
@@ -184,19 +282,125 @@ export function modelsForVerify(
   return [...preferred, ...rest].slice(0, 4);
 }
 
-// ── 비전(이미지 입력) 무료 폴백 ──
-// 멀티모달은 원래 Gemini 전용이라, Gemini 키가 크레딧 소진(429)되면 이미지 질문이 전부
-// 실패했다. Gemini 다음 순번으로 이미지 입력을 받는 무료/저가 비전 모델을 둬서, Gemini가
-// 죽어도 사진 질문이 폴백으로 처리되게 한다. 모델명은 공개 문서 기준 best-effort이며
-// 사용 불가 시 폴백 루프가 조용히 다음 후보로 넘어간다.
+// ── 비전(이미지 입력) 풀 ──
+const GROQ_VISION: ModelDef = {
+  provider: "groq",
+  model: "meta-llama/llama-4-scout-17b-16e-instruct",
+  free: true,
+};
+
+/** 정적 무료 비전 폴백 (env 미설정 시 기본값). */
 export const VISION_FALLBACK: ModelDef[] = [
-  { provider: "groq", model: "meta-llama/llama-4-scout-17b-16e-instruct", free: true },
   orFree("meta-llama/llama-3.2-11b-vision-instruct:free"),
   orFree("qwen/qwen2.5-vl-72b-instruct:free"),
+  GROQ_VISION,
 ];
 
+/** 정적 유료 비전 폴백 (env 미설정 시 기본값). */
+export const VISION_PAID_FALLBACK: ModelDef[] = [
+  orPaid("qwen/qwen2.5-vl-72b-instruct"),
+  orPaid("meta-llama/llama-3.2-11b-vision-instruct"),
+  G_PRO,
+];
+
+/**
+ * 비전/이미지 인식 후보 — Free→Paid→Free→Paid 교차.
+ * ai.ts, backendRoute(hasFiles), toolGeneration에서 공통 사용.
+ */
+export async function buildVisionCandidates(): Promise<ModelDef[]> {
+  const freePool: ModelDef[] = [G_FLASH];
+  const paidPool: ModelDef[] = [];
+
+  if (hasProviderKey("openrouter")) {
+    const [orFreeModels, orPaidModels] = await Promise.all([
+      getOpenRouterVisionModelsFree(),
+      getOpenRouterVisionModelsPaid(),
+    ]);
+    freePool.push(...orFreeModels.map((model) => orFree(model)));
+    paidPool.push(...orPaidModels.map((model) => orPaid(model)));
+  }
+
+  if (hasProviderKey("groq")) {
+    freePool.push(GROQ_VISION);
+  }
+  if (hasProviderKey("gemini") && !paidPool.some((m) => m.provider === "gemini")) {
+    paidPool.push(G_PRO);
+  }
+
+  const ordered = interleaveFreePaid(freePool, paidPool);
+  const available = filterAvailableCandidates(ordered);
+  pipelineInfo(
+    "vision/candidates",
+    `${available.length}/${ordered.length} available`,
+    available.map((m) => `${m.provider}/${m.model}`).join(" → "),
+  );
+  return available;
+}
+
+/** 이미지 생성 비용 순위 — 무료(Pollinations) → Gemini → OpenRouter paid. */
+export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
+  {
+    provider: "pollinations",
+    model: process.env.POLLINATIONS_IMAGE_MODEL || "flux",
+    free: true,
+  },
+  { provider: "gemini", model: "gemini-2.5-flash-image", free: true },
+  {
+    provider: "openrouter",
+    model: process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5",
+  },
+];
+
+/**
+ * 이미지 생성 후보 — 비용 오름차순 단일 폴백 체인.
+ * rank 0: Pollinations(완전 무료, 키 불필요)
+ * rank 1: Gemini flash-image
+ * rank 2+: OPENROUTER_IMAGE_MODEL → env fallbacks(최대 2)
+ */
+export async function imageGenerationCandidates(): Promise<ImageGenCandidate[]> {
+  const primary = process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5";
+  const pollinationsModel = process.env.POLLINATIONS_IMAGE_MODEL || "flux";
+  const base: ImageGenCandidate[] = [
+    { provider: "pollinations", model: pollinationsModel, free: true },
+  ];
+
+  if (hasProviderKey("gemini") && !isProviderSkipped("gemini")) {
+    base.push({ provider: "gemini", model: "gemini-2.5-flash-image", free: true });
+  }
+  if (hasProviderKey("openrouter") && !isProviderSkipped("openrouter")) {
+    base.push({ provider: "openrouter", model: primary });
+    try {
+      const fallbacks = await getOpenRouterImageModels();
+      const seen = new Set(base.map((c) => c.model));
+      for (const model of fallbacks) {
+        if (seen.has(model)) continue;
+        seen.add(model);
+        base.push({ provider: "openrouter", model });
+      }
+    } catch (err) {
+      pipelineInfo(
+        "image-gen/candidates",
+        "OpenRouter fallback discovery skipped",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  }
+
+  const available = filterAvailableImageGenCandidates(base);
+  pipelineInfo(
+    "image-gen/candidates",
+    `${available.length}/${base.length} available`,
+    available.map((c) => `${c.provider}/${c.model}`).join(" → "),
+  );
+  return available;
+}
+
 const TEXT_CHAIN = buildTextChain();
-const MULTI_CHAIN: ModelDef[] = [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
+// 정적 문서용 — 런타임은 buildVisionCandidates() 사용
+const MULTI_CHAIN: ModelDef[] = interleaveFreePaid(
+  [G_FLASH, ...VISION_FALLBACK],
+  VISION_PAID_FALLBACK,
+);
 
 export const FALLBACK_MODELS: ModelDef[] = TEXT_CHAIN;
 export const MULTIMODAL_MODELS: ModelDef[] = MULTI_CHAIN;
@@ -206,12 +410,9 @@ export function modelsForTier(
   opts?: { multimodal?: boolean },
 ): ModelDef[] {
   if (opts?.multimodal) {
-    // Gemini 우선, 그다음 무료 비전 폴백(크레딧 소진 대비).
-    if (tier === "top") return [G_FLASH, G_PRO, G_FLASH_LITE, ...VISION_FALLBACK];
-    return [G_FLASH, G_FLASH_LITE, G_PRO, ...VISION_FALLBACK];
+    return MULTI_CHAIN;
   }
   if (tier === "top") return buildTextChain(8, "top");
   if (tier === "priority") return buildTextChain(6, "priority");
   return buildTextChain(6, "standard");
 }
-

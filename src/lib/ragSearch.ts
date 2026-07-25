@@ -1,7 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { listWhere } from "@/lib/workspace";
-import { topK } from "@/lib/rag";
 import { embedQuery } from "@/lib/embeddings";
+import {
+  hybridScore,
+  keywordOverlapScore,
+  passesRetrievalThreshold,
+} from "@/lib/ragHybrid";
+import { cosine } from "@/lib/rag";
+
+function cosineLocal(a: number[], b: number[]): number {
+  return cosine(a, b);
+}
 
 /**
  * RAG 검색(검색만 — LLM 합성 없음). rag/search 라우트에 인라인돼 있던 로직을
@@ -53,11 +62,21 @@ export async function retrieveChunks(input: {
   }
 
   const { vector, provider } = await embedQuery(input.query);
-  const top = topK(vector, chunks, k).filter((r) => r.score > 0);
+  const scored = chunks
+    .map((item) => {
+      const vectorScore = cosineLocal(vector, item.embedding);
+      const kw = keywordOverlapScore(input.query, item.content);
+      return { item, score: hybridScore(vectorScore, kw) };
+    })
+    .filter((r) => passesRetrievalThreshold(r.score))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k);
 
-  if (top.length === 0) {
+  if (scored.length === 0) {
     return { ranked: [], provider, empty: false };
   }
+
+  const top = scored;
 
   const itemIds = [...new Set(top.map((r) => r.item.libraryItemId))];
   const items = await prisma.libraryItem.findMany({

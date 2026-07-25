@@ -1,12 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-// 수식 렌더링 스타일 — 루트 레이아웃이 아니라 KaTeX를 실제로 쓰는 라우트에서만 로드
-import "katex/dist/katex.min.css";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send,
@@ -26,9 +21,9 @@ import {
   Pencil,
   Check,
   RotateCcw,
+  BookOpen,
 } from "lucide-react";
 import {
-  downloadMarkdown,
   downloadTextFile,
   openPrintableHtml,
 } from "@/lib/textExport";
@@ -36,6 +31,9 @@ import { useT, useAppLanguage, toolUiLabel, featureGroupLabel, type AppDictKey }
 import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
 import { getToolPlaceholder } from "@/lib/toolPlaceholders";
 import CopyButton from "@/components/CopyButton";
+import AnswerFeedbackButtons from "@/components/AnswerFeedbackButtons";
+import CitationCards, { parseCitationsFromResultData } from "@/components/CitationCards";
+import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSession } from "next-auth/react";
 import { useSpeech } from "@/lib/useSpeech";
@@ -50,13 +48,15 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
-import { markdownCodeComponents } from "@/components/CodeBlockPre";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
-  type PlanStep,
   type TerminalLine,
 } from "./ChatRightPanel";
+import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
+
+// react-markdown + remark/rehype-katex 체인을 초기 번들에서 분리
+const ChatMarkdown = dynamic(() => import("./ChatMarkdown"));
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -69,29 +69,53 @@ const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
 const CHAT_MIN = 320;
 
-/** 에이전트 작업 단계 (status key → 계획 단계) */
-const PLAN_PIPELINE: { id: string; label: string; keys: string[] }[] = [
+const ATTACH_FORMATS: {
+  id: string;
+  labelKey: AppDictKey;
+  accept: string;
+  icon: typeof ImageIcon;
+}[] = [
+  { id: "image", labelKey: "chat.attach.image", accept: "image/*", icon: ImageIcon },
+  { id: "pdf", labelKey: "chat.attach.pdf", accept: "application/pdf,.pdf", icon: FileText },
   {
-    id: "select",
-    label: "status.pipeline.select",
-    keys: ["status.agent.selecting", "status.analyzing", "status.routing"],
+    id: "doc",
+    labelKey: "chat.attach.document",
+    accept:
+      ".doc,.docx,.txt,.md,.hwp,.hwpx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    icon: FileText,
   },
-  {
-    id: "research",
-    label: "status.pipeline.research",
-    keys: ["status.researching", "status.context", "status.reading"],
-  },
-  {
-    id: "generate",
-    label: "status.pipeline.generate",
-    keys: ["status.generating", "status.writing", "status.tool", "status.building"],
-  },
-  {
-    id: "finalize",
-    label: "status.pipeline.finalize",
-    keys: ["status.finalizing", "status.saving", "status.done"],
-  },
+  { id: "audio", labelKey: "chat.attach.audio", accept: "audio/*,.mp3,.wav,.m4a", icon: Mic },
+  { id: "other", labelKey: "chat.attach.other", accept: "*/*", icon: Paperclip },
 ];
+
+function feedbackToolId(agentId?: string | null, outputType?: string): string | null {
+  if (agentId?.startsWith("quicktool:")) return agentId.replace("quicktool:", "");
+  if (outputType && outputType !== "chat") return outputType;
+  return null;
+}
+
+function ModelFeedback({
+  messageId,
+  sessionId,
+  agentId,
+  outputType,
+  streaming,
+}: {
+  messageId: string;
+  sessionId: string | null;
+  agentId?: string | null;
+  outputType?: string;
+  streaming?: boolean;
+}) {
+  if (streaming || messageId.startsWith("temp-")) return null;
+  return (
+    <AnswerFeedbackButtons
+      chatHistoryId={messageId}
+      sessionId={sessionId}
+      toolId={feedbackToolId(agentId, outputType)}
+    />
+  );
+}
 
 interface StoredAttachment {
   url: string;
@@ -118,6 +142,7 @@ interface Msg {
   streaming?: boolean;
   /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
   interrupted?: boolean;
+  agentId?: string | null;
 }
 
 interface StreamEvent {
@@ -148,9 +173,9 @@ function readStoredWidth(): number {
 }
 
 function readStoredOpen(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   const v = window.localStorage.getItem(PANEL_OPEN_KEY);
-  if (v === null) return true;
+  if (v === null) return window.matchMedia("(min-width: 768px)").matches;
   return v !== "0";
 }
 
@@ -252,48 +277,16 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
   return list.reverse();
 }
 
-function buildPlanSteps(
-  loading: boolean,
-  statusKey: string | null,
-  t: (key: AppDictKey) => string,
-): PlanStep[] {
-  if (!loading && !statusKey) {
-    // 유휴: 파이프라인 미리보기
-    return PLAN_PIPELINE.map((p) => ({
-      id: p.id,
-      label: t(p.label as AppDictKey),
-      status: "pending" as const,
-    }));
-  }
-
-  let activeIdx = 0;
-  if (statusKey) {
-    const found = PLAN_PIPELINE.findIndex((p) => p.keys.includes(statusKey));
-    if (found >= 0) activeIdx = found;
-    else if (loading) activeIdx = 0;
-  }
-
-  return PLAN_PIPELINE.map((p, i) => ({
-    id: p.id,
-    label: t(p.label as AppDictKey),
-    status: !loading && i <= activeIdx
-      ? ("done" as const)
-      : i < activeIdx
-        ? ("done" as const)
-        : i === activeIdx && loading
-          ? ("active" as const)
-          : ("pending" as const),
-  }));
-}
-
 export default function ChatWorkspace({
   sessionId,
   onSessionCreated,
   onTurnSaved,
+  onOpenBookChat,
 }: {
   sessionId: string | null;
   onSessionCreated: (id: string) => void;
   onTurnSaved: () => void;
+  onOpenBookChat: (sessionId: string) => void;
 }) {
   const t = useT();
   const uiLang = useAppLanguage();
@@ -314,7 +307,13 @@ export default function ChatWorkspace({
   const [noteFormat, setNoteFormat] = useState<"markdown" | "pdf" | "image">("markdown");
   const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [attachAccept, setAttachAccept] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const quickActionsRef = useRef<HTMLDivElement | null>(null);
+  const kbRef = useRef<HTMLDivElement | null>(null);
+  const attachMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -358,6 +357,27 @@ export default function ChatWorkspace({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, loading]);
+
+  useEffect(() => {
+    function closeOnOutsidePointer(event: PointerEvent) {
+      const target = event.target as Node;
+      if (
+        quickActionsOpen &&
+        quickActionsRef.current &&
+        !quickActionsRef.current.contains(target)
+      ) {
+        setQuickActionsOpen(false);
+      }
+      if (kbOpen && kbRef.current && !kbRef.current.contains(target)) {
+        setKbOpen(false);
+      }
+      if (attachMenuOpen && attachMenuRef.current && !attachMenuRef.current.contains(target)) {
+        setAttachMenuOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [quickActionsOpen, kbOpen, attachMenuOpen]);
 
   useEffect(() => {
     // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
@@ -433,7 +453,7 @@ export default function ChatWorkspace({
     const files = Array.from(e.target.files ?? []);
     const added: PendingFile[] = [];
     for (const f of files) {
-      if (f.size > 12 * 1024 * 1024) {
+      if (f.size > MAX_UPLOAD_BYTES) {
         setError(`${f.name}: ${t("chat.fileTooLarge")}`);
         continue;
       }
@@ -448,7 +468,6 @@ export default function ChatWorkspace({
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
-    setPanelTab((tab) => (tab === "files" ? "plan" : tab));
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -532,7 +551,7 @@ export default function ChatWorkspace({
         throw new Error(errorMessage);
       }
       if (!sessionId && newSessionId) onSessionCreated(newSessionId);
-      if (doneMessage) {
+      if (doneMessage && (doneMessage.text?.trim() || doneMessage.outputType)) {
         const finalMessage: Msg = { ...doneMessage, interrupted: doneInterrupted };
         if (streamMsgId) {
           const id = streamMsgId;
@@ -709,10 +728,6 @@ export default function ChatWorkspace({
   }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
-  const planSteps = useMemo(
-    () => buildPlanSteps(loading, statusKey, t),
-    [loading, statusKey, t],
-  );
 
   function scrollToMessage(id?: string) {
     if (!id) return;
@@ -730,7 +745,7 @@ export default function ChatWorkspace({
     <div ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
       <div className="flex min-w-0 flex-1 flex-col px-3 py-3 sm:px-5 sm:py-4">
-        <div className="mb-2 flex items-center justify-end sm:hidden">
+        <div className="mb-2 flex items-center justify-end md:hidden">
           <button
             type="button"
             onClick={() => setMobileSheet(true)}
@@ -883,6 +898,13 @@ export default function ChatWorkspace({
                       }
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : m.outputType === "image" && m.fileUrl ? (
                   <div className="min-w-0 max-w-[min(100%,28rem)] flex-1">
@@ -903,6 +925,13 @@ export default function ChatWorkspace({
                         {t("chat.download")}
                       </a>
                     </div>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
@@ -913,17 +942,21 @@ export default function ChatWorkspace({
                       data={JSON.parse(m.resultData)}
                     />
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={markdownCodeComponents}
-                      >
-                        {m.text}
-                      </ReactMarkdown>
+                      <ChatMarkdown text={m.text} />
+                      {!m.streaming && (
+                        <CitationCards citations={parseCitationsFromResultData(m.resultData)} />
+                      )}
                       {m.streaming && (
                         <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-slate-400 align-middle dark:bg-slate-500" />
                       )}
@@ -975,19 +1008,6 @@ export default function ChatWorkspace({
                         <button
                           type="button"
                           onClick={() =>
-                            downloadMarkdown(
-                              (m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "") || "zeff-note",
-                              m.text,
-                            )
-                          }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                        >
-                          <FileText className="h-3 w-3" />
-                          Markdown
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
                             downloadTextFile(
                               `${(m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "")}.txt`,
                               m.text,
@@ -1023,28 +1043,23 @@ export default function ChatWorkspace({
                           )}
                       </div>
                     )}
+                    <ModelFeedback
+                      messageId={m.id}
+                      sessionId={sessionId}
+                      agentId={m.agentId}
+                      outputType={m.outputType}
+                      streaming={m.streaming}
+                    />
                   </div>
                 )}
               </div>
             ),
           )}
 
-          {/* AI 작업 중 — 브랜드 로고 스핀 로딩 (스트리밍 말풍선이 뜬 뒤엔 중복 표시 안 함) */}
+          {/* AI 작업 중 — 응답이 시작되기 전에는 로고 스핀만 표시한다. */}
           {loading && !streamingId && (
-            <div className="flex gap-2.5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-white shadow-sm dark:border-blue-400/20 dark:bg-slate-900">
-                <Logo size="sm" withWordmark={false} spin />
-              </div>
-              <div className="flex min-w-0 flex-col justify-center gap-1 rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <div className="flex items-center gap-2">
-                  <Logo size="sm" withWordmark spin className="!gap-1.5" />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {statusKey
-                    ? t(statusKey as Parameters<typeof t>[0])
-                    : t("chat.processing")}
-                </p>
-              </div>
+            <div className="flex h-10 items-center">
+              <Logo size="sm" withWordmark={false} spin />
             </div>
           )}
 
@@ -1080,7 +1095,7 @@ export default function ChatWorkspace({
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
                 <activeQuickTool.icon className="h-3.5 w-3.5" />
-                {activeQuickTool.short}
+                {toolUiLabel(activeQuickTool, t)}
                 <button
                   type="button"
                   onClick={() => setActiveQuickTool(null)}
@@ -1167,11 +1182,15 @@ export default function ChatWorkspace({
             </div>
           )}
 
-          <div className="flex items-end gap-2">
-            <div className="relative shrink-0">
+          <div className="flex items-end gap-1.5 sm:gap-2">
+            <div ref={quickActionsRef} className="relative shrink-0">
               <motion.button
                 type="button"
-                onClick={() => setQuickActionsOpen((v) => !v)}
+                onClick={() => {
+                  setKbOpen(false);
+                  setAttachMenuOpen(false);
+                  setQuickActionsOpen((v) => !v);
+                }}
                 disabled={loading}
                 whileTap={{ scale: 0.96 }}
                 title={t("chat.quickActions")}
@@ -1187,7 +1206,7 @@ export default function ChatWorkspace({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 8 }}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
+                    className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                   >
                     {featureGroups.map((g) => (
                       <QuickToolGroup
@@ -1205,19 +1224,74 @@ export default function ChatWorkspace({
               </AnimatePresence>
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={loading}
-              title={t("chat.attach")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
-            >
-              <Paperclip className="h-5 w-5" />
-            </button>
+            <div ref={kbRef} className="relative shrink-0">
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setQuickActionsOpen(false);
+                  setAttachMenuOpen(false);
+                  setKbOpen((v) => !v);
+                }}
+                disabled={loading}
+                whileTap={{ scale: 0.96 }}
+                title={t("sidebar.myLibrary")}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
+              >
+                <BookOpen className="h-5 w-5" />
+              </motion.button>
+              <KnowledgeBaseSheet
+                open={kbOpen}
+                onClose={() => setKbOpen(false)}
+                onOpenBookChat={onOpenBookChat}
+              />
+            </div>
+
+            <div ref={attachMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickActionsOpen(false);
+                  setKbOpen(false);
+                  setAttachMenuOpen((v) => !v);
+                }}
+                disabled={loading}
+                title={t("chat.attach")}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-colors hover:border-blue-500/50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400 dark:hover:text-blue-300"
+              >
+                <Paperclip className="h-5 w-5" />
+              </button>
+              <AnimatePresence>
+                {attachMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="absolute bottom-full left-0 z-20 mb-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40"
+                  >
+                    {ATTACH_FORMATS.map(({ id, labelKey, accept, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setAttachAccept(accept);
+                          setAttachMenuOpen(false);
+                          window.setTimeout(() => fileRef.current?.click(), 0);
+                        }}
+                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/80"
+                      >
+                        <Icon className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                        {t(labelKey)}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <input
               ref={fileRef}
               type="file"
-              accept={toolAcceptAttr(activeQuickTool)}
+              accept={attachAccept || toolAcceptAttr(activeQuickTool)}
               multiple
               onChange={onPickFiles}
               className="hidden"
@@ -1302,7 +1376,7 @@ export default function ChatWorkspace({
 
       {/* 우측 작업 패널 */}
       <div
-        className="hidden h-full shrink-0 sm:block"
+        className="hidden h-full shrink-0 md:block"
         style={panelOpen ? { width: panelWidth } : undefined}
       >
         <ChatRightPanel
@@ -1311,7 +1385,6 @@ export default function ChatWorkspace({
           tab={panelTab}
           onTabChange={setPanelTab}
           artifacts={artifacts}
-          planSteps={planSteps}
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
@@ -1326,7 +1399,7 @@ export default function ChatWorkspace({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
             onClick={() => setMobileSheet(false)}
           >
             <motion.div
@@ -1343,7 +1416,6 @@ export default function ChatWorkspace({
                 tab={panelTab}
                 onTabChange={setPanelTab}
                 artifacts={artifacts}
-                planSteps={planSteps}
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {
@@ -1373,14 +1445,24 @@ export default function ChatWorkspace({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {previewArtifact.url && (
-                  <a
-                    href={previewArtifact.url}
-                    download={previewArtifact.fileName ?? undefined}
-                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {t("chat.download")}
-                  </a>
+                  <>
+                    <a
+                      href={previewArtifact.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+                    >
+                      {t("chat.openNewTab")}
+                    </a>
+                    <a
+                      href={previewArtifact.url}
+                      download={previewArtifact.fileName ?? undefined}
+                      className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {t("chat.download")}
+                    </a>
+                  </>
                 )}
                 <button
                   type="button"
@@ -1503,13 +1585,7 @@ function ArtifactPreview({
   if (msg?.text) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-          components={markdownCodeComponents}
-        >
-          {msg.text}
-        </ReactMarkdown>
+        <ChatMarkdown text={msg.text} />
       </div>
     );
   }

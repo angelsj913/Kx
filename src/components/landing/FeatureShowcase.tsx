@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
+import { useScrollProgress, stickySceneIndex, sceneLocalProgress } from "@/lib/landingScroll";
 
 type Item = { no: string; tag: string; title: string; desc: string };
 type ShowcaseCopy = { title: string; subtitle: string; items: Item[] };
@@ -278,7 +280,7 @@ function TextLine({ w, tone = "base" }: { w: string; tone?: "base" | "faint" | "
   return <div className={`h-1.5 rounded-full ${bg}`} style={{ width: w }} />;
 }
 
-function MockSummary() {
+function MockSummary({ progress = 1 }: { progress?: number }) {
   const summaryTabs = [
     { Icon: FileText, active: true },
     { Icon: ListChecks, active: false },
@@ -331,9 +333,12 @@ function MockSummary() {
             {["96%", "88%", "92%", "78%"].map((w, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <Check className="h-2.5 w-2.5 shrink-0 text-blue-500" />
-                <TextLine w={w} />
+                <TextLine w={w} tone={i === 1 ? "accent" : "base"} />
               </div>
             ))}
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${progress * 100}%` }} />
+            </div>
           </div>
         </div>
       </div>
@@ -341,7 +346,7 @@ function MockSummary() {
   );
 }
 
-function MockLecture() {
+function MockLecture({ progress = 0.65 }: { progress?: number }) {
   // 파형(오디오) — 높이가 다른 막대로 실제 음성 트랙처럼 보이게.
   const wave = [30, 55, 40, 70, 90, 60, 45, 75, 50, 85, 65, 40, 55, 80, 60, 35, 50, 72];
   return (
@@ -355,7 +360,7 @@ function MockLecture() {
         </span>
         {/* 하단 진행바 */}
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
-          <div className="h-full w-2/3 bg-blue-500" />
+          <div className="h-full bg-blue-500" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
       {/* 파형 + 자막 노트 */}
@@ -364,7 +369,7 @@ function MockLecture() {
           {wave.map((h, i) => (
             <span
               key={i}
-              className={`w-full rounded-full ${i < 12 ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
+              className={`w-full rounded-full ${i < Math.floor(progress * wave.length) ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
               style={{ height: `${h}%` }}
             />
           ))}
@@ -387,7 +392,7 @@ function MockLecture() {
   );
 }
 
-function MockDocs() {
+function MockDocs({ slideIndex = 0 }: { slideIndex?: number }) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
       <div className="grid grid-cols-2 gap-2.5">
@@ -428,7 +433,7 @@ function MockDocs() {
             {[45, 70, 55, 90, 65].map((h, i) => (
               <div
                 key={i}
-                className="flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400"
+                className={`flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 ${i === slideIndex % 5 ? "ring-2 ring-blue-300" : ""}`}
                 style={{ height: `${h}%` }}
               />
             ))}
@@ -486,66 +491,149 @@ function MockLibrary() {
 
 const MOCKS = [MockSummary, MockLecture, MockDocs, MockLibrary];
 
-export default function FeatureShowcase() {
-  const copy = useLocalCopy(COPY);
-
+function ProgressRing({ index, active, done, progress }: { index: number; active: boolean; done: boolean; progress: number }) {
+  const pct = active ? progress * 100 : done ? 100 : 0;
+  const r = 18;
+  const c = 2 * Math.PI * r;
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50/80 to-slate-50 py-20 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
-      {/* 위 요금제 섹션에서 이어지는 상단 페이드 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/0 via-white/40 to-transparent dark:from-slate-950 dark:via-slate-950/80 dark:to-transparent"
-      />
-      {/* 아래 「만드는 사람들」과 경계 없이 이어지는 하단 페이드 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-slate-50 dark:to-slate-950"
-      />
-      <div className="relative mx-auto max-w-5xl px-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
-            {copy.title}
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">
-            {copy.subtitle}
-          </p>
-        </div>
+    <div className="relative flex h-11 w-11 items-center justify-center">
+      <svg className="-rotate-90" width="44" height="44" aria-hidden>
+        <circle cx="22" cy="22" r={r} fill="none" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="3" />
+        <circle
+          cx="22"
+          cy="22"
+          r={r}
+          fill="none"
+          className="stroke-blue-600 dark:stroke-blue-400"
+          strokeWidth="3"
+          strokeDasharray={c}
+          strokeDashoffset={c - (c * pct) / 100}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className={`absolute text-[10px] font-bold ${active ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`}>
+        {String(index + 1).padStart(2, "0")}
+      </span>
+    </div>
+  );
+}
 
+function MockWithProgress({ index, localP }: { index: number; localP: number }) {
+  if (index === 0) return <MockSummary progress={localP} />;
+  if (index === 1) return <MockLecture progress={localP} />;
+  if (index === 2) return <MockDocs slideIndex={Math.floor(localP * 5)} />;
+  return <MockLibrary />;
+}
+
+function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
+  return (
+    <section className="py-20">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">{copy.title}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>
+        </div>
         <div className="mt-16 space-y-16">
           {copy.items.map((item, i) => {
             const Mock = MOCKS[i];
             const reversed = i % 2 === 1;
             return (
-              <motion.div
-                key={item.no}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                className="grid items-center gap-8 md:grid-cols-2"
-              >
+              <motion.div key={item.no} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="grid items-center gap-8 md:grid-cols-2">
                 <div className={reversed ? "md:order-2" : ""}>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">
-                      {item.no}
-                    </span>
-                    <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
-                      {item.tag}
-                    </span>
+                    <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
+                    <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{item.tag}</span>
                   </div>
-                  <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">
-                    {item.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
-                    {item.desc}
-                  </p>
+                  <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
                 </div>
-                <div className={reversed ? "md:order-1" : ""}>
-                  <Mock />
-                </div>
+                <div className={reversed ? "md:order-1" : ""}><Mock /></div>
               </motion.div>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function FeatureShowcase() {
+  const copy = useLocalCopy(COPY);
+  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const count = MOCKS.length;
+  const prevIdx = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const next = stickySceneIndex(p, count, 0.1, prevIdx.current);
+    prevIdx.current = next;
+    setActiveIndex(next);
+  }, [p, count]);
+
+  const item = copy.items[activeIndex]!;
+  const localP = sceneLocalProgress(p, count, activeIndex);
+
+  if (reducedMotion) return <StaticShowcase copy={copy} />;
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative h-[440vh] bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"
+    >
+      <div className="sticky top-0 flex min-h-[100svh] items-center overflow-hidden py-20 sm:py-24">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(37,99,235,0.10),transparent_38%)] dark:bg-[radial-gradient(circle_at_75%_45%,rgba(59,130,246,0.14),transparent_38%)]"
+        />
+        <div className="relative mx-auto w-full max-w-5xl px-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">{copy.title}</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>
+          </div>
+          <div className="mt-10 grid items-center gap-8 md:mt-14 md:grid-cols-[0.88fr_1.12fr] md:gap-12">
+            <motion.div key={item.no} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
+                <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{item.tag}</span>
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-50">{item.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
+              <div className="mt-7 flex gap-3" aria-hidden>
+                {copy.items.map((scene, index) => (
+                  <ProgressRing
+                    key={scene.no}
+                    index={index}
+                    active={index === activeIndex}
+                    done={index < activeIndex}
+                    progress={index === activeIndex ? localP : 0}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
+            <div className="relative h-[min(22rem,50vh)] min-h-[16rem]">
+              {MOCKS.map((_, i) => {
+                const offset = i - activeIndex;
+                const isPast = i < activeIndex;
+                const isActive = i === activeIndex;
+                if (offset > 2 || offset < -1) return null;
+                return (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      opacity: isActive ? 1 : isPast ? 0 : 0.35,
+                      scale: isActive ? 1 : 0.94 - Math.abs(offset) * 0.02,
+                      y: offset * 14,
+                      zIndex: 10 - Math.abs(offset),
+                    }}
+                    className={`absolute inset-x-0 top-0 landing-card rounded-2xl p-3 sm:p-4 ${!isActive ? "pointer-events-none blur-[1px]" : "shadow-xl"}`}
+                  >
+                    <MockWithProgress index={i} localP={isActive ? localP : 1} />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </section>

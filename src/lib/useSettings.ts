@@ -11,6 +11,8 @@ export interface UserSettings {
   language: AppLanguage;
   enabledQuickTools: string[];
   aiDisabled?: boolean;
+  memoryEnabled: boolean;
+  preferredTone: "balanced" | "concise" | "friendly" | "professional" | "teaching";
 }
 
 function normalizeLanguage(raw: unknown): AppLanguage {
@@ -116,5 +118,23 @@ export function useSettings(userId?: string | null) {
     [patch],
   );
 
-  return { settings, loading, updateLanguage, updatePlan, updateQuickTools };
+  const updateMemoryEnabled = useCallback(
+    (memoryEnabled: boolean) => patch({ memoryEnabled }),
+    [patch],
+  );
+
+  const updatePreferredTone = useCallback(
+    (preferredTone: UserSettings["preferredTone"]) => patch({ preferredTone }),
+    [patch],
+  );
+
+  return {
+    settings,
+    loading,
+    updateLanguage,
+    updatePlan,
+    updateQuickTools,
+    updateMemoryEnabled,
+    updatePreferredTone,
+  };
 }

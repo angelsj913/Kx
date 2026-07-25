@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { chatReplyWithFallback } from "@/lib/ai";
@@ -47,11 +47,8 @@ function parseCards(text: string): { front: string; back: string }[] {
 
 // 서재 항목에서 AI로 복습 카드를 자동 생성한다.
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let scope;
   try {

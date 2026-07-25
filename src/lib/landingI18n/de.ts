@@ -42,6 +42,7 @@ const de: Record<keyof typeof ko, string> = {
   "workspace.video1": "Demo: Lösen mathematischer Probleme",
   "workspace.video2": "Demo: Ergebniserstellung",
   "workspace.videoPlaceholder": "Video in Vorbereitung",
+  "workspace.videoPlay": "Demo abspielen",
   "workspace.feature1.title": "Überwältigende Geschwindigkeit",
   "workspace.feature1.desc": "Auch komplexe Formeln und Logikoperationen werden verzögerungsfrei in Echtzeit gelöst.",
   "workspace.feature1.detail":
@@ -98,6 +99,14 @@ const de: Record<keyof typeof ko, string> = {
   "grid.cta": "Anmelden und loslegen",
 
   "pricing.title": "Preise",
+  "pricing.lead.title": "Lernen und Arbeit — ein Workspace",
+  "pricing.lead.subtitle": "Von Free über Pro bis Professional — nach Nutzung, KI-Modellen und Bibliothek wählen.",
+  "pricing.lead.pill1.title": "Mehr Nutzung",
+  "pricing.lead.pill1.desc": "Chat, Dokumente und PPT/Excel skalieren mit dem Tarif.",
+  "pricing.lead.pill2.title": "Stärkere KI",
+  "pricing.lead.pill2.desc": "Höhere Tarife erhalten leistungsfähigere Modelle zuerst.",
+  "pricing.lead.pill3.title": "Dateien & Bibliothek",
+  "pricing.lead.pill3.desc": "Vorschau und Speicher wachsen mit dem Plan.",
   "pricing.subtitle": "Wählen Sie den passenden Plan.",
   "pricing.free.name": "free",
   "pricing.free.desc":
@@ -372,6 +381,22 @@ const de: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Versandhandelsregistrierungsnummer:",
   "legal.bizInfo.privacyOfficer": "Datenschutzbeauftragter:",
   "legal.bizInfo.contact": "Kontakt:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "ZEFF AI herunterladen",
+  "downloadPage.subtitle": "Installationsprogramm herunterladen, ausführen – und schon können Sie loslegen.",
+  "downloadPage.recommended": "Empfohlen für dieses Gerät",
+  "downloadPage.windows": "Für Windows herunterladen",
+  "downloadPage.mac": "Für macOS herunterladen",
+  "downloadPage.fileLabel": "Installationsprogramm",
+  "downloadPage.reqTitle": "Systemanforderungen",
+  "downloadPage.reqOs": "Betriebssystem",
+  "downloadPage.reqCpu": "Prozessor",
+  "downloadPage.reqRam": "Arbeitsspeicher",
+  "downloadPage.reqDisk": "Speicherplatz",
+  "downloadPage.howto": "Führen Sie das heruntergeladene Installationsprogramm aus und folgen Sie den Anweisungen auf dem Bildschirm. Windows verwendet eine .exe-Datei, macOS eine .dmg-Datei.",
+  "downloadPage.version": "Version",
+  "downloadPage.smartScreenTitle": "Sicherheitswarnung bei der Installation?",
+  "downloadPage.smartScreen": "Wenn Windows eine Warnung „Der Computer wurde durch Windows geschützt“ (SmartScreen) oder „unbekannter Herausgeber“ anzeigt, klicken Sie auf Weitere Informationen → Trotzdem ausführen. Sie erscheint nur, weil die App noch nicht code-signiert ist, und das Fortfahren ist sicher. Wenn macOS „nicht verifizierter Entwickler“ meldet, klicken Sie mit der rechten Maustaste auf die Datei → Öffnen.",
 };
 
 export default de;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { put } from "@vercel/blob";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
@@ -15,7 +15,14 @@ import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
-import { buildZeffRuntimeInstruction } from "@/lib/zeffContext";
+import { assembleRuntimeContext } from "@/lib/zeffContext";
+import { shouldEscalateToAgent } from "@/lib/skills";
+import {
+  loadInlineFromStored,
+  parseStoredAttachments,
+} from "@/lib/attachmentLoader";
+import { embedTexts } from "@/lib/embeddings";
+import { isProviderSkipped } from "@/lib/providerHealth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +33,15 @@ interface StoredAttachment {
   mimeType: string;
 }
 
+async function reloadAttachmentsFromMessage(
+  attachments: unknown,
+): Promise<{ stored: StoredAttachment[]; inline: { data: string; mimeType: string }[] }> {
+  const stored = parseStoredAttachments(attachments);
+  if (!stored.length) return { stored: [], inline: [] };
+  const inline = await loadInlineFromStored(stored);
+  return { stored, inline };
+}
+
 type StreamEvent =
   | { type: "status"; key: string; sessionId: string; detail?: string }
   | { type: "delta"; sessionId: string; text: string }
@@ -33,11 +49,8 @@ type StreamEvent =
   | { type: "error"; sessionId: string; message: string };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const contentType = request.headers.get("content-type") ?? "";
   let sessionId: string | null = null;
@@ -111,7 +124,8 @@ export async function POST(request: Request) {
   // 생성이 실패로 끝났거나, 예약만 하고 실제로 진행하지 못한 모든 경로에서 호출한다.
   async function releaseReservations() {
     if (quota?.consumed) {
-      await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey).catch((e) =>
+      // requireUserId()의 instanceof 가드는 이 중첩 함수 안에서는 좁혀지지 않는다(TS 한계) — 위에서 이미 검증됨.
+      await refundQuota(userId as string, quota.consumed.feature, quota.consumed.periodKey).catch((e) =>
         console.warn("[chat route] quota refund failed:", e),
       );
     }
@@ -203,6 +217,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
       }
       text = lastUser.text;
+      const reloaded = await reloadAttachmentsFromMessage(lastUser.attachments);
+      storedAttachments = reloaded.stored;
+      inlineFiles = reloaded.inline;
       const lastAssistant = await prisma.chatHistory.findFirst({
         where: { sessionId: resolvedSessionId, role: "model" },
         orderBy: { createdAt: "desc" },
@@ -228,6 +245,9 @@ export async function POST(request: Request) {
         where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
       });
       await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
+      const reloaded = await reloadAttachmentsFromMessage(target.attachments);
+      storedAttachments = reloaded.stored;
+      inlineFiles = reloaded.inline;
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: { updatedAt: new Date() },
@@ -266,6 +286,12 @@ export async function POST(request: Request) {
             : undefined,
         },
       });
+      // 장기 맥락은 명시적인 선호·사실만 비동기로 추출한다. 실패해도 현재 대화는 막지 않는다.
+      void import("@/lib/userLearning")
+        .then(({ learnFromUserMessage }) =>
+          learnFromUserMessage({ userId, sessionId: resolvedSessionId, text }),
+        )
+        .catch((err) => console.warn("[chat route] memory learning skipped:", err));
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: {
@@ -303,13 +329,13 @@ export async function POST(request: Request) {
       }
 
       try {
-        if (quickToolId === "agent") {
-          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 ──
+        if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
+          // ── 에이전트: 도구를 스스로 골라 연쇄 호출 (멀티스텝 자동 승격 포함) ──
           send({
             type: "status",
             key: "status.route.start",
             sessionId: resolvedSessionId,
-            detail: "agent",
+            detail: quickToolId === "agent" ? "agent" : "agent-auto",
           });
 
           const AGENT_HISTORY_LIMIT = 16;
@@ -324,6 +350,21 @@ export async function POST(request: Request) {
             role: m.role === "model" ? "model" : "user",
             text: m.text,
           }));
+          if (inlineFiles.length) {
+            for (let i = agentMessages.length - 1; i >= 0; i--) {
+              if (agentMessages[i]?.role === "user") {
+                agentMessages[i] = { ...agentMessages[i]!, files: inlineFiles };
+                break;
+              }
+            }
+          }
+
+          const agentContext = await assembleRuntimeContext({
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
+            query: text,
+            language: userLanguage,
+          });
 
           const agentResult = await runAgentRoute({
             text,
@@ -331,6 +372,7 @@ export async function POST(request: Request) {
             modelTier,
             userId,
             workspaceId: chatSession.workspaceId ?? null,
+            extraSystemInstruction: agentContext.instruction,
             signal: request.signal,
             onDelta: (delta) =>
               send({ type: "delta", sessionId: resolvedSessionId, text: delta }),
@@ -406,6 +448,7 @@ export async function POST(request: Request) {
 
           // 영상 요약: YouTube oEmbed 메타 보강
           let toolText = text;
+          let videoTranscriptBadge: string | null = null;
           if (quickToolId === "video-summary") {
             send({
               type: "status",
@@ -414,11 +457,49 @@ export async function POST(request: Request) {
             });
             const enriched = await enrichVideoSummaryPrompt(text);
             toolText = enriched.enrichedText;
+            videoTranscriptBadge = enriched.meta?.hasTranscript
+              ? "🟢 자막 기반 분석"
+              : enriched.meta?.hasTranscript === false
+                ? "🟡 자막 없음 — 추측 요약 금지"
+                : null;
+
+            if (enriched.meta?.hasTranscript && enriched.transcript && enriched.transcriptChunks.length) {
+              const title =
+                enriched.meta.title ?? `YouTube ${enriched.meta.videoId ?? "video"}`;
+              const libItem = await prisma.libraryItem.create({
+                data: {
+                  userId,
+                  workspaceId: chatSession.workspaceId,
+                  title: `[자막] ${title}`.slice(0, 120),
+                  fileUrl: enriched.meta.url,
+                  fileName: `${enriched.meta.videoId ?? "video"}.txt`,
+                  mimeType: "text/plain",
+                  extractedText: enriched.transcript.fullText,
+                },
+              });
+              const { chunkText } = await import("@/lib/rag");
+              const chunks = chunkText(enriched.transcript.fullText, 900, 150);
+              const { vectors } = await embedTexts(chunks.map((c) => c.content));
+              await prisma.documentChunk.deleteMany({ where: { libraryItemId: libItem.id } });
+              await prisma.documentChunk.createMany({
+                data: chunks.map((c, i) => ({
+                  libraryItemId: libItem.id,
+                  userId,
+                  workspaceId: chatSession.workspaceId,
+                  idx: c.idx,
+                  content: c.content,
+                  embedding: vectors[i] ?? [],
+                  provider: process.env.GEMINI_API_KEY ? "gemini" : "local",
+                })),
+              });
+            }
           }
 
           // 대화 맥락 자동 이어받기: 최근 대화를 참고 컨텍스트로 덧붙이고,
           // 요청이 이를 가리키면 반영·아니면 무시하도록 모델이 스스로 판단하게 한다.
-          if (text) {
+          // 이미지 생성은 프롬프트가 곧 픽셀이므로 이전 대화(노트북 등)가 섞이면
+          // 요청과 무관한 이미지가 나온다 — 현재 사용자 문장만 사용한다.
+          if (text && quickToolId !== "image-gen" && quickToolId !== "image-upscale") {
             const prior = await prisma.chatHistory.findMany({
               where: { sessionId: resolvedSessionId },
               orderBy: { createdAt: "desc" },
@@ -436,6 +517,31 @@ export async function POST(request: Request) {
             if (ctx) {
               toolText =
                 `[최근 대화 맥락 — 이번 요청이 이 내용을 가리키거나 이어지는 경우에만 참고하고, 무관하면 완전히 무시하세요]\n${ctx}\n\n[요청]\n${toolText}`;
+            }
+          }
+
+          // 문제 번호·교재명·학년 등 텍스트 메타만으로도 서재에서 해당 수학 문제를 찾는다.
+          // 사진이 있을 때는 사진 자체를 1차 근거로 두어 불필요한 검색 주입을 피한다.
+          if (quickToolId === "math-solve" && imageLike.length === 0 && text.trim()) {
+            try {
+              const { retrieveChunks } = await import("@/lib/ragSearch");
+              const found = await retrieveChunks({
+                userId,
+                workspaceId: chatSession.workspaceId ?? null,
+                query: text,
+                k: 3,
+              });
+              if (found.ranked.length) {
+                toolText = [
+                  "[서재에서 찾은 문제/교재 근거 — 번호·메타가 일치하는지 확인한 뒤에만 사용]",
+                  ...found.ranked.map((chunk) => `${chunk.title}\n${chunk.content}`),
+                  "",
+                  "[사용자 요청]",
+                  text,
+                ].join("\n\n");
+              }
+            } catch (err) {
+              console.warn("[chat route] math metadata search skipped:", err);
             }
           }
 
@@ -472,6 +578,9 @@ export async function POST(request: Request) {
 
           if (result.outputType === "markdown") {
             replyText = result.text;
+            if (videoTranscriptBadge) {
+              replyText = `${videoTranscriptBadge}\n\n${replyText}`;
+            }
             if (result.file) {
               fileUrl = result.file.url;
               fileName = result.file.filename;
@@ -490,6 +599,10 @@ export async function POST(request: Request) {
             replyText =
               "엑셀 파일(.xlsx)을 만들었어요. 아래에서 확인하고 다운로드하세요.";
             resultData = result.resultData;
+            fileUrl = result.file.url;
+            fileName = result.file.filename;
+          } else if (result.outputType === "docx") {
+            replyText = "워드 문서(.docx)를 만들었어요. 아래에서 다운로드할 수 있어요.";
             fileUrl = result.file.url;
             fileName = result.file.filename;
           } else if (result.outputType === "image") {
@@ -549,7 +662,19 @@ export async function POST(request: Request) {
             files: i === history.length - 1 && inlineFiles.length ? inlineFiles : undefined,
           }));
 
-          const extraSystemInstruction = await buildZeffRuntimeInstruction({
+          const hasPdf = inlineFiles.some((f) => f.mimeType === "application/pdf");
+          const needsGeminiVision =
+            hasPdf || inlineFiles.some((f) => !f.mimeType.startsWith("image/"));
+          if (
+            needsGeminiVision &&
+            (!process.env.GEMINI_API_KEY || isProviderSkipped("gemini"))
+          ) {
+            throw new Error(
+              "PDF·문서 첨부 분석은 Gemini가 필요합니다. GEMINI_API_KEY를 설정하거나 잠시 후 다시 시도해 주세요.",
+            );
+          }
+
+          const extraSystemInstruction = await assembleRuntimeContext({
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
@@ -561,7 +686,8 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
-            extraSystemInstruction,
+            extraSystemInstruction: extraSystemInstruction.instruction,
+            citations: extraSystemInstruction.citations,
             signal: request.signal,
             onDelta: (delta) => {
               send({ type: "delta", sessionId: resolvedSessionId, text: delta });
@@ -584,6 +710,14 @@ export async function POST(request: Request) {
             },
           });
 
+          const citationPayload =
+            result.citations && result.citations.length
+              ? JSON.stringify({ citations: result.citations })
+              : undefined;
+
+          if (!result.text.trim()) {
+            throw new Error("AI가 응답을 생성하지 못했습니다. 다시 시도해 주세요.");
+          }
           const assistantRow = await prisma.chatHistory.create({
             data: {
               sessionId: resolvedSessionId,
@@ -593,6 +727,7 @@ export async function POST(request: Request) {
               provider: result.provider,
               modelName: result.model,
               attempts: result.attempts,
+              resultData: citationPayload,
             },
           });
           await prisma.chatSession.update({
@@ -609,6 +744,9 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("chat stream error:", err);
+        if (err instanceof Error && err.stack) {
+          console.error("[zeff-pipeline] chat route stack:", err.stack.split("\n").slice(0, 6).join("\n"));
+        }
         await releaseReservations();
         send({ type: "error", sessionId: resolvedSessionId, message: friendlyError(err) });
       } finally {

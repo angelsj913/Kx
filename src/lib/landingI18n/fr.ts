@@ -42,6 +42,7 @@ const fr: Record<keyof typeof ko, string> = {
   "workspace.video1": "Démo de résolution de problèmes mathématiques",
   "workspace.video2": "Démo de génération de résultats",
   "workspace.videoPlaceholder": "Vidéo en préparation",
+  "workspace.videoPlay": "Lire la démo",
   "workspace.feature1.title": "Une vitesse impressionnante",
   "workspace.feature1.desc": "Même les équations et opérations logiques complexes sont résolues en temps réel, sans délai.",
   "workspace.feature1.detail":
@@ -98,6 +99,14 @@ const fr: Record<keyof typeof ko, string> = {
   "grid.cta": "Se connecter pour commencer",
 
   "pricing.title": "Tarifs",
+  "pricing.lead.title": "Études et travail, un seul espace",
+  "pricing.lead.subtitle": "De Free à Pro et Professional — selon l'usage, les modèles IA et la bibliothèque.",
+  "pricing.lead.pill1.title": "Usage généreux",
+  "pricing.lead.pill1.desc": "Chat, documents et PPT/Excel augmentent à chaque forfait.",
+  "pricing.lead.pill2.title": "IA plus puissante",
+  "pricing.lead.pill2.desc": "Les forfaits supérieurs accèdent d'abord aux modèles les plus capables.",
+  "pricing.lead.pill3.title": "Fichiers & bibliothèque",
+  "pricing.lead.pill3.desc": "Aperçu des livrables et stockage étendus avec le plan.",
   "pricing.subtitle": "Choisissez le forfait adapté à vos besoins.",
   "pricing.free.name": "free",
   "pricing.free.desc":
@@ -372,6 +381,22 @@ const fr: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Numéro de déclaration de vente à distance :",
   "legal.bizInfo.privacyOfficer": "Responsable de la protection des données :",
   "legal.bizInfo.contact": "Contact :",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "Télécharger ZEFF AI",
+  "downloadPage.subtitle": "Téléchargez l'installateur, exécutez-le, et c'est prêt.",
+  "downloadPage.recommended": "Recommandé pour cet appareil",
+  "downloadPage.windows": "Télécharger pour Windows",
+  "downloadPage.mac": "Télécharger pour macOS",
+  "downloadPage.fileLabel": "Installateur",
+  "downloadPage.reqTitle": "Configuration requise",
+  "downloadPage.reqOs": "Système d'exploitation",
+  "downloadPage.reqCpu": "Processeur",
+  "downloadPage.reqRam": "Mémoire",
+  "downloadPage.reqDisk": "Stockage",
+  "downloadPage.howto": "Exécutez l'installateur téléchargé et suivez les instructions à l'écran. Windows utilise un fichier .exe, macOS un fichier .dmg.",
+  "downloadPage.version": "Version",
+  "downloadPage.smartScreenTitle": "Un avertissement de sécurité pendant l'installation ?",
+  "downloadPage.smartScreen": "Si Windows affiche un avertissement « Windows a protégé votre ordinateur » (SmartScreen) ou « éditeur inconnu », cliquez sur Informations complémentaires → Exécuter quand même. Il apparaît uniquement parce que l'application n'est pas encore signée, et vous pouvez continuer en toute sécurité. Sur macOS, en cas d'avertissement « développeur non identifié », faites un clic droit sur le fichier → Ouvrir.",
 };
 
 export default fr;

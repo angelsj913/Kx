@@ -172,14 +172,31 @@ export async function assertAndConsumeQuota(
     return { planId, feature, consumed: { feature, periodKey } };
   }
 
-  // 일반 문서/채팅
-  if (plan.monthlyDocuments != null) {
+  const monthlyLimit =
+    feature === "chat"
+      ? plan.monthlyMessages
+      : feature === "image-generation"
+        ? plan.imageGenerationMonthly
+        : feature === "image-upscale"
+          ? plan.imageUpscaleMonthly
+          : plan.monthlyDocuments;
+  const featureLabel =
+    feature === "chat"
+      ? "AI 메시지"
+      : feature === "image-generation"
+        ? "이미지 생성"
+        : feature === "image-upscale"
+          ? "이미지 고화질 확대"
+          : "문서 작성";
+
+  // 일반 채팅·문서·이미지
+  if (monthlyLimit != null) {
     const periodKey = monthKey();
-    const result = await reserveQuota(userId, "document", periodKey, plan.monthlyDocuments);
+    const result = await reserveQuota(userId, feature, periodKey, monthlyLimit);
     if (!result.ok) {
-      throw new QuotaError(`월 문서 작성 한도(${plan.monthlyDocuments}회)에 도달했습니다.`);
+      throw new QuotaError(`월 ${featureLabel} 한도(${monthlyLimit}회)에 도달했습니다.`);
     }
-    return { planId, feature, consumed: { feature: "document", periodKey } };
+    return { planId, feature, consumed: { feature, periodKey } };
   }
 
   return { planId, feature, consumed: null };
@@ -190,8 +207,11 @@ export async function getUsageSummary(userId: string) {
   const plan = getPlanOrFree(planId);
   const mk = monthKey();
   const wk = weekKey();
-  const [doc, file, exam, sim, maker] = await Promise.all([
+  const [chat, doc, imageGeneration, imageUpscale, file, exam, sim, maker] = await Promise.all([
+    getCount(userId, "chat", mk),
     getCount(userId, "document", mk),
+    getCount(userId, "image-generation", mk),
+    getCount(userId, "image-upscale", mk),
     getCount(userId, "pptx-xlsx", plan.pptxXlsxLimit.period === "week" ? wk : mk),
     getCount(userId, "exam-analysis", mk),
     getCount(userId, "similar-problems", mk),
@@ -201,7 +221,10 @@ export async function getUsageSummary(userId: string) {
     planId,
     plan,
     usage: {
+      chat: { used: chat, max: plan.monthlyMessages, period: "month" },
       document: { used: doc, max: plan.monthlyDocuments },
+      imageGeneration: { used: imageGeneration, max: plan.imageGenerationMonthly, period: "month" },
+      imageUpscale: { used: imageUpscale, max: plan.imageUpscaleMonthly, period: "month" },
       pptxXlsx: { used: file, max: plan.pptxXlsxLimit.max, period: plan.pptxXlsxLimit.period },
       examAnalysis: { used: exam, max: plan.examAnalysisMonthly },
       similarProblems: { used: sim, max: plan.similarProblemsMonthly },

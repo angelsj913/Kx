@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import {
   getMembership,
@@ -14,13 +14,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string; memberId: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const { id, memberId } = await params;
-  const meId = session.user.id;
+  const meId = userId;
 
   try {
     const me = await requireMembership(id, meId);

@@ -56,16 +56,16 @@ export default function Hero() {
           : null;
 
   return (
-    <section id="about" className="relative overflow-hidden pb-8 pt-32 sm:pt-40">
+    <section id="about" className="relative overflow-hidden bg-transparent pb-14 pt-28 sm:pb-20 sm:pt-36">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-6 text-center">
+      <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
         <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
           <Sparkles className="h-3.5 w-3.5" />
           {t("hero.badge")}
         </span>
 
-        <h1 className="hero-fade-up hero-delay-1 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+        <h1 className="hero-fade-up hero-delay-1 max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
           {t("hero.title.line1")}
           <br />
           <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
@@ -82,12 +82,12 @@ export default function Hero() {
 
         <div
           id="download"
-          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-2xl scroll-mt-32 flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
         >
           <button
             type="button"
             onClick={() => setSelected("windows")}
-            className="group flex flex-1 items-center justify-center gap-3 whitespace-nowrap rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] sm:min-w-[11rem]"
+            className="group flex w-full items-center justify-center gap-3 whitespace-nowrap rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] md:w-auto md:min-w-[11rem] md:flex-1"
           >
             <WindowsIcon className="h-6 w-6" />
             {t("hero.download.windows")}
@@ -96,7 +96,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("android")}
-            className="group flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-emerald-500/40 bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] sm:min-w-[12.5rem]"
+            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-emerald-500/40 bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] md:w-auto md:min-w-[12.5rem] md:flex-1"
           >
             <Smartphone className="h-6 w-6" />
             {t("hero.download.android")}
@@ -109,7 +109,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("mac")}
-            className="group flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:min-w-[12.5rem]"
+            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 md:w-auto md:min-w-[12.5rem] md:flex-1"
           >
             <Apple className="h-6 w-6" />
             {t("hero.download.mac")}

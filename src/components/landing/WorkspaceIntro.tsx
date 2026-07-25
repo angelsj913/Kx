@@ -1,7 +1,12 @@
 "use client";
 
-import { Play, Zap, Target, Waves } from "lucide-react";
+import { Zap, Target, Waves } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
+
+const VIDEOS = [
+  { src: "/videos/workspace-math-chat.webm", poster: "/videos/workspace-math-chat-poster.jpg", labelKey: "workspace.video1" as const },
+  { src: "/videos/workspace-artifact.webm", poster: "/videos/workspace-artifact-poster.jpg", labelKey: "workspace.video2" as const },
+];
 
 export default function WorkspaceIntro() {
   const t = useLandingT();
@@ -16,7 +21,7 @@ export default function WorkspaceIntro() {
     <section id="potential" className="scroll-mt-24 py-20">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
-          <h2 className="mx-auto max-w-2xl text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+          <h2 className="mx-auto max-w-2xl break-keep text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
             {t("workspace.title")}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-300">
@@ -25,16 +30,23 @@ export default function WorkspaceIntro() {
         </div>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
-          {[t("workspace.video1"), t("workspace.video2")].map((label) => (
+          {VIDEOS.map(({ src, poster, labelKey }) => (
             <div
-              key={label}
-              className="flex aspect-video flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              key={src}
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/10">
-                <Play className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="relative aspect-video bg-slate-950">
+                <video
+                  className="h-full w-full object-cover object-top"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster={poster}
+                >
+                  <source src={src} type="video/webm" />
+                </video>
               </div>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">{t("workspace.videoPlaceholder")}</p>
+              <p className="px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200">{t(labelKey)}</p>
             </div>
           ))}
         </div>

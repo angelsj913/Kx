@@ -9,18 +9,13 @@ import {
   useState,
 } from "react";
 import { useSession } from "next-auth/react";
+import type { WorkspaceSummary as ServerWorkspaceSummary } from "@/lib/workspace";
 
 // 팀 워크스페이스 클라이언트 계층 — 활성 워크스페이스를 사용자별로 localStorage에 보관하고,
 // 모든 데이터 요청에 X-Workspace-Id 헤더를 실어 보낸다(개인 스코프면 헤더 없음).
 
-export interface WorkspaceSummary {
-  id: string;
-  name: string;
-  role: "owner" | "admin" | "member";
-  memberCount: number;
-  imageUrl?: string | null;
-  inviteCode?: string | null;
-}
+// 타입만 가져온다(빌드 시 지워짐) — workspace.ts의 서버 전용 런타임 코드는 클라이언트 번들에 포함되지 않는다.
+export type WorkspaceSummary = Omit<ServerWorkspaceSummary, "createdAt">;
 
 const WS_KEY_PREFIX = "kx.activeWorkspace";
 /** 레거시(전역) 키 — 사용자별 키로 이전 후 제거 */

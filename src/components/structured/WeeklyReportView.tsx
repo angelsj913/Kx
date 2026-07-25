@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2, BarChart3 } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
+import PanelShell from "./PanelShell";
 import type { WeeklyReport, WeeklyReportItem } from "@/lib/structured";
 import { useT } from "@/lib/i18n";
 
@@ -104,15 +105,11 @@ export default function WeeklyReportView({
   const status = useAutosave(id, data);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 dark:border-slate-800 bg-white shadow-sm dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <BarChart3 className="h-4 w-4 text-[var(--mode-accent)]" />
-          {t("structured.weeklyReport.title")}
-        </h2>
-        <SaveIndicator status={status} />
-      </div>
-
+    <PanelShell
+      icon={<BarChart3 className="h-4 w-4 text-[var(--mode-accent)]" />}
+      title={t("structured.weeklyReport.title")}
+      actions={<SaveIndicator status={status} />}
+    >
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 sm:grid-cols-2 sm:p-5">
         <Column
           title={t("structured.weeklyReport.thisWeek")}
@@ -125,6 +122,6 @@ export default function WeeklyReportView({
           onChange={(items) => setData((d) => ({ ...d, nextWeek: items }))}
         />
       </div>
-    </div>
+    </PanelShell>
   );
 }

@@ -23,7 +23,7 @@ type Copy = {
 const COPY: Partial<Record<AppLanguage, Copy>> & { en: Copy; ko: Copy } = {
   ko: {
     title: "친구 초대하고 Pro 받기",
-    desc: "친구가 내 코드를 입력하면 두 사람 모두 Pro 7일을 받습니다. 초대할수록 기간이 쌓여요.",
+    desc: "친구가 내 코드를 입력하면 두 사람 모두 Pro 7일을 받습니다. 초대는 계정당 최대 20명, Pro 체험은 최대 28일까지 쌓입니다.",
     yourCode: "내 추천 코드",
     copy: "복사",
     copied: "복사됨!",
@@ -38,7 +38,7 @@ const COPY: Partial<Record<AppLanguage, Copy>> & { en: Copy; ko: Copy } = {
   },
   en: {
     title: "Invite friends, get Pro",
-    desc: "When a friend enters your code, you both get 7 days of Pro. It stacks with every invite.",
+    desc: "When a friend enters your code, you both get 7 days of Pro. Max 20 successful invites per account; Pro trial stacks up to 28 days.",
     yourCode: "Your referral code",
     copy: "Copy",
     copied: "Copied!",
@@ -56,6 +56,8 @@ const COPY: Partial<Record<AppLanguage, Copy>> & { en: Copy; ko: Copy } = {
 type Status = {
   code: string;
   referredCount: number;
+  maxReferrals?: number;
+  remainingInvites?: number;
   activeGrant: { plan: string; until: string } | null;
 };
 
@@ -157,10 +159,22 @@ export default function ReferralCard() {
           </button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-          <span><b className="text-slate-700 dark:text-slate-200">{status.referredCount}</b>{c.referred}</span>
+          <span>
+            <b className="text-slate-700 dark:text-slate-200">{status.referredCount}</b>
+            {c.referred}
+            {typeof status.maxReferrals === "number" && (
+              <span className="text-slate-400"> / {status.maxReferrals}</span>
+            )}
+          </span>
+          {typeof status.remainingInvites === "number" && (
+            <span>
+              남은 초대 {status.remainingInvites}명
+            </span>
+          )}
           {status.activeGrant && (
             <span className="text-blue-600 dark:text-blue-300">
-              {new Date(status.activeGrant.until).toLocaleDateString()}{c.activeGrant}
+              {new Date(status.activeGrant.until).toLocaleDateString()}
+              {c.activeGrant}
             </span>
           )}
         </div>
