@@ -10,7 +10,6 @@ import {
   Presentation,
   Table2,
   MessageSquare,
-  Sparkles,
   Link2,
   Play,
 } from "lucide-react";
@@ -108,41 +107,117 @@ function PanelLecture({ progress = 0.7 }: { progress?: number }) {
   );
 }
 
+/** 생성된 산출물을 실제로 보여주는 패널 — 회색 스켈레톤 대신 진짜 슬라이드 내용을 담는다. */
 function PanelDocs() {
-  const icons = [FileText, Presentation, Table2];
+  const tabs = [
+    { icon: FileText, label: "문서" },
+    { icon: Presentation, label: "슬라이드" },
+    { icon: Table2, label: "표" },
+  ];
   return (
-    <div className="flex flex-col items-center justify-center gap-3 p-4">
-      {icons.map((Icon, i) => (
-        <div
-          key={i}
-          className="landing-card flex w-full max-w-xs items-center gap-3 rounded-xl p-3"
-          style={{ transform: `translateX(${(i - 1) * 12}px) rotate(${(i - 1) * 3}deg)` }}
-        >
-          <Icon className="h-5 w-5 text-blue-600" />
-          <div className="flex-1 space-y-1.5">
-            <div className="h-2 w-3/4 rounded bg-slate-300 dark:bg-slate-600" />
-            <div className="h-1.5 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
+    <div className="space-y-2.5 p-4">
+      <div className="flex items-center gap-1">
+        {tabs.map(({ icon: Icon, label }, i) => (
+          <span
+            key={label}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium ${
+              i === 1
+                ? "bg-blue-600 text-white"
+                : "text-slate-500 dark:text-slate-400"
+            }`}
+          >
+            <Icon className="h-3 w-3" />
+            {label}
+          </span>
+        ))}
+        <span className="ml-auto rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          내보내기
+        </span>
+      </div>
+
+      {/* 실제 생성된 슬라이드 */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="h-1 bg-blue-600" />
+        <div className="p-3.5">
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-600">Q3 매출 보고</p>
+          <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">제품별 매출 분석</p>
+          <ul className="mt-2.5 space-y-1.5 text-[11px] leading-snug text-slate-600 dark:text-slate-300">
+            <li className="flex gap-1.5"><span className="text-blue-600">•</span>제품 A — 6.2억 원 (+18%)</li>
+            <li className="flex gap-1.5"><span className="text-blue-600">•</span>제품 B — 5.1억 원 (+4%)</li>
+            <li className="flex gap-1.5"><span className="text-blue-600">•</span>제품 C — 3.7억 원 (−2%)</li>
+          </ul>
+          <div className="mt-3 flex items-end gap-1.5" aria-hidden>
+            {[62, 51, 37].map((v, i) => (
+              <span
+                key={i}
+                className="flex-1 rounded-t bg-blue-500/85"
+                style={{ height: `${v * 0.5}px` }}
+              />
+            ))}
           </div>
         </div>
-      ))}
+        <div className="flex items-center justify-between border-t border-slate-100 px-3.5 py-1.5 text-[9px] text-slate-400 dark:border-slate-800">
+          <span>Q3_매출_보고.pptx</span>
+          <span>2 / 3</span>
+        </div>
+      </div>
     </div>
   );
 }
 
+/** "한곳에서"를 말이 아니라 실제 워크스페이스 화면으로 보여준다(사이드바 + 대화 + 산출물). */
 function PanelUnified() {
-  const tiles = [MessageSquare, Sparkles, FileText, Presentation, Table2, Video];
+  const chats = [
+    { label: "미적분 극값 문제", active: false },
+    { label: "Q3 매출 보고서", active: true },
+    { label: "파이썬 기초 정리", active: false },
+  ];
   return (
-    <div className="grid grid-cols-3 gap-2 p-4">
-      {tiles.map((Icon, i) => (
-        <div
-          key={i}
-          className={`flex aspect-square items-center justify-center rounded-xl border ${
-            i === 0 ? "border-blue-500 bg-blue-600/10" : "border-slate-200 bg-white/60 dark:border-slate-700 dark:bg-slate-900/40"
-          }`}
-        >
-          <Icon className={`h-5 w-5 ${i === 0 ? "text-blue-600" : "text-slate-400"}`} />
+    <div className="flex h-full min-h-[17rem] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+      {/* 사이드바 */}
+      <div className="hidden w-[38%] shrink-0 flex-col gap-1 border-r border-slate-100 bg-slate-50/70 p-2.5 sm:flex dark:border-slate-800 dark:bg-slate-950/40">
+        <span className="mb-1 rounded-md bg-blue-600 px-2 py-1.5 text-center text-[10px] font-semibold text-white">
+          + 새 채팅
+        </span>
+        {chats.map(({ label, active }) => (
+          <span
+            key={label}
+            className={`truncate rounded-md px-2 py-1.5 text-[10px] ${
+              active
+                ? "bg-white font-medium text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100"
+                : "text-slate-500 dark:text-slate-400"
+            }`}
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* 대화 + 산출물 */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
+        <div className="self-end rounded-2xl rounded-br-sm bg-blue-600 px-2.5 py-1.5 text-[10px] leading-snug text-white">
+          3주차 강의 정리해서 보고서로 만들어줘
         </div>
-      ))}
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+          <MessageSquare className="h-3 w-3 text-blue-600" />
+          강의 노트를 정리해 문서 초안을 만들었어요.
+        </div>
+        <div className="mt-auto rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 dark:border-slate-700 dark:bg-slate-950/40">
+          <div className="flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+            <span className="truncate text-[10px] font-semibold text-slate-800 dark:text-slate-100">
+              3주차_강의노트.docx
+            </span>
+            <span className="ml-auto shrink-0 rounded bg-blue-600/10 px-1.5 py-0.5 text-[9px] font-medium text-blue-700 dark:text-blue-300">
+              보기
+            </span>
+          </div>
+          <ul className="mt-1.5 space-y-1 text-[10px] leading-snug text-slate-600 dark:text-slate-300">
+            <li>• 극값 판정법 — 1계·2계 도함수</li>
+            <li>• 증감표 작성 순서</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

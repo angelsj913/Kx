@@ -50,7 +50,8 @@ export default function Header() {
   const langRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    function onScroll() { setScrolled(window.scrollY > 8); }
+    // 8px는 너무 빨라 살짝만 움직여도 배경이 튀었다. 헤더 높이 근처에서 바꾼다.
+    function onScroll() { setScrolled(window.scrollY > 48); }
     onScroll();
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -68,10 +69,13 @@ export default function Header() {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        // 최상단에서는 배경을 아예 칠하지 않는다 — 배경이 없으면 헤더/본문 경계선이
+        // 생길 수가 없다. 색을 맞추려던 과거 3번의 시도가 전부 재발한 이유가 이것이다.
+        // 스크롤 후에는 프로스트 글래스로 전환해, 뒤 배경이 무엇이든 블러가 흡수한다.
+        className={`fixed inset-x-0 top-0 z-50 border-b transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
           scrolled
-            ? "border-b border-slate-200/40 bg-[var(--landing-header-bg-scrolled)] shadow-sm backdrop-blur-md dark:border-slate-800/50"
-            : "border-b border-transparent bg-[var(--landing-header-bg)] backdrop-blur-[2px]"
+            ? "border-slate-900/[0.06] bg-white/70 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/70"
+            : "border-transparent bg-transparent"
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -152,7 +156,7 @@ export default function Header() {
 
         <AnimatePresence>
           {menuOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-200/60 bg-[var(--landing-header-bg)] backdrop-blur-md dark:border-slate-800/60">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-900/[0.06] bg-white/85 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/85">
               <nav className="mx-auto flex max-w-6xl flex-col px-6 py-4">
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">
