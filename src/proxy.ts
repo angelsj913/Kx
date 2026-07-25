@@ -5,11 +5,21 @@ import { GEO_COOKIE } from "@/lib/constants";
 /**
  * Next.js 16 proxy(구 middleware) — 세 가지를 한 곳에서 처리한다.
  *  1) /app 보호: 미로그인 접근은 로그인으로 리다이렉트
- *  2) CSP nonce 주입 + 보안 응답 헤더(CSP/HSTS/X-Content-Type-Options 등)
+ *  2) 보안 응답 헤더(CSP/HSTS/X-Content-Type-Options 등)
  *  3) 접속 국가 기반 "기본" 언어 쿠키(사용자가 고른 언어가 항상 우선)
  *
- * CSP는 script-src에서 unsafe-inline/unsafe-eval을 빼고 nonce + strict-dynamic으로 잠근다
- * (개발 모드만 HMR용 unsafe-eval 허용).
+ * CSP script-src 정책 — 왜 nonce/strict-dynamic을 쓰지 않는가:
+ * 이전 버전은 `'nonce-<uuid>' 'strict-dynamic'`을 썼는데, 이 조합은 프로덕션에서
+ * 사이트의 모든 JS를 차단했다. 이유는 두 가지가 겹친다.
+ *  (a) Next.js는 nonce를 `x-nonce`가 아니라 *요청 헤더의* Content-Security-Policy를
+ *      파싱해서 얻는다(app-render/get-script-nonce-from-header). 응답에만 CSP를 달면
+ *      script 태그에 nonce가 붙지 않는다.
+ *  (b) 랜딩(/)은 정적 프리렌더 페이지라 요청마다 다른 nonce를 주입하는 것 자체가 불가능하다
+ *      (Next.js 공식 문서도 nonce는 동적 렌더링 전용이라고 명시).
+ * `strict-dynamic`이 있으면 규격상 `'self'`가 무시되므로, nonce 없는 정적 청크는 전부 거부된다.
+ * 따라서 정적 렌더링을 유지하는 한 `'unsafe-inline'`이 필요하다(Next.js가 하이드레이션
+ * 데이터를 인라인 script로 주입하기 때문). 진짜 nonce CSP가 필요하면 랜딩을 동적 렌더링으로
+ * 전환하는 별도 작업이 선행돼야 한다.
  */
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
@@ -23,13 +33,13 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2) CSP nonce — UUID면 충분(예측 불가·요청마다 유일). Buffer 미의존.
-  const nonce = crypto.randomUUID();
+  // 2) 보안 응답 헤더
   const csp = [
     "default-src 'self'",
+    // 개발 모드는 HMR이 eval을 쓴다. 프로덕션은 unsafe-eval 없이 unsafe-inline만 허용.
     isDev
-      ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
-      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' https: data: blob:",
     "media-src 'self' https: blob:",
@@ -46,10 +56,7 @@ export const proxy = auth((req) => {
     .replace(/\s{2,}/g, " ")
     .trim();
 
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-nonce", nonce);
-
-  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  const res = NextResponse.next();
 
   res.headers.set("Content-Security-Policy", csp);
   res.headers.set("X-Content-Type-Options", "nosniff");
