@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { scanSourceForSecrets } from "./secretScan";
+import { PAID_PRICE_COMBOS, priceIdFor } from "@/lib/stripe";
 
 export type CheckResult = "pass" | "fail" | "warn";
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
@@ -383,6 +384,42 @@ function checkStripeWebhookSecret(): SecurityCheckOutcome {
       : "Stripe 키는 있으나 STRIPE_WEBHOOK_SECRET이 없습니다. 웹훅 위조에 취약할 수 있습니다.",
     remediation: "Stripe 대시보드에서 웹훅 시크릿을 발급해 STRIPE_WEBHOOK_SECRET에 넣으세요.",
     result: hasWh ? "pass" : "fail",
+  };
+}
+
+/**
+ * Stripe 키가 있는데 Price ID env 가 비면 모든 결제가 503 으로 죽는다.
+ * 조용히 죽는 대신 자가점검에서 잡는다.
+ */
+function checkStripePriceIds(): SecurityCheckOutcome {
+  const checkId = "env.stripe_price_ids_present";
+  const skillIds = ["testing-for-sensitive-data-exposure"];
+  const title = "Stripe Price ID";
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return {
+      checkId,
+      skillIds,
+      severity: "low",
+      title,
+      detail: "STRIPE_SECRET_KEY가 없어 결제 미연동으로 간주합니다.",
+      remediation: "Stripe 연동 시 플랜×주기별 Price ID도 함께 설정하세요.",
+      result: "pass",
+    };
+  }
+  const missing = PAID_PRICE_COMBOS.filter(([plan, interval]) => !priceIdFor(plan, interval)).map(
+    ([plan, interval]) => `STRIPE_PRICE_${plan.toUpperCase()}_${interval.toUpperCase()}`,
+  );
+  return {
+    checkId,
+    skillIds,
+    severity: "high",
+    title,
+    detail:
+      missing.length === 0
+        ? "유료 플랜 4종의 Price ID가 모두 설정되어 있습니다."
+        : `Price ID가 비어 있어 해당 결제가 실패합니다: ${missing.join(", ")}`,
+    remediation: "Stripe 대시보드의 Price 객체 ID를 해당 환경변수에 넣으세요.",
+    result: missing.length === 0 ? "pass" : "fail",
   };
 }
 
@@ -1169,6 +1206,7 @@ export const DEFAULT_CHECK_IDS = [
   "deps.next_auth_min_version",
   "env.auth_secret_present",
   "env.stripe_webhook_secret_present",
+  "env.stripe_price_ids_present",
   "env.cron_secret_present",
   "deps.npm_audit_critical_high",
   // v2 스킬 기반 신규 점검팩
@@ -1202,6 +1240,7 @@ const RUNNERS: Record<string, () => Promise<SecurityCheckOutcome> | SecurityChec
   "deps.next_auth_min_version": checkNextAuthVersion,
   "env.auth_secret_present": checkAuthSecret,
   "env.stripe_webhook_secret_present": checkStripeWebhookSecret,
+  "env.stripe_price_ids_present": checkStripePriceIds,
   "env.cron_secret_present": checkCronSecretPresent,
   "deps.npm_audit_critical_high": checkNpmAuditCriticalHigh,
   // v2 스킬 기반 신규 점검팩

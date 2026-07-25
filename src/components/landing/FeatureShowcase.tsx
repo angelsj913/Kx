@@ -538,7 +538,9 @@ function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
             const Mock = MOCKS[i];
             const reversed = i % 2 === 1;
             return (
-              <motion.div key={item.no} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="grid items-center gap-8 md:grid-cols-2">
+              // reduced-motion 폴백은 애니메이션을 쓰지 않는다. 이전엔 whileInView+opacity:0라
+              // 동작 줄이기를 켠 사용자(특히 iOS)에게 콘텐츠가 안 보이는 경로가 됐다.
+              <div key={item.no} className="grid items-center gap-8 md:grid-cols-2">
                 <div className={reversed ? "md:order-2" : ""}>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
@@ -548,7 +550,7 @@ function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
                   <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">{item.desc}</p>
                 </div>
                 <div className={reversed ? "md:order-1" : ""}><Mock /></div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -559,7 +561,7 @@ function StaticShowcase({ copy }: { copy: ShowcaseCopy }) {
 
 export default function FeatureShowcase() {
   const copy = useLocalCopy(COPY);
-  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const { sectionRef, p, reducedMotion, mounted } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const count = MOCKS.length;
   const prevIdx = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -578,7 +580,9 @@ export default function FeatureShowcase() {
   return (
     <section
       ref={sectionRef}
-      className="relative h-[440vh] bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"
+      // 배경을 직접 칠하지 않는다 — 불투명 배경은 .landing-shell의 공용 표면을 440vh 동안
+      // 덮어버려 고정 헤더 뒤가 순백이 되고 경계선이 생겼다. 공용 표면이 비치게 둔다.
+      className="relative h-[440vh]"
     >
       <div className="sticky top-0 flex min-h-[100svh] items-center overflow-hidden py-20 sm:py-24">
         <div
@@ -591,7 +595,7 @@ export default function FeatureShowcase() {
             <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base dark:text-slate-400">{copy.subtitle}</p>
           </div>
           <div className="mt-10 grid items-center gap-8 md:mt-14 md:grid-cols-[0.88fr_1.12fr] md:gap-12">
-            <motion.div key={item.no} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div key={item.no} initial={mounted ? { opacity: 0, y: 14 } : false} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-center gap-3">
                 <span className="text-sm font-bold tracking-widest text-blue-600 dark:text-blue-400">{item.no}</span>
                 <span className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">{item.tag}</span>

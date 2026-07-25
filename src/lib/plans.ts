@@ -156,6 +156,9 @@ export function isPlanId(v: unknown): v is PlanId {
   return v === "free" || v === "pro" || v === "professional";
 }
 
+/** 플랜 등급 — 업그레이드/다운그레이드 방향 판별에 사용 */
+export const PLAN_RANK: Record<PlanId, number> = { free: 0, pro: 1, professional: 2 };
+
 /** checkout 등 — free는 결제 대상 아님, 없으면 undefined */
 export function getPlan(id: string | null | undefined): PlanDef | undefined {
   if (!id || !isPlanId(id)) return undefined;

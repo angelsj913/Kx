@@ -154,7 +154,7 @@ function MockLecturePanel({ progress }: { progress: number }) {
 
 export default function WorkLectureScroll() {
   const t = useLandingT();
-  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const { sectionRef, p, reducedMotion, mounted } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const prevIdx = useRef(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -218,7 +218,9 @@ export default function WorkLectureScroll() {
               {officeItems.map((item, i) => {
                 const isActive = i === activeIdx;
                 return (
-                  <div key={item.title} className={`transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-40"}`}>
+                  // 비활성도 읽히게 둔다. opacity-40 + text-slate-500이 이중으로 걸려
+                  // 배경에 묻혔다 — 강조는 투명도가 아니라 색·굵기로 준다.
+                  <div key={item.title} className={`transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-70"}`}>
                     <div className="flex items-center gap-3">
                       <span
                         className={`relative z-10 flex h-3 w-3 shrink-0 rounded-full border-2 ${
@@ -229,11 +231,11 @@ export default function WorkLectureScroll() {
                       />
                       <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">{item.group}</p>
                     </div>
-                    <h2 className={`mt-2 text-xl font-bold sm:text-2xl ${isActive ? "text-slate-900 dark:text-slate-50" : "text-slate-500"}`}>
+                    <h2 className={`mt-2 text-xl font-bold sm:text-2xl ${isActive ? "text-slate-900 dark:text-slate-50" : "text-slate-600 dark:text-slate-400"}`}>
                       {item.title}
                     </h2>
                     {isActive && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <motion.div initial={mounted ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }}>
                         <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.desc}</p>
                         <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">{item.detail}</p>
                       </motion.div>

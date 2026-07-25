@@ -77,6 +77,8 @@ export async function POST(request: Request) {
           merchantUid,
           userId: userId || cs.metadata?.userId || null,
           stripeSession: cs.id,
+          // 웹훅이 누락돼도 이 경로로 Customer id 가 남는다
+          stripeCustomerId: typeof cs.customer === "string" ? cs.customer : cs.customer?.id ?? null,
           source: "checkout_confirm",
         });
         if (!result.ok) {

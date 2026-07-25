@@ -15,7 +15,6 @@ import {
   ExternalLink,
   Check,
   Trash2,
-  Plus,
   MessageCircle,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
@@ -58,12 +57,6 @@ const LEGAL_LINKS: { labelKey: AppDictKey; href: string }[] = [
   { labelKey: "settings.legal.consent", href: "/support/legal#consent" },
   { labelKey: "settings.legal.privacy", href: "/support/legal#privacy" },
 ];
-
-const BRAND_LABEL: Record<string, string> = {
-  visa: "Visa",
-  mastercard: "Mastercard",
-  amex: "American Express",
-};
 
 export default function SettingsModal({
   open,
@@ -218,17 +211,6 @@ function GeneralPanel() {
           ))}
         </div>
       </section>
-      <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {t("settings.plan.current")}
-        </h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          {settings?.plan ? PLANS[isPlanId(settings.plan) ? settings.plan : "free"].name : "…"}
-        </p>
-        <p className="mt-2 text-xs text-slate-400">
-          {t("settings.plan.changeHint")}
-        </p>
-      </section>
     </div>
   );
 }
@@ -367,39 +349,19 @@ type OrderRow = {
 
 function BillingPanel() {
   const t = useT();
-  const { settings } = useSettings();
-  const isPaidPlan =
-    isPlanId(settings?.plan ?? "free") && (settings?.plan ?? "free") !== "free";
-  const [methods, setMethods] = useState<
-    { id: string; brand: string; last4: string }[]
-  >([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
-  const [brand, setBrand] = useState("visa");
-  const [last4, setLast4] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    const [m, o] = await Promise.all([
-      fetch("/api/billing/methods").then((r) => r.json()),
-      fetch("/api/billing/orders").then((r) => r.json()),
-    ]);
-    if (m.methods) setMethods(m.methods);
-    if (o.orders) setOrders(o.orders);
-  }, []);
-
+  // 결제수단 등록 UI는 제거됐다 — 자체 DB에 브랜드·뒤 4자리만 저장하던 장식이라
+  // 실제 결제 능력이 없었고, 카드를 등록했다고 오해하게 만들었다.
+  // 실제 카드 관리는 Stripe 결제 포털이 맡는다.
   // await 이후 setState — 동기 effect setState 회피
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [m, o] = await Promise.all([
-          fetch("/api/billing/methods").then((r) => r.json()),
-          fetch("/api/billing/orders").then((r) => r.json()),
-        ]);
+        const o = await fetch("/api/billing/orders").then((r) => r.json());
         if (cancelled) return;
-        if (m.methods) setMethods(m.methods);
         if (o.orders) setOrders(o.orders);
       } catch {
         /* ignore */
@@ -410,123 +372,8 @@ function BillingPanel() {
     };
   }, []);
 
-  async function addMethod() {
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/billing/methods", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ brand, last4 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? t("billing.addFailed"));
-      setLast4("");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("common.error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeMethod(id: string) {
-    setError("");
-    const res = await fetch("/api/billing/methods", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data?.error ?? t("billing.removeFailed"));
-      return;
-    }
-    await load();
-  }
-
   return (
     <div className="space-y-8">
-      <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.methodsTitle")}</h3>
-        <p className="mt-1 text-xs text-slate-500">
-          {t("billing.methodsHint")}
-        </p>
-        <ul className="mt-3 space-y-2">
-          {methods.length === 0 && (
-            <li className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-600">
-              {t("billing.methodsEmpty")}
-            </li>
-          )}
-          {methods.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/40"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-14 items-center justify-center rounded-md bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-white dark:bg-slate-100 dark:text-slate-900">
-                  {m.brand === "visa"
-                    ? "VISA"
-                    : m.brand === "mastercard"
-                      ? "MC"
-                      : m.brand === "amex"
-                        ? "AMEX"
-                        : "CARD"}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {BRAND_LABEL[m.brand] ??
-                      (m.brand === "local" ? t("billing.cardLocal") : t("billing.cardGeneric"))}{" "}
-                    ···· {m.last4}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeMethod(m.id)}
-                disabled={isPaidPlan && methods.length <= 1}
-                title={
-                  isPaidPlan && methods.length <= 1
-                    ? t("billing.cancelPlanFirst")
-                    : t("billing.remove")
-                }
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-3 dark:border-slate-700">
-          <select
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-          >
-            <option value="visa">Visa</option>
-            <option value="mastercard">Mastercard</option>
-            <option value="amex">Amex</option>
-            <option value="local">{t("billing.cardLocal")}</option>
-          </select>
-          <input
-            value={last4}
-            onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder={t("billing.last4Placeholder")}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void addMethod()}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" /> {t("common.add")}
-          </button>
-        </div>
-        {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-      </section>
-
       <section>
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.historyTitle")}</h3>
         <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
@@ -732,41 +579,36 @@ function DataPanel() {
         <section>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("settings.data.usage")}</h3>
           <p className="mt-1 text-xs text-slate-500">{t("settings.data.usagePercentHint")}</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {Object.entries(usage.usage).map(([key, v]) => {
-              const labelKey = `settings.data.metric.${key}` as Parameters<typeof t>[0];
-              const label = t(labelKey);
-              const displayLabel =
-                !label || label === labelKey || label.startsWith("settings.data.metric.")
-                  ? key
-                  : label;
-              const pct =
-                v.max == null || v.max <= 0
-                  ? null
-                  : Math.min(100, Math.round((v.used / v.max) * 100));
+          {(() => {
+            // 항목별로 쪼개 보여주는 대신 전체 한도를 합쳐 한 줄로. 무제한(max=null) 항목을
+            // 섞으면 비율이 의미를 잃으므로 합계에서 제외한다.
+            const limited = Object.values(usage.usage).filter((v) => v.max != null && v.max > 0);
+            if (limited.length === 0) {
               return (
-                <div
-                  key={key}
-                  className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700"
-                >
-                  <p className="text-xs text-slate-500">{displayLabel}</p>
-                  <p className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    {pct == null ? t("settings.data.usageUnlimited") : `${pct}%`}
-                  </p>
-                  {pct != null && (
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-blue-600"
-                        }`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
+                <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  {t("settings.data.usageUnlimited")}
+                </p>
               );
-            })}
-          </div>
+            }
+            const used = limited.reduce((sum, v) => sum + v.used, 0);
+            const max = limited.reduce((sum, v) => sum + v.max!, 0);
+            const pct = Math.min(100, Math.round((used / max) * 100));
+            return (
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-blue-600"
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                  {pct}%
+                </span>
+              </div>
+            );
+          })()}
         </section>
       )}
     </div>
@@ -777,12 +619,36 @@ function PlanPanel() {
   const t = useT();
   const { settings } = useSettings();
   const current = isPlanId(settings?.plan) ? settings!.plan : "free";
+  const isSubscribed = current !== "free";
+  // 결제 개시 전에는 CTA 를 켜두지 않는다 — 눌러도 서버가 503 을 돌려주던 막다른 길이었다.
+  // env 를 켜는 순간 코드 변경 없이 되살아난다.
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "1";
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState("");
+
+  // 해지·플랜 변경은 전부 Stripe 고객 포털이 맡는다.
+  async function openPortal() {
+    setPortalBusy(true);
+    setPortalError("");
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.error ?? t("settings.plan.portalFailed"));
+      window.location.href = data.url;
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : t("settings.plan.portalFailed"));
+      setPortalBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
         {t("settings.plan.sameAsHome")}
       </p>
+      {portalError && (
+        <p className="text-sm text-red-600 dark:text-red-400">{portalError}</p>
+      )}
       <div className="grid gap-4 lg:grid-cols-3">
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
           const p = PLANS[id];
@@ -818,7 +684,18 @@ function PlanPanel() {
                 >
                   {t("settings.plan.inUse")}
                 </button>
-              ) : (
+              ) : isSubscribed ? (
+                // 구독 중이면 상위·하위 어느 쪽이든 체크아웃을 새로 열지 않는다.
+                // 새 구독이 하나 더 생겨 이중 청구되기 때문. 변경도 해지도 포털에서.
+                <button
+                  type="button"
+                  onClick={openPortal}
+                  disabled={portalBusy}
+                  className="mt-5 w-full rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-500 hover:text-blue-600 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
+                >
+                  {t("settings.plan.manage")}
+                </button>
+              ) : paymentsEnabled ? (
                 <a
                   href={`/checkout?plan=${id}`}
                   target="_blank"
@@ -827,6 +704,14 @@ function PlanPanel() {
                 >
                   {t("settings.plan.subscribe")}
                 </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-5 w-full cursor-not-allowed rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-500 dark:bg-slate-700"
+                >
+                  {t("settings.plan.comingSoon")}
+                </button>
               )}
             </div>
           );
@@ -840,18 +725,9 @@ function AboutPanel() {
   const t = useT();
   return (
     <div className="flex flex-col items-center py-8 text-center">
-      <Logo size="lg" />
-      <p className="mt-6 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-        <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent dark:hidden">
-          Z
-        </span>
-        <span className="hidden bg-gradient-to-br from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent dark:inline">
-          Z
-        </span>
-        eff{" "}
-        <span className="text-blue-600 dark:text-blue-400">AI</span>
-      </p>
-      <p className="mt-2 max-w-sm text-sm text-slate-500">
+      {/* Logo가 이미 마크+워드마크를 그린다 — 아래에 브랜드명을 한 번 더 찍지 않는다 */}
+      <Logo size="xl" />
+      <p className="mt-3 max-w-sm text-sm text-slate-500">
         {t("settings.about.tagline")}
       </p>
       <p className="mt-8 rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">

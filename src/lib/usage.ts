@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { featureForTool, getPlanOrFree, type PlanId } from "@/lib/plans";
+import { featureForTool, getPlanOrFree, PLAN_RANK, type PlanId } from "@/lib/plans";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -27,7 +27,6 @@ export class QuotaError extends Error {
   }
 }
 
-const PLAN_RANK: Record<PlanId, number> = { free: 0, pro: 1, professional: 2 };
 
 function asPlanId(v: string | null | undefined): PlanId {
   return v === "pro" || v === "professional" || v === "free" ? v : "free";
