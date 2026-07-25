@@ -22,7 +22,7 @@ import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
 import ReferralCard from "@/components/settings/ReferralCard";
 import InquiryWorkspaceView from "@/components/InquiryWorkspaceView";
-import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
+import { PLANS, PLAN_RANK, type PlanId, isPlanId } from "@/lib/plans";
 import { LANGUAGE_ORDER, LANGUAGE_LABELS } from "@/lib/languages";
 import {
   useT,
@@ -217,17 +217,6 @@ function GeneralPanel() {
             </button>
           ))}
         </div>
-      </section>
-      <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {t("settings.plan.current")}
-        </h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          {settings?.plan ? PLANS[isPlanId(settings.plan) ? settings.plan : "free"].name : "…"}
-        </p>
-        <p className="mt-2 text-xs text-slate-400">
-          {t("settings.plan.changeHint")}
-        </p>
       </section>
     </div>
   );
@@ -732,41 +721,36 @@ function DataPanel() {
         <section>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("settings.data.usage")}</h3>
           <p className="mt-1 text-xs text-slate-500">{t("settings.data.usagePercentHint")}</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {Object.entries(usage.usage).map(([key, v]) => {
-              const labelKey = `settings.data.metric.${key}` as Parameters<typeof t>[0];
-              const label = t(labelKey);
-              const displayLabel =
-                !label || label === labelKey || label.startsWith("settings.data.metric.")
-                  ? key
-                  : label;
-              const pct =
-                v.max == null || v.max <= 0
-                  ? null
-                  : Math.min(100, Math.round((v.used / v.max) * 100));
+          {(() => {
+            // 항목별로 쪼개 보여주는 대신 전체 한도를 합쳐 한 줄로. 무제한(max=null) 항목을
+            // 섞으면 비율이 의미를 잃으므로 합계에서 제외한다.
+            const limited = Object.values(usage.usage).filter((v) => v.max != null && v.max > 0);
+            if (limited.length === 0) {
               return (
-                <div
-                  key={key}
-                  className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700"
-                >
-                  <p className="text-xs text-slate-500">{displayLabel}</p>
-                  <p className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    {pct == null ? t("settings.data.usageUnlimited") : `${pct}%`}
-                  </p>
-                  {pct != null && (
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-blue-600"
-                        }`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
+                <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  {t("settings.data.usageUnlimited")}
+                </p>
               );
-            })}
-          </div>
+            }
+            const used = limited.reduce((sum, v) => sum + v.used, 0);
+            const max = limited.reduce((sum, v) => sum + v.max!, 0);
+            const pct = Math.min(100, Math.round((used / max) * 100));
+            return (
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-blue-600"
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                  {pct}%
+                </span>
+              </div>
+            );
+          })()}
         </section>
       )}
     </div>
@@ -787,6 +771,9 @@ function PlanPanel() {
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
           const p = PLANS[id];
           const isCurrent = id === current;
+          // 하위 등급 카드에 결제 버튼을 켜두면 안 된다 — 서버가 free 결제를 거부하므로
+          // 눌러도 오류 페이지로 가는 막다른 길이었다. 다운그레이드는 아직 준비 전이라 비활성.
+          const isDowngrade = PLAN_RANK[id] < PLAN_RANK[current];
           return (
             <div
               key={id}
@@ -818,6 +805,19 @@ function PlanPanel() {
                 >
                   {t("settings.plan.inUse")}
                 </button>
+              ) : isDowngrade ? (
+                <>
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-5 w-full cursor-not-allowed rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-500 dark:bg-slate-700"
+                  >
+                    {t("settings.plan.downgrade")}
+                  </button>
+                  <p className="mt-2 text-center text-xs text-slate-400">
+                    {t("settings.plan.downgradeHint")}
+                  </p>
+                </>
               ) : (
                 <a
                   href={`/checkout?plan=${id}`}
@@ -840,18 +840,9 @@ function AboutPanel() {
   const t = useT();
   return (
     <div className="flex flex-col items-center py-8 text-center">
-      <Logo size="lg" />
-      <p className="mt-6 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-        <span className="bg-gradient-to-br from-blue-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent dark:hidden">
-          Z
-        </span>
-        <span className="hidden bg-gradient-to-br from-sky-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent dark:inline">
-          Z
-        </span>
-        eff{" "}
-        <span className="text-blue-600 dark:text-blue-400">AI</span>
-      </p>
-      <p className="mt-2 max-w-sm text-sm text-slate-500">
+      {/* Logo가 이미 마크+워드마크를 그린다 — 아래에 브랜드명을 한 번 더 찍지 않는다 */}
+      <Logo size="xl" />
+      <p className="mt-3 max-w-sm text-sm text-slate-500">
         {t("settings.about.tagline")}
       </p>
       <p className="mt-8 rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">

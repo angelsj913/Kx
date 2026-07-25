@@ -236,9 +236,6 @@ export default function WhyZeff() {
   }, [p, count]);
 
   const localP = sceneLocalProgress(p, count, idx);
-  // 진행선은 "지나온 단계"를 나타내므로 활성 원에 스냅시킨다.
-  // 예전엔 컨테이너 높이의 %라 원과 무관한 지점(주로 원 중간)에서 끊겼다.
-  const lineFill = count > 1 ? (idx / (count - 1)) * 100 : 0;
 
   if (reducedMotion) {
     return (
@@ -274,25 +271,28 @@ export default function WhyZeff() {
             <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300">{copy.subtitle}</p>
           </div>
 
-          {/* items-start: 레일 칼럼이 오른쪽 카드 높이까지 늘어나면 세로선이 목록보다
-              길어져 마지막 원 아래로 꼬리가 생긴다. 칼럼을 내용 높이로 고정한다. */}
           <div className="grid items-start gap-8 lg:grid-cols-[240px_1fr]">
-            <div className="relative hidden self-start lg:block">
-              {/* 선은 첫 원 중심(1.125rem = w-9의 절반)에서 마지막 원 중심까지만 긋는다.
-                  원 안에서 시작·끝나지 않으므로 "선이 원을 관통"하는 인상이 사라진다. */}
-              <div className="absolute bottom-[1.125rem] left-[1.125rem] top-[1.125rem] w-px bg-slate-200 dark:bg-slate-700" />
-              <div
-                className="absolute left-[1.125rem] top-[1.125rem] w-px bg-blue-600 transition-[height] duration-300 ease-out dark:bg-blue-400"
-                style={{ height: `calc((100% - 2.25rem) * ${lineFill} / 100)` }}
-              />
+            <div className="hidden self-start lg:block">
               <ol className="space-y-10">
                 {copy.pillars.map((pillar, i) => {
                   const Icon = RAIL_ICONS[i]!;
                   const active = i === idx;
                   return (
-                    <li key={pillar.title} className={`flex gap-4 transition-opacity ${active ? "opacity-100" : "opacity-45"}`}>
+                    <li key={pillar.title} className="relative flex gap-4">
+                      {/* 연결선은 컨테이너 전체가 아니라 원과 원 "사이"에만 긋는다.
+                          top-9 = 원 아래 모서리, -bottom-10 = space-y-10 간격의 끝(다음 원 위 모서리).
+                          원 뒤를 지나는 픽셀이 없으므로 투명도·배경색과 무관하게 관통이 불가능하고,
+                          마지막 항목엔 선이 없어 꼬리도 생기지 않는다. */}
+                      {i < count - 1 && (
+                        <span
+                          aria-hidden
+                          className={`absolute -bottom-10 left-[1.125rem] top-9 w-px transition-colors duration-300 ${
+                            i < idx ? "bg-blue-600 dark:bg-blue-400" : "bg-slate-200 dark:bg-slate-700"
+                          }`}
+                        />
+                      )}
                       <span
-                        className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 ${
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                           active
                             ? "border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                             : "border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-900"
@@ -300,7 +300,8 @@ export default function WhyZeff() {
                       >
                         <Icon className="h-4 w-4" />
                       </span>
-                      <div>
+                      {/* 투명도는 텍스트에만 건다 — li 전체에 걸면 원까지 반투명해져 선이 비친다 */}
+                      <div className={`transition-opacity ${active ? "opacity-100" : "opacity-45"}`}>
                         <p className="text-sm font-bold text-slate-900 dark:text-slate-50">{pillar.title}</p>
                         {active && <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{pillar.desc}</p>}
                       </div>
