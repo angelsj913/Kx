@@ -35,20 +35,18 @@ async function run() {
     take: 200,
   });
 
-  let converted = 0;
   let mailed = 0;
+  const now = new Date();
+
+  if (candidates.length > 0) {
+    await prisma.user.updateMany({
+      where: { id: { in: candidates.map((u) => u.id) } },
+      data: { accountStatus: "dormant", dormantAt: now },
+    });
+  }
+  const converted = candidates.length;
 
   for (const u of candidates) {
-    const now = new Date();
-    await prisma.user.update({
-      where: { id: u.id },
-      data: {
-        accountStatus: "dormant",
-        dormantAt: now,
-      },
-    });
-    converted += 1;
-
     if (u.email && !u.dormantNotifiedAt) {
       const name = u.name || "고객";
       const subject = "[ZEFF AI] 본인의 계정이 휴면 상태로 전환되었습니다";
