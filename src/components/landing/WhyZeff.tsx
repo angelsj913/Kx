@@ -149,7 +149,7 @@ function PanelUnified() {
 
 export default function WhyZeff() {
   const copy = useLocalCopy(COPY);
-  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const { sectionRef, p, reducedMotion, mounted } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const count = copy.pillars.length;
   const prevIdx = useRef(0);
   const [idx, setIdx] = useState(0);
@@ -231,7 +231,7 @@ export default function WhyZeff() {
 
             <motion.div
               key={idx}
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={mounted ? { opacity: 0, scale: 0.96 } : false}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.35 }}
               className="landing-card min-h-[18rem] overflow-hidden rounded-2xl shadow-lg"

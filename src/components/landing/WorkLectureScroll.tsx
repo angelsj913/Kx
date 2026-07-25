@@ -154,7 +154,7 @@ function MockLecturePanel({ progress }: { progress: number }) {
 
 export default function WorkLectureScroll() {
   const t = useLandingT();
-  const { sectionRef, p, reducedMotion } = useScrollProgress<HTMLElement>({ topOffset: 72 });
+  const { sectionRef, p, reducedMotion, mounted } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const prevIdx = useRef(0);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -233,7 +233,7 @@ export default function WorkLectureScroll() {
                       {item.title}
                     </h2>
                     {isActive && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                      <motion.div initial={mounted ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }}>
                         <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.desc}</p>
                         <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">{item.detail}</p>
                       </motion.div>

@@ -131,8 +131,18 @@ body {
   }
 }
 
+/* ── 랜딩 배경: 그라데이션을 "뷰포트에 고정"한다 ──
+   이전에는 .landing-shell(문서 전체 ~15,000px)에 그라데이션을 깔았다. 그러면 화면 최상단에
+   실제로 칠해지는 색이 스크롤에 따라 계속 변하는데, 헤더는 position:fixed에 상수 색이라
+   scrollY===0에서만 일치할 수 있었다 — 이게 헤더/본문 경계선이 3번이나 재발한 진짜 원인이다.
+   (과거 수정들은 전부 색상 상수만 바꿔서 구조는 그대로였다.)
+
+   그라데이션을 이미 존재하던 fixed 의사요소로 옮기면 화면 최상단 색이 항상
+   --landing-gradient-start 로 고정되어, 같은 토큰에서 파생된 헤더 색과 영구히 일치한다.
+   background-attachment: fixed 는 iOS Safari에서 깨지므로 쓰지 않는다. fixed 레이어를
+   새로 늘리지 않고 기존 레이어가 칠하는 내용만 바꾼 것이라 iOS 페인트 부담도 그대로다. */
 .landing-shell {
-  background: var(--landing-gradient);
+  background: var(--landing-bg);
   position: relative;
 }
 .landing-shell::before {
@@ -140,7 +150,7 @@ body {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  background: var(--landing-glow);
+  background: var(--landing-glow), var(--landing-gradient);
   z-index: 0;
 }
 .landing-shell > *:not(header) {
@@ -150,6 +160,8 @@ body {
 .landing-card {
   border: 1px solid rgb(226 232 240 / 0.8);
   background: rgb(255 255 255 / 0.72);
+  /* 미접두 backdrop-filter는 Safari 18+ 전용 — 구버전 iOS를 위해 접두어를 함께 둔다. */
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 .dark .landing-card {

@@ -8,12 +8,18 @@ export function useScrollProgress<T extends HTMLElement>(opts?: { topOffset?: nu
   const sectionRef = useRef<T>(null);
   const [p, setP] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // 하이드레이션 완료 여부. SSR 단계에서 framer-motion의 initial(opacity:0)을 적용하면
+  // JS가 실패했을 때 콘텐츠가 영구히 안 보인다(실제로 CSP가 JS를 막아 장애가 났었다).
+  // mounted=false 동안 initial={false}를 주면 서버 HTML이 곧바로 보이는 상태로 나가고,
+  // 하이드레이션 이후에만 장면 전환 애니메이션이 동작한다.
+  const [mounted, setMounted] = useState(false);
   const target = useRef(0);
   const current = useRef(0);
   const raf = useRef<number | null>(null);
   const reduced = useRef(false);
 
   useEffect(() => {
+    setMounted(true);
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     reduced.current = mq.matches;
     setReducedMotion(mq.matches);
@@ -61,7 +67,7 @@ export function useScrollProgress<T extends HTMLElement>(opts?: { topOffset?: nu
     };
   }, [topOffset]);
 
-  return { sectionRef, p, reducedMotion };
+  return { sectionRef, p, reducedMotion, mounted };
 }
 
 /** 균등 밴드 scene index (히스테리시스 없음). */
