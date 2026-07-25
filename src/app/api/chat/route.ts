@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { put } from "@vercel/blob";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
@@ -49,11 +49,8 @@ type StreamEvent =
   | { type: "error"; sessionId: string; message: string };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const contentType = request.headers.get("content-type") ?? "";
   let sessionId: string | null = null;
@@ -127,7 +124,8 @@ export async function POST(request: Request) {
   // 생성이 실패로 끝났거나, 예약만 하고 실제로 진행하지 못한 모든 경로에서 호출한다.
   async function releaseReservations() {
     if (quota?.consumed) {
-      await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey).catch((e) =>
+      // requireUserId()의 instanceof 가드는 이 중첩 함수 안에서는 좁혀지지 않는다(TS 한계) — 위에서 이미 검증됨.
+      await refundQuota(userId as string, quota.consumed.feature, quota.consumed.periodKey).catch((e) =>
         console.warn("[chat route] quota refund failed:", e),
       );
     }

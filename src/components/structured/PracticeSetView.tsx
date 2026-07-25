@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2, Shuffle } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import SaveIndicator from "./SaveIndicator";
+import PanelShell from "./PanelShell";
 import type { PracticeSet } from "@/lib/structured";
 import { useT } from "@/lib/i18n";
 
@@ -65,15 +66,11 @@ export default function PracticeSetView({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 dark:border-slate-800 bg-white shadow-sm dark:bg-slate-900/60 dark:shadow-2xl dark:shadow-black/40 dark:backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          <Shuffle className="h-4 w-4 text-[var(--mode-accent)]" />
-          {t("structured.practiceSet.title")}
-        </h2>
-        <SaveIndicator status={status} />
-      </div>
-
+    <PanelShell
+      icon={<Shuffle className="h-4 w-4 text-[var(--mode-accent)]" />}
+      title={t("structured.practiceSet.title")}
+      actions={<SaveIndicator status={status} />}
+    >
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">{t("structured.subjectLabel")}</span>
@@ -178,6 +175,6 @@ export default function PracticeSetView({
           )}
         </div>
       </div>
-    </div>
+    </PanelShell>
   );
 }

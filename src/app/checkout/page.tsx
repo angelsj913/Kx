@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -8,8 +8,7 @@ import { Loader2, CreditCard, AlertCircle, Check } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
-import { getCheckoutT, readCheckoutLanguage } from "@/lib/checkoutI18n";
-import { setAppLanguage, type AppLanguage } from "@/lib/i18n";
+import { setAppLanguage, useT, type AppLanguage } from "@/lib/i18n";
 import { LANGUAGE_ORDER } from "@/lib/languages";
 
 function CheckoutInner() {
@@ -21,14 +20,13 @@ function CheckoutInner() {
   const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
   const isAnnual = interval === "year" && plan?.annualAmount != null;
 
-  // 설정 언어 우선 동기화 (UserSettings → localStorage 폴백)
-  const [lang, setLang] = useState<AppLanguage>(() => readCheckoutLanguage());
-  const ct = useMemo(() => getCheckoutT(lang), [lang]);
+  // 앱·랜딩·결제창이 공유하는 languageStore 기반 (설정 언어는 아래 useEffect가 동기화)
+  const ct = useT();
 
   const [state, setState] = useState<"init" | "loading" | "stub" | "error">(
     !plan ? "error" : canceled ? "init" : "loading",
   );
-  const [error, setError] = useState(!plan ? getCheckoutT(readCheckoutLanguage()).unknownPlan : "");
+  const [error, setError] = useState(!plan ? ct("checkout.unknownPlan") : "");
   const [merchantUid, setMerchantUid] = useState("");
   const [paying, setPaying] = useState(false);
 
@@ -46,9 +44,7 @@ function CheckoutInner() {
           (LANGUAGE_ORDER as string[]).includes(raw) &&
           !ignore
         ) {
-          const next = raw as AppLanguage;
-          setLang(next);
-          setAppLanguage(next);
+          setAppLanguage(raw as AppLanguage);
         }
       } catch {
         /* keep localStorage language */
@@ -77,7 +73,7 @@ function CheckoutInner() {
           );
           return;
         }
-        if (!res.ok) throw new Error(data?.error ?? ct.prepareFail);
+        if (!res.ok) throw new Error(data?.error ?? ct("checkout.prepareFail"));
         if (data.url) {
           // Stripe locale 힌트 (지원 시)
           const url = String(data.url);
@@ -138,11 +134,11 @@ function CheckoutInner() {
             <CreditCard className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h1 className="mt-4 text-lg font-bold">
-            ZEFF AI {plan?.label ?? ""} {plan ? ct.subscribe : ""}
+            ZEFF AI {plan?.label ?? ""} {plan ? ct("checkout.subscribe") : ""}
           </h1>
           {plan && (
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {amount} {ct.perMonth}
+              {amount} {ct("checkout.perMonth")}
             </p>
           )}
 
@@ -150,7 +146,7 @@ function CheckoutInner() {
             {state === "loading" && (
               <div className="flex flex-col items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
-                {ct.preparing}
+                {ct("checkout.preparing")}
               </div>
             )}
 
@@ -158,7 +154,7 @@ function CheckoutInner() {
               <div className="space-y-4 text-left">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {ct.orderSummary}
+                    {ct("checkout.orderSummary")}
                   </p>
                   <div className="mt-2 flex justify-between text-sm">
                     <span>{plan.name}</span>
@@ -178,7 +174,7 @@ function CheckoutInner() {
                 </div>
 
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  {ct.stubNote}
+                  {ct("checkout.stubNote")}
                 </p>
 
                 {merchantUid && (
@@ -196,10 +192,10 @@ function CheckoutInner() {
                   {paying ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      {ct.moving}
+                      {ct("checkout.moving")}
                     </>
                   ) : (
-                    ct.completeSim
+                    ct("checkout.completeSim")
                   )}
                 </button>
               </div>
@@ -209,7 +205,7 @@ function CheckoutInner() {
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <AlertCircle className="h-4 w-4 text-slate-400" />
-                  {canceled ? ct.canceled : error}
+                  {canceled ? ct("checkout.canceled") : error}
                 </div>
                 {plan && (
                   <button
@@ -217,7 +213,7 @@ function CheckoutInner() {
                     onClick={() => window.location.reload()}
                     className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
                   >
-                    {ct.retry}
+                    {ct("checkout.retry")}
                   </button>
                 )}
               </div>

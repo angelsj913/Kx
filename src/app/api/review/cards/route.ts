@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 
@@ -18,21 +18,19 @@ const CARD_SELECT = {
 
 // 복습 카드 목록 — 오늘 만기 카드(due) + 통계(total/due).
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let scope;
   try {
-    scope = await resolveScope(request, session.user.id);
+    scope = await resolveScope(request, userId);
   } catch (err) {
     if (err instanceof WorkspaceError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
-  const base = listWhere(scope, session.user.id);
+  const base = listWhere(scope, userId);
   const now = new Date();
 
   const [due, total, dueCount] = await Promise.all([
@@ -51,11 +49,8 @@ export async function GET(request: Request) {
 
 // 카드 생성 — 단일 { front, back } 또는 다중 { cards: [...] }. libraryItemId 선택.
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let scope;
   try {

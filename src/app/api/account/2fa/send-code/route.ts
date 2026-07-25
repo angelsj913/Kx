@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { issueOtp } from "@/lib/otp";
 import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
@@ -10,18 +10,16 @@ export const dynamic = "force-dynamic";
 /** 2단계 인증 설정(켜기/끄기) 전 본인 확인용 코드를 사용자 이메일로 발송. */
 export async function POST() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-    }
+    const userId = await requireUserId();
+    if (userId instanceof NextResponse) return userId;
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { email: true },
     });
     if (!user?.email) {
       return NextResponse.json({ error: "이메일이 없는 계정입니다." }, { status: 400 });
     }
-    await assertRateLimit("2fa-setup:user", session.user.id, { max: 5, windowSeconds: 600 });
+    await assertRateLimit("2fa-setup:user", userId, { max: 5, windowSeconds: 600 });
 
     const result = await issueOtp(user.email, "login-2fa");
     return NextResponse.json({

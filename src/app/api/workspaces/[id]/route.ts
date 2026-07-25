@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -17,14 +18,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
 
   try {
-    const me = await requireMembership(id, session.user.id);
+    const me = await requireMembership(id, userId);
     const workspace = await prisma.workspace.findUnique({
       where: { id },
       include: {
@@ -77,24 +76,22 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
 
   try {
     // 이름/이미지: admin 이상, 코드 재발급·양도: owner
     if (body?.transferToUserId) {
-      await transferOwnership(id, session.user.id, String(body.transferToUserId));
+      await transferOwnership(id, userId, String(body.transferToUserId));
       return NextResponse.json({ ok: true, transferred: true });
     }
 
     const data: { name?: string; imageUrl?: string | null; inviteCode?: string } = {};
 
     if (typeof body?.name === "string") {
-      await requireRole(id, session.user.id, "admin");
+      await requireRole(id, userId, "admin");
       const name = body.name.trim();
       if (!name || name.length > 60) {
         return NextResponse.json({ error: "이름은 1~60자로 입력해 주세요." }, { status: 400 });
@@ -103,7 +100,7 @@ export async function PATCH(
     }
 
     if (body?.imageUrl !== undefined) {
-      await requireRole(id, session.user.id, "admin");
+      await requireRole(id, userId, "admin");
       data.imageUrl =
         body.imageUrl === null || body.imageUrl === ""
           ? null
@@ -111,7 +108,7 @@ export async function PATCH(
     }
 
     if (body?.regenerateInviteCode) {
-      await requireRole(id, session.user.id, "owner");
+      await requireRole(id, userId, "owner");
       data.inviteCode = newInviteCode();
     }
 

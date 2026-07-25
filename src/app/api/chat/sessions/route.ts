@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { listWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
@@ -7,14 +8,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let scope;
   try {
-    scope = await resolveScope(request, session.user.id);
+    scope = await resolveScope(request, userId);
   } catch (err) {
     if (err instanceof WorkspaceError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -24,7 +23,7 @@ export async function GET(request: Request) {
 
   // 메시지 있는 실제 대화를 위에, 빈 「새 대화」는 아래로
   const rows = await prisma.chatSession.findMany({
-    where: listWhere(scope, session.user.id),
+    where: listWhere(scope, userId),
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,

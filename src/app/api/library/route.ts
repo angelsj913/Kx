@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { put } from "@vercel/blob";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { runToolGeneration } from "@/lib/toolGeneration";
 import { friendlyError } from "@/lib/errors";
@@ -47,11 +47,8 @@ function parseMode(request: Request): "personal" | "shared" | "auto" {
 }
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const mode = parseMode(request);
 
   let scope: { workspaceId: string | null };
@@ -109,11 +106,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const userId = session.user.id;
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const mode = parseMode(request);
 
   let scope: { workspaceId: string | null };

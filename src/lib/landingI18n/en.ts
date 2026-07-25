@@ -382,6 +382,22 @@ const en: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "Mail-order business no.:",
   "legal.bizInfo.privacyOfficer": "Privacy officer:",
   "legal.bizInfo.contact": "Contact:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "Download ZEFF AI",
+  "downloadPage.subtitle": "Download the installer, run it, and you're ready to go.",
+  "downloadPage.recommended": "Recommended for your device",
+  "downloadPage.windows": "Download for Windows",
+  "downloadPage.mac": "Download for macOS",
+  "downloadPage.fileLabel": "Installer",
+  "downloadPage.reqTitle": "System requirements",
+  "downloadPage.reqOs": "OS",
+  "downloadPage.reqCpu": "Processor",
+  "downloadPage.reqRam": "Memory",
+  "downloadPage.reqDisk": "Storage",
+  "downloadPage.howto": "Run the downloaded installer and follow the on-screen steps. Windows uses a .exe file, macOS a .dmg file.",
+  "downloadPage.version": "Version",
+  "downloadPage.smartScreenTitle": "Seeing a security warning during install?",
+  "downloadPage.smartScreen": "If Windows shows a 'Windows protected your PC' (SmartScreen) or 'unknown publisher' warning, click More info → Run anyway. It appears only because the app isn't code-signed yet and is safe to proceed. On macOS, if you see an 'unidentified developer' warning, right-click the file → Open.",
 };
 
 export default en;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { joinByInviteCode, WorkspaceError } from "@/lib/workspace";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
@@ -8,10 +8,8 @@ export const dynamic = "force-dynamic";
 
 /** 초대 코드로 워크스페이스 가입 */
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const body = await request.json().catch(() => ({}));
   const code = String(body?.code ?? "").trim();
@@ -21,9 +19,9 @@ export async function POST(request: Request) {
 
   try {
     // 코드 공간(33^8)이 넓긴 하지만, 대입 자체를 막을 방법이 전혀 없었다.
-    await assertRateLimit("workspace-join:user", session.user.id, { max: 10, windowSeconds: 300 });
+    await assertRateLimit("workspace-join:user", userId, { max: 10, windowSeconds: 300 });
     await assertRateLimit("workspace-join:ip", clientIp(request), { max: 20, windowSeconds: 300 });
-    const result = await joinByInviteCode(session.user.id, code);
+    const result = await joinByInviteCode(userId, code);
     return NextResponse.json({
       ok: true,
       alreadyMember: result.alreadyMember,

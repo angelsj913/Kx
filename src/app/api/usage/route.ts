@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/apiAuth";
 import { getUsageSummary } from "@/lib/usage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  const summary = await getUsageSummary(session.user.id);
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
+  const summary = await getUsageSummary(userId);
   return NextResponse.json(summary);
 }

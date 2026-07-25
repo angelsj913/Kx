@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/apiAuth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendWorkspaceInviteEmail } from "@/lib/email";
@@ -17,14 +18,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
   const { id } = await params;
 
   try {
-    await requireRole(id, session.user.id, "admin");
+    await requireRole(id, userId, "admin");
     const invites = await prisma.workspaceInvite.findMany({
       where: { workspaceId: id, acceptedAt: null, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: "desc" },

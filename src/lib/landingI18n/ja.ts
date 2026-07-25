@@ -375,6 +375,22 @@ const ja: Record<keyof typeof ko, string> = {
   "legal.bizInfo.mailOrderNo": "通信販売業申告番号:",
   "legal.bizInfo.privacyOfficer": "個人情報保護責任者:",
   "legal.bizInfo.contact": "お問い合わせ:",
+  // --- 다운로드 페이지 (src/app/download/page.tsx) ---
+  "downloadPage.title": "ZEFF AI ダウンロード",
+  "downloadPage.subtitle": "インストーラーをダウンロードして実行するだけで、すぐに使い始められます。",
+  "downloadPage.recommended": "このデバイスにおすすめ",
+  "downloadPage.windows": "Windows版をダウンロード",
+  "downloadPage.mac": "macOS版をダウンロード",
+  "downloadPage.fileLabel": "インストーラー",
+  "downloadPage.reqTitle": "システム要件",
+  "downloadPage.reqOs": "OS",
+  "downloadPage.reqCpu": "プロセッサ",
+  "downloadPage.reqRam": "メモリ",
+  "downloadPage.reqDisk": "ストレージ",
+  "downloadPage.howto": "ダウンロードしたインストーラーを実行し、画面の指示に従ってインストールしてください。Windowsは.exe、macOSは.dmgファイルです。",
+  "downloadPage.version": "バージョン",
+  "downloadPage.smartScreenTitle": "インストール中にセキュリティ警告が出ますか？",
+  "downloadPage.smartScreen": "Windowsで「WindowsによってPCが保護されました」(SmartScreen)や「不明な発行元」の警告が出た場合は、[詳細情報]→[実行]を押してインストールしてください。まだコード署名証明書を適用していないため表示される正常な警告です。macOSで「未確認の開発元」警告が出た場合は、ファイルを右クリック→[開く]を選択してください。",
 };
 
 export default ja;
