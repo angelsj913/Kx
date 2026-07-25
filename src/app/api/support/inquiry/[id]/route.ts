@@ -34,5 +34,8 @@ export async function GET(
     return NextResponse.json({ error: "문의를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  return NextResponse.json({ inquiry });
+  const { resolveInquiryFileUrl } = await import("@/lib/inquiryBlob");
+  const fileUrl = await resolveInquiryFileUrl(inquiry.fileUrl);
+
+  return NextResponse.json({ inquiry: { ...inquiry, fileUrl } });
 }

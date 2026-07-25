@@ -368,6 +368,7 @@ const de: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "Verifizierung fehlgeschlagen.",
   "auth.otp.devCodePrefix": "(Entwicklung) Bestätigungscode: ",
   "support.inquiry.errors.submitFailed": "Ihre Anfrage konnte nicht gesendet werden.",
+  "support.inquiry.errors.loginRequired": "Bitte melden Sie sich an, um eine Anfrage zu senden.",
 
   "legal.disclaimer": "Rechtlich maßgeblich ist der koreanische Originaltext. Der folgende Inhalt dient nur zur Information.",
   "legal.effectiveDate": "Inkrafttreten:",

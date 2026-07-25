@@ -88,7 +88,11 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    // 비밀번호 변경 시 sessionVersion을 올려 다른 기기의 기존 JWT를 모두 무효화한다.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { hasRecentVerifiedOtp } from "@/lib/otp";
-import { checkPasswordStrength } from "@/lib/password";
+import { BCRYPT_COST, checkPasswordStrength } from "@/lib/password";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "이미 가입된 이메일입니다." }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
     await prisma.user.create({
       data: {

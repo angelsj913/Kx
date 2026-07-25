@@ -561,6 +561,75 @@ model SavedInsight {
   @@index([workspaceId])
 }
 
+// ── ZEFF Security Program (admin-only) ──
+
+model SecurityScan {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  createdById String?
+  status      String   // running | completed | failed
+  score       Int?
+  summaryJson String?  @db.Text
+  error       String?  @db.Text
+  findings    SecurityFinding[]
+
+  @@index([createdAt])
+}
+
+model SecurityFinding {
+  id          String   @id @default(cuid())
+  scanId      String
+  scan        SecurityScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  checkId     String
+  skillIds    String   @db.Text // JSON string[]
+  severity    String   // critical|high|medium|low|info
+  domain      String?  // http|secrets|access-control|rate-limit|jwt|deps|auth|env (그룹핑용)
+  title       String
+  detail      String   @db.Text
+  remediation String?  @db.Text
+  result      String   // pass|fail|warn
+  status      String   @default("open") // open|acknowledged|resolved|waived
+  waiveReason String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([scanId])
+  @@index([status, severity])
+  @@index([checkId])
+  @@index([domain])
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  actorId   String?
+  type      String
+  payload   String?  @db.Text // JSON
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+model SecuritySkillRef {
+  id          String   @id // skill folder name
+  title       String
+  description String   @db.Text
+  domain      String?
+  tags        String   @db.Text // JSON string[]
+  checkIds    String   @db.Text // JSON string[]
+  updatedAt   DateTime @updatedAt
+}
+
+/** 싱글톤 프로그램 설정 (id = "default") */
+model SecurityProgramSettings {
+  id                String   @id @default("default")
+  /** JSON string[] of enabled checkIds; empty = all default checks */
+  enabledChecksJson String   @default("[]") @db.Text
+  notifyOnCritical  Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+  updatedById       String?
+}
+
 /** 관리자 보안 콘솔 감사 로그 — append-only */
 model AdminAuditLog {
   id         String   @id @default(cuid())

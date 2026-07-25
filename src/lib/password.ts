@@ -11,6 +11,8 @@
 
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 72; // bcrypt는 72바이트를 넘으면 뒷부분을 조용히 자른다
+/** 신규 해시용 bcrypt cost. 기존 해시는 compare로 그대로 검증된다. */
+export const BCRYPT_COST = 12;
 
 const COMMON_PASSWORDS = new Set([
   "password",

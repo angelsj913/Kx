@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { Paperclip, CheckCircle2, X } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
@@ -18,21 +19,36 @@ const TYPE_OPTIONS: { value: string; labelKey: Parameters<ReturnType<typeof useL
 
 export default function InquiryPage() {
   const t = useLandingT();
+  const { data: session, status } = useSession();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      const el = document.querySelector<HTMLInputElement>('input[name="email"]');
+      if (el && !el.value) el.value = session.user.email;
+    }
+  }, [status, session?.user?.email]);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    if (status !== "authenticated") {
+      setError(t("support.inquiry.errors.loginRequired"));
+      return;
+    }
     setLoading(true);
     try {
       const form = new FormData(e.currentTarget);
       if (file) form.set("file", file);
       const res = await fetch("/api/support/inquiry", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        throw new Error(data?.error ?? t("support.inquiry.errors.loginRequired"));
+      }
       if (!res.ok) throw new Error(data?.error ?? t("support.inquiry.errors.submitFailed"));
       setSent(true);
     } catch (err) {
@@ -60,7 +76,21 @@ export default function InquiryPage() {
         <h1 className="text-xl font-bold sm:text-2xl">{t("support.tab.inquiry")}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("support.inquiry.intro")}</p>
 
-        {sent ? (
+        {status === "loading" ? (
+          <p className="mt-8 text-sm text-slate-500">{t("support.inquiry.history.loading")}</p>
+        ) : status !== "authenticated" ? (
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {t("support.inquiry.errors.loginRequired")}
+            </p>
+            <Link
+              href={`/login?callbackUrl=${encodeURIComponent("/support/inquiry")}`}
+              className="mt-4 inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+              {t("header.login")}
+            </Link>
+          </div>
+        ) : sent ? (
           <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-8 text-center dark:border-blue-500/30 dark:bg-blue-500/10">
             <CheckCircle2 className="h-10 w-10 text-blue-600 dark:text-blue-400" />
             <p className="text-sm font-medium text-blue-800 dark:text-blue-200">{t("support.inquiry.success")}</p>
@@ -123,7 +153,7 @@ export default function InquiryPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*,application/pdf"
+                accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="hidden"
               />
@@ -161,6 +191,7 @@ export default function InquiryPage() {
                 type="email"
                 name="email"
                 required
+                defaultValue={session?.user?.email ?? ""}
                 placeholder={t("support.inquiry.emailPlaceholder")}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors duration-300 focus:border-blue-500/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
               />

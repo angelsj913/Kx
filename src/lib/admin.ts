@@ -1,9 +1,6 @@
-// 개발자(관리자) 판별 — 이메일 allowlist
-// ADMIN_EMAILS 환경변수(쉼표 구분) + 아래 기본 관리자는 항상 포함
+// 개발자(관리자) 판별 — 이메일 allowlist (ADMIN_EMAILS 환경변수, 쉼표 구분)
 
 import type { Session } from "next-auth";
-
-const DEFAULT_ADMINS = ["zeff@zeffai.com", "kxeung9@gmail.com"];
 
 function parseList(raw: string | undefined): string[] {
   if (!raw) return [];
@@ -13,13 +10,17 @@ function parseList(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
-/** 기본 관리자 + Vercel ADMIN_EMAILS (중복 제거) */
-export const ADMIN_EMAILS = Array.from(
-  new Set([...DEFAULT_ADMINS, ...parseList(process.env.ADMIN_EMAILS)]),
-);
+/** Vercel/로컬 ADMIN_EMAILS 만 사용. 소스에 이메일을 하드코딩하지 않는다. */
+export const ADMIN_EMAILS = Array.from(new Set(parseList(process.env.ADMIN_EMAILS)));
+
+if (process.env.NODE_ENV === "production" && ADMIN_EMAILS.length === 0) {
+  console.error(
+    "[admin] ADMIN_EMAILS is empty in production — no users will have admin access. Set ADMIN_EMAILS on the host before deploy.",
+  );
+}
 
 export function isAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
+  if (!email || ADMIN_EMAILS.length === 0) return false;
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 

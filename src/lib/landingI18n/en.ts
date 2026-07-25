@@ -212,7 +212,7 @@ const en: Record<keyof typeof ko, string> = {
   "support.tab.legal": "Terms · Privacy Policy",
   "support.nav.history": "Inquiry history",
   "support.inquiry.type.account": "Account",
-  "support.inquiry.intro": "Leave your question and we'll reply to the email you provide.",
+  "support.inquiry.intro": "Sign in, leave your question, and we'll reply to the email you provide.",
   "support.inquiry.viewHistory": "View inquiry history",
   "support.inquiry.fileLabel": "Attachment (optional)",
   "support.inquiry.fileHint": "Attach an image or document",
@@ -370,6 +370,7 @@ const en: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "Verification failed.",
   "auth.otp.devCodePrefix": "(dev) verification code: ",
   "support.inquiry.errors.submitFailed": "Failed to submit your inquiry.",
+  "support.inquiry.errors.loginRequired": "Please sign in to submit an inquiry.",
 
   "legal.disclaimer": "This document is legally governed by the original Korean text. The content below is provided for reference only.",
   "legal.effectiveDate": "Effective date:",

@@ -7,10 +7,12 @@ import {
   Users,
   HardDrive,
   ChevronDown,
+  ScanSearch,
 } from "lucide-react";
 
 const SECTIONS = [
   { href: "/admin/security", label: "대시보드", icon: Shield, exact: true },
+  { href: "/admin/security/self-scan", label: "자가점검", icon: ScanSearch },
   { href: "/admin/security/vuln", label: "AI 취약점", icon: Bug },
   { href: "/admin/security/monitor", label: "실시간 모니터링", icon: Radio },
   { href: "/admin/security/predict", label: "예측·분석", icon: TrendingUp },

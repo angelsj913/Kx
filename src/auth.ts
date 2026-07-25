@@ -102,9 +102,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.sv = u?.sessionVersion ?? 0;
             token.svAt = Date.now();
           } else {
-            // 토큰 갱신 경로: 과도한 DB 부하를 막으려 60초에 한 번만 재검사
+            // 토큰 갱신 경로: 과도한 DB 부하를 막으려 15초에 한 번만 재검사
+            // (비밀번호 재설정·logout-all 후 무효화 창을 짧게 유지)
             const last = typeof token.svAt === "number" ? token.svAt : 0;
-            if (Date.now() - last > 60_000) {
+            if (Date.now() - last > 15_000) {
               const u = await prisma.user.findUnique({
                 where: { id: String(token.id) },
                 select: { sessionVersion: true },

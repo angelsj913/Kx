@@ -368,6 +368,7 @@ const ru: Record<keyof typeof ko, string> = {
   "auth.errors.verifyFailed": "Не удалось подтвердить.",
   "auth.otp.devCodePrefix": "(для разработки) код подтверждения: ",
   "support.inquiry.errors.submitFailed": "Не удалось отправить обращение.",
+  "support.inquiry.errors.loginRequired": "Чтобы отправить обращение, войдите в аккаунт.",
 
   "legal.disclaimer": "Юридическую силу имеет оригинальный текст на корейском языке. Содержимое ниже приведено только для справки.",
   "legal.effectiveDate": "Дата вступления в силу:",

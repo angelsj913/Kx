@@ -268,7 +268,7 @@ export default async function AdminDashboard() {
       </div>
 
       <p className="mt-6 text-[11px] text-slate-400">
-        관리자 이메일만 접근 가능합니다. (환경 변수 ADMIN_EMAILS)
+        관리자 이메일만 접근 가능합니다. (환경 변수 ADMIN_EMAILS 필수)
       </p>
     </div>
   );
