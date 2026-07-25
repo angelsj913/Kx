@@ -108,8 +108,16 @@ export function sceneLocalProgress(p: number, count: number, index: number): num
   return (p - start) / (end - start);
 }
 
-/** 연속 가로 트랙용: p 0→1 을 장면 사이 interpolate (CSS transition 없이 중간 장면이 보임) */
+/**
+ * 연속 가로 트랙용: p 0→1 을 장면 사이 interpolate (CSS transition 없이 중간 장면이 보임)
+ *
+ * 주의 — CSS에서 translateX의 백분율은 "요소 자기 자신의 너비" 기준이다.
+ * 이 트랙은 width: count*100% 이므로, 한 장면(=컨테이너 100%)을 넘기려면
+ * 트랙 기준으로는 100/count % 만 이동해야 한다.
+ * 예전엔 장면당 100%씩 이동해서(count=3이면 -200%) 실제로는 컨테이너 기준 -600%,
+ * 즉 패널 6개만큼 밀려 트랙이 overflow-hidden 밖으로 사라졌다(카드가 빈 화면이 됨).
+ */
 export function trackTranslatePercent(p: number, count: number): number {
   if (count <= 1) return 0;
-  return -(p * (count - 1) * 100);
+  return -(p * (count - 1) * (100 / count));
 }

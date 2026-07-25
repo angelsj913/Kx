@@ -236,7 +236,9 @@ export default function WhyZeff() {
   }, [p, count]);
 
   const localP = sceneLocalProgress(p, count, idx);
-  const lineFill = Math.min(100, (p / Math.max(0.001, (count - 1) / count)) * 100);
+  // 진행선은 "지나온 단계"를 나타내므로 활성 원에 스냅시킨다.
+  // 예전엔 컨테이너 높이의 %라 원과 무관한 지점(주로 원 중간)에서 끊겼다.
+  const lineFill = count > 1 ? (idx / (count - 1)) * 100 : 0;
 
   if (reducedMotion) {
     return (
@@ -272,12 +274,16 @@ export default function WhyZeff() {
             <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300">{copy.subtitle}</p>
           </div>
 
-          <div className="grid items-stretch gap-8 lg:grid-cols-[240px_1fr]">
-            <div className="relative hidden lg:block">
-              <div className="absolute bottom-2 left-[1.125rem] top-2 w-px bg-slate-200 dark:bg-slate-700" />
+          {/* items-start: 레일 칼럼이 오른쪽 카드 높이까지 늘어나면 세로선이 목록보다
+              길어져 마지막 원 아래로 꼬리가 생긴다. 칼럼을 내용 높이로 고정한다. */}
+          <div className="grid items-start gap-8 lg:grid-cols-[240px_1fr]">
+            <div className="relative hidden self-start lg:block">
+              {/* 선은 첫 원 중심(1.125rem = w-9의 절반)에서 마지막 원 중심까지만 긋는다.
+                  원 안에서 시작·끝나지 않으므로 "선이 원을 관통"하는 인상이 사라진다. */}
+              <div className="absolute bottom-[1.125rem] left-[1.125rem] top-[1.125rem] w-px bg-slate-200 dark:bg-slate-700" />
               <div
-                className="absolute left-[1.125rem] top-2 w-px origin-top bg-blue-600 dark:bg-blue-400"
-                style={{ height: `${lineFill}%` }}
+                className="absolute left-[1.125rem] top-[1.125rem] w-px bg-blue-600 transition-[height] duration-300 ease-out dark:bg-blue-400"
+                style={{ height: `calc((100% - 2.25rem) * ${lineFill} / 100)` }}
               />
               <ol className="space-y-10">
                 {copy.pillars.map((pillar, i) => {
