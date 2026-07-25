@@ -15,7 +15,6 @@ import {
   ExternalLink,
   Check,
   Trash2,
-  Plus,
   MessageCircle,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
@@ -58,12 +57,6 @@ const LEGAL_LINKS: { labelKey: AppDictKey; href: string }[] = [
   { labelKey: "settings.legal.consent", href: "/support/legal#consent" },
   { labelKey: "settings.legal.privacy", href: "/support/legal#privacy" },
 ];
-
-const BRAND_LABEL: Record<string, string> = {
-  visa: "Visa",
-  mastercard: "Mastercard",
-  amex: "American Express",
-};
 
 export default function SettingsModal({
   open,
@@ -356,39 +349,19 @@ type OrderRow = {
 
 function BillingPanel() {
   const t = useT();
-  const { settings } = useSettings();
-  const isPaidPlan =
-    isPlanId(settings?.plan ?? "free") && (settings?.plan ?? "free") !== "free";
-  const [methods, setMethods] = useState<
-    { id: string; brand: string; last4: string }[]
-  >([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
-  const [brand, setBrand] = useState("visa");
-  const [last4, setLast4] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    const [m, o] = await Promise.all([
-      fetch("/api/billing/methods").then((r) => r.json()),
-      fetch("/api/billing/orders").then((r) => r.json()),
-    ]);
-    if (m.methods) setMethods(m.methods);
-    if (o.orders) setOrders(o.orders);
-  }, []);
-
+  // 결제수단 등록 UI는 제거됐다 — 자체 DB에 브랜드·뒤 4자리만 저장하던 장식이라
+  // 실제 결제 능력이 없었고, 카드를 등록했다고 오해하게 만들었다.
+  // 실제 카드 관리는 Stripe 결제 포털이 맡는다.
   // await 이후 setState — 동기 effect setState 회피
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [m, o] = await Promise.all([
-          fetch("/api/billing/methods").then((r) => r.json()),
-          fetch("/api/billing/orders").then((r) => r.json()),
-        ]);
+        const o = await fetch("/api/billing/orders").then((r) => r.json());
         if (cancelled) return;
-        if (m.methods) setMethods(m.methods);
         if (o.orders) setOrders(o.orders);
       } catch {
         /* ignore */
@@ -399,123 +372,8 @@ function BillingPanel() {
     };
   }, []);
 
-  async function addMethod() {
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/billing/methods", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ brand, last4 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? t("billing.addFailed"));
-      setLast4("");
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("common.error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeMethod(id: string) {
-    setError("");
-    const res = await fetch("/api/billing/methods", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data?.error ?? t("billing.removeFailed"));
-      return;
-    }
-    await load();
-  }
-
   return (
     <div className="space-y-8">
-      <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.methodsTitle")}</h3>
-        <p className="mt-1 text-xs text-slate-500">
-          {t("billing.methodsHint")}
-        </p>
-        <ul className="mt-3 space-y-2">
-          {methods.length === 0 && (
-            <li className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-600">
-              {t("billing.methodsEmpty")}
-            </li>
-          )}
-          {methods.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/40"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-14 items-center justify-center rounded-md bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-white dark:bg-slate-100 dark:text-slate-900">
-                  {m.brand === "visa"
-                    ? "VISA"
-                    : m.brand === "mastercard"
-                      ? "MC"
-                      : m.brand === "amex"
-                        ? "AMEX"
-                        : "CARD"}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                    {BRAND_LABEL[m.brand] ??
-                      (m.brand === "local" ? t("billing.cardLocal") : t("billing.cardGeneric"))}{" "}
-                    ···· {m.last4}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeMethod(m.id)}
-                disabled={isPaidPlan && methods.length <= 1}
-                title={
-                  isPaidPlan && methods.length <= 1
-                    ? t("billing.cancelPlanFirst")
-                    : t("billing.remove")
-                }
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-3 dark:border-slate-700">
-          <select
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-          >
-            <option value="visa">Visa</option>
-            <option value="mastercard">Mastercard</option>
-            <option value="amex">Amex</option>
-            <option value="local">{t("billing.cardLocal")}</option>
-          </select>
-          <input
-            value={last4}
-            onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder={t("billing.last4Placeholder")}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void addMethod()}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" /> {t("common.add")}
-          </button>
-        </div>
-        {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-      </section>
-
       <section>
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("billing.historyTitle")}</h3>
         <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
