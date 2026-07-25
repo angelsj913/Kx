@@ -21,7 +21,7 @@ import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
 import ReferralCard from "@/components/settings/ReferralCard";
 import InquiryWorkspaceView from "@/components/InquiryWorkspaceView";
-import { PLANS, PLAN_RANK, type PlanId, isPlanId } from "@/lib/plans";
+import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
 import { LANGUAGE_ORDER, LANGUAGE_LABELS } from "@/lib/languages";
 import {
   useT,
@@ -619,19 +619,40 @@ function PlanPanel() {
   const t = useT();
   const { settings } = useSettings();
   const current = isPlanId(settings?.plan) ? settings!.plan : "free";
+  const isSubscribed = current !== "free";
+  // 결제 개시 전에는 CTA 를 켜두지 않는다 — 눌러도 서버가 503 을 돌려주던 막다른 길이었다.
+  // env 를 켜는 순간 코드 변경 없이 되살아난다.
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "1";
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState("");
+
+  // 해지·플랜 변경은 전부 Stripe 고객 포털이 맡는다.
+  async function openPortal() {
+    setPortalBusy(true);
+    setPortalError("");
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.error ?? t("settings.plan.portalFailed"));
+      window.location.href = data.url;
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : t("settings.plan.portalFailed"));
+      setPortalBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
         {t("settings.plan.sameAsHome")}
       </p>
+      {portalError && (
+        <p className="text-sm text-red-600 dark:text-red-400">{portalError}</p>
+      )}
       <div className="grid gap-4 lg:grid-cols-3">
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
           const p = PLANS[id];
           const isCurrent = id === current;
-          // 하위 등급 카드에 결제 버튼을 켜두면 안 된다 — 서버가 free 결제를 거부하므로
-          // 눌러도 오류 페이지로 가는 막다른 길이었다. 다운그레이드는 아직 준비 전이라 비활성.
-          const isDowngrade = PLAN_RANK[id] < PLAN_RANK[current];
           return (
             <div
               key={id}
@@ -663,20 +684,18 @@ function PlanPanel() {
                 >
                   {t("settings.plan.inUse")}
                 </button>
-              ) : isDowngrade ? (
-                <>
-                  <button
-                    type="button"
-                    disabled
-                    className="mt-5 w-full cursor-not-allowed rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-500 dark:bg-slate-700"
-                  >
-                    {t("settings.plan.downgrade")}
-                  </button>
-                  <p className="mt-2 text-center text-xs text-slate-400">
-                    {t("settings.plan.downgradeHint")}
-                  </p>
-                </>
-              ) : (
+              ) : isSubscribed ? (
+                // 구독 중이면 상위·하위 어느 쪽이든 체크아웃을 새로 열지 않는다.
+                // 새 구독이 하나 더 생겨 이중 청구되기 때문. 변경도 해지도 포털에서.
+                <button
+                  type="button"
+                  onClick={openPortal}
+                  disabled={portalBusy}
+                  className="mt-5 w-full rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-500 hover:text-blue-600 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
+                >
+                  {t("settings.plan.manage")}
+                </button>
+              ) : paymentsEnabled ? (
                 <a
                   href={`/checkout?plan=${id}`}
                   target="_blank"
@@ -685,6 +704,14 @@ function PlanPanel() {
                 >
                   {t("settings.plan.subscribe")}
                 </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-5 w-full cursor-not-allowed rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-500 dark:bg-slate-700"
+                >
+                  {t("settings.plan.comingSoon")}
+                </button>
               )}
             </div>
           );

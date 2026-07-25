@@ -32,6 +32,8 @@ export async function fulfillPaidOrder(opts: {
   userId?: string | null;
   /** Stripe Checkout Session id */
   stripeSession?: string | null;
+  /** Stripe Customer id — 다음 결제 때 재사용하고, 포털 진입 키로도 쓴다 */
+  stripeCustomerId?: string | null;
   source: FulfillSource;
 }): Promise<FulfillResult> {
   const merchantUid = opts.merchantUid?.trim();
@@ -72,11 +74,13 @@ export async function fulfillPaidOrder(opts: {
     },
   });
 
-  // 요금제 권한 자동 부여
+  // 요금제 권한 자동 부여. Customer id 는 웹훅·confirm 두 경로가 모두 여길 지나므로
+  // 여기서만 저장하면 양쪽이 함께 해결된다.
+  const customer = opts.stripeCustomerId?.trim() || null;
   await prisma.userSettings.upsert({
     where: { userId },
-    create: { userId, plan: planId },
-    update: { plan: planId },
+    create: { userId, plan: planId, ...(customer ? { stripeCustomerId: customer } : {}) },
+    update: { plan: planId, ...(customer ? { stripeCustomerId: customer } : {}) },
   });
 
   return {

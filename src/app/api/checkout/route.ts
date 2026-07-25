@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, newMerchantUid } from "@/lib/plans";
-import { getStripe, getBaseUrl, isStubCheckoutAllowed } from "@/lib/stripe";
+import { getStripe, getBaseUrl, isStubCheckoutAllowed, priceIdFor } from "@/lib/stripe";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -33,9 +33,36 @@ export async function POST(request: Request) {
     const interval: "month" | "year" = isAnnual ? "year" : "month";
     const chargeAmount = isAnnual ? (plan.annualAmount as number) : plan.amount;
 
-    const merchantUid = newMerchantUid();
+    // 설정은 여기서 한 번만 읽어 가드·customer 재사용·결제창 locale 에 모두 쓴다.
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+
+    // 이미 유료 구독 중이면 새 Checkout 을 만들지 않는다. 만들면 구독이 2개가 되어
+    // 매달 두 번 청구된다. 플랜 변경·해지는 고객 포털이 담당한다.
+    // grantedPlan(추천 보상)은 보지 않는다 — 보상으로 받은 사용자도 결제는 할 수 있어야 한다.
+    if (settings?.plan && settings.plan !== "free") {
+      return NextResponse.json(
+        {
+          error: "이미 구독 중입니다. 요금제 변경과 해지는 구독 관리에서 진행해 주세요.",
+          manageSubscription: true,
+        },
+        { status: 409 }
+      );
+    }
+
     const stripe = getStripe();
     const baseUrl = getBaseUrl();
+
+    // Price ID 확인은 주문 발행 전에. 뒤로 미루면 결제 불가한 주문만 pending 으로 쌓인다.
+    const priceId = stripe ? priceIdFor(plan.id, interval) : undefined;
+    if (stripe && !priceId) {
+      console.error(`checkout error: STRIPE_PRICE_${plan.id.toUpperCase()}_${interval.toUpperCase()} missing`);
+      return NextResponse.json(
+        { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
+        { status: 503 }
+      );
+    }
+
+    const merchantUid = newMerchantUid();
 
     // 주문 기록 발행
     await prisma.order.create({
@@ -69,7 +96,6 @@ export async function POST(request: Request) {
     }
 
     // 워크스페이스 설정 언어 → Stripe 결제창 locale 동기화
-    const settings = await prisma.userSettings.findUnique({ where: { userId } });
     const lang = settings?.language || "ko";
     const stripeLocaleMap: Record<string, string> = {
       ko: "ko",
@@ -95,24 +121,16 @@ export async function POST(request: Request) {
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       locale,
-      line_items: [
-        {
-          price_data: {
-            currency: plan.currency,
-            product_data: {
-              name: `ZEFF AI ${plan.label}${isAnnual ? " (연간)" : ""}`,
-            },
-            unit_amount: chargeAmount,
-            recurring: { interval },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: merchantUid,
       metadata: { merchantUid, plan: plan.id, userId, interval },
       success_url: `${baseUrl}/checkout/complete?uid=${encodeURIComponent(merchantUid)}`,
       cancel_url: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,
-      customer_email: userEmail,
+      // Customer 를 재사용해야 카드·영수증 이력이 한 고객에 모이고 포털이 열린다.
+      // customer 와 customer_email 을 함께 주면 Stripe 가 거부하므로 택일.
+      ...(settings?.stripeCustomerId
+        ? { customer: settings.stripeCustomerId }
+        : { customer_email: userEmail }),
     });
 
     await prisma.order.update({
