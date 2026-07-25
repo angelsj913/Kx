@@ -628,6 +628,8 @@ model SecurityProgramSettings {
   notifyOnCritical  Boolean  @default(true)
   updatedAt         DateTime @updatedAt
   updatedById       String?
+}
+
 /** 관리자 보안 콘솔 감사 로그 — append-only */
 model AdminAuditLog {
   id         String   @id @default(cuid())

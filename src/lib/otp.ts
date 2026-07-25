@@ -9,7 +9,9 @@ export type OtpPurpose =
   | "find-password"
   | "workspace-delete"
   | "admin-plan-change"
-  | "login-2fa";
+  | "login-2fa"
+  | "password-change"
+  | "admin-access";
 
 const CODE_TTL_MS = 3 * 60 * 1000; // 3분
 

@@ -35,8 +35,15 @@ export interface AgentRouteResult {
 }
 
 /** ChatMessage 히스토리 + 현재 입력 → OpenAI tool 메시지 배열 */
-function toToolMessages(history: ChatMessage[], text: string): OAIToolMessage[] {
-  const msgs: OAIToolMessage[] = [{ role: "system", content: AGENT_SYSTEM }];
+function toToolMessages(
+  history: ChatMessage[],
+  text: string,
+  extraSystemInstruction?: string,
+): OAIToolMessage[] {
+  const system = extraSystemInstruction
+    ? `${AGENT_SYSTEM}\n\n${extraSystemInstruction}`
+    : AGENT_SYSTEM;
+  const msgs: OAIToolMessage[] = [{ role: "system", content: system }];
   for (const m of history) {
     if (!m.text) continue;
     msgs.push({ role: m.role === "model" ? "assistant" : "user", content: m.text });
@@ -65,6 +72,8 @@ export async function runAgentRoute(args: {
   onAttempt?: (info: AttemptInfo) => void;
   onDelta: (delta: string) => void;
   signal?: AbortSignal;
+  /** 채팅 런타임 컨텍스트 등 추가 시스템 지시(선택) */
+  extraSystemInstruction?: string;
 }): Promise<AgentRouteResult> {
   const specs = buildAgentTools();
   const toolSchemas = toOpenAITools(specs);
@@ -76,7 +85,7 @@ export async function runAgentRoute(args: {
     onStatus: args.onStage,
   };
 
-  const msgs = toToolMessages(args.messages, args.text);
+  const msgs = toToolMessages(args.messages, args.text, args.extraSystemInstruction);
   const toolsUsed: string[] = [];
   let totalAttempts = 0;
   let lastProvider = "";
@@ -167,7 +176,9 @@ export async function runAgentRoute(args: {
       text: typeof m.content === "string" ? m.content : "",
     }));
   const final = await chatReplyWithFallbackStream({
-    systemInstruction: AGENT_SYSTEM,
+    systemInstruction: args.extraSystemInstruction
+      ? `${AGENT_SYSTEM}\n\n${args.extraSystemInstruction}`
+      : AGENT_SYSTEM,
     messages: foldedHistory,
     candidates: AGENT_MODELS,
     onDelta: args.onDelta,
