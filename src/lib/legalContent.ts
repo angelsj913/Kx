@@ -9,15 +9,13 @@ export const COMPANY_INFO = {
   companyName: "ZEFF AI",
   representative: "권승준",
   address: "[사업자 소재지 — 등록 후 기재]",
-  businessNo: "[사업자등록번호 — 등록 후 기재]",
+  businessNo: "435-42-01296",
   mailOrderNo: "[통신판매업 신고번호 — 등록 후 기재]",
   privacyOfficer: "권승준",
   privacyOfficerContact: "zeff@zeffai.com",
   contactEmail: "zeff@zeffai.com",
   /** 일본 특정상거래법은 전화번호 표시를 요구한다 — 일본 판매 개시 전 필수 */
   phone: "[연락 가능한 전화번호 — 일본 판매 시 필수]",
-  /** GDPR 제27조 — EU 내 대리인. EU 판매 개시 전 지정 필수 */
-  euRepresentative: "[EU 대리인 — GDPR 제27조에 따라 지정 후 기재]",
   effectiveDate: "2026년 7월 11일",
   lastUpdated: "2026년 7월 18일",
 };
@@ -202,6 +200,10 @@ export const TERMS: LegalArticle[] = [
  * 국제 이용자 특칙 — 대한민국 외 거주 이용자에게 적용된다.
  * 거주국 소비자보호 강행법규는 준거법 조항으로 배제할 수 없으므로, 배제를 시도하는 대신
  * 각 법역이 요구하는 고지·권리를 명시해 둔다. 본문 약관과 상충하면 이 특칙이 우선한다.
+ *
+ * 서비스 지역은 아시아·북미·중남미다. EU·EEA·영국은 제외했다 — GDPR 제27조 대리인 지정과
+ * VAT OSS 분기 신고 부담이 해당 시장의 예상 매출을 넘어선다는 판단. 여는 시점에
+ * 청약철회권(14일) 조항과 GDPR 조항을 다시 넣어야 한다.
  * ⚠️ 변호사 검토 전 문서다. 대괄호 항목은 실제 값 확보 후 교체해야 한다.
  */
 export const INTERNATIONAL: LegalArticle[] = [
@@ -216,13 +218,12 @@ export const INTERNATIONAL: LegalArticle[] = [
   },
   {
     id: "i2",
-    title: "제2조 (EU·EEA 및 영국 거주 이용자의 청약철회권)",
+    title: "제2조 (서비스 제공 지역)",
     body:
-      "① 유럽연합(EU)·유럽경제지역(EEA) 또는 영국에 거주하는 소비자는 계약 체결일로부터 14일 이내에 이유를 제시하지 않고 청약을 철회할 수 있습니다.\n" +
-      "② 다만 이용자가 결제 시점에 (ㄱ) 14일의 철회기간이 만료되기 전에 서비스 제공을 즉시 개시하는 것에 명시적으로 사전 동의하고, (ㄴ) 그로 인해 청약철회권을 상실하게 됨을 명시적으로 확인한 경우, 서비스 제공이 개시된 때에 청약철회권이 소멸합니다.\n" +
-      "③ 제2항의 동의를 하지 않은 이용자는 14일 이내에 철회할 수 있으며, 이 경우 철회 시점까지 실제로 제공된 부분에 대하여 계약 총액에 비례하는 금액이 공제될 수 있습니다.\n" +
-      `④ 철회 의사는 ${COMPANY_INFO.contactEmail} 로 통지하거나, 서비스 내 구독 해지 기능을 통해 표시할 수 있습니다. 명확한 의사표시이면 형식은 제한되지 않습니다.\n` +
-      "⑤ 회사는 철회 통지를 받은 날부터 14일 이내에, 이용자가 결제에 사용한 것과 동일한 수단으로 환불합니다. 이로 인한 추가 수수료는 이용자에게 부과되지 않습니다.",
+      "① 회사는 아시아, 북미 및 중남미 지역을 대상으로 유료서비스를 제공합니다.\n" +
+      "② 회사는 유럽연합(EU)·유럽경제지역(EEA) 및 영국 거주자를 대상으로 유료서비스를 제공하지 않으며, 해당 지역에서는 결제가 지원되지 않습니다.\n" +
+      "③ 제2항의 지역에 거주하는 이용자는 무료 플랜을 이용할 수 있으나, 회사는 해당 지역을 향하여 서비스를 제공하거나 마케팅하지 않습니다.\n" +
+      "④ 서비스가 여러 언어를 지원하는 것은 해당 언어 사용자의 편의를 위한 것이며, 특정 국가를 대상으로 서비스를 제공한다는 의미가 아닙니다.",
   },
   {
     id: "i3",
@@ -253,7 +254,7 @@ export const INTERNATIONAL: LegalArticle[] = [
     title: "Article 5. Summary for International Users (English)",
     body:
       "ZEFF AI is a digital subscription service. No physical goods are shipped. Prices are shown and charged in US dollars (USD); your card issuer may add its own currency-conversion or foreign-transaction fee, which we do not receive.\n\n" +
-      "EU / EEA / UK consumers: you have a 14-day right of withdrawal from the date the contract is concluded. If, at checkout, you expressly consent to immediate performance and acknowledge that you thereby lose this right, the right expires once we begin supplying the service. If you did not give that consent, you may withdraw within 14 days, and we may deduct an amount proportionate to what was supplied before withdrawal. We refund within 14 days of receiving your notice, using the same payment method, at no extra cost to you.\n\n" +
+      "Where we sell: Asia, North America, and Latin America. We do not offer paid subscriptions to residents of the European Union, the European Economic Area, or the United Kingdom, and payment is not available in those regions. Availability in multiple languages is for the convenience of speakers of those languages and does not mean we direct our service to any particular country.\n\n" +
       "US consumers: your subscription renews automatically until you cancel. Renewal frequency, amount, and the cancellation method are disclosed before we collect your billing information. You can cancel at any time in the in-app settings — the same medium you used to subscribe. No phone call is required.\n\n" +
       `To exercise any of these rights, contact ${COMPANY_INFO.contactEmail}. Where mandatory consumer-protection law of your country of residence conflicts with these terms, that law prevails.`,
   },
@@ -361,15 +362,13 @@ export const PRIVACY: LegalArticle[] = [
   },
   {
     id: "p13",
-    title: "13. EU·EEA 및 영국 거주 이용자의 권리 (GDPR / UK GDPR)",
+    title: "13. 국외 거주 이용자의 개인정보 처리",
     body:
-      "① 적용: 회사가 EU·EEA 또는 영국에 거주하는 정보주체에게 서비스를 제공하는 범위에서, 회사는 GDPR 및 UK GDPR상의 컨트롤러(controller)에 해당합니다.\n" +
-      "② 처리의 법적 근거: 서비스 제공 및 계약 이행(GDPR 제6조 제1항 (b)), 법령상 의무 이행(동항 (c)), 서비스 보안·부정이용 방지 등 회사의 정당한 이익(동항 (f)), 그 밖에 별도 동의를 받은 경우 그 동의(동항 (a)).\n" +
-      "③ 정보주체의 권리: 열람권, 정정권, 삭제권(잊힐 권리), 처리제한권, 데이터 이동권, 처리에 대한 반대권, 동의를 근거로 한 처리에 대한 동의 철회권을 행사할 수 있습니다. 동의 철회는 철회 이전의 처리의 적법성에 영향을 주지 않습니다.\n" +
-      `④ 권리 행사 방법: ${COMPANY_INFO.privacyOfficerContact} 로 요청하시면 원칙적으로 1개월 이내에 처리합니다.\n` +
-      `⑤ EU 대리인(GDPR 제27조): ${COMPANY_INFO.euRepresentative}\n` +
-      "⑥ 국외 이전: 개인정보는 대한민국 내 클라우드 인프라에서 처리될 수 있습니다. 유럽연합 집행위원회는 2021년 12월 17일 대한민국에 대한 적정성 결정을 채택하였으므로, EU·EEA에서 대한민국으로의 이전에는 표준계약조항(SCC) 등 별도의 안전조치가 요구되지 않습니다.\n" +
-      "⑦ 감독기관 민원: 정보주체는 자신이 거주하거나 근무하는 회원국의 감독기관(영국의 경우 정보위원회, ICO)에 민원을 제기할 권리가 있습니다.",
+      "① 회사는 대한민국에 소재하며, 개인정보는 대한민국 내 클라우드 인프라에서 처리·보관됩니다.\n" +
+      "② 국외에 거주하는 이용자가 서비스를 이용하는 경우, 해당 이용자의 개인정보는 서비스 제공을 위하여 대한민국으로 이전되어 처리됩니다.\n" +
+      "③ 국외 거주 이용자도 본 방침 제8항에 따른 열람·정정·삭제·처리정지 요구권을 동일하게 행사할 수 있으며, 요청은 " +
+      `${COMPANY_INFO.privacyOfficerContact} 로 접수합니다.\n` +
+      "④ 회사는 유럽연합(EU)·유럽경제지역(EEA) 및 영국 거주자를 대상으로 유료서비스를 제공하지 않습니다.",
   },
 ];
 
