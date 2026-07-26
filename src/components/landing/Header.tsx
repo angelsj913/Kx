@@ -149,9 +149,11 @@ export default function Header() {
                 </Link>
               </div>
             ) : (
+              // min-h/px 는 rem 이 아니라 px 이라 모바일 rem 축소(globals.css)의 영향을 받지 않는다.
+              // 글자만 작아지고 탭 영역은 44px 를 유지한다.
               <Link
                 href="/login"
-                className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                className="inline-flex min-h-[44px] items-center px-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
               >
                 {t("header.login")}
               </Link>

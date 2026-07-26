@@ -1,39 +1,25 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import {
-  computeLandingScale,
-  type LandingViewportKind,
-} from "@/lib/landingScale";
+import { useEffect, type ReactNode } from "react";
+import { computeLandingScale } from "@/lib/landingScale";
 
 /**
- * 공식 홈: 모바일 / 태블릿 / 데스크톱 배율을 구분해 적용.
- * 비율 수치는 src/lib/landingScale.ts 의 LANDING_SCALE 에서 조정.
+ * 공식 홈: 큰 모니터에서 rem 배율을 올려 전체 UI 를 키운다.
+ * documentElement 의 font-size 를 바꾸면 Tailwind 의 text/max-w/gap 이 일괄로 따라온다.
+ * 배율 수치는 src/lib/landingScale.ts 에서 조정.
  *
- * 적용 방식: documentElement font-size (rem) → Tailwind text/max-w/gap 일괄 스케일
+ * 모바일·태블릿은 배율 1 고정이라 이 컴포넌트가 사실상 아무 일도 하지 않는다 —
+ * 그쪽 반응형은 Tailwind 브레이크포인트가 담당한다.
  */
-
 export default function LandingViewportScale({ children }: { children: ReactNode }) {
-  const [scale, setScale] = useState(1);
-  const [kind, setKind] = useState<LandingViewportKind>("desktop");
-
   useEffect(() => {
     let raf = 0;
+    const root = document.documentElement;
 
     const apply = () => {
-      const { kind: nextKind, scale: nextScale } = computeLandingScale(
-        window.innerWidth,
-      );
-      setKind(nextKind);
-      setScale(nextScale);
-
-      const root = document.documentElement;
-      root.style.setProperty("--landing-ui-scale", String(nextScale));
-      root.dataset.landingViewport = nextKind;
-
-      // 1.0 이면 브라우저 기본(16px)으로 되돌려 Tailwind 기본과 맞춤
-      root.style.fontSize =
-        nextScale === 1 ? "" : `${(16 * nextScale).toFixed(3)}px`;
+      const { scale } = computeLandingScale(window.innerWidth);
+      // 1.0 이면 브라우저 기본(16px)으로 되돌려 Tailwind 기본과 맞춘다
+      root.style.fontSize = scale === 1 ? "" : `${(16 * scale).toFixed(3)}px`;
     };
 
     const onResize = () => {
@@ -43,31 +29,13 @@ export default function LandingViewportScale({ children }: { children: ReactNode
 
     apply();
     window.addEventListener("resize", onResize, { passive: true });
-    window.visualViewport?.addEventListener("resize", onResize);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
-      window.visualViewport?.removeEventListener("resize", onResize);
-      const root = document.documentElement;
-      root.style.removeProperty("--landing-ui-scale");
       root.style.fontSize = "";
-      delete root.dataset.landingViewport;
     };
   }, []);
 
-  return (
-    <div
-      data-landing-scale={scale.toFixed(3)}
-      data-landing-viewport={kind}
-      className="landing-viewport-scale min-h-screen"
-      style={
-        {
-          ["--landing-ui-scale" as string]: scale,
-        } as CSSProperties
-      }
-    >
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
