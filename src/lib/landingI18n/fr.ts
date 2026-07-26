@@ -111,7 +111,7 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Un point de départ tranquille pour explorer et gérer les tâches quotidiennes de base — de quoi se faire une véritable idée de ce que l'assistant central de ZEFF AI peut faire.",
-  "pricing.free.price": "0 €",
+  "pricing.free.price": "$0",
   "pricing.free.period": "/ mois",
   "pricing.free.cta": "S'abonner",
   "pricing.free.bullet1": "Chat IA de base",
@@ -124,7 +124,7 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Environ 30× le quota gratuit",
   "pricing.pro.desc":
     "Pour ceux qui veulent un peu plus de marge de manœuvre au travail. Il fluidifie le rythme quotidien des tâches, avec nettement plus de ressources que le plan de base — une capacité supplémentaire, disponible dès que vous en avez besoin.",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ mois",
   "pricing.pro.cta": "S'abonner",
   "pricing.pro.bullet1": "Espace de travail élargi pour un usage réel",
@@ -139,7 +139,7 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Notre forfait haut de gamme pour ceux qui pilotent de grands projets complexes et ne veulent pas que des limites de ressources freinent leurs idées. Notre modèle de raisonnement le plus puissant et sa vitesse remarquable s'intègrent naturellement à votre façon de travailler.",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ mois",
   "pricing.professional.cta": "S'abonner",
   "pricing.professional.bullet1": "Fonctions Pro + limites étendues",
@@ -221,6 +221,8 @@ const fr: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "Pas encore de réponse. Nous vous préviendrons par e-mail dès qu'elle sera prête.",
   "support.inquiry.detail.attachment": "Pièce jointe",
   "support.inquiry.detail.loading": "Chargement...",
+  "support.legal.intlTitle": "Conditions pour les utilisateurs internationaux",
+  "support.legal.intl.notice": "Ces conditions s'appliquent aux utilisateurs résidant hors de la République de Corée. En cas de conflit avec les conditions générales d'utilisation, les conditions ci-dessous prévalent.",
   "support.legal.consentTitle": "Consentement à la collecte et à l'utilisation des données personnelles",
   "support.legal.age.title": "Confirmation de l'âge (19+)",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

@@ -106,7 +106,7 @@ const ja: Record<keyof typeof ko, string> = {
   "pricing.free.name": "free",
   "pricing.free.desc":
     "気軽な探索や日常的な基本業務に無理なく合うスタータープランです。ZEFF AIの中核となるアシスタント機能を気軽に体験できます。",
-  "pricing.free.price": "¥0",
+  "pricing.free.price": "$0",
   "pricing.free.period": "/ 月",
   "pricing.free.cta": "お申し込み",
   "pricing.free.bullet1": "基本AIチャット",
@@ -119,7 +119,7 @@ const ja: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "無料版比 約30倍の利用量",
   "pricing.pro.desc":
     "より没入感のある作業環境と、余裕あるリソースを求める方のためのプランです。日々のワークフローを途切れさせずスムーズにし、標準環境よりゆとりある計算リソースを有機的にサポートします。",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ 月",
   "pricing.pro.cta": "お申し込み",
   "pricing.pro.bullet1": "実務向けの拡張された作業環境",
@@ -134,7 +134,7 @@ const ja: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "大規模で複雑なプロジェクトを主導し、リソースの制約なくアイデアを実現したい方のための最上位プランです。最も深い高性能推論モデルと圧倒的な処理速度が、日常に完全に溶け込みます。",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ 月",
   "pricing.professional.cta": "お申し込み",
   "pricing.professional.bullet1": "Pro機能 + 拡張上限",
@@ -216,6 +216,8 @@ const ja: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "まだ回答が登録されていません。回答が準備でき次第、メールでもお知らせします。",
   "support.inquiry.detail.attachment": "添付ファイル",
   "support.inquiry.detail.loading": "読み込み中...",
+  "support.legal.intlTitle": "国際利用者向け特則",
+  "support.legal.intl.notice": "大韓民国外にお住まいの利用者に適用されます。利用規約本文と抵触する場合は、以下の特則が優先します。",
   "support.legal.consentTitle": "個人情報の収集・利用同意書",
   "support.legal.age.title": "満19歳以上の確認",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

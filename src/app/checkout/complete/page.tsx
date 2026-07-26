@@ -12,7 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
+import { PLANS, isPlanId, formatAmount, type PlanId } from "@/lib/plans";
 
 type ConfirmOk = {
   ok: true;
@@ -86,9 +86,10 @@ function CompleteInner() {
 
   const planId = data && isPlanId(data.plan) ? (data.plan as PlanId) : null;
   const planDef = planId ? PLANS[planId] : null;
+  // 주문에 남은 통화를 그대로 쓴다 — 플랜 통화가 나중에 바뀌어도 과거 영수증은 그때 금액으로 보여야 한다.
   const amountLabel =
     data != null
-      ? `₩${(data.amount ?? 0).toLocaleString("ko-KR")}`
+      ? formatAmount(data.amount ?? 0, data.currency)
       : planDef
         ? planDef.priceLabel
         : "";
@@ -164,7 +165,7 @@ function CompleteInner() {
                 {data.stub && (
                   <p className="mt-3 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                     결제 플랫폼 연동 전 · 테스트 결제 완료로 처리되었습니다.
-                    Stripe 키가 등록되면 실제 결제로 전환됩니다.
+                    결제대행사 연동이 끝나면 실제 결제로 전환됩니다.
                   </p>
                 )}
               </div>

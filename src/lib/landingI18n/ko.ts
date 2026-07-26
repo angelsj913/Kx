@@ -108,7 +108,7 @@ const ko = {
   "pricing.free.name": "free",
   "pricing.free.desc":
     "개인적인 탐색과 기본적인 일상 업무에 부담 없이 적합한 스타터 구성입니다. ZEFF AI의 핵심적인 어시스턴트 기능을 가볍게 경험해보실 수 있습니다.",
-  "pricing.free.price": "₩0",
+  "pricing.free.price": "$0",
   "pricing.free.period": "/ 월",
   "pricing.free.cta": "무료로 시작하기",
   "pricing.free.bullet1": "기본 AI 채팅",
@@ -121,7 +121,7 @@ const ko = {
   "pricing.pro.badge": "무료 대비 약 30배 이용량",
   "pricing.pro.desc":
     "조금 더 몰입감 있는 작업 환경과 넉넉한 유연성이 필요한 분들을 위한 플랜입니다. 일상의 루틴한 업무 흐름을 한결 부드럽게 만들어 주며, 기본 환경보다 한층 더 여유로운 연산 자원이 유기적으로 지원됩니다.",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ 월",
   "pricing.pro.cta": "결제하기",
   "pricing.pro.bullet1": "실무에 맞춘 확장 작업 환경",
@@ -136,7 +136,7 @@ const ko = {
   "pricing.professional.badge2": "정밀 AI 라우트 이용",
   "pricing.professional.desc":
     "깊은 분석과 시험·학습 도구까지 폭넓게 쓰는 분을 위한 상위 플랜입니다. 다중 AI 라우트와 넉넉한 이용량으로 작업 흐름을 이어 갑니다.",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ 월",
   "pricing.professional.cta": "결제하기",
   "pricing.professional.bullet1": "Pro 기능 + 확장 한도",
@@ -223,6 +223,8 @@ const ko = {
   "support.inquiry.detail.pending": "아직 답변이 등록되지 않았어요. 답변이 준비되면 이메일로도 알려드릴게요.",
   "support.inquiry.detail.attachment": "첨부파일",
   "support.inquiry.detail.loading": "내용을 불러오는 중...",
+  "support.legal.intlTitle": "국제 이용자 특칙",
+  "support.legal.intl.notice": "대한민국 외 국가에 거주하는 이용자에게 적용됩니다. 이용약관 본문과 상충하는 경우 아래 특칙이 우선합니다.",
   "support.legal.consentTitle": "개인정보 수집 이용 동의서",
   "support.legal.age.title": "만 19세 이상 확인",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

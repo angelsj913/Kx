@@ -133,7 +133,8 @@ export async function POST(request: Request, ctx: RouteCtx) {
           userId: target.id,
           plan,
           amount,
-          currency: "krw",
+          // amount 를 PLANS 에서 가져오므로 통화도 같은 곳에서 가져와야 짝이 맞는다
+          currency: PLANS[plan].currency,
           status: "paid",
         },
       });

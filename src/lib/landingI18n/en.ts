@@ -126,7 +126,7 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "About 30× free usage allowance",
   "pricing.pro.desc":
     "Built for anyone who wants a bit more room to breathe while they work. It smooths out the everyday rhythm of your tasks, with noticeably more headroom than the basic plan — extra capacity that's simply there when you need it.",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ mo",
   "pricing.pro.cta": "Subscribe",
   "pricing.pro.bullet1": "Expanded workspace for real work",
@@ -141,7 +141,7 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Our top-tier plan for anyone leading large, complex projects who doesn't want resource limits getting in the way of an idea. Our deepest reasoning model and its remarkable speed become part of how you naturally work.",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ mo",
   "pricing.professional.cta": "Subscribe",
   "pricing.professional.bullet1": "Pro features + higher limits",
@@ -228,6 +228,8 @@ const en: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "No reply yet. We'll email you as soon as it's ready.",
   "support.inquiry.detail.attachment": "Attachment",
   "support.inquiry.detail.loading": "Loading...",
+  "support.legal.intlTitle": "Terms for International Users",
+  "support.legal.intl.notice": "These terms apply to users residing outside the Republic of Korea. Where they conflict with the main Terms of Service, the terms below prevail.",
   "support.legal.consentTitle": "Consent to Collection and Use of Personal Information",
   "support.legal.age.title": "Confirmation of Age (19+)",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

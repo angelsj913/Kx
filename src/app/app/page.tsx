@@ -50,10 +50,42 @@ export default function AppWorkspace() {
     wasLoading.current = loading;
   }, [loading]);
 
+  // 소프트 키보드 대응. dvh 는 주소창 변화만 반영하고 키보드는 반영하지 않아서,
+  // 키보드가 올라오면 100dvh 셸의 아래쪽(= 채팅 입력창)이 키보드 뒤에 영구히 가렸다.
+  // Android/Chrome 은 viewport 의 interactiveWidget 이 처리하지만 iOS Safari 는 이를
+  // 무시하므로, 실제로 보이는 영역인 visualViewport 높이를 셸 높이로 쓴다.
+  // rAF 스로틀 패턴은 LandingViewportScale.tsx 와 동일.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let raf = 0;
+
+    const apply = () => {
+      document.documentElement.style.setProperty("--app-vh", `${vv.height}px`);
+      // iOS 는 키보드가 열릴 때 레이아웃 뷰포트를 밀어 올린다. 되돌리지 않으면
+      // 셸 높이를 맞춰도 화면이 어긋난 채로 남는다.
+      if (vv.offsetTop > 0) window.scrollTo(0, 0);
+    };
+    const onChange = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(apply);
+    };
+
+    apply();
+    vv.addEventListener("resize", onChange);
+    vv.addEventListener("scroll", onChange);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv.removeEventListener("resize", onChange);
+      vv.removeEventListener("scroll", onChange);
+      document.documentElement.style.removeProperty("--app-vh");
+    };
+  }, []);
+
   return (
     <div
       style={workspaceAccentCssVars()}
-      className="flex h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-[var(--workspace-bg)] font-[family-name:var(--font-noto-kr)] text-[var(--workspace-text)]"
+      className="flex h-[var(--app-vh,100dvh)] w-full max-w-[100vw] overflow-hidden bg-[var(--workspace-bg)] font-[family-name:var(--font-noto-kr)] text-[var(--workspace-text)]"
     >
       {mobileNav && (
         <button type="button" aria-label={t("nav.closeMenu")} className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setMobileNav(false)} />

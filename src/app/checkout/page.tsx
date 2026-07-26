@@ -7,7 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, CreditCard, AlertCircle, Check } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PLANS, isPlanId, type PlanId } from "@/lib/plans";
+import { PLANS, isPlanId, formatAmount, type PlanId } from "@/lib/plans";
 import { setAppLanguage, useT, type AppLanguage } from "@/lib/i18n";
 import { LANGUAGE_ORDER } from "@/lib/languages";
 
@@ -75,7 +75,7 @@ function CheckoutInner() {
         }
         if (!res.ok) throw new Error(data?.error ?? ct("checkout.prepareFail"));
         if (data.url) {
-          // Stripe locale 힌트 (지원 시)
+          // 결제대행사 결제창으로 이동
           const url = String(data.url);
           window.location.href = url;
           return;
@@ -95,7 +95,7 @@ function CheckoutInner() {
   }, [planId]);
 
   const amount = plan
-    ? `₩${(isAnnual ? (plan.annualAmount as number) : plan.amount).toLocaleString("ko-KR")}`
+    ? formatAmount(isAnnual ? (plan.annualAmount as number) : plan.amount, plan.currency)
     : "";
 
   function goComplete() {

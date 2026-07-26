@@ -1,11 +1,28 @@
 /**
  * 결제 확인 → 주문 paid + UserSettings.plan 부여 (단일 진입점)
- * Stripe 웹훅 · 완료 페이지 confirm API · 스텁 결제에서 공용.
+ * 완료 페이지 confirm API · 스텁 결제에서 공용. 결제대행사 연동이 붙으면
+ * 그 콜백도 이 함수를 지나게 한다 — 권한 부여 지점은 하나로 유지한다.
  */
 import { prisma } from "@/lib/prisma";
 import { getPlan, isPlanId, type PlanId } from "@/lib/plans";
 
-export type FulfillSource = "stripe_webhook" | "checkout_confirm" | "stub";
+export type FulfillSource = "checkout_confirm" | "paymentwall_pingback" | "stub";
+
+/**
+ * 스텁 결제(테스트 완료 처리)는 개발/프리뷰 환경에서만 허용한다.
+ * 프로덕션에서 결제대행사가 연동되지 않았으면 실제 결제를 요구하도록 막아,
+ * 무료로 요금제가 부여되는 우회를 방지한다.
+ */
+export function isStubCheckoutAllowed(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+export function getBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
+}
 
 export type FulfillResult = {
   ok: boolean;
@@ -28,12 +45,8 @@ export type FulfillResult = {
  */
 export async function fulfillPaidOrder(opts: {
   merchantUid: string;
-  /** 웹훅/세션에서 보강할 userId (주문에 없을 때) */
+  /** 결제 콜백에서 보강할 userId (주문에 없을 때) */
   userId?: string | null;
-  /** Stripe Checkout Session id */
-  stripeSession?: string | null;
-  /** Stripe Customer id — 다음 결제 때 재사용하고, 포털 진입 키로도 쓴다 */
-  stripeCustomerId?: string | null;
   source: FulfillSource;
 }): Promise<FulfillResult> {
   const merchantUid = opts.merchantUid?.trim();
@@ -67,20 +80,14 @@ export async function fulfillPaidOrder(opts: {
 
   const updated = await prisma.order.update({
     where: { id: order.id },
-    data: {
-      status: "paid",
-      userId,
-      ...(opts.stripeSession ? { stripeSession: opts.stripeSession } : {}),
-    },
+    data: { status: "paid", userId },
   });
 
-  // 요금제 권한 자동 부여. Customer id 는 웹훅·confirm 두 경로가 모두 여길 지나므로
-  // 여기서만 저장하면 양쪽이 함께 해결된다.
-  const customer = opts.stripeCustomerId?.trim() || null;
+  // 요금제 권한 자동 부여
   await prisma.userSettings.upsert({
     where: { userId },
-    create: { userId, plan: planId, ...(customer ? { stripeCustomerId: customer } : {}) },
-    update: { plan: planId, ...(customer ? { stripeCustomerId: customer } : {}) },
+    create: { userId, plan: planId },
+    update: { plan: planId },
   });
 
   return {

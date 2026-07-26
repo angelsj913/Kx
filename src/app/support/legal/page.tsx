@@ -2,7 +2,7 @@
 
 import { useLandingT } from "@/lib/landingI18n";
 import SupportShell from "@/components/support/SupportShell";
-import { TERMS, PRIVACY, CONSENT, COMPANY_INFO, type LegalArticle } from "@/lib/legalContent";
+import { TERMS, INTERNATIONAL, PRIVACY, CONSENT, COMPANY_INFO, type LegalArticle } from "@/lib/legalContent";
 
 function Article({ article }: { article: LegalArticle }) {
   return (
@@ -45,6 +45,21 @@ export default function SupportLegalPage() {
                 {t("support.legal.age.body")}
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* 국제 이용자 특칙 — 거주국 강행법규가 본문 약관에 우선하는 부분을 모아 둔다 */}
+        <section className="border-t border-slate-200 pt-8 dark:border-slate-800">
+          <h2 id="international" className="scroll-mt-20 text-xl font-bold sm:text-2xl">
+            {t("support.legal.intlTitle")}
+          </h2>
+          <p className="mt-3 rounded-xl bg-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+            {t("support.legal.intl.notice")}
+          </p>
+          <div className="mt-4 space-y-4">
+            {INTERNATIONAL.map((a) => (
+              <Article key={a.id} article={a} />
+            ))}
           </div>
         </section>
 

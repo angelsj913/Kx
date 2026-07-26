@@ -14,6 +14,7 @@ import {
   Download,
   Wrench,
   LifeBuoy,
+  Languages,
 } from "lucide-react";
 import {
   useLandingLanguage,
@@ -78,17 +79,21 @@ export default function Header() {
             : "border-transparent bg-transparent"
         }`}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        {/* 모바일에서 내용물 폭이 화면을 넘겨 로그인 버튼이 밖으로 밀려나 있었다.
+            여백을 줄이고, 오른쪽은 축소 대상에서 빼고, 왼쪽은 넘칠 때 겹치는 대신
+            잘리도록 min-w-0 을 준다 — 언어가 바뀌어 라벨이 길어져도 재발하지 않는다. */}
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <button type="button" aria-label={t("header.menuAria")} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-900/5 dark:text-slate-200 dark:hover:bg-white/5">
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link href="/" className="flex items-center" aria-label={t("header.homeAria")}>
+            {/* overflow-hidden: 극단적으로 좁은 화면에서 워드마크가 옆 버튼을 밀지 않고 잘리게 한다 */}
+            <Link href="/" className="flex min-w-0 items-center overflow-hidden" aria-label={t("header.homeAria")}>
               <Logo size="lg" />
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {isAdmin && (
               // 일반 <a> 로 전체 페이지 이동 — soft navigation 후 silent redirect 가
               // 홈에서 '버튼 무반응'처럼 보이던 문제 방지
@@ -104,8 +109,8 @@ export default function Header() {
 
             <ThemeToggle />
 
-            {/* 언어 선택 */}
-            <div ref={langRef} className="relative">
+            {/* 언어 선택 — 모바일에서는 폭을 차지해 로그인을 밀어내므로 햄버거 메뉴로 옮겼다 */}
+            <div ref={langRef} className="relative hidden sm:block">
               <button type="button" onClick={() => setLangOpen((v) => !v)} className="flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400/60 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:text-white">
                 {LANGUAGE_LABELS[language]}
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${langOpen ? "rotate-180" : ""}`} />
@@ -157,13 +162,37 @@ export default function Header() {
         <AnimatePresence>
           {menuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-900/[0.06] bg-white/85 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/85">
-              <nav className="mx-auto flex max-w-6xl flex-col px-6 py-4">
+              <nav className="mx-auto flex max-w-6xl flex-col px-4 py-4 sm:px-6">
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">
                     <Icon className="h-4 w-4" />
                     {t(labelKey)}
                   </Link>
                 ))}
+
+                {/* 언어 — 헤더에서 밀려난 모바일 전용. 데스크톱은 헤더 드롭다운이 그대로 있다 */}
+                <div className="mt-2 border-t border-slate-900/[0.06] pt-3 sm:hidden dark:border-white/[0.08]">
+                  <p className="flex items-center gap-2.5 px-2 pb-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <Languages className="h-4 w-4" />
+                    {t("header.language")}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 px-2 pt-1.5">
+                    {LANGUAGE_ORDER.map((lang: LandingLanguage) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => { setLanguage(lang); setMenuOpen(false); }}
+                        className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                          lang === language
+                            ? "bg-blue-600/10 font-semibold text-blue-700 dark:text-blue-300"
+                            : "text-slate-600 hover:bg-slate-900/5 dark:text-slate-300 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {LANGUAGE_LABELS[lang]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </nav>
             </motion.div>
           )}

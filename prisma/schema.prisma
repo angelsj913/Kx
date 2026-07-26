@@ -416,7 +416,6 @@ model UserSettings {
   plan              String   @default("free")
   language          String   @default("ko")
   enabledQuickTools String[] @default([])
-  stripeCustomerId  String?
   /** 관리자가 사용자 AI 를 개별 차단할 때 true */
   aiDisabled        Boolean  @default(false)
   /** 대화에서 장기 선호·사실을 자동 저장해 다음 세션에 반영할지 */
@@ -464,7 +463,7 @@ model RateLimitHit {
   @@index([scope, windowKey])
 }
 
-// Stripe 결제 주문. merchantUid로 조회하고 웹훅으로 상태를 갱신한다.
+// 결제 주문. merchantUid로 조회하고 결제대행사 콜백으로 상태를 갱신한다.
 model Order {
   id            String   @id @default(cuid())
   merchantUid   String   @unique
@@ -473,7 +472,8 @@ model Order {
   amount        Int      @default(0)
   currency      String   @default("krw")
   status        String   @default("pending") // "pending" | "paid" | "failed" | "canceled"
-  stripeSession String?
+  /** 결제대행사 거래 참조(Paymentwall ref) — 환불·문의 시 대조용. 결제사 이름을 넣지 않는다. */
+  providerRef   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

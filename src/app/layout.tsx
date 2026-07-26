@@ -83,6 +83,10 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // 소프트 키보드가 올라오면 레이아웃 뷰포트를 줄인다 — 이게 없으면 100dvh 셸이
+  // 그대로 유지돼 채팅 입력창이 키보드 뒤에 가린다. iOS Safari 는 이 값을 무시하므로
+  // visualViewport 로 따로 처리한다(src/app/app/page.tsx).
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a1120" },

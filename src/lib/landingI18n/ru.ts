@@ -124,7 +124,7 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Примерно в 30 раз больше лимита бесплатного плана",
   "pricing.pro.desc":
     "Тариф для тех, кому нужна более комфортная рабочая среда и гибкие ресурсы. Он делает повседневный рабочий процесс более плавным, органично предоставляя больше вычислительных ресурсов, чем базовая версия.",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ мес",
   "pricing.pro.cta": "Оформить",
   "pricing.pro.bullet1": "Расширенная рабочая среда для реальных задач",
@@ -139,7 +139,7 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Топовый тариф для тех, кто ведёт крупные и сложные проекты и не хочет, чтобы ограничения ресурсов мешали воплощать идеи. Самая мощная модель рассуждений и впечатляющая скорость становятся частью вашей повседневной работы.",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ мес",
   "pricing.professional.cta": "Оформить",
   "pricing.professional.bullet1": "Функции Pro + расширенные лимиты",
@@ -221,6 +221,8 @@ const ru: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "Ответа пока нет. Мы сообщим по email, как только он будет готов.",
   "support.inquiry.detail.attachment": "Вложение",
   "support.inquiry.detail.loading": "Загрузка...",
+  "support.legal.intlTitle": "Особые условия для международных пользователей",
+  "support.legal.intl.notice": "Применяются к пользователям, проживающим за пределами Республики Корея. В случае противоречия с основными условиями обслуживания преимущественную силу имеют условия ниже.",
   "support.legal.consentTitle": "Согласие на сбор и использование персональных данных",
   "support.legal.age.title": "Подтверждение возраста (19+)",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

@@ -1,8 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { scanSourceForSecrets } from "./secretScan";
-import { PAID_PRICE_COMBOS, priceIdFor, getStripe } from "@/lib/stripe";
-import { PLANS } from "@/lib/plans";
 
 export type CheckResult = "pass" | "fail" | "warn";
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
@@ -359,90 +357,33 @@ function checkAuthSecret(): SecurityCheckOutcome {
   };
 }
 
-function checkStripeWebhookSecret(): SecurityCheckOutcome {
-  const checkId = "env.stripe_webhook_secret_present";
-  const skillIds = ["testing-for-sensitive-data-exposure"];
-  const hasStripe = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
-  const hasWh = Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim());
-  if (!hasStripe) {
-    return {
-      checkId,
-      skillIds,
-      severity: "low",
-      title: "Stripe webhook 시크릿",
-      detail: "STRIPE_SECRET_KEY가 없어 스텁/미연동으로 간주합니다.",
-      remediation: "Stripe 연동 시 STRIPE_WEBHOOK_SECRET도 함께 설정하세요.",
-      result: "pass",
-    };
-  }
-  return {
-    checkId,
-    skillIds,
-    severity: "high",
-    title: "Stripe webhook 시크릿",
-    detail: hasWh
-      ? "STRIPE_WEBHOOK_SECRET이 설정되어 있습니다."
-      : "Stripe 키는 있으나 STRIPE_WEBHOOK_SECRET이 없습니다. 웹훅 위조에 취약할 수 있습니다.",
-    remediation: "Stripe 대시보드에서 웹훅 시크릿을 발급해 STRIPE_WEBHOOK_SECRET에 넣으세요.",
-    result: hasWh ? "pass" : "fail",
-  };
-}
-
 /**
- * Stripe 키가 있는데 Price ID env 가 비면 모든 결제가 503 으로 죽는다.
- * ID 가 있으면 실제 Price 를 읽어 plans.ts 와 대조까지 한다 — 대시보드 금액이
- * 어긋나면 Order 에는 plans.ts 금액이 남고 실제 청구는 다른 금액이 되는데,
- * 이 불일치는 결제가 성공해 버리므로 자가점검 말고는 드러날 곳이 없다.
+ * 결제는 세 값이 모두 있어야 동작한다. 하나만 비어도 결제창이 503 으로 죽는데,
+ * 그 상태는 사용자가 결제를 시도하기 전까지 드러나지 않으므로 여기서 잡는다.
+ * 시크릿 키는 pingback 위조 방어의 유일한 수단이라 없으면 치명적이다.
  */
-async function checkStripePriceIds(): Promise<SecurityCheckOutcome> {
-  const checkId = "env.stripe_price_ids_present";
+function checkPaymentwallEnv(): SecurityCheckOutcome {
+  const checkId = "env.paymentwall_keys_present";
   const skillIds = ["testing-for-sensitive-data-exposure"];
-  const title = "Stripe Price ID";
-  const stripe = getStripe();
-  if (!stripe) {
+  const title = "Paymentwall 키";
+  const required = [
+    "PAYMENTWALL_PROJECT_KEY",
+    "PAYMENTWALL_SECRET_KEY",
+    "PAYMENTWALL_WIDGET_CODE",
+  ];
+  const missing = required.filter((k) => !process.env[k]?.trim());
+
+  // 하나도 없으면 아직 연동 전 — 결제 CTA 도 꺼져 있으므로 정상 상태다.
+  if (missing.length === required.length) {
     return {
       checkId,
       skillIds,
       severity: "low",
       title,
-      detail: "STRIPE_SECRET_KEY가 없어 결제 미연동으로 간주합니다.",
-      remediation: "Stripe 연동 시 플랜×주기별 Price ID도 함께 설정하세요.",
+      detail: "Paymentwall 키가 없어 결제 미연동으로 간주합니다.",
+      remediation: "결제를 개시할 때 세 환경변수를 모두 설정하세요.",
       result: "pass",
     };
-  }
-
-  const problems: string[] = [];
-  for (const [plan, interval] of PAID_PRICE_COMBOS) {
-    const envKey = `STRIPE_PRICE_${plan.toUpperCase()}_${interval.toUpperCase()}`;
-    const priceId = priceIdFor(plan, interval);
-    if (!priceId) {
-      problems.push(`${envKey}: 비어 있음`);
-      continue;
-    }
-    const def = PLANS[plan];
-    const expected = interval === "month" ? def.amount : def.annualAmount;
-    if (expected == null) {
-      problems.push(`${envKey}: plans.ts에 해당 주기 금액이 없음`);
-      continue;
-    }
-    try {
-      const price = await stripe.prices.retrieve(priceId);
-      // KRW 는 zero-decimal — unit_amount 가 곧 원 단위다.
-      if (price.currency !== def.currency) {
-        problems.push(`${envKey}: 통화 ${price.currency} ≠ ${def.currency}`);
-      }
-      if (price.unit_amount !== expected) {
-        problems.push(`${envKey}: 금액 ${price.unit_amount} ≠ ${expected}`);
-      }
-      if (price.recurring?.interval !== interval) {
-        problems.push(`${envKey}: 주기 ${price.recurring?.interval ?? "일회성"} ≠ ${interval}`);
-      }
-      if (!price.active) {
-        problems.push(`${envKey}: 비활성 Price`);
-      }
-    } catch {
-      problems.push(`${envKey}: Price 조회 실패 (${priceId})`);
-    }
   }
 
   return {
@@ -451,12 +392,12 @@ async function checkStripePriceIds(): Promise<SecurityCheckOutcome> {
     severity: "high",
     title,
     detail:
-      problems.length === 0
-        ? "유료 플랜 4종의 Price 가 plans.ts 의 금액·통화·주기와 일치합니다."
-        : `Price 설정이 어긋났습니다: ${problems.join(" / ")}`,
+      missing.length === 0
+        ? "PROJECT_KEY · SECRET_KEY · WIDGET_CODE 가 모두 설정되어 있습니다."
+        : `일부만 설정돼 결제가 실패합니다. 누락: ${missing.join(", ")}`,
     remediation:
-      "Stripe 대시보드의 Price 를 plans.ts 금액(Pro ₩9,900·₩99,000, Professional ₩14,900·₩149,000)에 맞추고 ID를 해당 환경변수에 넣으세요.",
-    result: problems.length === 0 ? "pass" : "fail",
+      "Paymentwall 대시보드의 공개키·개인키·위젯 코드를 해당 환경변수에 모두 넣으세요.",
+    result: missing.length === 0 ? "pass" : "fail",
   };
 }
 
@@ -845,17 +786,18 @@ async function listRouteFiles(): Promise<string[]> {
 async function checkApiRoutesAuthed(): Promise<SecurityCheckOutcome> {
   const checkId = "bac.api_routes_authed";
   const skillIds = ["testing-for-broken-access-control", "testing-api-security-with-owasp-top-10"];
-  // 의도적으로 공개인 경로(로그인 전 흐름·웹훅·크론). 이들은 별도로 레이트리밋/시크릿 검증을 받는다.
+  // 의도적으로 공개인 경로(로그인 전 흐름·크론·결제 콜백). 이들은 별도로 레이트리밋이나
+  // 시크릿·서명 검증을 받는다.
   const publicPrefixes = [
     "src/app/api/auth/", // NextAuth 핸들러 + signup/otp/reset (rate-limit로 보호)
-    "src/app/api/stripe/webhook/", // 서명 검증
     "src/app/api/cron/", // CRON_SECRET 검증
     "src/app/api/account/2fa/login-challenge/", // 로그인 1단계(세션 전) — login rate-limit 공유
+    "src/app/api/paymentwall/pingback/", // 결제대행사 콜백 — HMAC 서명 검증
   ];
   const authMarkers = [
     "auth()", "requireUserId", "requireSession", "requireSecurityAdmin",
-    "requireAdmin", "getServerSession", "verifyCronSecret", "verifyStripeSignature",
-    "constructEvent",
+    "requireAdmin", "getServerSession", "verifyCronSecret",
+    "verifyPingbackSignature",
   ];
   try {
     const files = await listRouteFiles();
@@ -936,12 +878,16 @@ async function checkTenantScoping(): Promise<SecurityCheckOutcome> {
 async function checkAuthRateLimited(): Promise<SecurityCheckOutcome> {
   const checkId = "ratelimit.auth_endpoints";
   const skillIds = ["implementing-api-rate-limiting-and-throttling", "testing-api-authentication-weaknesses"];
+  // 결제 경로도 함께 본다 — 카드 테스팅 봇의 표적이라 무차별 대입 방어가 필요한
+  // 성격이 인증 경로와 같다. 별도 점검을 만들지 않고 대상만 넓혔다.
   const targets = [
     "src/auth.ts",
     "src/app/api/auth/otp/route.ts",
     "src/app/api/auth/signup/route.ts",
     "src/app/api/auth/reset-password/route.ts",
     "src/app/api/account/password/route.ts",
+    "src/app/api/checkout/route.ts",
+    "src/app/api/checkout/confirm/route.ts",
   ];
   try {
     const missing: string[] = [];
@@ -955,21 +901,21 @@ async function checkAuthRateLimited(): Promise<SecurityCheckOutcome> {
     }
     if (missing.length === 0) {
       return {
-        checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
-        detail: "로그인/OTP/가입/비밀번호 경로가 모두 레이트리밋을 호출합니다.",
-        remediation: "새 인증 관련 엔드포인트에도 checkRateLimit/assertRateLimit를 적용하세요.",
+        checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
+        detail: "로그인/OTP/가입/비밀번호/결제 경로가 모두 레이트리밋을 호출합니다.",
+        remediation: "새 인증·결제 엔드포인트에도 checkRateLimit/assertRateLimit를 적용하세요.",
         result: "pass",
       };
     }
     return {
-      checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
-      detail: `레이트리밋이 없는 인증 경로: ${missing.join(", ")}`,
+      checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
+      detail: `레이트리밋이 없는 인증·결제 경로: ${missing.join(", ")}`,
       remediation: "해당 경로에 IP·계정 기준 checkRateLimit를 추가해 무차별 대입을 막으세요.",
       result: "fail",
     };
   } catch (e) {
     return {
-      checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
+      checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
       detail: `검사 실패: ${e instanceof Error ? e.message : String(e)}`,
       remediation: "인증 경로를 확인하세요.",
       result: "warn",
@@ -1242,8 +1188,7 @@ export const DEFAULT_CHECK_IDS = [
   "cron.query_secret_disabled_in_prod",
   "deps.next_auth_min_version",
   "env.auth_secret_present",
-  "env.stripe_webhook_secret_present",
-  "env.stripe_price_ids_present",
+  "env.paymentwall_keys_present",
   "env.cron_secret_present",
   "deps.npm_audit_critical_high",
   // v2 스킬 기반 신규 점검팩
@@ -1276,8 +1221,7 @@ const RUNNERS: Record<string, () => Promise<SecurityCheckOutcome> | SecurityChec
   "cron.query_secret_disabled_in_prod": checkCronQuerySecret,
   "deps.next_auth_min_version": checkNextAuthVersion,
   "env.auth_secret_present": checkAuthSecret,
-  "env.stripe_webhook_secret_present": checkStripeWebhookSecret,
-  "env.stripe_price_ids_present": checkStripePriceIds,
+  "env.paymentwall_keys_present": checkPaymentwallEnv,
   "env.cron_secret_present": checkCronSecretPresent,
   "deps.npm_audit_critical_high": checkNpmAuditCriticalHigh,
   // v2 스킬 기반 신규 점검팩
