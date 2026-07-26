@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, newMerchantUid } from "@/lib/plans";
 import { isStubCheckoutAllowed } from "@/lib/billing";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -10,6 +11,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    // 카드 테스팅 방어 — 결제창을 여는 지점이라 봇이 훔친 카드 목록을 대량으로
+    // 검증하는 표적이 된다. 계정을 갈아타며 시도하는 패턴은 사용자 단위로는 안
+    // 잡히므로 IP 를 먼저 본다. 로그인 검사보다 앞에 두어야 미인증 폭주도 걸린다.
+    await assertRateLimit("checkout:ip", clientIp(request), { max: 30, windowSeconds: 600 });
+
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
@@ -20,6 +26,10 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    // 정상 사용자는 결제창을 몇 번 여닫는 정도다. 취소 후 재시도 여유는 두되,
+    // 한 계정으로 카드를 바꿔가며 반복하는 시도는 여기서 끊는다.
+    await assertRateLimit("checkout:user", userId, { max: 8, windowSeconds: 600 });
 
     const body = await request.json().catch(() => ({}));
     const plan = getPlan(body?.plan);
@@ -78,6 +88,9 @@ export async function POST(request: Request) {
       completeUrl: `/checkout/complete?uid=${encodeURIComponent(merchantUid)}&stub=1`,
     });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     console.error("checkout error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

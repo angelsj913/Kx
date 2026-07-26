@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, PLANS } from "@/lib/plans";
 import { fulfillPaidOrder, orderBelongsToUser, isStubCheckoutAllowed } from "@/lib/billing";
+import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 import { friendlyError } from "@/lib/errors";
 
 export const runtime = "nodejs";
@@ -15,8 +16,15 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
+    // 요금제 권한이 실제로 부여되는 지점이라 결제창보다 값이 높은 표적이다.
+    // 남의 주문번호를 긁어 맞히려는 시도를 여기서 끊는다(소유자 검사는 아래에서 별도).
+    await assertRateLimit("checkout:confirm:ip", clientIp(request), { max: 40, windowSeconds: 600 });
+
     const userId = await requireUserId();
     if (userId instanceof NextResponse) return userId;
+
+    // 완료 페이지가 새로고침될 수 있어 여유를 두되, 반복 조회는 막는다.
+    await assertRateLimit("checkout:confirm:user", userId, { max: 15, windowSeconds: 600 });
 
     const body = await request.json().catch(() => ({}));
     const merchantUid =
@@ -68,6 +76,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ...successPayload(result), stub: true });
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
     console.error("checkout confirm error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

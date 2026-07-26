@@ -832,12 +832,16 @@ async function checkTenantScoping(): Promise<SecurityCheckOutcome> {
 async function checkAuthRateLimited(): Promise<SecurityCheckOutcome> {
   const checkId = "ratelimit.auth_endpoints";
   const skillIds = ["implementing-api-rate-limiting-and-throttling", "testing-api-authentication-weaknesses"];
+  // 결제 경로도 함께 본다 — 카드 테스팅 봇의 표적이라 무차별 대입 방어가 필요한
+  // 성격이 인증 경로와 같다. 별도 점검을 만들지 않고 대상만 넓혔다.
   const targets = [
     "src/auth.ts",
     "src/app/api/auth/otp/route.ts",
     "src/app/api/auth/signup/route.ts",
     "src/app/api/auth/reset-password/route.ts",
     "src/app/api/account/password/route.ts",
+    "src/app/api/checkout/route.ts",
+    "src/app/api/checkout/confirm/route.ts",
   ];
   try {
     const missing: string[] = [];
@@ -851,21 +855,21 @@ async function checkAuthRateLimited(): Promise<SecurityCheckOutcome> {
     }
     if (missing.length === 0) {
       return {
-        checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
-        detail: "로그인/OTP/가입/비밀번호 경로가 모두 레이트리밋을 호출합니다.",
-        remediation: "새 인증 관련 엔드포인트에도 checkRateLimit/assertRateLimit를 적용하세요.",
+        checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
+        detail: "로그인/OTP/가입/비밀번호/결제 경로가 모두 레이트리밋을 호출합니다.",
+        remediation: "새 인증·결제 엔드포인트에도 checkRateLimit/assertRateLimit를 적용하세요.",
         result: "pass",
       };
     }
     return {
-      checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
-      detail: `레이트리밋이 없는 인증 경로: ${missing.join(", ")}`,
+      checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
+      detail: `레이트리밋이 없는 인증·결제 경로: ${missing.join(", ")}`,
       remediation: "해당 경로에 IP·계정 기준 checkRateLimit를 추가해 무차별 대입을 막으세요.",
       result: "fail",
     };
   } catch (e) {
     return {
-      checkId, skillIds, severity: "high", title: "인증 엔드포인트 레이트리밋",
+      checkId, skillIds, severity: "high", title: "인증·결제 엔드포인트 레이트리밋",
       detail: `검사 실패: ${e instanceof Error ? e.message : String(e)}`,
       remediation: "인증 경로를 확인하세요.",
       result: "warn",
