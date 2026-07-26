@@ -1,0 +1,4286 @@
+{
+  "name": "zeff-ai",
+  "description": "ZEFF AI Workspace (Web, Desktop, Android) Note: this project has over 100 source files; consider scoping analysis to a subdirectory for faster results.",
+  "languages": [
+    "batch",
+    "css",
+    "gradle",
+    "html",
+    "jar",
+    "java",
+    "javascript",
+    "json",
+    "jsonl",
+    "markdown",
+    "mts",
+    "prisma",
+    "pro",
+    "properties",
+    "txt",
+    "typescript",
+    "webm",
+    "webmanifest",
+    "xml",
+    "yaml"
+  ],
+  "frameworks": [
+    "Next.js",
+    "React",
+    "Prisma",
+    "Auth.js",
+    "Electron",
+    "Capacitor",
+    "Tailwind CSS",
+    "GitHub Actions",
+    "framer-motion"
+  ],
+  "files": [
+    {
+      "path": ".cursor/mcp.json",
+      "language": "json",
+      "sizeLines": 13,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".gitattributes",
+      "language": "unknown",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".github/workflows/build-windows-installer.yml",
+      "language": "yaml",
+      "sizeLines": 32,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".github/workflows/db-push.yml",
+      "language": "yaml",
+      "sizeLines": 35,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/README.md",
+      "language": "markdown",
+      "sizeLines": 306,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 58,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/references/edge-cases.md",
+      "language": "markdown",
+      "sizeLines": 78,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/references/guide-template.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/references/metrics.md",
+      "language": "markdown",
+      "sizeLines": 43,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/references/review-mode.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/brand-voice-analyzer/references/voice-dimensions.md",
+      "language": "markdown",
+      "sizeLines": 74,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 28,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/references/analysis-framework.md",
+      "language": "markdown",
+      "sizeLines": 169,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/references/inputs.md",
+      "language": "markdown",
+      "sizeLines": 26,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 145,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/references/root-cause-taxonomy.md",
+      "language": "markdown",
+      "sizeLines": 71,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/churn-autopsy/references/standards.md",
+      "language": "markdown",
+      "sizeLines": 47,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/cold-email-sequence-generator/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 47,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/cold-email-sequence-generator/references/email-templates.md",
+      "language": "markdown",
+      "sizeLines": 331,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/cold-email-sequence-generator/references/optimization.md",
+      "language": "markdown",
+      "sizeLines": 90,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/cold-email-sequence-generator/references/output-format.md",
+      "language": "markdown",
+      "sizeLines": 35,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/cold-email-sequence-generator/references/quick-start-templates.md",
+      "language": "markdown",
+      "sizeLines": 34,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-content-analyzer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-intel-agent/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-intel-agent/references/directory-structure.md",
+      "language": "markdown",
+      "sizeLines": 98,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-intel-agent/references/intel-report-format.md",
+      "language": "markdown",
+      "sizeLines": 111,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-intel-agent/references/monitoring-dimensions.md",
+      "language": "markdown",
+      "sizeLines": 196,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/competitor-intel-agent/references/scoring-and-rules.md",
+      "language": "markdown",
+      "sizeLines": 65,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/content-repurposer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/customer-journey-mapper/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/customer-journey-mapper/references/examples.md",
+      "language": "markdown",
+      "sizeLines": 25,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/customer-journey-mapper/references/journey-stages.md",
+      "language": "markdown",
+      "sizeLines": 69,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/customer-journey-mapper/references/mermaid-diagrams.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/customer-journey-mapper/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 118,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/deal-closer-playbook/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/deal-closer-playbook/references/intelligence-gathering.md",
+      "language": "markdown",
+      "sizeLines": 120,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/deal-closer-playbook/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 150,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/deal-closer-playbook/references/playbook-strategy.md",
+      "language": "markdown",
+      "sizeLines": 157,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/email-subject-line-optimizer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 33,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/account-profile.md",
+      "language": "markdown",
+      "sizeLines": 57,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/data-inputs.md",
+      "language": "markdown",
+      "sizeLines": 64,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/expansion-triggers.md",
+      "language": "markdown",
+      "sizeLines": 131,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/playbook-template.md",
+      "language": "markdown",
+      "sizeLines": 209,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/rules-and-edge-cases.md",
+      "language": "markdown",
+      "sizeLines": 33,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/expansion-revenue-finder/references/scoring.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/inbound-lead-qualifier/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 230,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-copywriter/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 126,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-copywriter/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 77,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 25,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/references/checklists.md",
+      "language": "markdown",
+      "sizeLines": 23,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/references/cta-optimization.md",
+      "language": "markdown",
+      "sizeLines": 33,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/references/page-structure.md",
+      "language": "markdown",
+      "sizeLines": 101,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/references/performance.md",
+      "language": "markdown",
+      "sizeLines": 67,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/landing-page-optimizer/references/seo-and-tracking.md",
+      "language": "markdown",
+      "sizeLines": 85,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/lead-scoring-model/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/lead-scoring-model/references/inputs.md",
+      "language": "markdown",
+      "sizeLines": 132,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/lead-scoring-model/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 588,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/local-seo-optimizer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 34,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/pricing-strategy/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/pricing-strategy/references/analysis-framework.md",
+      "language": "markdown",
+      "sizeLines": 83,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/pricing-strategy/references/best-practices.md",
+      "language": "markdown",
+      "sizeLines": 44,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/pricing-strategy/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 627,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/pricing-strategy/references/required-inputs.md",
+      "language": "markdown",
+      "sizeLines": 36,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 65,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/confidence-and-scoring.md",
+      "language": "markdown",
+      "sizeLines": 67,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/data-templates.md",
+      "language": "markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/dimension-rubrics.md",
+      "language": "markdown",
+      "sizeLines": 238,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/output-template.md",
+      "language": "markdown",
+      "sizeLines": 97,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/save-plays.md",
+      "language": "markdown",
+      "sizeLines": 81,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/renewal-predictor/references/signals.md",
+      "language": "markdown",
+      "sizeLines": 45,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/seo-keyword-cluster-builder/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/seo-optimizer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 232,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/social-repurposer/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 202,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".learned/onewave-claude-skills/utm-parameter-generator/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 59,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".npmrc",
+      "language": "unknown",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "markdown",
+      "sizeLines": 5,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "CLAUDE.md",
+      "language": "markdown",
+      "sizeLines": 1,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "PROGRESS.md",
+      "language": "markdown",
+      "sizeLines": 232,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 36,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "WEBSITE.md",
+      "language": "markdown",
+      "sizeLines": 69,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "android/README.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "android/app/build.gradle",
+      "language": "gradle",
+      "sizeLines": 78,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/capacitor.build.gradle",
+      "language": "gradle",
+      "sizeLines": 22,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/proguard-rules.pro",
+      "language": "pro",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java",
+      "language": "java",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "language": "xml",
+      "sizeLines": 52,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/java/com/zeffai/app/MainActivity.java",
+      "language": "java",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+      "language": "xml",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "language": "xml",
+      "sizeLines": 170,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/layout/activity_main.xml",
+      "language": "xml",
+      "sizeLines": 12,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "language": "xml",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+      "language": "xml",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/values/ic_launcher_background.xml",
+      "language": "xml",
+      "sizeLines": 3,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/values/strings.xml",
+      "language": "xml",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/values/styles.xml",
+      "language": "xml",
+      "sizeLines": 21,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/main/res/xml/file_paths.xml",
+      "language": "xml",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java",
+      "language": "java",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/build.gradle",
+      "language": "gradle",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/capacitor.settings.gradle",
+      "language": "gradle",
+      "sizeLines": 15,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/gradle.properties",
+      "language": "properties",
+      "sizeLines": 22,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.jar",
+      "language": "jar",
+      "sizeLines": 157,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "language": "properties",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/gradlew",
+      "language": "unknown",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "android/gradlew.bat",
+      "language": "batch",
+      "sizeLines": 94,
+      "fileCategory": "script"
+    },
+    {
+      "path": "android/settings.gradle",
+      "language": "gradle",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "android/variables.gradle",
+      "language": "gradle",
+      "sizeLines": 15,
+      "fileCategory": "config"
+    },
+    {
+      "path": "capacitor.config.ts",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "data/security-skills.manifest.json",
+      "language": "json",
+      "sizeLines": 59,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/ADMIN_SECURITY_BACKUP_PLAN.md",
+      "language": "markdown",
+      "sizeLines": 140,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/CHAT_HANDOFF_2026-07-14.md",
+      "language": "markdown",
+      "sizeLines": 260,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PLAY_STORE.md",
+      "language": "markdown",
+      "sizeLines": 123,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_LANDING_SAFARI_FIX.md",
+      "language": "markdown",
+      "sizeLines": 207,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_LANDING_SCROLL_BUGS.md",
+      "language": "markdown",
+      "sizeLines": 164,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_SECURITY_HARDENING_2026-07.md",
+      "language": "markdown",
+      "sizeLines": 334,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_SECURITY_PROGRAM_V2_SKILL_CHECKS.md",
+      "language": "markdown",
+      "sizeLines": 131,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_VIDEO_AND_FOOTER.md",
+      "language": "markdown",
+      "sizeLines": 165,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/PRD_ZEFF_SECURITY_PROGRAM.md",
+      "language": "markdown",
+      "sizeLines": 445,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/RAG_REINDEX.md",
+      "language": "markdown",
+      "sizeLines": 26,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/SECURITY_PLATFORM_PLAN.md",
+      "language": "markdown",
+      "sizeLines": 43,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/ZEFF_AI_DATASET_USAGE.md",
+      "language": "markdown",
+      "sizeLines": 202,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/ZEFF_AI_DATASET_USAGE_10000.md",
+      "language": "markdown",
+      "sizeLines": 386,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/ZEFF_AI_DATASET_USAGE_100000.md",
+      "language": "markdown",
+      "sizeLines": 241,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/ci/build-android.yml",
+      "language": "yaml",
+      "sizeLines": 90,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-current-facts.md",
+      "language": "markdown",
+      "sizeLines": 38,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-exam-reference.md",
+      "language": "markdown",
+      "sizeLines": 86,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-qa-source.md",
+      "language": "markdown",
+      "sizeLines": 2222,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-rag-source-extended.md",
+      "language": "markdown",
+      "sizeLines": 471,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-rag-source.md",
+      "language": "markdown",
+      "sizeLines": 434,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-system-prompt.txt",
+      "language": "txt",
+      "sizeLines": 11,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-training-1000.jsonl",
+      "language": "jsonl",
+      "sizeLines": 1000,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-training-1000.messages.jsonl",
+      "language": "jsonl",
+      "sizeLines": 1000,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-training-10000.jsonl",
+      "language": "jsonl",
+      "sizeLines": 10000,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/datasets/zeff-ai-training-10000.messages.jsonl",
+      "language": "jsonl",
+      "sizeLines": 10000,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/development/figma-mcp.md",
+      "language": "markdown",
+      "sizeLines": 34,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/eval/golden/chat.json",
+      "language": "json",
+      "sizeLines": 50,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/images.json",
+      "language": "json",
+      "sizeLines": 10,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/lecture.json",
+      "language": "json",
+      "sizeLines": 10,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/manifest.json",
+      "language": "json",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/math.json",
+      "language": "json",
+      "sizeLines": 12,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/misc.json",
+      "language": "json",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/ppt.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/eval/golden/rag.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "electron/assets/license.txt",
+      "language": "txt",
+      "sizeLines": 36,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "electron/backup.js",
+      "language": "javascript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "electron/main.js",
+      "language": "javascript",
+      "sizeLines": 362,
+      "fileCategory": "code"
+    },
+    {
+      "path": "electron/preload.js",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "language": "javascript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "mobile/www/index.html",
+      "language": "html",
+      "sizeLines": 103,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "next.config.ts",
+      "language": "typescript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 143,
+      "fileCategory": "config"
+    },
+    {
+      "path": "postcss.config.mjs",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "prisma.config.ts",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "language": "prisma",
+      "sizeLines": 690,
+      "fileCategory": "data"
+    },
+    {
+      "path": "public/.well-known/assetlinks.json",
+      "language": "json",
+      "sizeLines": 12,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/manifest.webmanifest",
+      "language": "webmanifest",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/videos/workspace-artifact.webm",
+      "language": "webm",
+      "sizeLines": 1949,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/videos/workspace-math-chat.webm",
+      "language": "webm",
+      "sizeLines": 3904,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/aggregate-feedback.mjs",
+      "language": "javascript",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/copy-win-installer-alias.cjs",
+      "language": "javascript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/db-push-retry.mjs",
+      "language": "javascript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/eval-ai.mts",
+      "language": "mts",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/fix-locales.mjs",
+      "language": "javascript",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/generate-zeff-dataset.mjs",
+      "language": "javascript",
+      "sizeLines": 769,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/index-zeff-rag.mjs",
+      "language": "javascript",
+      "sizeLines": 289,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/prepare-rag-qa-source.mjs",
+      "language": "javascript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/smoke-tools.mts",
+      "language": "mts",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/verify-paymentwall-signature.mts",
+      "language": "mts",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/about/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/ai/page.tsx",
+      "language": "typescript",
+      "sizeLines": 253,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/inquiries/page.tsx",
+      "language": "typescript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/layout.tsx",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/orders/page.tsx",
+      "language": "typescript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/page.tsx",
+      "language": "typescript",
+      "sizeLines": 275,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/access/logs/page.tsx",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/access/page.tsx",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/access/rbac/page.tsx",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/access/users/page.tsx",
+      "language": "typescript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/activity/page.tsx",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/agent/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/ai-learning/page.tsx",
+      "language": "typescript",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/ai-usage/page.tsx",
+      "language": "typescript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/auth/page.tsx",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/backup/page.tsx",
+      "language": "typescript",
+      "sizeLines": 198,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/findings/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/homepage/page.tsx",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/layout.tsx",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/live/page.tsx",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/monitor/alerts/page.tsx",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/monitor/events/page.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/monitor/page.tsx",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/monitor/traffic/page.tsx",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/page.tsx",
+      "language": "typescript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/predict/hardening/page.tsx",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/predict/page.tsx",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/scans/[id]/page.tsx",
+      "language": "typescript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/self-scan/page.tsx",
+      "language": "typescript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/settings/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/skills/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/system/page.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/threats/[id]/page.tsx",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/threats/page.tsx",
+      "language": "typescript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/vuln/page.tsx",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/vuln/report/[id]/page.tsx",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/security/workspace/page.tsx",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/users/page.tsx",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admin/verify/page.tsx",
+      "language": "typescript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/admine/page.tsx",
+      "language": "typescript",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/2fa/login-challenge/route.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/2fa/route.ts",
+      "language": "typescript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/2fa/send-code/route.ts",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/logout-all/route.ts",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/password/route.ts",
+      "language": "typescript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/referral/redeem/route.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/referral/route.ts",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/account/security/route.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/ai/route.ts",
+      "language": "typescript",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/backup/download/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/backup/start/route.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/backup/status/route.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/inquiries/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/rag/zeff/route.ts",
+      "language": "typescript",
+      "sizeLines": 259,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/agent/route.ts",
+      "language": "typescript",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/alerts/route.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/events/export/route.ts",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/findings/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/findings/route.ts",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/live/route.ts",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/mfa/send/route.ts",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/mfa/verify/route.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/overview/route.ts",
+      "language": "typescript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/predict/route.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/rbac/route.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/scan/route.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/scans/[id]/export/route.ts",
+      "language": "typescript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/scans/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/settings/route.ts",
+      "language": "typescript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/skills/route.ts",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/threats/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/threats/route.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/security/vuln/route.ts",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/admin/users/[id]/plan/route.ts",
+      "language": "typescript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/auth/[...nextauth]/route.ts",
+      "language": "typescript",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/auth/otp/route.ts",
+      "language": "typescript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/auth/reset-password/route.ts",
+      "language": "typescript",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/auth/signup/route.ts",
+      "language": "typescript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/billing/orders/route.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/chat/history/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/chat/route.ts",
+      "language": "typescript",
+      "sizeLines": 770,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/chat/sessions/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/chat/sessions/route.ts",
+      "language": "typescript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/checkout/confirm/route.ts",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/checkout/route.ts",
+      "language": "typescript",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/cron/dormant/route.ts",
+      "language": "typescript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/feedback/route.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/library/[id]/chat/route.ts",
+      "language": "typescript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/library/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/library/blob-upload/route.ts",
+      "language": "typescript",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/library/route.ts",
+      "language": "typescript",
+      "sizeLines": 260,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/memories/route.ts",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/paymentwall/pingback/route.ts",
+      "language": "typescript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/rag/index/route.ts",
+      "language": "typescript",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/review/cards/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/review/cards/route.ts",
+      "language": "typescript",
+      "sizeLines": 99,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/review/generate/route.ts",
+      "language": "typescript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/settings/route.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/support/inquiry/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/support/inquiry/route.ts",
+      "language": "typescript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/usage/route.ts",
+      "language": "typescript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/[id]/invites/route.ts",
+      "language": "typescript",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/[id]/members/[memberId]/route.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/[id]/route.ts",
+      "language": "typescript",
+      "sizeLines": 207,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/invites/[token]/route.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/join/route.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/api/workspaces/route.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/app/layout.tsx",
+      "language": "typescript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/app/loading.tsx",
+      "language": "typescript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/app/page.tsx",
+      "language": "typescript",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/checkout/complete/page.tsx",
+      "language": "typescript",
+      "sizeLines": 253,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/checkout/page.tsx",
+      "language": "typescript",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/download/page.tsx",
+      "language": "typescript",
+      "sizeLines": 177,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/find-password/page.tsx",
+      "language": "typescript",
+      "sizeLines": 193,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/global-error.tsx",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/globals.css",
+      "language": "css",
+      "sizeLines": 438,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/app/invite/[token]/page.tsx",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "language": "typescript",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/login/page.tsx",
+      "language": "typescript",
+      "sizeLines": 219,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/page.tsx",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/prototype/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/signup/page.tsx",
+      "language": "typescript",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/inquiry/history/page.tsx",
+      "language": "typescript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/inquiry/page.tsx",
+      "language": "typescript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/legal/page.tsx",
+      "language": "typescript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/notices/[id]/page.tsx",
+      "language": "typescript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/notices/page.tsx",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/page.tsx",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/support/releases/page.tsx",
+      "language": "typescript",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/template.tsx",
+      "language": "typescript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/app/vision/page.tsx",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/auth.ts",
+      "language": "typescript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/AnswerFeedbackButtons.tsx",
+      "language": "typescript",
+      "sizeLines": 126,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ChatMarkdown.tsx",
+      "language": "typescript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ChatRightPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 312,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ChatWorkspace.tsx",
+      "language": "typescript",
+      "sizeLines": 1633,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/CitationCards.tsx",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/CodeBlockPre.tsx",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/CopyButton.tsx",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/DirectionSync.tsx",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/FileResultPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 256,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/InquiryWorkspaceView.tsx",
+      "language": "typescript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/KnowledgeBaseSheet.tsx",
+      "language": "typescript",
+      "sizeLines": 316,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/LibraryView.tsx",
+      "language": "typescript",
+      "sizeLines": 284,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ProfileMenu.tsx",
+      "language": "typescript",
+      "sizeLines": 248,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/RootSessionProvider.tsx",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/SettingsModal.tsx",
+      "language": "typescript",
+      "sizeLines": 706,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/Sidebar.tsx",
+      "language": "typescript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ThemeProvider.tsx",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ThemeToggle.tsx",
+      "language": "typescript",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/WorkspaceModal.tsx",
+      "language": "typescript",
+      "sizeLines": 565,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/WorkspaceSwitcher.tsx",
+      "language": "typescript",
+      "sizeLines": 324,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/AdminAccessDenied.tsx",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/AdminUserPlanControl.tsx",
+      "language": "typescript",
+      "sizeLines": 281,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/AdminVerifyClient.tsx",
+      "language": "typescript",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/AlertSettingsForm.tsx",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/InquiryReply.tsx",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/PredictPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/RbacManager.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/ResolveThreatButton.tsx",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityAgentClient.tsx",
+      "language": "typescript",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityBackLink.tsx",
+      "language": "typescript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityDashboardClient.tsx",
+      "language": "typescript",
+      "sizeLines": 305,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityFindingsClient.tsx",
+      "language": "typescript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityNav.tsx",
+      "language": "typescript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecurityPageShell.tsx",
+      "language": "typescript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecuritySettingsClient.tsx",
+      "language": "typescript",
+      "sizeLines": 213,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/SecuritySkillsClient.tsx",
+      "language": "typescript",
+      "sizeLines": 165,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/ThreatScanButton.tsx",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/admin/VulnOssScanButton.tsx",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/auth/OtpInput.tsx",
+      "language": "typescript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/auth/PasswordStrengthHint.tsx",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/AdminDeniedBanner.tsx",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/CompanyPageContent.tsx",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/FeatureGrid.tsx",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/FeatureShowcase.tsx",
+      "language": "typescript",
+      "sizeLines": 645,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/Footer.tsx",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/Header.tsx",
+      "language": "typescript",
+      "sizeLines": 205,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/Hero.tsx",
+      "language": "typescript",
+      "sizeLines": 196,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/LandingViewportScale.tsx",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/Pricing.tsx",
+      "language": "typescript",
+      "sizeLines": 227,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/PricingLead.tsx",
+      "language": "typescript",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/WhyZeff.tsx",
+      "language": "typescript",
+      "sizeLines": 334,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/WorkLectureScroll.tsx",
+      "language": "typescript",
+      "sizeLines": 284,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/landing/WorkspaceIntro.tsx",
+      "language": "typescript",
+      "sizeLines": 143,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/settings/ReferralCard.tsx",
+      "language": "typescript",
+      "sizeLines": 209,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/settings/SecurityPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 541,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/ExamAnalysisView.tsx",
+      "language": "typescript",
+      "sizeLines": 157,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/GraphErrorBoundary.tsx",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/GraphView.tsx",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/LectureNotesView.tsx",
+      "language": "typescript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/MeetingMinutesView.tsx",
+      "language": "typescript",
+      "sizeLines": 153,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/PanelShell.tsx",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/PracticeSetView.tsx",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/ResearchDraftView.tsx",
+      "language": "typescript",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/SaveIndicator.tsx",
+      "language": "typescript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/StructuredResultView.tsx",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/structured/WeeklyReportView.tsx",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/support/SupportShell.tsx",
+      "language": "typescript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/BackButton.tsx",
+      "language": "typescript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/Logo.tsx",
+      "language": "typescript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/activity.ts",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/admin.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/adminAudit.ts",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/adminBackup.ts",
+      "language": "typescript",
+      "sizeLines": 182,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/adminMfa.ts",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/agentRoute.ts",
+      "language": "typescript",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/agentTools.ts",
+      "language": "typescript",
+      "sizeLines": 267,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/agentTurnLoop.ts",
+      "language": "typescript",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/ai.ts",
+      "language": "typescript",
+      "sizeLines": 395,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/aiControl.ts",
+      "language": "typescript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/apiAuth.ts",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/attachmentLoader.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/backendRoute.ts",
+      "language": "typescript",
+      "sizeLines": 310,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/billing.ts",
+      "language": "typescript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/constants.ts",
+      "language": "typescript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/cronAuth.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/docx.ts",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/email.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/embeddings.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/errors.ts",
+      "language": "typescript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/fileTypes.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/gemini.ts",
+      "language": "typescript",
+      "sizeLines": 228,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/i18n.ts",
+      "language": "typescript",
+      "sizeLines": 3809,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/imagePrompt.ts",
+      "language": "typescript",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/inquiryBlob.ts",
+      "language": "typescript",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/intentTools.ts",
+      "language": "typescript",
+      "sizeLines": 174,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/de.ts",
+      "language": "typescript",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/en.ts",
+      "language": "typescript",
+      "sizeLines": 406,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/es.ts",
+      "language": "typescript",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/fr.ts",
+      "language": "typescript",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/index.ts",
+      "language": "typescript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/ja.ts",
+      "language": "typescript",
+      "sizeLines": 399,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/ko.ts",
+      "language": "typescript",
+      "sizeLines": 401,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/ru.ts",
+      "language": "typescript",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingI18n/zh.ts",
+      "language": "typescript",
+      "sizeLines": 393,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingScale.ts",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/landingScroll.ts",
+      "language": "typescript",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/languageStore.ts",
+      "language": "typescript",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/languages.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/legalContent.ts",
+      "language": "typescript",
+      "sizeLines": 402,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/mail.ts",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/mathGraph.ts",
+      "language": "typescript",
+      "sizeLines": 238,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/mathVerify.ts",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/models.ts",
+      "language": "typescript",
+      "sizeLines": 418,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/notices.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/openaiCompat.ts",
+      "language": "typescript",
+      "sizeLines": 727,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/otp.ts",
+      "language": "typescript",
+      "sizeLines": 174,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/password.ts",
+      "language": "typescript",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/paymentwall.ts",
+      "language": "typescript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pdfText.ts",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pipelineLog.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/plans.ts",
+      "language": "typescript",
+      "sizeLines": 228,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pollinations.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pptValidate.ts",
+      "language": "typescript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pptx.ts",
+      "language": "typescript",
+      "sizeLines": 1047,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/prisma.ts",
+      "language": "typescript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/prompts/index.ts",
+      "language": "typescript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/prompts/registry.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/providerHealth.ts",
+      "language": "typescript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/quickTools.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/rag.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/ragHybrid.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/ragIndexing.ts",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/ragSearch.ts",
+      "language": "typescript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/rateLimit.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/referral.ts",
+      "language": "typescript",
+      "sizeLines": 158,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/requireAdmin.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/safeExpr.ts",
+      "language": "typescript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/security/agentRoute.ts",
+      "language": "typescript",
+      "sizeLines": 178,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/security/agentTools.ts",
+      "language": "typescript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/security/checks.ts",
+      "language": "typescript",
+      "sizeLines": 1295,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/security/program.ts",
+      "language": "typescript",
+      "sizeLines": 173,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/security/secretScan.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/sessions.ts",
+      "language": "typescript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/skills/index.ts",
+      "language": "typescript",
+      "sizeLines": 126,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/srs.ts",
+      "language": "typescript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/structured.ts",
+      "language": "typescript",
+      "sizeLines": 494,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/textExport.ts",
+      "language": "typescript",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/textSanitize.ts",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/theme.ts",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/threatRules.ts",
+      "language": "typescript",
+      "sizeLines": 142,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/toolGeneration.ts",
+      "language": "typescript",
+      "sizeLines": 807,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/toolPlaceholders.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/tools.ts",
+      "language": "typescript",
+      "sizeLines": 984,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/usage.ts",
+      "language": "typescript",
+      "sizeLines": 233,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useAutosave.ts",
+      "language": "typescript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useIsDesktopClient.ts",
+      "language": "typescript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useLocalCopy.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useOtpFlow.ts",
+      "language": "typescript",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useSettings.ts",
+      "language": "typescript",
+      "sizeLines": 140,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/useSpeech.ts",
+      "language": "typescript",
+      "sizeLines": 157,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/userLearning.ts",
+      "language": "typescript",
+      "sizeLines": 246,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/videoContext.ts",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/vulnScan.ts",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/workspace.ts",
+      "language": "typescript",
+      "sizeLines": 249,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/workspaceClient.tsx",
+      "language": "typescript",
+      "sizeLines": 156,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/xlsx.ts",
+      "language": "typescript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/youtubeTranscript.ts",
+      "language": "typescript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/zeffContext.ts",
+      "language": "typescript",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/proxy.ts",
+      "language": "typescript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/types/next-auth.d.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/types/plotly-dist-min.d.ts",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tsconfig.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "vercel.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    }
+  ],
+  "totalFiles": 473,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "large",
+  "importMap": {
+    ".cursor/mcp.json": [],
+    ".gitattributes": [],
+    ".github/workflows/build-windows-installer.yml": [],
+    ".github/workflows/db-push.yml": [],
+    ".learned/onewave-claude-skills/README.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/SKILL.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/references/edge-cases.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/references/guide-template.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/references/metrics.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/references/review-mode.md": [],
+    ".learned/onewave-claude-skills/brand-voice-analyzer/references/voice-dimensions.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/SKILL.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/references/analysis-framework.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/references/inputs.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/references/output-template.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/references/root-cause-taxonomy.md": [],
+    ".learned/onewave-claude-skills/churn-autopsy/references/standards.md": [],
+    ".learned/onewave-claude-skills/cold-email-sequence-generator/SKILL.md": [],
+    ".learned/onewave-claude-skills/cold-email-sequence-generator/references/email-templates.md": [],
+    ".learned/onewave-claude-skills/cold-email-sequence-generator/references/optimization.md": [],
+    ".learned/onewave-claude-skills/cold-email-sequence-generator/references/output-format.md": [],
+    ".learned/onewave-claude-skills/cold-email-sequence-generator/references/quick-start-templates.md": [],
+    ".learned/onewave-claude-skills/competitor-content-analyzer/SKILL.md": [],
+    ".learned/onewave-claude-skills/competitor-intel-agent/SKILL.md": [],
+    ".learned/onewave-claude-skills/competitor-intel-agent/references/directory-structure.md": [],
+    ".learned/onewave-claude-skills/competitor-intel-agent/references/intel-report-format.md": [],
+    ".learned/onewave-claude-skills/competitor-intel-agent/references/monitoring-dimensions.md": [],
+    ".learned/onewave-claude-skills/competitor-intel-agent/references/scoring-and-rules.md": [],
+    ".learned/onewave-claude-skills/content-repurposer/SKILL.md": [],
+    ".learned/onewave-claude-skills/customer-journey-mapper/SKILL.md": [],
+    ".learned/onewave-claude-skills/customer-journey-mapper/references/examples.md": [],
+    ".learned/onewave-claude-skills/customer-journey-mapper/references/journey-stages.md": [],
+    ".learned/onewave-claude-skills/customer-journey-mapper/references/mermaid-diagrams.md": [],
+    ".learned/onewave-claude-skills/customer-journey-mapper/references/output-template.md": [],
+    ".learned/onewave-claude-skills/deal-closer-playbook/SKILL.md": [],
+    ".learned/onewave-claude-skills/deal-closer-playbook/references/intelligence-gathering.md": [],
+    ".learned/onewave-claude-skills/deal-closer-playbook/references/output-template.md": [],
+    ".learned/onewave-claude-skills/deal-closer-playbook/references/playbook-strategy.md": [],
+    ".learned/onewave-claude-skills/email-subject-line-optimizer/SKILL.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/SKILL.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/account-profile.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/data-inputs.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/expansion-triggers.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/playbook-template.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/rules-and-edge-cases.md": [],
+    ".learned/onewave-claude-skills/expansion-revenue-finder/references/scoring.md": [],
+    ".learned/onewave-claude-skills/inbound-lead-qualifier/SKILL.md": [],
+    ".learned/onewave-claude-skills/landing-page-copywriter/SKILL.md": [],
+    ".learned/onewave-claude-skills/landing-page-copywriter/references/output-template.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/SKILL.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/references/checklists.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/references/cta-optimization.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/references/page-structure.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/references/performance.md": [],
+    ".learned/onewave-claude-skills/landing-page-optimizer/references/seo-and-tracking.md": [],
+    ".learned/onewave-claude-skills/lead-scoring-model/SKILL.md": [],
+    ".learned/onewave-claude-skills/lead-scoring-model/references/inputs.md": [],
+    ".learned/onewave-claude-skills/lead-scoring-model/references/output-template.md": [],
+    ".learned/onewave-claude-skills/local-seo-optimizer/SKILL.md": [],
+    ".learned/onewave-claude-skills/pricing-strategy/SKILL.md": [],
+    ".learned/onewave-claude-skills/pricing-strategy/references/analysis-framework.md": [],
+    ".learned/onewave-claude-skills/pricing-strategy/references/best-practices.md": [],
+    ".learned/onewave-claude-skills/pricing-strategy/references/output-template.md": [],
+    ".learned/onewave-claude-skills/pricing-strategy/references/required-inputs.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/SKILL.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/confidence-and-scoring.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/data-templates.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/dimension-rubrics.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/output-template.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/save-plays.md": [],
+    ".learned/onewave-claude-skills/renewal-predictor/references/signals.md": [],
+    ".learned/onewave-claude-skills/seo-keyword-cluster-builder/SKILL.md": [],
+    ".learned/onewave-claude-skills/seo-optimizer/SKILL.md": [],
+    ".learned/onewave-claude-skills/social-repurposer/SKILL.md": [],
+    ".learned/onewave-claude-skills/utm-parameter-generator/SKILL.md": [],
+    ".npmrc": [],
+    "AGENTS.md": [],
+    "CLAUDE.md": [],
+    "PROGRESS.md": [],
+    "README.md": [],
+    "WEBSITE.md": [],
+    "android/README.md": [],
+    "android/app/build.gradle": [],
+    "android/app/capacitor.build.gradle": [],
+    "android/app/proguard-rules.pro": [],
+    "android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java": [],
+    "android/app/src/main/AndroidManifest.xml": [],
+    "android/app/src/main/java/com/zeffai/app/MainActivity.java": [],
+    "android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml": [],
+    "android/app/src/main/res/drawable/ic_launcher_background.xml": [],
+    "android/app/src/main/res/layout/activity_main.xml": [],
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": [],
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml": [],
+    "android/app/src/main/res/values/ic_launcher_background.xml": [],
+    "android/app/src/main/res/values/strings.xml": [],
+    "android/app/src/main/res/values/styles.xml": [],
+    "android/app/src/main/res/xml/file_paths.xml": [],
+    "android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java": [],
+    "android/build.gradle": [],
+    "android/capacitor.settings.gradle": [],
+    "android/gradle.properties": [],
+    "android/gradle/wrapper/gradle-wrapper.jar": [],
+    "android/gradle/wrapper/gradle-wrapper.properties": [],
+    "android/gradlew": [],
+    "android/gradlew.bat": [],
+    "android/settings.gradle": [],
+    "android/variables.gradle": [],
+    "capacitor.config.ts": [],
+    "data/security-skills.manifest.json": [],
+    "docs/ADMIN_SECURITY_BACKUP_PLAN.md": [],
+    "docs/CHAT_HANDOFF_2026-07-14.md": [],
+    "docs/PLAY_STORE.md": [],
+    "docs/PRD_LANDING_SAFARI_FIX.md": [],
+    "docs/PRD_LANDING_SCROLL_BUGS.md": [],
+    "docs/PRD_SECURITY_HARDENING_2026-07.md": [],
+    "docs/PRD_SECURITY_PROGRAM_V2_SKILL_CHECKS.md": [],
+    "docs/PRD_VIDEO_AND_FOOTER.md": [],
+    "docs/PRD_ZEFF_SECURITY_PROGRAM.md": [],
+    "docs/RAG_REINDEX.md": [],
+    "docs/SECURITY_PLATFORM_PLAN.md": [],
+    "docs/ZEFF_AI_DATASET_USAGE.md": [],
+    "docs/ZEFF_AI_DATASET_USAGE_10000.md": [],
+    "docs/ZEFF_AI_DATASET_USAGE_100000.md": [],
+    "docs/ci/build-android.yml": [],
+    "docs/datasets/zeff-ai-current-facts.md": [],
+    "docs/datasets/zeff-ai-exam-reference.md": [],
+    "docs/datasets/zeff-ai-qa-source.md": [],
+    "docs/datasets/zeff-ai-rag-source-extended.md": [],
+    "docs/datasets/zeff-ai-rag-source.md": [],
+    "docs/datasets/zeff-ai-system-prompt.txt": [],
+    "docs/datasets/zeff-ai-training-1000.jsonl": [],
+    "docs/datasets/zeff-ai-training-1000.messages.jsonl": [],
+    "docs/datasets/zeff-ai-training-10000.jsonl": [],
+    "docs/datasets/zeff-ai-training-10000.messages.jsonl": [],
+    "docs/development/figma-mcp.md": [],
+    "docs/eval/golden/chat.json": [],
+    "docs/eval/golden/images.json": [],
+    "docs/eval/golden/lecture.json": [],
+    "docs/eval/golden/manifest.json": [],
+    "docs/eval/golden/math.json": [],
+    "docs/eval/golden/misc.json": [],
+    "docs/eval/golden/ppt.json": [],
+    "docs/eval/golden/rag.json": [],
+    "electron/assets/license.txt": [],
+    "electron/backup.js": [],
+    "electron/main.js": [
+      "electron/backup.js"
+    ],
+    "electron/preload.js": [],
+    "eslint.config.mjs": [],
+    "mobile/www/index.html": [],
+    "next.config.ts": [],
+    "package.json": [],
+    "postcss.config.mjs": [],
+    "prisma.config.ts": [],
+    "prisma/schema.prisma": [],
+    "public/.well-known/assetlinks.json": [],
+    "public/manifest.webmanifest": [],
+    "public/videos/workspace-artifact.webm": [],
+    "public/videos/workspace-math-chat.webm": [],
+    "scripts/aggregate-feedback.mjs": [],
+    "scripts/copy-win-installer-alias.cjs": [],
+    "scripts/db-push-retry.mjs": [],
+    "scripts/eval-ai.mts": [],
+    "scripts/fix-locales.mjs": [],
+    "scripts/generate-zeff-dataset.mjs": [],
+    "scripts/index-zeff-rag.mjs": [],
+    "scripts/prepare-rag-qa-source.mjs": [],
+    "scripts/smoke-tools.mts": [],
+    "scripts/verify-paymentwall-signature.mts": [],
+    "src/app/about/page.tsx": [
+      "src/components/landing/CompanyPageContent.tsx"
+    ],
+    "src/app/admin/ai/page.tsx": [],
+    "src/app/admin/inquiries/page.tsx": [
+      "src/components/admin/InquiryReply.tsx",
+      "src/lib/inquiryBlob.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/admin/layout.tsx": [
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/orders/page.tsx": [
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/admin/page.tsx": [
+      "src/lib/prisma.ts"
+    ],
+    "src/app/admin/security/access/logs/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/access/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/access/rbac/page.tsx": [
+      "src/components/admin/RbacManager.tsx",
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/access/users/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/activity/page.tsx": [],
+    "src/app/admin/security/agent/page.tsx": [
+      "src/components/admin/SecurityAgentClient.tsx"
+    ],
+    "src/app/admin/security/ai-learning/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/ai-usage/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/usage.ts"
+    ],
+    "src/app/admin/security/auth/page.tsx": [],
+    "src/app/admin/security/backup/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx"
+    ],
+    "src/app/admin/security/findings/page.tsx": [
+      "src/components/admin/SecurityFindingsClient.tsx"
+    ],
+    "src/app/admin/security/homepage/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/layout.tsx": [
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/live/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx"
+    ],
+    "src/app/admin/security/monitor/alerts/page.tsx": [
+      "src/components/admin/AlertSettingsForm.tsx",
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/monitor/events/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/monitor/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/monitor/traffic/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/components/admin/ThreatScanButton.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/threatRules.ts"
+    ],
+    "src/app/admin/security/predict/hardening/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/predict/page.tsx": [
+      "src/components/admin/PredictPanel.tsx",
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/scans/[id]/page.tsx": [
+      "src/lib/prisma.ts"
+    ],
+    "src/app/admin/security/self-scan/page.tsx": [
+      "src/components/admin/SecurityDashboardClient.tsx"
+    ],
+    "src/app/admin/security/settings/page.tsx": [
+      "src/components/admin/SecuritySettingsClient.tsx"
+    ],
+    "src/app/admin/security/skills/page.tsx": [
+      "src/components/admin/SecuritySkillsClient.tsx"
+    ],
+    "src/app/admin/security/system/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/aiControl.ts",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/threats/[id]/page.tsx": [
+      "src/components/admin/ResolveThreatButton.tsx",
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/threatRules.ts"
+    ],
+    "src/app/admin/security/threats/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/components/admin/ThreatScanButton.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/threatRules.ts"
+    ],
+    "src/app/admin/security/vuln/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/components/admin/VulnOssScanButton.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/vuln/report/[id]/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/security/workspace/page.tsx": [
+      "src/components/admin/SecurityPageShell.tsx",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/admin/users/page.tsx": [
+      "src/components/admin/AdminUserPlanControl.tsx",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/admin/verify/page.tsx": [
+      "src/auth.ts",
+      "src/components/admin/AdminVerifyClient.tsx",
+      "src/lib/admin.ts",
+      "src/lib/adminMfa.ts"
+    ],
+    "src/app/admine/page.tsx": [],
+    "src/app/api/account/2fa/login-challenge/route.ts": [
+      "src/lib/otp.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/account/2fa/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/otp.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/account/2fa/send-code/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/otp.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/account/logout-all/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/account/password/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/errors.ts",
+      "src/lib/otp.ts",
+      "src/lib/password.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/account/referral/redeem/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/rateLimit.ts",
+      "src/lib/referral.ts"
+    ],
+    "src/app/api/account/referral/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/referral.ts"
+    ],
+    "src/app/api/account/security/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/admin/ai/route.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/aiControl.ts",
+      "src/lib/prisma.ts",
+      "src/lib/usage.ts"
+    ],
+    "src/app/api/admin/backup/download/[id]/route.ts": [
+      "src/lib/adminBackup.ts",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/backup/start/route.ts": [
+      "src/lib/adminAudit.ts",
+      "src/lib/adminBackup.ts",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/backup/status/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/inquiries/[id]/route.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/errors.ts",
+      "src/lib/mail.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/admin/rag/zeff/route.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/cronAuth.ts",
+      "src/lib/embeddings.ts",
+      "src/lib/errors.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rag.ts"
+    ],
+    "src/app/api/admin/security/agent/route.ts": [
+      "src/lib/security/agentRoute.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/alerts/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/events/export/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/findings/[id]/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/findings/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/live/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/mfa/send/route.ts": [
+      "src/lib/adminAudit.ts",
+      "src/lib/otp.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/mfa/verify/route.ts": [
+      "src/lib/adminAudit.ts",
+      "src/lib/adminMfa.ts",
+      "src/lib/otp.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/overview/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/predict/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/threatRules.ts"
+    ],
+    "src/app/api/admin/security/rbac/route.ts": [
+      "src/lib/adminAudit.ts",
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/scan/route.ts": [
+      "src/lib/rateLimit.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/scans/[id]/export/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/scans/[id]/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/settings/route.ts": [
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/skills/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/security/program.ts"
+    ],
+    "src/app/api/admin/security/threats/[id]/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts"
+    ],
+    "src/app/api/admin/security/threats/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/threatRules.ts"
+    ],
+    "src/app/api/admin/security/vuln/route.ts": [
+      "src/lib/prisma.ts",
+      "src/lib/requireAdmin.ts",
+      "src/lib/vulnScan.ts"
+    ],
+    "src/app/api/admin/users/[id]/plan/route.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/errors.ts",
+      "src/lib/otp.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/auth/[...nextauth]/route.ts": [
+      "src/auth.ts"
+    ],
+    "src/app/api/auth/otp/route.ts": [
+      "src/lib/errors.ts",
+      "src/lib/otp.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/auth/reset-password/route.ts": [
+      "src/lib/errors.ts",
+      "src/lib/otp.ts",
+      "src/lib/password.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/auth/signup/route.ts": [
+      "src/lib/errors.ts",
+      "src/lib/otp.ts",
+      "src/lib/password.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/billing/orders/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/chat/history/[id]/route.ts": [
+      "src/auth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/chat/route.ts": [
+      "src/lib/agentRoute.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/attachmentLoader.ts",
+      "src/lib/backendRoute.ts",
+      "src/lib/constants.ts",
+      "src/lib/embeddings.ts",
+      "src/lib/errors.ts",
+      "src/lib/gemini.ts",
+      "src/lib/intentTools.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts",
+      "src/lib/providerHealth.ts",
+      "src/lib/skills/index.ts",
+      "src/lib/toolGeneration.ts",
+      "src/lib/tools.ts",
+      "src/lib/usage.ts",
+      "src/lib/videoContext.ts",
+      "src/lib/workspace.ts",
+      "src/lib/zeffContext.ts"
+    ],
+    "src/app/api/chat/sessions/[id]/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/chat/sessions/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/checkout/confirm/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/billing.ts",
+      "src/lib/errors.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/checkout/route.ts": [
+      "src/auth.ts",
+      "src/lib/billing.ts",
+      "src/lib/errors.ts",
+      "src/lib/paymentwall.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/cron/dormant/route.ts": [
+      "src/lib/cronAuth.ts",
+      "src/lib/mail.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/feedback/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/userLearning.ts"
+    ],
+    "src/app/api/library/[id]/chat/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/library/[id]/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/library/blob-upload/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/constants.ts"
+    ],
+    "src/app/api/library/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/constants.ts",
+      "src/lib/errors.ts",
+      "src/lib/pdfText.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts",
+      "src/lib/ragIndexing.ts",
+      "src/lib/toolGeneration.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/memories/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/paymentwall/pingback/route.ts": [
+      "src/lib/billing.ts",
+      "src/lib/paymentwall.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/rag/index/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/errors.ts",
+      "src/lib/pdfText.ts",
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts",
+      "src/lib/ragIndexing.ts",
+      "src/lib/toolGeneration.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/review/cards/[id]/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/srs.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/review/cards/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/review/generate/route.ts": [
+      "src/lib/ai.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/errors.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/settings/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/languages.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/support/inquiry/[id]/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/support/inquiry/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/app/api/usage/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/usage.ts"
+    ],
+    "src/app/api/workspaces/[id]/invites/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/email.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/workspaces/[id]/members/[memberId]/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/workspaces/[id]/route.ts": [
+      "src/auth.ts",
+      "src/lib/apiAuth.ts",
+      "src/lib/prisma.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/workspaces/invites/[token]/route.ts": [
+      "src/auth.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/app/api/workspaces/join/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/rateLimit.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/api/workspaces/route.ts": [
+      "src/lib/apiAuth.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/app/app/layout.tsx": [
+      "src/auth.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/app/app/loading.tsx": [
+      "src/components/ui/Logo.tsx"
+    ],
+    "src/app/app/page.tsx": [
+      "src/components/Sidebar.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/sessions.ts",
+      "src/lib/theme.ts"
+    ],
+    "src/app/checkout/complete/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/lib/plans.ts"
+    ],
+    "src/app/checkout/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/languages.ts",
+      "src/lib/plans.ts"
+    ],
+    "src/app/download/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/constants.ts",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/app/find-password/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/auth/OtpInput.tsx",
+      "src/components/auth/PasswordStrengthHint.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/landingI18n/index.ts",
+      "src/lib/password.ts",
+      "src/lib/useOtpFlow.ts"
+    ],
+    "src/app/global-error.tsx": [],
+    "src/app/globals.css": [],
+    "src/app/invite/[token]/page.tsx": [],
+    "src/app/layout.tsx": [
+      "src/app/globals.css",
+      "src/components/RootSessionProvider.tsx",
+      "src/components/ThemeProvider.tsx"
+    ],
+    "src/app/login/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/lib/landingI18n/index.ts",
+      "src/lib/useIsDesktopClient.ts"
+    ],
+    "src/app/page.tsx": [
+      "src/components/landing/AdminDeniedBanner.tsx",
+      "src/components/landing/Footer.tsx",
+      "src/components/landing/Header.tsx",
+      "src/components/landing/Hero.tsx",
+      "src/components/landing/LandingViewportScale.tsx"
+    ],
+    "src/app/prototype/page.tsx": [
+      "src/components/landing/CompanyPageContent.tsx"
+    ],
+    "src/app/signup/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/auth/OtpInput.tsx",
+      "src/components/auth/PasswordStrengthHint.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/landingI18n/index.ts",
+      "src/lib/password.ts",
+      "src/lib/useOtpFlow.ts"
+    ],
+    "src/app/support/inquiry/history/page.tsx": [
+      "src/components/support/SupportShell.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/app/support/inquiry/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/app/support/legal/page.tsx": [
+      "src/components/support/SupportShell.tsx",
+      "src/lib/landingI18n/index.ts",
+      "src/lib/legalContent.ts"
+    ],
+    "src/app/support/notices/[id]/page.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/lib/notices.ts"
+    ],
+    "src/app/support/notices/page.tsx": [
+      "src/components/support/SupportShell.tsx",
+      "src/lib/landingI18n/index.ts",
+      "src/lib/notices.ts"
+    ],
+    "src/app/support/page.tsx": [
+      "src/components/support/SupportShell.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/app/support/releases/page.tsx": [],
+    "src/app/template.tsx": [],
+    "src/app/vision/page.tsx": [
+      "src/components/landing/CompanyPageContent.tsx"
+    ],
+    "src/auth.ts": [
+      "src/lib/admin.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rateLimit.ts"
+    ],
+    "src/components/AnswerFeedbackButtons.tsx": [
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/ChatMarkdown.tsx": [
+      "src/components/CodeBlockPre.tsx"
+    ],
+    "src/components/ChatRightPanel.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/ChatWorkspace.tsx": [
+      "src/components/AnswerFeedbackButtons.tsx",
+      "src/components/ChatRightPanel.tsx",
+      "src/components/CitationCards.tsx",
+      "src/components/CopyButton.tsx",
+      "src/components/FileResultPanel.tsx",
+      "src/components/KnowledgeBaseSheet.tsx",
+      "src/components/structured/StructuredResultView.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/constants.ts",
+      "src/lib/i18n.ts",
+      "src/lib/languages.ts",
+      "src/lib/quickTools.ts",
+      "src/lib/structured.ts",
+      "src/lib/textExport.ts",
+      "src/lib/toolPlaceholders.ts",
+      "src/lib/tools.ts",
+      "src/lib/useSettings.ts",
+      "src/lib/useSpeech.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/CitationCards.tsx": [],
+    "src/components/CodeBlockPre.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/CopyButton.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/DirectionSync.tsx": [
+      "src/lib/languageStore.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/components/FileResultPanel.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/lib/fileTypes.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/components/InquiryWorkspaceView.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/KnowledgeBaseSheet.tsx": [
+      "src/lib/i18n.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/LibraryView.tsx": [
+      "src/lib/i18n.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/ProfileMenu.tsx": [
+      "src/components/SettingsModal.tsx",
+      "src/components/ThemeToggle.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/useSettings.ts"
+    ],
+    "src/components/RootSessionProvider.tsx": [],
+    "src/components/SettingsModal.tsx": [
+      "src/components/InquiryWorkspaceView.tsx",
+      "src/components/settings/ReferralCard.tsx",
+      "src/components/settings/SecurityPanel.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/languages.ts",
+      "src/lib/legalContent.ts",
+      "src/lib/plans.ts",
+      "src/lib/useSettings.ts"
+    ],
+    "src/components/Sidebar.tsx": [
+      "src/components/ProfileMenu.tsx",
+      "src/components/WorkspaceSwitcher.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/sessions.ts"
+    ],
+    "src/components/ThemeProvider.tsx": [
+      "src/components/DirectionSync.tsx"
+    ],
+    "src/components/ThemeToggle.tsx": [
+      "src/lib/languageStore.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/components/WorkspaceModal.tsx": [
+      "src/lib/i18n.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/WorkspaceSwitcher.tsx": [
+      "src/components/WorkspaceModal.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/components/admin/AdminAccessDenied.tsx": [],
+    "src/components/admin/AdminUserPlanControl.tsx": [
+      "src/lib/plans.ts"
+    ],
+    "src/components/admin/AdminVerifyClient.tsx": [],
+    "src/components/admin/AlertSettingsForm.tsx": [],
+    "src/components/admin/InquiryReply.tsx": [],
+    "src/components/admin/PredictPanel.tsx": [],
+    "src/components/admin/RbacManager.tsx": [],
+    "src/components/admin/ResolveThreatButton.tsx": [],
+    "src/components/admin/SecurityAgentClient.tsx": [
+      "src/components/admin/SecurityBackLink.tsx"
+    ],
+    "src/components/admin/SecurityBackLink.tsx": [],
+    "src/components/admin/SecurityDashboardClient.tsx": [],
+    "src/components/admin/SecurityFindingsClient.tsx": [
+      "src/components/admin/SecurityBackLink.tsx"
+    ],
+    "src/components/admin/SecurityNav.tsx": [],
+    "src/components/admin/SecurityPageShell.tsx": [
+      "src/components/admin/SecurityNav.tsx"
+    ],
+    "src/components/admin/SecuritySettingsClient.tsx": [
+      "src/components/admin/SecurityBackLink.tsx"
+    ],
+    "src/components/admin/SecuritySkillsClient.tsx": [
+      "src/components/admin/SecurityBackLink.tsx"
+    ],
+    "src/components/admin/ThreatScanButton.tsx": [],
+    "src/components/admin/VulnOssScanButton.tsx": [],
+    "src/components/auth/OtpInput.tsx": [],
+    "src/components/auth/PasswordStrengthHint.tsx": [
+      "src/lib/password.ts"
+    ],
+    "src/components/landing/AdminDeniedBanner.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/CompanyPageContent.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/FeatureGrid.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/FeatureShowcase.tsx": [
+      "src/lib/landingI18n/index.ts",
+      "src/lib/landingScroll.ts",
+      "src/lib/useLocalCopy.ts"
+    ],
+    "src/components/landing/Footer.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/Header.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/Logo.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/Hero.tsx": [
+      "src/components/ui/Logo.tsx",
+      "src/lib/constants.ts",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/LandingViewportScale.tsx": [
+      "src/lib/landingScale.ts"
+    ],
+    "src/components/landing/Pricing.tsx": [
+      "src/lib/landingI18n/index.ts",
+      "src/lib/plans.ts"
+    ],
+    "src/components/landing/PricingLead.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/landing/WhyZeff.tsx": [
+      "src/lib/landingI18n/index.ts",
+      "src/lib/landingScroll.ts",
+      "src/lib/useLocalCopy.ts"
+    ],
+    "src/components/landing/WorkLectureScroll.tsx": [
+      "src/lib/landingI18n/index.ts",
+      "src/lib/landingScroll.ts"
+    ],
+    "src/components/landing/WorkspaceIntro.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/settings/ReferralCard.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/settings/SecurityPanel.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/structured/ExamAnalysisView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/GraphErrorBoundary.tsx": [
+      "src/lib/i18n.ts"
+    ],
+    "src/components/structured/GraphView.tsx": [
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts"
+    ],
+    "src/components/structured/LectureNotesView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/MeetingMinutesView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/PanelShell.tsx": [],
+    "src/components/structured/PracticeSetView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/ResearchDraftView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/SaveIndicator.tsx": [
+      "src/lib/i18n.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/structured/StructuredResultView.tsx": [
+      "src/components/structured/ExamAnalysisView.tsx",
+      "src/components/structured/GraphErrorBoundary.tsx",
+      "src/components/structured/LectureNotesView.tsx",
+      "src/components/structured/MeetingMinutesView.tsx",
+      "src/components/structured/PracticeSetView.tsx",
+      "src/components/structured/ResearchDraftView.tsx",
+      "src/components/structured/WeeklyReportView.tsx",
+      "src/lib/structured.ts"
+    ],
+    "src/components/structured/WeeklyReportView.tsx": [
+      "src/components/structured/PanelShell.tsx",
+      "src/components/structured/SaveIndicator.tsx",
+      "src/lib/i18n.ts",
+      "src/lib/structured.ts",
+      "src/lib/useAutosave.ts"
+    ],
+    "src/components/support/SupportShell.tsx": [
+      "src/components/ThemeToggle.tsx",
+      "src/components/ui/BackButton.tsx",
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/ui/BackButton.tsx": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/components/ui/Logo.tsx": [],
+    "src/lib/activity.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/admin.ts": [],
+    "src/lib/adminAudit.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/adminBackup.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/adminMfa.ts": [],
+    "src/lib/agentRoute.ts": [
+      "src/lib/agentTools.ts",
+      "src/lib/agentTurnLoop.ts",
+      "src/lib/ai.ts",
+      "src/lib/gemini.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/textSanitize.ts"
+    ],
+    "src/lib/agentTools.ts": [
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/ragSearch.ts",
+      "src/lib/safeExpr.ts",
+      "src/lib/toolGeneration.ts"
+    ],
+    "src/lib/agentTurnLoop.ts": [
+      "src/lib/ai.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/providerHealth.ts"
+    ],
+    "src/lib/ai.ts": [
+      "src/lib/gemini.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/pipelineLog.ts",
+      "src/lib/providerHealth.ts",
+      "src/lib/tools.ts"
+    ],
+    "src/lib/aiControl.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/apiAuth.ts": [
+      "src/auth.ts"
+    ],
+    "src/lib/attachmentLoader.ts": [],
+    "src/lib/backendRoute.ts": [
+      "src/lib/ai.ts",
+      "src/lib/gemini.ts",
+      "src/lib/intentTools.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/prompts/registry.ts",
+      "src/lib/ragSearch.ts",
+      "src/lib/skills/index.ts",
+      "src/lib/textSanitize.ts"
+    ],
+    "src/lib/billing.ts": [
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/constants.ts": [],
+    "src/lib/cronAuth.ts": [],
+    "src/lib/docx.ts": [],
+    "src/lib/email.ts": [
+      "src/lib/mail.ts"
+    ],
+    "src/lib/embeddings.ts": [],
+    "src/lib/errors.ts": [
+      "src/lib/gemini.ts",
+      "src/lib/pipelineLog.ts",
+      "src/lib/providerHealth.ts"
+    ],
+    "src/lib/fileTypes.ts": [],
+    "src/lib/gemini.ts": [
+      "src/lib/tools.ts"
+    ],
+    "src/lib/i18n.ts": [
+      "src/lib/languageStore.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/lib/imagePrompt.ts": [],
+    "src/lib/inquiryBlob.ts": [],
+    "src/lib/intentTools.ts": [],
+    "src/lib/landingI18n/de.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/en.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/es.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/fr.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/index.ts": [
+      "src/lib/landingI18n/de.ts",
+      "src/lib/landingI18n/en.ts",
+      "src/lib/landingI18n/es.ts",
+      "src/lib/landingI18n/fr.ts",
+      "src/lib/landingI18n/ja.ts",
+      "src/lib/landingI18n/ko.ts",
+      "src/lib/landingI18n/ru.ts",
+      "src/lib/landingI18n/zh.ts",
+      "src/lib/languageStore.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/lib/landingI18n/ja.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/ko.ts": [],
+    "src/lib/landingI18n/ru.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingI18n/zh.ts": [
+      "src/lib/landingI18n/ko.ts"
+    ],
+    "src/lib/landingScale.ts": [],
+    "src/lib/landingScroll.ts": [],
+    "src/lib/languageStore.ts": [
+      "src/lib/constants.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/lib/languages.ts": [],
+    "src/lib/legalContent.ts": [],
+    "src/lib/mail.ts": [],
+    "src/lib/mathGraph.ts": [
+      "src/lib/safeExpr.ts"
+    ],
+    "src/lib/mathVerify.ts": [
+      "src/lib/safeExpr.ts"
+    ],
+    "src/lib/models.ts": [
+      "src/lib/openaiCompat.ts",
+      "src/lib/pipelineLog.ts",
+      "src/lib/providerHealth.ts"
+    ],
+    "src/lib/notices.ts": [],
+    "src/lib/openaiCompat.ts": [
+      "src/lib/gemini.ts",
+      "src/lib/models.ts",
+      "src/lib/tools.ts"
+    ],
+    "src/lib/otp.ts": [
+      "src/lib/mail.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/password.ts": [],
+    "src/lib/paymentwall.ts": [
+      "src/lib/plans.ts"
+    ],
+    "src/lib/pdfText.ts": [],
+    "src/lib/pipelineLog.ts": [],
+    "src/lib/plans.ts": [],
+    "src/lib/pollinations.ts": [
+      "src/lib/gemini.ts"
+    ],
+    "src/lib/pptValidate.ts": [
+      "src/lib/fileTypes.ts"
+    ],
+    "src/lib/pptx.ts": [
+      "src/lib/fileTypes.ts"
+    ],
+    "src/lib/prisma.ts": [],
+    "src/lib/prompts/index.ts": [],
+    "src/lib/prompts/registry.ts": [],
+    "src/lib/providerHealth.ts": [
+      "src/lib/models.ts"
+    ],
+    "src/lib/quickTools.ts": [
+      "src/lib/tools.ts"
+    ],
+    "src/lib/rag.ts": [],
+    "src/lib/ragHybrid.ts": [],
+    "src/lib/ragIndexing.ts": [
+      "src/lib/embeddings.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rag.ts"
+    ],
+    "src/lib/ragSearch.ts": [
+      "src/lib/embeddings.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rag.ts",
+      "src/lib/ragHybrid.ts",
+      "src/lib/workspace.ts"
+    ],
+    "src/lib/rateLimit.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/referral.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/requireAdmin.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/adminMfa.ts"
+    ],
+    "src/lib/safeExpr.ts": [],
+    "src/lib/security/agentRoute.ts": [
+      "src/lib/agentTools.ts",
+      "src/lib/agentTurnLoop.ts",
+      "src/lib/ai.ts",
+      "src/lib/gemini.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/security/agentTools.ts",
+      "src/lib/textSanitize.ts"
+    ],
+    "src/lib/security/agentTools.ts": [
+      "src/lib/agentTools.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/security/checks.ts": [
+      "src/lib/security/secretScan.ts"
+    ],
+    "src/lib/security/program.ts": [
+      "src/auth.ts",
+      "src/lib/admin.ts",
+      "src/lib/prisma.ts",
+      "src/lib/security/checks.ts"
+    ],
+    "src/lib/security/secretScan.ts": [],
+    "src/lib/sessions.ts": [
+      "src/lib/workspaceClient.tsx"
+    ],
+    "src/lib/skills/index.ts": [],
+    "src/lib/srs.ts": [],
+    "src/lib/structured.ts": [
+      "src/lib/fileTypes.ts",
+      "src/lib/mathGraph.ts"
+    ],
+    "src/lib/textExport.ts": [],
+    "src/lib/textSanitize.ts": [],
+    "src/lib/theme.ts": [],
+    "src/lib/threatRules.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/toolGeneration.ts": [
+      "src/lib/ai.ts",
+      "src/lib/docx.ts",
+      "src/lib/fileTypes.ts",
+      "src/lib/gemini.ts",
+      "src/lib/imagePrompt.ts",
+      "src/lib/mathVerify.ts",
+      "src/lib/models.ts",
+      "src/lib/openaiCompat.ts",
+      "src/lib/pipelineLog.ts",
+      "src/lib/pollinations.ts",
+      "src/lib/pptValidate.ts",
+      "src/lib/pptx.ts",
+      "src/lib/prompts/registry.ts",
+      "src/lib/providerHealth.ts",
+      "src/lib/structured.ts",
+      "src/lib/textSanitize.ts",
+      "src/lib/tools.ts",
+      "src/lib/videoContext.ts",
+      "src/lib/xlsx.ts"
+    ],
+    "src/lib/toolPlaceholders.ts": [
+      "src/lib/languages.ts"
+    ],
+    "src/lib/tools.ts": [
+      "src/lib/structured.ts"
+    ],
+    "src/lib/usage.ts": [
+      "src/lib/plans.ts",
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/useAutosave.ts": [],
+    "src/lib/useIsDesktopClient.ts": [],
+    "src/lib/useLocalCopy.ts": [
+      "src/lib/landingI18n/index.ts"
+    ],
+    "src/lib/useOtpFlow.ts": [],
+    "src/lib/useSettings.ts": [
+      "src/lib/i18n.ts",
+      "src/lib/languageStore.ts",
+      "src/lib/languages.ts"
+    ],
+    "src/lib/useSpeech.ts": [],
+    "src/lib/userLearning.ts": [
+      "src/lib/embeddings.ts",
+      "src/lib/prisma.ts",
+      "src/lib/rag.ts"
+    ],
+    "src/lib/videoContext.ts": [
+      "src/lib/youtubeTranscript.ts"
+    ],
+    "src/lib/vulnScan.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/workspace.ts": [
+      "src/lib/prisma.ts"
+    ],
+    "src/lib/workspaceClient.tsx": [
+      "src/lib/workspace.ts"
+    ],
+    "src/lib/xlsx.ts": [
+      "src/lib/fileTypes.ts"
+    ],
+    "src/lib/youtubeTranscript.ts": [],
+    "src/lib/zeffContext.ts": [
+      "src/lib/prompts/registry.ts",
+      "src/lib/ragSearch.ts",
+      "src/lib/userLearning.ts"
+    ],
+    "src/proxy.ts": [
+      "src/auth.ts",
+      "src/lib/constants.ts"
+    ],
+    "src/types/next-auth.d.ts": [],
+    "src/types/plotly-dist-min.d.ts": [],
+    "tsconfig.json": [],
+    "vercel.json": []
+  }
+}
