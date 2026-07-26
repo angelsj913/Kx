@@ -26,8 +26,8 @@ const config: CapacitorConfig = {
       "accounts.google.com",
       "*.google.com",
       "*.googleusercontent.com",
-      "checkout.stripe.com",
-      "*.stripe.com",
+      "api.paymentwall.com",
+      "*.paymentwall.com",
     ],
   },
   plugins: {

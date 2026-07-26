@@ -49,10 +49,6 @@ body {
     color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 공식 홈 스케일(모바일/데스크톱 분리): src/lib/landingScale.ts */
-:root {
-  --landing-ui-scale: 1;
-}
 .dark body {
   background: var(--landing-bg);
   color: #f8fafc;
