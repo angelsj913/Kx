@@ -199,9 +199,18 @@ export function getPlanOrFree(id: string | null | undefined): PlanDef {
   return PLANS.free;
 }
 
-/** 고유 주문번호(Merchant UID) 발행 */
+/**
+ * 고유 주문번호(Merchant UID) 발행.
+ * 결제 식별자이므로 Math.random 을 쓰지 않는다 — 예측 가능한 주문번호는 조회·추측의
+ * 실마리가 된다. Web Crypto 의 getRandomValues 는 브라우저와 Node 양쪽에 있어서,
+ * 클라이언트 컴포넌트가 import 하는 이 파일에서도 안전하게 쓸 수 있다(node:crypto 는 불가).
+ */
 export function newMerchantUid(): string {
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const bytes = new Uint8Array(5);
+  globalThis.crypto.getRandomValues(bytes);
+  const rand = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
   return `ZEFF-${Date.now()}-${rand}`;
 }
 
