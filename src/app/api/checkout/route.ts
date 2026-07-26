@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, newMerchantUid } from "@/lib/plans";
-import { isStubCheckoutAllowed } from "@/lib/billing";
+import { isStubCheckoutAllowed, getBaseUrl } from "@/lib/billing";
+import { buildWidgetUrl } from "@/lib/paymentwall";
 import { assertRateLimit, clientIp, RateLimitError } from "@/lib/rateLimit";
 import { friendlyError } from "@/lib/errors";
 
@@ -55,9 +56,21 @@ export async function POST(request: Request) {
     }
 
     // 결제 불가 조건은 주문 발행 전에 거른다. 뒤로 미루면 결제할 수 없는 주문만
-    // pending 으로 쌓인다. 결제대행사 연동 전이라 프로덕션에서는 여기서 끝난다.
-    if (!isStubCheckoutAllowed()) {
-      console.error("checkout error: 결제대행사 미연동");
+    // pending 으로 쌓인다.
+    const interval = isAnnual ? "year" : "month";
+    const baseUrl = getBaseUrl();
+    const widgetUrl = buildWidgetUrl({
+      userId,
+      plan: plan.id as "pro" | "professional",
+      interval,
+      email: session?.user?.email ?? undefined,
+      successUrl: `${baseUrl}/checkout/complete`,
+      failureUrl: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,
+    });
+
+    // 위젯 URL 을 못 만들면(키 미설정) 결제할 수 없다. 스텁은 개발/프리뷰 전용.
+    if (!widgetUrl && !isStubCheckoutAllowed()) {
+      console.error("checkout error: PAYMENTWALL_* 환경변수 누락");
       return NextResponse.json(
         { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
         { status: 503 }
@@ -78,13 +91,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // 결제대행사 미연동 — 스텁 모드로 완료 페이지에서 권한 부여.
-    // 개발/프리뷰 전용이며, 프로덕션은 위 가드에서 이미 걸러졌다.
+    if (widgetUrl) {
+      // 권한 부여는 pingback 이 담당한다. 완료 페이지는 결과 안내만 한다.
+      return NextResponse.json({ ok: true, url: widgetUrl, merchantUid });
+    }
+
+    // 키 미설정 + 개발/프리뷰 — 스텁으로 완료 페이지에서 권한 부여
     return NextResponse.json({
       ok: true,
       stub: true,
       merchantUid,
-      // 프론트가 바로 완료(시뮬) 페이지로 이동할 수 있게 URL 제공
       completeUrl: `/checkout/complete?uid=${encodeURIComponent(merchantUid)}&stub=1`,
     });
   } catch (err) {

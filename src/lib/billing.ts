@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPlan, isPlanId, type PlanId } from "@/lib/plans";
 
-export type FulfillSource = "checkout_confirm" | "stub";
+export type FulfillSource = "checkout_confirm" | "paymentwall_pingback" | "stub";
 
 /**
  * 스텁 결제(테스트 완료 처리)는 개발/프리뷰 환경에서만 허용한다.

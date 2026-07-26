@@ -357,6 +357,50 @@ function checkAuthSecret(): SecurityCheckOutcome {
   };
 }
 
+/**
+ * 결제는 세 값이 모두 있어야 동작한다. 하나만 비어도 결제창이 503 으로 죽는데,
+ * 그 상태는 사용자가 결제를 시도하기 전까지 드러나지 않으므로 여기서 잡는다.
+ * 시크릿 키는 pingback 위조 방어의 유일한 수단이라 없으면 치명적이다.
+ */
+function checkPaymentwallEnv(): SecurityCheckOutcome {
+  const checkId = "env.paymentwall_keys_present";
+  const skillIds = ["testing-for-sensitive-data-exposure"];
+  const title = "Paymentwall 키";
+  const required = [
+    "PAYMENTWALL_PROJECT_KEY",
+    "PAYMENTWALL_SECRET_KEY",
+    "PAYMENTWALL_WIDGET_CODE",
+  ];
+  const missing = required.filter((k) => !process.env[k]?.trim());
+
+  // 하나도 없으면 아직 연동 전 — 결제 CTA 도 꺼져 있으므로 정상 상태다.
+  if (missing.length === required.length) {
+    return {
+      checkId,
+      skillIds,
+      severity: "low",
+      title,
+      detail: "Paymentwall 키가 없어 결제 미연동으로 간주합니다.",
+      remediation: "결제를 개시할 때 세 환경변수를 모두 설정하세요.",
+      result: "pass",
+    };
+  }
+
+  return {
+    checkId,
+    skillIds,
+    severity: "high",
+    title,
+    detail:
+      missing.length === 0
+        ? "PROJECT_KEY · SECRET_KEY · WIDGET_CODE 가 모두 설정되어 있습니다."
+        : `일부만 설정돼 결제가 실패합니다. 누락: ${missing.join(", ")}`,
+    remediation:
+      "Paymentwall 대시보드의 공개키·개인키·위젯 코드를 해당 환경변수에 모두 넣으세요.",
+    result: missing.length === 0 ? "pass" : "fail",
+  };
+}
+
 function checkCronSecretPresent(): SecurityCheckOutcome {
   const checkId = "env.cron_secret_present";
   const skillIds = ["testing-for-sensitive-data-exposure"];
@@ -742,16 +786,18 @@ async function listRouteFiles(): Promise<string[]> {
 async function checkApiRoutesAuthed(): Promise<SecurityCheckOutcome> {
   const checkId = "bac.api_routes_authed";
   const skillIds = ["testing-for-broken-access-control", "testing-api-security-with-owasp-top-10"];
-  // 의도적으로 공개인 경로(로그인 전 흐름·크론). 이들은 별도로 레이트리밋/시크릿 검증을 받는다.
-  // 결제대행사 콜백을 붙이면 그 경로도 여기 추가하고 서명 검증 마커를 authMarkers 에 넣어야 한다.
+  // 의도적으로 공개인 경로(로그인 전 흐름·크론·결제 콜백). 이들은 별도로 레이트리밋이나
+  // 시크릿·서명 검증을 받는다.
   const publicPrefixes = [
     "src/app/api/auth/", // NextAuth 핸들러 + signup/otp/reset (rate-limit로 보호)
     "src/app/api/cron/", // CRON_SECRET 검증
     "src/app/api/account/2fa/login-challenge/", // 로그인 1단계(세션 전) — login rate-limit 공유
+    "src/app/api/paymentwall/pingback/", // 결제대행사 콜백 — HMAC 서명 검증
   ];
   const authMarkers = [
     "auth()", "requireUserId", "requireSession", "requireSecurityAdmin",
     "requireAdmin", "getServerSession", "verifyCronSecret",
+    "verifyPingbackSignature",
   ];
   try {
     const files = await listRouteFiles();
@@ -1142,6 +1188,7 @@ export const DEFAULT_CHECK_IDS = [
   "cron.query_secret_disabled_in_prod",
   "deps.next_auth_min_version",
   "env.auth_secret_present",
+  "env.paymentwall_keys_present",
   "env.cron_secret_present",
   "deps.npm_audit_critical_high",
   // v2 스킬 기반 신규 점검팩
@@ -1174,6 +1221,7 @@ const RUNNERS: Record<string, () => Promise<SecurityCheckOutcome> | SecurityChec
   "cron.query_secret_disabled_in_prod": checkCronQuerySecret,
   "deps.next_auth_min_version": checkNextAuthVersion,
   "env.auth_secret_present": checkAuthSecret,
+  "env.paymentwall_keys_present": checkPaymentwallEnv,
   "env.cron_secret_present": checkCronSecretPresent,
   "deps.npm_audit_critical_high": checkNpmAuditCriticalHigh,
   // v2 스킬 기반 신규 점검팩
