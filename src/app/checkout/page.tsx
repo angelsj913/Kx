@@ -75,7 +75,7 @@ function CheckoutInner() {
         }
         if (!res.ok) throw new Error(data?.error ?? ct("checkout.prepareFail"));
         if (data.url) {
-          // Stripe locale 힌트 (지원 시)
+          // 결제대행사 결제창으로 이동
           const url = String(data.url);
           window.location.href = url;
           return;

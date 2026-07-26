@@ -6,7 +6,7 @@ export type PlanId = "free" | "pro" | "professional";
 export interface PlanDef {
   id: PlanId;
   name: string;
-  /** checkout / Stripe 표시명 */
+  /** checkout / 결제창 표시명 */
   label: string;
   /** KRW 원 단위 (zero-decimal) — 월간 결제액 */
   amount: number;

@@ -164,7 +164,7 @@ function CompleteInner() {
                 {data.stub && (
                   <p className="mt-3 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                     결제 플랫폼 연동 전 · 테스트 결제 완료로 처리되었습니다.
-                    Stripe 키가 등록되면 실제 결제로 전환됩니다.
+                    결제대행사 연동이 끝나면 실제 결제로 전환됩니다.
                   </p>
                 )}
               </div>
