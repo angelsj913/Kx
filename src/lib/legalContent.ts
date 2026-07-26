@@ -14,6 +14,10 @@ export const COMPANY_INFO = {
   privacyOfficer: "권승준",
   privacyOfficerContact: "zeff@zeffai.com",
   contactEmail: "zeff@zeffai.com",
+  /** 일본 특정상거래법은 전화번호 표시를 요구한다 — 일본 판매 개시 전 필수 */
+  phone: "[연락 가능한 전화번호 — 일본 판매 시 필수]",
+  /** GDPR 제27조 — EU 내 대리인. EU 판매 개시 전 지정 필수 */
+  euRepresentative: "[EU 대리인 — GDPR 제27조에 따라 지정 후 기재]",
   effectiveDate: "2026년 7월 11일",
   lastUpdated: "2026년 7월 18일",
 };
@@ -113,7 +117,8 @@ export const TERMS: LegalArticle[] = [
       "② 회사는 결제일로부터 7일 이내이고 유료서비스의 실질적인 이용 이력이 없는 경우 전액 환불을 지원합니다.\n" +
       "③ 이용자가 유료서비스를 이미 사용하기 시작한 경우에는 이용일수 및 사용량 등을 고려하여 관련 법령 및 회사의 환불정책에 따라 잔여 금액을 환불할 수 있습니다.\n" +
       "④ 이용자의 귀책사유로 이용계약이 해지되거나 이용이 제한된 경우 회사는 환불을 제한할 수 있습니다.\n" +
-      "⑤ 환불은 원칙적으로 결제에 사용된 수단과 동일한 방법으로 이루어지며, 결제수단의 특성상 동일 방법이 불가능한 경우 회사가 정한 방법으로 처리합니다.",
+      "⑤ 환불은 원칙적으로 결제에 사용된 수단과 동일한 방법으로 이루어지며, 결제수단의 특성상 동일 방법이 불가능한 경우 회사가 정한 방법으로 처리합니다.\n" +
+      "⑥ 대한민국 외 국가에 거주하는 이용자에게는 본조에 우선하여 「국제 이용자 특칙」이 적용됩니다.",
   },
   {
     id: "t12",
@@ -175,7 +180,8 @@ export const TERMS: LegalArticle[] = [
     title: "제19조 (분쟁의 해결 및 준거법)",
     body:
       "① 회사와 이용자는 서비스와 관련하여 분쟁이 발생한 경우 원만한 해결을 위하여 성실히 협의합니다.\n" +
-      "② 이 약관 및 서비스 이용에 관하여는 대한민국 법령을 준거법으로 하며, 분쟁에 관한 소송의 관할은 민사소송법 등 관련 법령에 따라 정해지는 법원으로 합니다.",
+      "② 이 약관 및 서비스 이용에 관하여는 대한민국 법령을 준거법으로 하며, 분쟁에 관한 소송의 관할은 민사소송법 등 관련 법령에 따라 정해지는 법원으로 합니다.\n" +
+      "③ 다만 이용자가 소비자인 경우, 제2항은 이용자가 상거소를 둔 국가의 소비자보호 강행법규가 부여하는 보호를 박탈하지 않습니다. 해당 강행법규가 이 약관과 상충하는 범위에서는 강행법규가 우선합니다.",
   },
   {
     id: "t20",
@@ -189,6 +195,67 @@ export const TERMS: LegalArticle[] = [
       "① 회원이 장기간 로그인을 하지 않거나 계정을 방치해두는 경우, 회사는 서비스 운영 정책에 따라 해당 계정을 휴면 상태로 전환할 수 있으며, 전환 사실을 회원이 등록한 이메일 등으로 통지할 수 있습니다.\n" +
       "② 장기간 로그인을 하지 않거나 계정을 방치해두는 경우에는 서버 최적화를 위하여 관리자가 지식 베이스에 저장된 데이터를 파기할 수 있습니다.\n" +
       "③ 휴면 전환 이후에도 회원은 로그인 등 본인 확인 절차를 통해 계정을 활성 상태로 복구할 수 있습니다. 다만 이미 파기된 지식 베이스 데이터는 복구되지 않을 수 있습니다.",
+  },
+];
+
+/**
+ * 국제 이용자 특칙 — 대한민국 외 거주 이용자에게 적용된다.
+ * 거주국 소비자보호 강행법규는 준거법 조항으로 배제할 수 없으므로, 배제를 시도하는 대신
+ * 각 법역이 요구하는 고지·권리를 명시해 둔다. 본문 약관과 상충하면 이 특칙이 우선한다.
+ * ⚠️ 변호사 검토 전 문서다. 대괄호 항목은 실제 값 확보 후 교체해야 한다.
+ */
+export const INTERNATIONAL: LegalArticle[] = [
+  {
+    id: "i1",
+    title: "제1조 (적용 범위 및 우선순위)",
+    body:
+      "① 본 특칙은 대한민국 외 국가에 상거소를 둔 이용자에게 적용됩니다.\n" +
+      "② 본 특칙과 이용약관 본문이 상충하는 경우, 해당 이용자에 대해서는 본 특칙이 우선합니다.\n" +
+      "③ 서비스는 전자적 방식으로 제공되는 디지털 서비스이며, 물리적으로 배송되는 상품은 포함되지 않습니다.\n" +
+      "④ 이용요금은 미국 달러(USD)로 표시·청구됩니다. 이용자의 카드 발급사 또는 결제수단 제공자가 환전 수수료 또는 해외 이용 수수료를 별도로 부과할 수 있으며, 이는 회사가 수취하는 금액이 아닙니다.",
+  },
+  {
+    id: "i2",
+    title: "제2조 (EU·EEA 및 영국 거주 이용자의 청약철회권)",
+    body:
+      "① 유럽연합(EU)·유럽경제지역(EEA) 또는 영국에 거주하는 소비자는 계약 체결일로부터 14일 이내에 이유를 제시하지 않고 청약을 철회할 수 있습니다.\n" +
+      "② 다만 이용자가 결제 시점에 (ㄱ) 14일의 철회기간이 만료되기 전에 서비스 제공을 즉시 개시하는 것에 명시적으로 사전 동의하고, (ㄴ) 그로 인해 청약철회권을 상실하게 됨을 명시적으로 확인한 경우, 서비스 제공이 개시된 때에 청약철회권이 소멸합니다.\n" +
+      "③ 제2항의 동의를 하지 않은 이용자는 14일 이내에 철회할 수 있으며, 이 경우 철회 시점까지 실제로 제공된 부분에 대하여 계약 총액에 비례하는 금액이 공제될 수 있습니다.\n" +
+      `④ 철회 의사는 ${COMPANY_INFO.contactEmail} 로 통지하거나, 서비스 내 구독 해지 기능을 통해 표시할 수 있습니다. 명확한 의사표시이면 형식은 제한되지 않습니다.\n` +
+      "⑤ 회사는 철회 통지를 받은 날부터 14일 이내에, 이용자가 결제에 사용한 것과 동일한 수단으로 환불합니다. 이로 인한 추가 수수료는 이용자에게 부과되지 않습니다.",
+  },
+  {
+    id: "i3",
+    title: "제3조 (미국 거주 이용자에 대한 자동갱신 고지)",
+    body:
+      "① 유료 구독은 이용자가 해지하기 전까지 결제주기에 따라 자동으로 갱신되며, 각 갱신 시 등록된 결제수단으로 요금이 청구됩니다.\n" +
+      "② 회사는 결제 정보를 입력받기 전에 갱신 주기, 청구 금액, 해지 방법을 결제 화면에 명확하고 눈에 띄게 표시합니다.\n" +
+      "③ 이용자는 가입에 이용한 것과 동일한 수단, 즉 서비스 내 설정 화면을 통해 언제든지 자동갱신을 해지할 수 있습니다. 해지를 위하여 전화 통화나 상담원 연결을 요구하지 않습니다.\n" +
+      "④ 해지는 다음 갱신일 전까지 이루어져야 하며, 해지하더라도 이미 결제된 이용기간의 만료일까지는 서비스가 정상 제공됩니다.\n" +
+      "⑤ 회사는 결제 완료 후 자동갱신 조건과 해지 방법을 포함한 확인 내역을 전자적 방법으로 제공합니다.",
+  },
+  {
+    id: "i4",
+    title: "제4조 (일본 거주 이용자 — 특정상거래법에 근거한 표시)",
+    body:
+      `판매업자: ${COMPANY_INFO.companyName}\n` +
+      `운영 총괄책임자: ${COMPANY_INFO.representative}\n` +
+      `소재지: ${COMPANY_INFO.address}\n` +
+      `연락처: ${COMPANY_INFO.phone} / ${COMPANY_INFO.contactEmail}\n` +
+      "판매가격: 각 요금제 안내 화면에 표시된 금액(미국 달러). 표시 금액 외에 회사가 부과하는 추가 비용은 없으며, 인터넷 접속료 및 통신비는 이용자가 부담합니다.\n" +
+      "대금 지급 시기 및 방법: 신용카드 등 결제 화면에 표시된 수단으로 신청 시점에 즉시 결제되며, 구독은 결제주기마다 자동 갱신됩니다.\n" +
+      "서비스 제공 시기: 결제 완료 즉시 이용할 수 있습니다.\n" +
+      "해지 및 반품: 디지털 서비스의 성질상 제공 개시 후의 반품은 받지 않습니다. 자동갱신 해지는 서비스 내 설정 화면에서 언제든 가능하며, 해지 시 이미 결제된 이용기간 만료일까지 서비스가 유지됩니다.\n" +
+      "동작 환경: 최신 버전의 웹 브라우저와 인터넷 연결이 필요합니다.",
+  },
+  {
+    id: "i5",
+    title: "Article 5. Summary for International Users (English)",
+    body:
+      "ZEFF AI is a digital subscription service. No physical goods are shipped. Prices are shown and charged in US dollars (USD); your card issuer may add its own currency-conversion or foreign-transaction fee, which we do not receive.\n\n" +
+      "EU / EEA / UK consumers: you have a 14-day right of withdrawal from the date the contract is concluded. If, at checkout, you expressly consent to immediate performance and acknowledge that you thereby lose this right, the right expires once we begin supplying the service. If you did not give that consent, you may withdraw within 14 days, and we may deduct an amount proportionate to what was supplied before withdrawal. We refund within 14 days of receiving your notice, using the same payment method, at no extra cost to you.\n\n" +
+      "US consumers: your subscription renews automatically until you cancel. Renewal frequency, amount, and the cancellation method are disclosed before we collect your billing information. You can cancel at any time in the in-app settings — the same medium you used to subscribe. No phone call is required.\n\n" +
+      `To exercise any of these rights, contact ${COMPANY_INFO.contactEmail}. Where mandatory consumer-protection law of your country of residence conflicts with these terms, that law prevails.`,
   },
 ];
 
@@ -291,6 +358,18 @@ export const PRIVACY: LegalArticle[] = [
     body:
       "① 이용자는 개인정보 침해에 대한 신고·상담이 필요한 경우 개인정보분쟁조정위원회, 개인정보침해신고센터(한국인터넷진흥원), 대검찰청, 경찰청 등에 문의할 수 있습니다.\n" +
       "② 본 개인정보처리방침의 내용 추가·삭제 및 수정이 있을 경우 개정 최소 7일 전부터 공지사항을 통하여 고지합니다.",
+  },
+  {
+    id: "p13",
+    title: "13. EU·EEA 및 영국 거주 이용자의 권리 (GDPR / UK GDPR)",
+    body:
+      "① 적용: 회사가 EU·EEA 또는 영국에 거주하는 정보주체에게 서비스를 제공하는 범위에서, 회사는 GDPR 및 UK GDPR상의 컨트롤러(controller)에 해당합니다.\n" +
+      "② 처리의 법적 근거: 서비스 제공 및 계약 이행(GDPR 제6조 제1항 (b)), 법령상 의무 이행(동항 (c)), 서비스 보안·부정이용 방지 등 회사의 정당한 이익(동항 (f)), 그 밖에 별도 동의를 받은 경우 그 동의(동항 (a)).\n" +
+      "③ 정보주체의 권리: 열람권, 정정권, 삭제권(잊힐 권리), 처리제한권, 데이터 이동권, 처리에 대한 반대권, 동의를 근거로 한 처리에 대한 동의 철회권을 행사할 수 있습니다. 동의 철회는 철회 이전의 처리의 적법성에 영향을 주지 않습니다.\n" +
+      `④ 권리 행사 방법: ${COMPANY_INFO.privacyOfficerContact} 로 요청하시면 원칙적으로 1개월 이내에 처리합니다.\n` +
+      `⑤ EU 대리인(GDPR 제27조): ${COMPANY_INFO.euRepresentative}\n` +
+      "⑥ 국외 이전: 개인정보는 대한민국 내 클라우드 인프라에서 처리될 수 있습니다. 유럽연합 집행위원회는 2021년 12월 17일 대한민국에 대한 적정성 결정을 채택하였으므로, EU·EEA에서 대한민국으로의 이전에는 표준계약조항(SCC) 등 별도의 안전조치가 요구되지 않습니다.\n" +
+      "⑦ 감독기관 민원: 정보주체는 자신이 거주하거나 근무하는 회원국의 감독기관(영국의 경우 정보위원회, ICO)에 민원을 제기할 권리가 있습니다.",
   },
 ];
 

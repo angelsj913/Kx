@@ -213,6 +213,8 @@ const zh: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "暂时还没有回复。准备好后我们也会通过邮件通知你。",
   "support.inquiry.detail.attachment": "附件",
   "support.inquiry.detail.loading": "正在加载...",
+  "support.legal.intlTitle": "国际用户特别条款",
+  "support.legal.intl.notice": "适用于居住在大韩民国境外的用户。如与服务条款正文冲突，以下列特别条款为准。",
   "support.legal.consentTitle": "个人信息收集使用同意书",
   "support.legal.age.title": "确认已满19周岁",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

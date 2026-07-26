@@ -221,6 +221,8 @@ const ru: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "Ответа пока нет. Мы сообщим по email, как только он будет готов.",
   "support.inquiry.detail.attachment": "Вложение",
   "support.inquiry.detail.loading": "Загрузка...",
+  "support.legal.intlTitle": "Особые условия для международных пользователей",
+  "support.legal.intl.notice": "Применяются к пользователям, проживающим за пределами Республики Корея. В случае противоречия с основными условиями обслуживания преимущественную силу имеют условия ниже.",
   "support.legal.consentTitle": "Согласие на сбор и использование персональных данных",
   "support.legal.age.title": "Подтверждение возраста (19+)",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

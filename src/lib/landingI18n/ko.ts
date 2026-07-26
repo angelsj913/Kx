@@ -223,6 +223,8 @@ const ko = {
   "support.inquiry.detail.pending": "아직 답변이 등록되지 않았어요. 답변이 준비되면 이메일로도 알려드릴게요.",
   "support.inquiry.detail.attachment": "첨부파일",
   "support.inquiry.detail.loading": "내용을 불러오는 중...",
+  "support.legal.intlTitle": "국제 이용자 특칙",
+  "support.legal.intl.notice": "대한민국 외 국가에 거주하는 이용자에게 적용됩니다. 이용약관 본문과 상충하는 경우 아래 특칙이 우선합니다.",
   "support.legal.consentTitle": "개인정보 수집 이용 동의서",
   "support.legal.age.title": "만 19세 이상 확인",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

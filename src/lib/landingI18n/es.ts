@@ -221,6 +221,8 @@ const es: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "Aún no hay respuesta. Te avisaremos por correo en cuanto esté lista.",
   "support.inquiry.detail.attachment": "Adjunto",
   "support.inquiry.detail.loading": "Cargando...",
+  "support.legal.intlTitle": "Condiciones para usuarios internacionales",
+  "support.legal.intl.notice": "Estas condiciones se aplican a los usuarios residentes fuera de la República de Corea. En caso de conflicto con los términos de servicio principales, prevalecen las condiciones siguientes.",
   "support.legal.consentTitle": "Consentimiento para la recopilación y uso de datos personales",
   "support.legal.age.title": "Confirmación de edad (19+)",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",

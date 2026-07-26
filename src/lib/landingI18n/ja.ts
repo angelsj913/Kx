@@ -216,6 +216,8 @@ const ja: Record<keyof typeof ko, string> = {
   "support.inquiry.detail.pending": "まだ回答が登録されていません。回答が準備でき次第、メールでもお知らせします。",
   "support.inquiry.detail.attachment": "添付ファイル",
   "support.inquiry.detail.loading": "読み込み中...",
+  "support.legal.intlTitle": "国際利用者向け特則",
+  "support.legal.intl.notice": "大韓民国外にお住まいの利用者に適用されます。利用規約本文と抵触する場合は、以下の特則が優先します。",
   "support.legal.consentTitle": "個人情報の収集・利用同意書",
   "support.legal.age.title": "満19歳以上の確認",
   "support.legal.age.body": "본 이용약관에 동의함으로써, 이용자는 자신이 만 19세 이상이며 서비스 이용에 필요한 법적 능력을 갖추고 있음을 확인합니다.",
