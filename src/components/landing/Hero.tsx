@@ -84,10 +84,13 @@ export default function Hero() {
           id="download"
           className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
         >
+          {/* nowrap 은 버튼이 나란히 놓이는 md 이상에서만 건다. 모바일은 w-full 로 쌓이는데,
+              긴 언어(독일어 "Für Windows herunterladen" 등)에서 줄바꿈이 막히면
+              글자가 화면 밖으로 나가 가로 스크롤이 생긴다. */}
           <button
             type="button"
             onClick={() => setSelected("windows")}
-            className="group flex w-full items-center justify-center gap-3 whitespace-nowrap rounded-2xl bg-blue-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] md:w-auto md:min-w-[11rem] md:flex-1"
+            className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] sm:px-7 md:w-auto md:min-w-[11rem] md:flex-1 md:whitespace-nowrap"
           >
             <WindowsIcon className="h-6 w-6" />
             {t("hero.download.windows")}
@@ -96,7 +99,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("android")}
-            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-emerald-500/40 bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] md:w-auto md:min-w-[12.5rem] md:flex-1"
+            className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
           >
             <Smartphone className="h-6 w-6" />
             {t("hero.download.android")}
@@ -109,7 +112,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setSelected("mac")}
-            className="group flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 md:w-auto md:min-w-[12.5rem] md:flex-1"
+            className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
           >
             <Apple className="h-6 w-6" />
             {t("hero.download.mac")}
