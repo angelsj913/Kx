@@ -58,20 +58,3 @@ export function cosine(a: number[], b: number[]): number {
   if (na === 0 || nb === 0) return 0;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
-
-export interface Scored<T> {
-  item: T;
-  score: number;
-}
-
-/** 쿼리 벡터에 대해 상위 K개 항목을 유사도 내림차순으로 반환. */
-export function topK<T extends { embedding: number[] }>(
-  query: number[],
-  items: T[],
-  k: number,
-): Scored<T>[] {
-  return items
-    .map((item) => ({ item, score: cosine(query, item.embedding) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k);
-}

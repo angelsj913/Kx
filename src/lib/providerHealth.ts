@@ -43,10 +43,6 @@ export function getProviderCooldownMinutes(provider: Provider): number | null {
   return Math.ceil((until - Date.now()) / 60_000);
 }
 
-export function getProviderSkipReason(provider: Provider): string {
-  return health[provider]?.reason ?? "";
-}
-
 export function noteProviderFailure(provider: Provider, err: unknown): void {
   const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
 

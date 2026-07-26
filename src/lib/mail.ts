@@ -14,7 +14,7 @@ export type SendMailOptions = {
   subject: string;
   text: string;
   html?: string;
-  /** true면 production에서 발송 수단 없을 때 예외 (sendEmail 호환) */
+  /** true면 production에서 발송 수단 없을 때 예외 */
   throwIfUnconfigured?: boolean;
 };
 
@@ -88,23 +88,6 @@ export async function sendMail(opts: SendMailOptions): Promise<SendMailResult> {
   }
   console.log(`[mail:dev] to=${to}\nsubject=${subject}\n${text}`);
   return { sent: false, mode: "dev-log" };
-}
-
-/** sendEmail 호환 — production 미설정 시 throw */
-export async function sendEmail(opts: {
-  to: string;
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<{ mode: Exclude<MailMode, "none"> }> {
-  const result = await sendMail({ ...opts, throwIfUnconfigured: true });
-  if (result.sent) {
-    return { mode: result.mode === "none" ? "dev-log" : result.mode };
-  }
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(result.error ?? "이메일 발송에 실패했습니다.");
-  }
-  return { mode: "dev-log" };
 }
 
 /** Resend 제한 메시지를 관리자 UI용 한국어로 변환 */

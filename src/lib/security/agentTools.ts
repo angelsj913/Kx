@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { toOpenAITools, type AgentToolSpec } from "@/lib/agentTools";
+import { type AgentToolSpec } from "@/lib/agentTools";
 
 function safeJsonArray(raw: string): string[] {
   try {
@@ -162,8 +162,4 @@ const GET_SKILL_SUMMARY: AgentToolSpec = {
 
 export function buildSecurityAgentTools(): AgentToolSpec[] {
   return [GET_LATEST_SCAN, LIST_FINDINGS, GET_SKILL_SUMMARY];
-}
-
-export function securityAgentToolSchemas() {
-  return toOpenAITools(buildSecurityAgentTools());
 }

@@ -212,7 +212,6 @@ export async function runBackendRoute(args: {
   const draftLen = draft.text.trim().length;
   const risk = draftVerifyRiskScore(draft.text);
   const shouldVerify =
-    process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
     !draft.interrupted &&
     draftLen > 600 &&
