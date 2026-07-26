@@ -1,7 +1,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { scanSourceForSecrets } from "./secretScan";
-import { PAID_PRICE_COMBOS, priceIdFor } from "@/lib/stripe";
+import { PAID_PRICE_COMBOS, priceIdFor, getStripe } from "@/lib/stripe";
+import { PLANS } from "@/lib/plans";
 
 export type CheckResult = "pass" | "fail" | "warn";
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
@@ -389,13 +390,16 @@ function checkStripeWebhookSecret(): SecurityCheckOutcome {
 
 /**
  * Stripe 키가 있는데 Price ID env 가 비면 모든 결제가 503 으로 죽는다.
- * 조용히 죽는 대신 자가점검에서 잡는다.
+ * ID 가 있으면 실제 Price 를 읽어 plans.ts 와 대조까지 한다 — 대시보드 금액이
+ * 어긋나면 Order 에는 plans.ts 금액이 남고 실제 청구는 다른 금액이 되는데,
+ * 이 불일치는 결제가 성공해 버리므로 자가점검 말고는 드러날 곳이 없다.
  */
-function checkStripePriceIds(): SecurityCheckOutcome {
+async function checkStripePriceIds(): Promise<SecurityCheckOutcome> {
   const checkId = "env.stripe_price_ids_present";
   const skillIds = ["testing-for-sensitive-data-exposure"];
   const title = "Stripe Price ID";
-  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+  const stripe = getStripe();
+  if (!stripe) {
     return {
       checkId,
       skillIds,
@@ -406,20 +410,53 @@ function checkStripePriceIds(): SecurityCheckOutcome {
       result: "pass",
     };
   }
-  const missing = PAID_PRICE_COMBOS.filter(([plan, interval]) => !priceIdFor(plan, interval)).map(
-    ([plan, interval]) => `STRIPE_PRICE_${plan.toUpperCase()}_${interval.toUpperCase()}`,
-  );
+
+  const problems: string[] = [];
+  for (const [plan, interval] of PAID_PRICE_COMBOS) {
+    const envKey = `STRIPE_PRICE_${plan.toUpperCase()}_${interval.toUpperCase()}`;
+    const priceId = priceIdFor(plan, interval);
+    if (!priceId) {
+      problems.push(`${envKey}: 비어 있음`);
+      continue;
+    }
+    const def = PLANS[plan];
+    const expected = interval === "month" ? def.amount : def.annualAmount;
+    if (expected == null) {
+      problems.push(`${envKey}: plans.ts에 해당 주기 금액이 없음`);
+      continue;
+    }
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      // KRW 는 zero-decimal — unit_amount 가 곧 원 단위다.
+      if (price.currency !== def.currency) {
+        problems.push(`${envKey}: 통화 ${price.currency} ≠ ${def.currency}`);
+      }
+      if (price.unit_amount !== expected) {
+        problems.push(`${envKey}: 금액 ${price.unit_amount} ≠ ${expected}`);
+      }
+      if (price.recurring?.interval !== interval) {
+        problems.push(`${envKey}: 주기 ${price.recurring?.interval ?? "일회성"} ≠ ${interval}`);
+      }
+      if (!price.active) {
+        problems.push(`${envKey}: 비활성 Price`);
+      }
+    } catch {
+      problems.push(`${envKey}: Price 조회 실패 (${priceId})`);
+    }
+  }
+
   return {
     checkId,
     skillIds,
     severity: "high",
     title,
     detail:
-      missing.length === 0
-        ? "유료 플랜 4종의 Price ID가 모두 설정되어 있습니다."
-        : `Price ID가 비어 있어 해당 결제가 실패합니다: ${missing.join(", ")}`,
-    remediation: "Stripe 대시보드의 Price 객체 ID를 해당 환경변수에 넣으세요.",
-    result: missing.length === 0 ? "pass" : "fail",
+      problems.length === 0
+        ? "유료 플랜 4종의 Price 가 plans.ts 의 금액·통화·주기와 일치합니다."
+        : `Price 설정이 어긋났습니다: ${problems.join(" / ")}`,
+    remediation:
+      "Stripe 대시보드의 Price 를 plans.ts 금액(Pro ₩9,900·₩99,000, Professional ₩14,900·₩149,000)에 맞추고 ID를 해당 환경변수에 넣으세요.",
+    result: problems.length === 0 ? "pass" : "fail",
   };
 }
 

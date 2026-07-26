@@ -52,10 +52,16 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     const baseUrl = getBaseUrl();
 
-    // Price ID 확인은 주문 발행 전에. 뒤로 미루면 결제 불가한 주문만 pending 으로 쌓인다.
+    // 결제 불가 조건은 전부 주문 발행 전에 거른다. 뒤로 미루면 결제할 수 없는 주문만
+    // pending 으로 쌓인다. 프로덕션에 키가 없는 경우도 여기 포함 — 스텁 부여는 아래서 막지만
+    // 그때는 이미 주문이 만들어진 뒤다.
     const priceId = stripe ? priceIdFor(plan.id, interval) : undefined;
-    if (stripe && !priceId) {
-      console.error(`checkout error: STRIPE_PRICE_${plan.id.toUpperCase()}_${interval.toUpperCase()} missing`);
+    const blocked = stripe
+      ? !priceId &&
+        `STRIPE_PRICE_${plan.id.toUpperCase()}_${interval.toUpperCase()} missing`
+      : !isStubCheckoutAllowed() && "STRIPE_SECRET_KEY missing in production";
+    if (blocked) {
+      console.error(`checkout error: ${blocked}`);
       return NextResponse.json(
         { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
         { status: 503 }
@@ -76,16 +82,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // Stripe 키가 없으면 스텁 모드 — 완료 페이지에서 결제 확인 후 권한 부여
-    // (개발/프리뷰 전용. 프로덕션에서는 실제 결제 없이 요금제가 부여되지 않도록 차단)
+    // Stripe 키가 없으면 스텁 모드 — 완료 페이지에서 결제 확인 후 권한 부여.
+    // 개발/프리뷰 전용이며, 프로덕션은 위 가드에서 이미 걸러졌다.
     if (!stripe) {
-      if (!isStubCheckoutAllowed()) {
-        console.error("checkout error: STRIPE_SECRET_KEY missing in production");
-        return NextResponse.json(
-          { error: "결제 시스템 점검 중입니다. 잠시 후 다시 시도해 주세요." },
-          { status: 503 }
-        );
-      }
       return NextResponse.json({
         ok: true,
         stub: true,
