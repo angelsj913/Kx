@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatAmount } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,7 @@ const STATUS_STYLE: Record<string, string> = {
   canceled: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };
 
-function money(amount: number, currency: string) {
-  if (currency.toLowerCase() === "krw") return `₩${amount.toLocaleString("ko-KR")}`;
-  return `${amount} ${currency.toUpperCase()}`;
-}
+const money = formatAmount;
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({

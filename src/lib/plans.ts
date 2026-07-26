@@ -8,13 +8,16 @@ export interface PlanDef {
   name: string;
   /** checkout / 결제창 표시명 */
   label: string;
-  /** KRW 원 단위 (zero-decimal) — 월간 결제액 */
+  /**
+   * 월간 결제액 — 통화의 최소 단위. USD 는 센트(700 = $7), KRW 는 원(zero-decimal).
+   * 이 규칙을 지키면 통화가 섞여도 amount 하나로 표현된다.
+   */
   amount: number;
-  /** 연간 결제액(원). 2개월 무료 관행 = 월×10. free/미지원은 null. */
+  /** 연간 결제액(최소 단위). 2개월 무료 관행 = 월×10. free/미지원은 null. */
   annualAmount: number | null;
   currency: string;
   priceLabel: string;
-  /** 연간 표시가 (예: "₩99,000"). 없으면 null. */
+  /** 연간 표시가 (예: "$70"). 없으면 null. */
   annualPriceLabel: string | null;
   periodLabel: string;
   description: string;
@@ -52,8 +55,8 @@ export const PLANS: Record<PlanId, PlanDef> = {
     label: "free",
     amount: 0,
     annualAmount: null,
-    currency: "krw",
-    priceLabel: "₩0",
+    currency: "usd",
+    priceLabel: "$0",
     annualPriceLabel: null,
     periodLabel: "/월",
     description: "가볍게 시작해 보는 기본 플랜",
@@ -84,11 +87,11 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "pro",
     name: "Pro",
     label: "Pro",
-    amount: 9900,
-    annualAmount: 99000,
-    currency: "krw",
-    priceLabel: "₩9,900",
-    annualPriceLabel: "₩99,000",
+    amount: 700,
+    annualAmount: 7000,
+    currency: "usd",
+    priceLabel: "$7",
+    annualPriceLabel: "$70",
     periodLabel: "/월",
     description: "업무·학습을 본격적으로 돌리는 실무 플랜",
     bullets: [
@@ -119,11 +122,11 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "professional",
     name: "Professional",
     label: "Professional",
-    amount: 14900,
-    annualAmount: 149000,
-    currency: "krw",
-    priceLabel: "₩14,900",
-    annualPriceLabel: "₩149,000",
+    amount: 1000,
+    annualAmount: 10000,
+    currency: "usd",
+    priceLabel: "$10",
+    annualPriceLabel: "$100",
     periodLabel: "/월",
     description: "정밀 라우트와 시험 기능을 쓰는 프리미엄 플랜",
     bullets: [
@@ -154,6 +157,31 @@ export const PLANS: Record<PlanId, PlanDef> = {
 
 export function isPlanId(v: unknown): v is PlanId {
   return v === "free" || v === "pro" || v === "professional";
+}
+
+/** 소수점을 쓰지 않는 통화 — 최소 단위가 곧 표시 단위다. */
+const ZERO_DECIMAL = new Set(["KRW", "JPY", "VND", "CLP"]);
+
+/**
+ * 최소 단위 금액 → 표시 문자열 (700, "usd" → "$7").
+ * 주문에 남은 통화가 플랜의 현재 통화와 달라도 각자 맞게 찍히도록,
+ * 표시 지점마다 기호를 하드코딩하지 않고 전부 여길 지난다.
+ */
+export function formatAmount(minorUnits: number, currency: string | null | undefined): string {
+  const code = (currency || "usd").toUpperCase();
+  const zeroDecimal = ZERO_DECIMAL.has(code);
+  const value = zeroDecimal ? minorUnits : minorUnits / 100;
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: zeroDecimal ? 0 : 2,
+    }).format(value);
+  } catch {
+    // 알 수 없는 통화 코드 — 숫자와 코드만 보여준다
+    return `${value.toLocaleString("en-US")} ${code}`;
+  }
 }
 
 /** 플랜 등급 — 업그레이드/다운그레이드 방향 판별에 사용 */

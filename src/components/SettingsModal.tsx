@@ -21,7 +21,7 @@ import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
 import ReferralCard from "@/components/settings/ReferralCard";
 import InquiryWorkspaceView from "@/components/InquiryWorkspaceView";
-import { PLANS, type PlanId, isPlanId } from "@/lib/plans";
+import { PLANS, type PlanId, isPlanId, formatAmount } from "@/lib/plans";
 import { LANGUAGE_ORDER, LANGUAGE_LABELS } from "@/lib/languages";
 import {
   useT,
@@ -404,7 +404,7 @@ function BillingPanel() {
                     {new Date(o.createdAt).toLocaleDateString("ko-KR")}
                   </td>
                   <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
-                    ₩{o.amount.toLocaleString()}
+                    {formatAmount(o.amount, o.currency)}
                   </td>
                   <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                     {o.plan} {t("billing.planSuffix")}
@@ -457,7 +457,7 @@ function ReceiptModal({
   <table>
     <tr><td>${t("billing.merchantUid")}</td><td>${order.merchantUid || order.id}</td></tr>
     <tr><td>${t("billing.plan")}</td><td>${order.plan}</td></tr>
-    <tr><td>${t("billing.amount")}</td><td>₩${order.amount.toLocaleString()} ${order.currency?.toUpperCase() || ""}</td></tr>
+    <tr><td>${t("billing.amount")}</td><td>${formatAmount(order.amount, order.currency)}</td></tr>
     <tr><td>${t("billing.status")}</td><td>${order.status}</td></tr>
     <tr><td>${t("billing.date")}</td><td>${new Date(order.createdAt).toLocaleString("ko-KR")}</td></tr>
   </table>
@@ -499,7 +499,7 @@ function ReceiptModal({
           <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">
             <dt className="text-slate-500">{t("billing.amount")}</dt>
             <dd className="font-semibold text-slate-900 dark:text-slate-50">
-              ₩{order.amount.toLocaleString()}
+              {formatAmount(order.amount, order.currency)}
             </dd>
           </div>
           <div className="flex justify-between gap-4 border-b border-slate-100 py-2 dark:border-slate-800">

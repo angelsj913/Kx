@@ -83,8 +83,9 @@ function successPayload(result: Awaited<ReturnType<typeof fulfillPaidOrder>>) {
     plan: planId,
     planName: def?.name ?? planId,
     planLabel: def?.label ?? planId,
+    // amount 와 currency 는 항상 같은 출처에서 — 섞이면 금액이 다른 통화로 찍힌다
     amount: result.order?.amount ?? def?.amount ?? 0,
-    currency: result.order?.currency ?? "krw",
+    currency: result.order?.currency ?? def?.currency ?? "usd",
     benefits: def?.bullets ?? [],
     message: "결제가 완료되었습니다",
   };

@@ -103,7 +103,7 @@ const zh: Record<keyof typeof ko, string> = {
   "pricing.subtitle": "选择适合你的方案。",
   "pricing.free.name": "free",
   "pricing.free.desc": "适合轻松探索与日常基础办公的入门方案。可以轻松体验 ZEFF AI 的核心助手功能。",
-  "pricing.free.price": "¥0",
+  "pricing.free.price": "$0",
   "pricing.free.period": "/ 月",
   "pricing.free.cta": "立即订阅",
   "pricing.free.bullet1": "基础 AI 对话",
@@ -116,7 +116,7 @@ const zh: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "相当于免费版约30倍的用量",
   "pricing.pro.desc":
     "为需要更沉浸的工作环境与更充裕资源的专业人士打造的方案，让日常工作流程更顺畅，并提供比基础环境更宽裕的算力支持。",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ 月",
   "pricing.pro.cta": "立即订阅",
   "pricing.pro.bullet1": "面向实际工作的扩展作业环境",
@@ -131,7 +131,7 @@ const zh: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "为主导大型复杂项目、不希望资源受限而无法实现创意的用户打造的顶级方案。最深层的高性能推理模型与压倒性的处理速度，完全融入你的日常工作。",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ 月",
   "pricing.professional.cta": "立即订阅",
   "pricing.professional.bullet1": "Pro 功能 + 扩展额度",

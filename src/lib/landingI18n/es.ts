@@ -111,7 +111,7 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Un punto de partida sin presión para explorar y realizar tareas básicas del día a día — suficiente para hacerse una idea real de lo que puede hacer el asistente principal de ZEFF AI.",
-  "pricing.free.price": "0 €",
+  "pricing.free.price": "$0",
   "pricing.free.period": "/ mes",
   "pricing.free.cta": "Suscribirse",
   "pricing.free.bullet1": "Chat de IA básico",
@@ -124,7 +124,7 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Unas 30 veces el límite del plan gratuito",
   "pricing.pro.desc":
     "Para quienes desean un entorno de trabajo más cómodo y recursos más flexibles. Suaviza el flujo de trabajo diario y ofrece notablemente más capacidad que el plan básico, disponible justo cuando la necesitas.",
-  "pricing.pro.price": "₩9,900",
+  "pricing.pro.price": "$7",
   "pricing.pro.period": "/ mes",
   "pricing.pro.cta": "Suscribirse",
   "pricing.pro.bullet1": "Entorno de trabajo ampliado para tareas reales",
@@ -139,7 +139,7 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Nuestro plan de mayor nivel para quienes lideran proyectos grandes y complejos y no quieren que los límites de recursos frenen sus ideas. Nuestro modelo de razonamiento más avanzado y su notable velocidad se integran por completo en tu forma de trabajar.",
-  "pricing.professional.price": "₩14,900",
+  "pricing.professional.price": "$10",
   "pricing.professional.period": "/ mes",
   "pricing.professional.cta": "Suscribirse",
   "pricing.professional.bullet1": "Funciones Pro + límites ampliados",
