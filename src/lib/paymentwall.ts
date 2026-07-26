@@ -76,6 +76,16 @@ export function verifyPingbackSignature(params: Record<string, string>): boolean
   if (!sig) return false;
 
   const version = Number(params.sign_version) || SIGN_VERSION;
+  // 대시보드는 v3(SHA256)로 설정돼 있어야 한다. v2(MD5)가 들어오면 설정이 바뀌었거나
+  // 다운그레이드를 시도하는 요청이므로 드러나게 남긴다. 검증 자체는 계속 진행한다 —
+  // 여기서 막았다가 Paymentwall 이 특정 이벤트만 v2 로 보내면 결제가 조용히 끊긴다.
+  if (version !== SIGN_VERSION) {
+    console.warn("paymentwall pingback: 예상과 다른 서명 버전", {
+      received: version,
+      expected: SIGN_VERSION,
+      ref: params.ref,
+    });
+  }
   const expected = calculateSignature(rest, config.secretKey, version);
   return safeEqual(sig, expected);
 }
