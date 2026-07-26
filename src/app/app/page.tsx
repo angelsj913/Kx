@@ -55,6 +55,14 @@ export default function AppWorkspace() {
   // Android/Chrome 은 viewport 의 interactiveWidget 이 처리하지만 iOS Safari 는 이를
   // 무시하므로, 실제로 보이는 영역인 visualViewport 높이를 셸 높이로 쓴다.
   // rAF 스로틀 패턴은 LandingViewportScale.tsx 와 동일.
+  // 워크스페이스는 모바일 rem 축소(globals.css) 대상에서 뺀다 — 채팅 글자와 입력창까지
+  // 작아지면 쓰기 불편해진다. 인라인 스타일이 미디어쿼리를 이긴다.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.fontSize = "16px";
+    return () => { root.style.fontSize = ""; };
+  }, []);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
