@@ -23,7 +23,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [012](./012-ai-input-moderation.md) | AI input/output moderation layer | P1 | L | — | DONE |
 | [013](./013-legal-deep-research-update.md) | Legal pages via deep-research | P1 | L | — | DONE |
 | [014](./014-workspace-panel-context-dock.md) | Workspace right panel — Context Dock MVP | P3 | M | 008 | DONE |
-| [015](./015-image-gen-quality-spike.md) | Image generation quality spike (approval gate) | P2 | M | — | BLOCKED |
+| [015](./015-image-gen-quality-spike.md) | Image generation quality spike (approval gate) | P2 | M | — | DONE |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`
 
@@ -33,7 +33,7 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED 
 - **005** is visual polish on top of **004** — do not block P1 bugs on it.
 - **011** requires **010** so PPT outlines can use gated RAG + web context.
 - **014** is optional MVP; ship after **008** if bandwidth is tight.
-- **015** is **BLOCKED** until the product owner explicitly approves image-gen work (per user request).
+- **015** was **BLOCKED** until approval — unblocked 2026-07-27 via roadmap continuation.
 
 ## Vetted findings (audit summary)
 

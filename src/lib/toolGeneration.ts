@@ -443,6 +443,7 @@ export async function runToolGeneration(
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
       const prompt = buildImagePrompt(input.text!.trim());
       pipelineInfo("image-gen/generate", "prompt", prompt.slice(0, 200));
+      pipelineInfo("image-gen/generate", "user-request", input.text!.trim().slice(0, 120));
       const candidates = await imageGenerationCandidates();
       if (candidates.length === 0) {
         pipelineError("image-gen/candidates", "no providers with API keys");

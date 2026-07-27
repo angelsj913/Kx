@@ -1,0 +1,30 @@
+{
+  "description": "Golden cases for buildImagePrompt — must preserve user intent, no still-life drift",
+  "cases": [
+    {
+      "input": "멀티툴 이미지를 그려줘",
+      "mustInclude": ["hand tools", "Draw exactly"],
+      "mustNotInclude": ["still life object on a table"]
+    },
+    {
+      "input": "망치 그려줘",
+      "mustInclude": ["hammer", "Draw exactly"],
+      "mustNotInclude": ["still life object on a table"]
+    },
+    {
+      "input": "공구함 일러스트",
+      "mustInclude": ["toolbox", "Draw exactly"],
+      "mustNotInclude": ["still life object on a table"]
+    },
+    {
+      "input": "노트북과 커피잔, 수채화 스타일",
+      "mustInclude": ["laptop", "coffee", "watercolor"],
+      "mustNotInclude": ["still life object on a table"]
+    },
+    {
+      "input": "multi-tool toolkit on a workbench",
+      "mustInclude": ["hand tools", "Draw exactly"],
+      "mustNotInclude": ["still life object on a table"]
+    }
+  ]
+}
