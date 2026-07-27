@@ -17,7 +17,7 @@ const Pricing = dynamic(() => import("@/components/landing/Pricing"));
 export default function Landing() {
   return (
     <LandingViewportScale>
-      <div className="landing-shell min-h-screen font-[family-name:var(--font-noto-kr)] text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:text-slate-100">
+      <div className="landing-shell min-h-screen text-[color:var(--landing-text-primary)] transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
         <Header />
         <Suspense fallback={null}>
           <AdminDeniedBanner />

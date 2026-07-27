@@ -140,6 +140,48 @@ body {
   }
 }
 
+/* ── Nothing-design landing tokens (plan 005) — scoped to .landing-shell only ── */
+.landing-shell {
+  --landing-bg: #f5f3ee;
+  --landing-bg-soft: #ebe8e1;
+  --landing-text-primary: rgba(26, 26, 26, 0.9);
+  --landing-text-muted: rgba(26, 26, 26, 0.55);
+  --landing-accent: #d71921;
+  --landing-gradient-start: #f5f3ee;
+  --landing-gradient: linear-gradient(
+    180deg,
+    var(--landing-gradient-start) 0%,
+    var(--landing-bg-soft) 48%,
+    var(--landing-bg) 100%
+  );
+  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(26, 26, 26, 0.04), transparent 65%);
+  font-family: var(--font-space-grotesk), var(--font-noto-kr), sans-serif;
+  color: var(--landing-text-primary);
+}
+.dark .landing-shell {
+  --landing-bg: #141414;
+  --landing-bg-soft: #1c1c1c;
+  --landing-text-primary: rgba(245, 243, 238, 0.92);
+  --landing-text-muted: rgba(245, 243, 238, 0.5);
+  --landing-accent: #d71921;
+  --landing-gradient-start: #141414;
+  --landing-gradient: linear-gradient(
+    180deg,
+    var(--landing-gradient-start) 0%,
+    var(--landing-bg-soft) 50%,
+    var(--landing-bg) 100%
+  );
+  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(245, 243, 238, 0.05), transparent 65%);
+}
+.landing-label {
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.landing-display {
+  font-family: var(--font-doto), var(--font-space-mono), ui-monospace, monospace;
+}
+
 /* ── 랜딩 배경: 그라데이션을 "뷰포트에 고정"한다 ──
    이전에는 .landing-shell(문서 전체 ~15,000px)에 그라데이션을 깔았다. 그러면 화면 최상단에
    실제로 칠해지는 색이 스크롤에 따라 계속 변하는데, 헤더는 position:fixed에 상수 색이라

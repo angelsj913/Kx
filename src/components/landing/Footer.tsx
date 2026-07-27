@@ -29,7 +29,7 @@ export default function Footer() {
         </div>
 
         <div className="relative z-10 ml-auto flex flex-col items-center md:items-end md:text-right">
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-end">
+          <nav className="landing-label flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] md:justify-end">
             <Link href="/support" className="font-medium text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400">
               {t("nav.support")}
             </Link>

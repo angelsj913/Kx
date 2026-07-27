@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Apple, Smartphone, Sparkles, X } from "lucide-react";
+import Link from "next/link";
+import { Download, Apple, Smartphone, X, ArrowRight } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
   MAC_DOWNLOAD_URL,
@@ -59,28 +60,39 @@ export default function Hero() {
 
   return (
     <section id="about" className="relative overflow-hidden bg-transparent pb-14 pt-28 sm:pb-20 sm:pt-36">
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
-
       <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
-        <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
-          <Sparkles className="h-3.5 w-3.5" />
+        <span className="landing-label hero-fade-up mb-5 inline-block text-[10px] font-medium text-[color:var(--landing-text-muted)]">
           {t("hero.badge")}
         </span>
 
-        <h1 className="hero-fade-up hero-delay-1 max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+        <p className="landing-display hero-fade-up hero-delay-1 text-5xl font-bold tabular-nums leading-none text-[color:var(--landing-text-primary)] sm:text-7xl" aria-hidden>
+          01
+        </p>
+
+        <h1 className="hero-fade-up hero-delay-1 mt-4 max-w-4xl text-3xl font-bold leading-[1.14] tracking-tight text-[color:var(--landing-text-primary)] sm:text-5xl">
           {t("hero.title.line1")}
           <br />
-          <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
-            <span className="text-4xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+          <span className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-4 sm:gap-x-4">
+            <span className="text-3xl font-bold leading-none tracking-tight sm:text-5xl">
               {t("hero.title.line2Prefix")}
             </span>
             <Logo size="hero" className="!items-center" />
           </span>
         </h1>
 
-        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
+        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-[color:var(--landing-text-muted)] sm:text-lg">
           {t("hero.subtitle")}
         </p>
+
+        {!SHOW_DOWNLOAD_CTA && (
+          <Link
+            href="/login"
+            className="hero-fade-up hero-delay-3 mt-10 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[var(--landing-accent)] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
+          >
+            {t("header.startWeb")}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
 
         {SHOW_DOWNLOAD_CTA && (
           <>
@@ -94,7 +106,7 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={() => setSelected("windows")}
-                className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] sm:px-7 md:w-auto md:min-w-[11rem] md:flex-1 md:whitespace-nowrap"
+                className="group flex w-full items-center justify-center gap-3 rounded-full bg-[var(--landing-accent)] px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] sm:px-7 md:w-auto md:min-w-[11rem] md:flex-1 md:whitespace-nowrap"
               >
                 <WindowsIcon className="h-6 w-6" />
                 {t("hero.download.windows")}
@@ -103,7 +115,7 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={() => setSelected("android")}
-                className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
+                className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 transition-colors hover:border-slate-400 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
               >
                 <Smartphone className="h-6 w-6" />
                 {t("hero.download.android")}
@@ -116,7 +128,7 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={() => setSelected("mac")}
-                className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
+                className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 transition-colors hover:border-slate-400 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
               >
                 <Apple className="h-6 w-6" />
                 {t("hero.download.mac")}
