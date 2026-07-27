@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/apiAuth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getMembership, itemAccessWhere, roleAtLeast } from "@/lib/workspace";
+import { mapMessageFilesForClient } from "@/lib/blobAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,12 @@ export async function GET(
     return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  return NextResponse.json({ session: chatSession });
+  return NextResponse.json({
+    session: {
+      ...chatSession,
+      history: chatSession.history.map(mapMessageFilesForClient),
+    },
+  });
 }
 
 export async function DELETE(

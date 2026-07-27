@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
+import { BLOB_ACCESS } from "@/lib/blobAccess";
 import {
   generateWithFallback,
   isOpenRouterCreditsError,
@@ -536,7 +537,7 @@ export async function runToolGeneration(
       blob = await put(
         `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
         Buffer.from(data, "base64"),
-        { access: "public", contentType: mimeType, addRandomSuffix: true },
+        { access: BLOB_ACCESS, contentType: mimeType, addRandomSuffix: true },
       );
       pipelineInfo("image-gen/blob-upload", "success", blob.url);
     } catch (err) {
@@ -725,7 +726,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: PPTX_MIME, addRandomSuffix: true },
+      { access: BLOB_ACCESS, contentType: PPTX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -770,7 +771,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: XLSX_MIME, addRandomSuffix: true },
+      { access: BLOB_ACCESS, contentType: XLSX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -795,7 +796,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.docx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: DOCX_MIME, addRandomSuffix: true },
+      { access: BLOB_ACCESS, contentType: DOCX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -822,7 +823,7 @@ export async function runToolGeneration(
       const blob = await put(
         `exports/${input.userId}/${tool.fileBaseName}-${Date.now()}.md`,
         body,
-        { access: "public", contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
+        { access: BLOB_ACCESS, contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
       );
       return {
         tool,

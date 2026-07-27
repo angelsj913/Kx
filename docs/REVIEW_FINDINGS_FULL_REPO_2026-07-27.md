@@ -17,7 +17,7 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 |----------|----------|---------|--------|
 | Critical | `otp.ts` + reset/signup | `hasRecentVerifiedOtp` 30m window reusable by anyone after victim verifies | **FIX** — single-use consume |
 | High/Med | `adminMfa.ts` + `requireAdmin.ts` | MFA cookie `path:/admin` never sent to `/api/admin/**`; APIs skip MFA; `"dev-admin-mfa"` fallback | **FIX** |
-| Medium | Blob `access:public` chat/library | URL = read access | DEFER (large storage migration) |
+| Medium | Blob `access:public` chat/library | URL = read access | **FIX** — private + `/api/files` proxy |
 | Medium | `itemAccessWhere` | Removed members keep uploader access | DEFER (tenancy redesign) |
 | Medium | `auth.ts` jwt | sessionVersion fail-open | DEFER (availability tradeoff; note only) |
 
@@ -65,5 +65,7 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 | Library blob finalize ownership | DONE (`library/${userId}/` on token + finalize) |
 | Paymentwall blind downgrade | DONE (grantedPlan + matching paid order) |
 | Workspace kick access revoke | DONE (`itemAccessWhere` / `listWhere` membership for team rows) |
-| Public Blob → private | **STOP** — signed-URL UX across chat/library/citations; dedicated PR |
-| sessionVersion fail-open | still deferred (availability tradeoff) |
+| Public Blob → private | **DONE** — `BLOB_ACCESS=private`, `/api/files` auth proxy, client URL mapping |
+| sessionVersion fail-open | **DONE** — 5s recheck, missing `sv` reject, 3× DB fail → fail-closed |
+| Chat history PATCH tenancy | **DONE** — `itemAccessWhere` |
+| Referral entropy + txn | **DONE** — `randomInt` + `$transaction` |

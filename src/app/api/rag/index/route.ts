@@ -9,6 +9,7 @@ import { extractPdfText, hasUsableText } from "@/lib/pdfText";
 import { friendlyError } from "@/lib/errors";
 import { assertAndConsumeQuota, refundQuota, QuotaError } from "@/lib/usage";
 import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
+import { fetchBlobBytes } from "@/lib/blobAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,9 +21,8 @@ async function reextractFromFile(item: {
   userId: string;
 }): Promise<string> {
   try {
-    const res = await fetch(item.fileUrl);
-    if (!res.ok) return "";
-    const buf = Buffer.from(await res.arrayBuffer());
+    const buf = await fetchBlobBytes(item.fileUrl);
+    if (!buf) return "";
     if (buf.length > 20 * 1024 * 1024) return ""; // 20MB 초과는 스킵
 
     // 1) PDF 텍스트 레이어 우선(AI·크레딧 무관, 즉시).

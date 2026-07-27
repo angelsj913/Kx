@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/apiAuth";
 import { put } from "@vercel/blob";
+import { BLOB_ACCESS, mapMessageFilesForClient } from "@/lib/blobAccess";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
@@ -308,7 +309,7 @@ export async function POST(request: Request) {
           const blob = await put(
             `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
             buf,
-            { access: "public", contentType: mimeType, addRandomSuffix: true },
+            { access: BLOB_ACCESS, contentType: mimeType, addRandomSuffix: true },
           );
           return {
             stored: {
@@ -403,7 +404,7 @@ export async function POST(request: Request) {
           send({
             type: "done",
             sessionId: resolvedSessionId,
-            message: assistantRow,
+            message: mapMessageFilesForClient(assistantRow),
           });
           return;
         }
@@ -496,7 +497,7 @@ export async function POST(request: Request) {
           send({
             type: "done",
             sessionId: resolvedSessionId,
-            message: assistantRow,
+            message: mapMessageFilesForClient(assistantRow),
             interrupted: agentResult.interrupted,
           });
         } else if (quickToolId) {
@@ -717,7 +718,11 @@ export async function POST(request: Request) {
             data: { updatedAt: new Date() },
           });
 
-          send({ type: "done", sessionId: resolvedSessionId, message: assistantRow });
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: mapMessageFilesForClient(assistantRow),
+          });
         } else {
           // ── 백엔드 라우트: 분류 → 생성 → (티어별) 정밀 검증 ──
           send({
@@ -819,7 +824,7 @@ export async function POST(request: Request) {
           send({
             type: "done",
             sessionId: resolvedSessionId,
-            message: assistantRow,
+            message: mapMessageFilesForClient(assistantRow),
             interrupted: result.interrupted,
           });
         }

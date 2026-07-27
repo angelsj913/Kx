@@ -1,5 +1,7 @@
 /** Blob URL 첨부를 재생성·편집 시 base64 inline으로 다시 로드 */
 
+import { fetchBlobBytes } from "@/lib/blobAccess";
+
 export interface StoredAttachment {
   url: string;
   filename: string;
@@ -13,9 +15,8 @@ export async function loadInlineFromStored(
 
   const results = await Promise.all(
     attachments.map(async (att) => {
-      const res = await fetch(att.url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) throw new Error(`첨부 파일을 불러오지 못했습니다: ${att.filename}`);
-      const buf = Buffer.from(await res.arrayBuffer());
+      const buf = await fetchBlobBytes(att.url);
+      if (!buf) throw new Error(`첨부 파일을 불러오지 못했습니다: ${att.filename}`);
       return { data: buf.toString("base64"), mimeType: att.mimeType || "application/octet-stream" };
     }),
   );

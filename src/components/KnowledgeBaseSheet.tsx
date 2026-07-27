@@ -109,7 +109,7 @@ export default function KnowledgeBaseSheet({
       if (!ownerId) throw new Error(t("library.errors.uploadFailed"));
       const { upload } = await import("@vercel/blob/client");
       const blob = await upload(`library/${ownerId}/${Date.now()}-${file.name}`, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/library/blob-upload",
       });
       const init: RequestInit = {
