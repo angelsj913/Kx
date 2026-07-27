@@ -99,8 +99,47 @@ async function handle(params: Record<string, string>): Promise<NextResponse> {
     type === PINGBACK_TYPE.SUBSCRIPTION_EXPIRED ||
     type === PINGBACK_TYPE.RENEWAL_FAILED
   ) {
-    await prisma.userSettings.updateMany({ where: { userId }, data: { plan: "free" } });
-    console.info("paymentwall pingback: 요금제 해제", { userId, type });
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+    if (!settings || settings.plan === "free") {
+      return new NextResponse("OK", { status: 200 });
+    }
+
+    // 관리자/추천 등으로 부여된 한시 요금제가 살아 있으면 PW 이벤트로 내리지 않는다.
+    if (
+      settings.grantedPlan &&
+      settings.grantedPlanUntil &&
+      settings.grantedPlanUntil.getTime() > Date.now()
+    ) {
+      console.info("paymentwall pingback: skip downgrade — grantedPlan active", {
+        userId,
+        type,
+      });
+      return new NextResponse("OK", { status: 200 });
+    }
+
+    // 이 사용자에 대한 Paymentwall 결제 증거가 있을 때만 다운그레이드
+    const pwOrder = params.ref
+      ? await prisma.order.findFirst({
+          where: { userId, providerRef: params.ref },
+        })
+      : await prisma.order.findFirst({
+          where: { userId, status: "paid", providerRef: { not: null } },
+          orderBy: { createdAt: "desc" },
+        });
+    if (!pwOrder) {
+      console.warn("paymentwall pingback: skip downgrade — no matching paid order", {
+        userId,
+        type,
+        ref: params.ref,
+      });
+      return new NextResponse("OK", { status: 200 });
+    }
+
+    await prisma.userSettings.updateMany({
+      where: { userId, plan: { not: "free" } },
+      data: { plan: "free" },
+    });
+    console.info("paymentwall pingback: 요금제 해제", { userId, type, orderId: pwOrder.id });
     return new NextResponse("OK", { status: 200 });
   }
 

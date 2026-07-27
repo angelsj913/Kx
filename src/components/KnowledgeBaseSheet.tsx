@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Upload, Trash2, MessageCircle, FileText, X, RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useT } from "@/lib/i18n";
 import { useWorkspace, wsFetch } from "@/lib/workspaceClient";
 
@@ -29,6 +30,7 @@ export default function KnowledgeBaseSheet({
   onOpenBookChat: (sessionId: string) => void;
 }) {
   const t = useT();
+  const { data: session } = useSession();
   const { activeId } = useWorkspace();
   const [tab, setTab] = useState<LibraryTab>("mine");
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
@@ -103,8 +105,10 @@ export default function KnowledgeBaseSheet({
     setItems(cacheRef.current[tab]!);
 
     try {
+      const ownerId = session?.user?.id;
+      if (!ownerId) throw new Error(t("library.errors.uploadFailed"));
       const { upload } = await import("@vercel/blob/client");
-      const blob = await upload(`library/${Date.now()}-${file.name}`, file, {
+      const blob = await upload(`library/${ownerId}/${Date.now()}-${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/library/blob-upload",
       });

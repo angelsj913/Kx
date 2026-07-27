@@ -7,6 +7,8 @@ import { runToolGeneration } from "@/lib/toolGeneration";
 import { getPlanOrFree } from "@/lib/plans";
 import { extractPdfText, hasUsableText } from "@/lib/pdfText";
 import { friendlyError } from "@/lib/errors";
+import { assertAndConsumeQuota, refundQuota, QuotaError } from "@/lib/usage";
+import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +60,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "서재 항목을 선택해 주세요." }, { status: 400 });
   }
 
+  let quota: Awaited<ReturnType<typeof assertAndConsumeQuota>> | null = null;
+  try {
+    await assertRateLimit(`rag:index:${userId}`, userId, {
+      max: 30,
+      windowSeconds: 3600,
+    });
+    // OCR·임베딩 모두 AI 비용 — 채팅 메시지 쿼터로 과금
+    quota = await assertAndConsumeQuota(userId, null);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+    if (err instanceof QuotaError) {
+      return NextResponse.json({ error: err.message, code: "QUOTA" }, { status: 402 });
+    }
+    throw err;
+  }
+
   const item = await prisma.libraryItem.findFirst({
     where: { id: libraryItemId, ...(await itemAccessWhere(userId)) },
   });
   if (!item) {
+    if (quota?.consumed) await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey);
     return NextResponse.json({ error: "서재 항목을 찾을 수 없습니다." }, { status: 404 });
   }
   try {
@@ -84,6 +105,7 @@ export async function POST(request: Request) {
 
     const result = await indexLibraryItem(workingItem);
     if (!result) {
+      if (quota?.consumed) await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey);
       return NextResponse.json(
         {
           error:
@@ -94,6 +116,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(result);
   } catch (err) {
+    if (quota?.consumed) await refundQuota(userId, quota.consumed.feature, quota.consumed.periodKey);
     console.error("rag index error:", err);
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }

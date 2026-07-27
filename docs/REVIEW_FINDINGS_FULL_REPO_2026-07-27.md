@@ -49,4 +49,18 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 
 ## This turn implemented
 
-See commit message / diff. Deferred items remain logged for follow-up.
+- OTP: `consumeRecentVerifiedOtp` single-use (signup/reset)
+- Admin MFA: cookie `path:/`, API MFA gate, timing-safe compare, no prod secret fallback; MFA send/verify `skipMfa`
+- Agent `zeff_tool` + regenerate: `moderateInput`
+- ChatWorkspace: safe `JSON.parse` for pptx/xlsx/structured
+- account password: `BCRYPT_COST`
+- Ponytail cuts: LibraryView, AdminAccessDenied, prompts barrel, dead exports/constants
+
+## Deferred (logged)
+
+- Public Blob → private
+- Workspace membership revoke on kick
+- sessionVersion fail-open
+- review/rag quota
+- library blob ownership finalize
+- Paymentwall blind downgrade

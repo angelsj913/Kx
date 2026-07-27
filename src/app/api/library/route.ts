@@ -164,9 +164,22 @@ export async function POST(request: Request) {
       titleInput = String(body?.title ?? "").trim();
       const size = Number(body?.size ?? 0);
 
-      // 우리 Blob 스토어의 URL만 허용(임의 URL 인젝션 방지)
+      // 우리 Blob 스토어의 URL만 허용 + 업로더 본인 pathname prefix
       if (!/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(blobUrl)) {
         return NextResponse.json({ error: "유효하지 않은 업로드입니다." }, { status: 400 });
+      }
+      const ownerPrefix = `library/${userId}/`;
+      let decodedPath = blobUrl;
+      try {
+        decodedPath = decodeURIComponent(blobUrl);
+      } catch {
+        /* keep raw */
+      }
+      if (!decodedPath.includes(ownerPrefix) && !blobUrl.includes(ownerPrefix)) {
+        return NextResponse.json(
+          { error: "업로드한 파일의 소유자를 확인할 수 없습니다." },
+          { status: 403 },
+        );
       }
       if (size > MAX_UPLOAD_BYTES) {
         return NextResponse.json(
