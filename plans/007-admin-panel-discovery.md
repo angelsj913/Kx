@@ -64,9 +64,9 @@ In `src/lib/requireAdmin.ts`, change redirect to `/?admin=denied`.
 
 ## Done criteria
 
-- [ ] Admin user sees link in hamburger on mobile width
-- [ ] Non-admin hitting `/admin` sees denied banner on home
-- [ ] `ADMIN_EMAILS` documented
+- [x] Admin user sees link in hamburger on mobile width
+- [x] Non-admin hitting `/admin` sees denied banner on home
+- [x] `ADMIN_EMAILS` documented
 
 ## STOP conditions
 

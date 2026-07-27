@@ -11,7 +11,7 @@ export async function requireAdminPage() {
     redirect("/login?callbackUrl=/admin");
   }
   if (!isAdminSession(session)) {
-    redirect("/");
+    redirect("/?admin=denied");
   }
   return session;
 }

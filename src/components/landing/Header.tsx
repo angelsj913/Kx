@@ -180,6 +180,17 @@ export default function Header() {
                   </Link>
                 ))}
 
+                {isAdmin && (
+                  <a
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-blue-700 transition-colors hover:bg-blue-600/10 dark:text-blue-300 dark:hover:bg-blue-600/10"
+                  >
+                    <Wrench className="h-4 w-4" />
+                    {t("header.adminPanel")}
+                  </a>
+                )}
+
                 {/* 언어 — 헤더에서 밀려난 모바일 전용. 데스크톱은 헤더 드롭다운이 그대로 있다 */}
                 <div className="mt-2 border-t border-slate-900/[0.06] pt-3 sm:hidden dark:border-white/[0.08]">
                   <p className="flex items-center gap-2.5 px-2 pb-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
