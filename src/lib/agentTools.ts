@@ -2,6 +2,7 @@ import { evaluateExpr } from "@/lib/safeExpr";
 import type { ModelTier } from "@/lib/models";
 import type { OpenAIToolSchema } from "@/lib/openaiCompat";
 import { retrieveChunks } from "@/lib/ragSearch";
+import { searchWeb, formatWebSearchForAgent } from "@/lib/webSearch";
 import { runToolGeneration } from "@/lib/toolGeneration";
 
 /**
@@ -124,29 +125,10 @@ const WEB_SEARCH: AgentToolSpec = {
     if (!key) return { terminal: false, text: "웹 검색을 사용할 수 없습니다." };
     ctx.onStatus?.(`웹 검색 중… (${query.slice(0, 30)})`);
     try {
-      const res = await fetch("https://api.tavily.com/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: key,
-          query,
-          max_results: 5,
-          include_answer: true,
-        }),
-      });
-      if (!res.ok) return { terminal: false, text: `웹 검색 오류 (${res.status})` };
-      const data = (await res.json()) as {
-        answer?: string;
-        results?: { title?: string; url?: string; content?: string }[];
-      };
-      const parts: string[] = [];
-      if (data.answer) parts.push(`요약: ${data.answer}`);
-      (data.results ?? []).forEach((r, i) => {
-        parts.push(`[${i + 1}] ${r.title ?? ""} (${r.url ?? ""})\n${r.content ?? ""}`);
-      });
+      const hits = await searchWeb(query);
       return {
         terminal: false,
-        text: parts.join("\n\n") || "검색 결과가 없습니다.",
+        text: formatWebSearchForAgent(hits) || "검색 결과가 없습니다.",
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "웹 검색 실패";

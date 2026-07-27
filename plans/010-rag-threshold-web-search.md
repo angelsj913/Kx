@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f`
+- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f` | **Completed**
 
 ## Why this matters
 
@@ -62,9 +62,9 @@ Parse both library and web sources in `resultData` JSON schema extension.
 
 ## Done criteria
 
-- [ ] Irrelevant low-score chunks not shown as citations
-- [ ] Legal question without library match uses web context in answer
-- [ ] `npm run lint` exit 0
+- [x] Irrelevant low-score chunks not shown as citations
+- [x] Legal question without library match uses web context in answer
+- [x] `npm run lint` exit 0
 
 ## STOP conditions
 

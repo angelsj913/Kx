@@ -1,6 +1,10 @@
 /** 하이브리드 RAG 점수 — 벡터 + 한국어 키워드/바이그램 가중 합산 */
 
-export const MIN_RETRIEVAL_SCORE = Number(process.env.MIN_RETRIEVAL_SCORE ?? "0.15");
+/** 벡터+키워드 하이브리드 점수 하한 — 미달 청크는 검색 결과에서 제외 */
+export const MIN_RETRIEVAL_SCORE = Number(process.env.MIN_RETRIEVAL_SCORE ?? "0.35");
+
+/** RAG 상위 결과가 이 값 미만이면 출처 카드·컨텍스트 주입을 생략 */
+export const MIN_CITATION_SCORE = Number(process.env.MIN_CITATION_SCORE ?? "0.35");
 
 const VECTOR_WEIGHT = 0.75;
 const KEYWORD_WEIGHT = 0.25;

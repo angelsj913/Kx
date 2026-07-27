@@ -1,6 +1,17 @@
-import { retrieveChunks, type RankedChunk } from "@/lib/ragSearch";
+import { retrieveChunks } from "@/lib/ragSearch";
+import { MIN_CITATION_SCORE } from "@/lib/ragHybrid";
+import {
+  rankedChunksToCitations,
+  webHitsToCitations,
+  type ChatCitation,
+} from "@/lib/chatCitations";
 import { formatLearnedInstruction, retrieveLearnedContext } from "@/lib/userLearning";
 import { citationRules } from "@/lib/prompts/registry";
+import {
+  formatWebSearchInstruction,
+  searchWeb,
+  shouldUseWebSearch,
+} from "@/lib/webSearch";
 
 const RAG_TOP_K = 4;
 
@@ -35,7 +46,7 @@ function buildZeffSystemPrompt(): string {
 
 export interface ZeffRuntimeContext {
   instruction: string;
-  citations: RankedChunk[];
+  citations: ChatCitation[];
 }
 
 export async function buildZeffRuntimeInstruction(args: {
@@ -56,7 +67,8 @@ export async function buildZeffRuntimeContext(args: {
 }): Promise<ZeffRuntimeContext> {
   const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt()}`];
   const query = args.query.trim();
-  let citations: RankedChunk[] = [];
+  let citations: ChatCitation[] = [];
+  let maxRagScore: number | null = null;
 
   if (query) {
     try {
@@ -71,8 +83,12 @@ export async function buildZeffRuntimeContext(args: {
         k: RAG_TOP_K,
       });
 
-      if (!empty && ranked.length) {
-        citations = ranked;
+      const ragRelevant =
+        !empty && ranked.length > 0 && ranked[0].score >= MIN_CITATION_SCORE;
+
+      if (ragRelevant) {
+        maxRagScore = ranked[0].score;
+        citations = rankedChunksToCitations(ranked);
         const context = ranked
           .map((r) => `[${r.n}] ${r.title}\n${r.content}`)
           .join("\n\n");
@@ -86,10 +102,19 @@ export async function buildZeffRuntimeContext(args: {
             context,
           ].join("\n"),
         );
-      } else if (!empty) {
+      } else if (!empty && ranked.length) {
+        maxRagScore = ranked[0].score;
         sections.push(
           "[검색 결과] 색인된 문서는 있으나 이번 질문과의 관련도가 낮습니다. 추측하지 말고 근거 부족을 명시하세요.",
         );
+      }
+
+      if (shouldUseWebSearch(query, maxRagScore)) {
+        const webHits = await searchWeb(query);
+        if (webHits.length) {
+          citations = [...citations, ...webHitsToCitations(webHits)];
+          sections.push(formatWebSearchInstruction(webHits));
+        }
       }
     } catch (err) {
       console.warn("[zeffContext] runtime context skipped:", err);

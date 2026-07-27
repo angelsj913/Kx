@@ -32,6 +32,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Environment
 
 - `ADMIN_EMAILS` — comma-separated admin allowlist (required in production). Used by `/admin` routes and the header admin link. See `src/lib/admin.ts`.
+- `TAVILY_API_KEY` — optional. Enables web search fallback when RAG relevance is low (legal/factual queries). Used by `src/lib/webSearch.ts`.
+- `MIN_RETRIEVAL_SCORE` — optional, default `0.35`. Minimum hybrid score for RAG chunk retrieval.
+- `MIN_CITATION_SCORE` — optional, default `0.35`. Minimum top RAG score before library citations are shown.
 
 ## Deploy on Vercel
 

@@ -24,7 +24,7 @@ import {
 import type { ChatMessage } from "./gemini";
 import { listConfiguredProviders } from "./openaiCompat";
 import { chatVerifyLight, chatVerifyDeep, chatBaseSystem } from "./prompts/registry";
-import type { RankedChunk } from "./ragSearch";
+import type { ChatCitation } from "./chatCitations";
 import {
   formatSkillPackInstruction,
   selectSkillPacks,
@@ -55,8 +55,8 @@ export interface BackendRouteResult {
   providersTried?: string[];
   /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 (스트리밍 전용) */
   interrupted?: boolean;
-  /** RAG 출처 (ChatWorkspace citation cards) */
-  citations?: RankedChunk[];
+  /** RAG·웹 출처 (ChatWorkspace citation cards) */
+  citations?: ChatCitation[];
 }
 
 const VERIFY_LIGHT = chatVerifyLight;
@@ -140,7 +140,7 @@ export async function runBackendRoute(args: {
   modelTier?: ModelTier;
   qualityTier?: QualityTier;
   extraSystemInstruction?: string;
-  citations?: RankedChunk[];
+  citations?: ChatCitation[];
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: string; stage: RouteStage }) => void;
   /** 자유 채팅 초안 생성 델타를 실시간 중계한다(퀵툴 경로는 호출하지 않음). */
