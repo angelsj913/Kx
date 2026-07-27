@@ -77,7 +77,7 @@ const ko = {
   "lecture.highlight3": "복습 포인트 자동 추출",
 
   "grid.title": "ZEFF AI 기능 모음",
-  "grid.subtitle": "채팅, 파일 생성·미리보기, 공유 서재, 다국어 워크스페이스까지 — 로그인 후 바로 사용하세요.",
+  "grid.subtitle": "채팅, 파일 생성·미리보기, 다국어 워크스페이스까지 — 로그인 후 바로 사용하세요.",
   "grid.bookChat.label": "Book Chat",
   "grid.bookChat.desc": "내 서재에 올려둔 책과 자유롭게 대화하세요.",
   "grid.library.label": "내 서재 · 공유 서재",

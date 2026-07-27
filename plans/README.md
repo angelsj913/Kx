@@ -12,7 +12,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [001](./001-revert-external-skills-commit.md) | Revert commit 06c604a (external skill packs) | P1 | S | — | DONE |
 | [002](./002-landing-footer-back-nav.md) | Footer layout + landing back → home hero | P1 | S | — | DONE |
 | [003](./003-landing-header-menu-download-hide.md) | Header/menu color sync + hide download UX | P1 | M | — | DONE |
-| [004](./004-landing-scroll-sections-unique.md) | Differentiate scroll demo sections + library promo | P1 | L | 003 | TODO |
+| [004](./004-landing-scroll-sections-unique.md) | Differentiate scroll demo sections + library promo | P1 | L | 003 | DONE |
 | [005](./005-landing-nothing-design-pass.md) | Nothing-design token pass on landing | P2 | L | 004 | TODO |
 | [006](./006-copy-humanize-landing-workspace.md) | Humanize landing + workspace copy | P1 | M | — | TODO |
 | [007](./007-admin-panel-discovery.md) | Restore admin panel discoverability | P1 | S | — | TODO |

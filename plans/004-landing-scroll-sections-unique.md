@@ -61,9 +61,9 @@ Preserve `prefers-reduced-motion` static fallbacks in both components.
 
 ## Done criteria
 
-- [ ] 7 scene mocks use at least 4 distinct layout patterns (visual review)
-- [ ] Library promoted in one primary homepage section
-- [ ] No duplicate library paragraph in two adjacent sections
+- [x] 7 scene mocks use at least 4 distinct layout patterns (visual review)
+- [x] Library promoted in one primary homepage section
+- [x] No duplicate library paragraph in two adjacent sections
 
 ## STOP conditions
 
