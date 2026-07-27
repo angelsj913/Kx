@@ -214,14 +214,15 @@ export async function POST(request: Request) {
   const resolvedSessionId = chatSession.id;
 
   // 입력 검열 — 사용자 메시지·첨부 저장 / 장기 기억 학습 전에 수행
+  // regenerate 는 DB에 저장된 원문을 아래에서 다시 검열한다.
   const moderationSubject = text.trim()
     ? text
     : uploads.map((f) => f.name).filter(Boolean).join("\n");
-  const earlyMod =
+  let earlyMod =
     !regenerate && moderationSubject.trim()
       ? moderateInput(moderationSubject)
       : null;
-  const moderationBlocked =
+  let moderationBlocked =
     earlyMod != null && !earlyMod.allowed && earlyMod.category !== "allowed";
 
   let storedAttachments: StoredAttachment[] = [];
@@ -239,6 +240,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
       }
       text = lastUser.text;
+      const regenMod = text.trim() ? moderateInput(text) : null;
+      if (regenMod && !regenMod.allowed && regenMod.category !== "allowed") {
+        earlyMod = regenMod;
+        moderationBlocked = true;
+      }
       const reloaded = await reloadAttachmentsFromMessage(lastUser.attachments);
       storedAttachments = reloaded.stored;
       inlineFiles = reloaded.inline;

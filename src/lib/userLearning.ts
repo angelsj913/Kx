@@ -63,48 +63,6 @@ export async function learnFromUserMessage(input: {
   });
 }
 
-/** 피드백 집계 → UserAiProfile 업데이트 */
-export async function aggregateFeedbackForUser(userId: string): Promise<void> {
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const feedbacks = await prisma.answerFeedback.findMany({
-    where: { userId, createdAt: { gte: since } },
-    select: { toolId: true, rating: true, reason: true },
-  });
-  if (!feedbacks.length) return;
-
-  const toolCounts = new Map<string, number>();
-  const badPatterns: string[] = [];
-  for (const f of feedbacks) {
-    if (f.toolId) toolCounts.set(f.toolId, (toolCounts.get(f.toolId) ?? 0) + 1);
-    if (f.rating === -1 && f.reason?.trim()) {
-      badPatterns.push(f.reason.trim().slice(0, 200));
-    }
-  }
-
-  const commonToolIds = [...toolCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([id]) => id);
-
-  const negativePatterns =
-    badPatterns.length > 0
-      ? { recent: [...new Set(badPatterns)].slice(0, 10) }
-      : undefined;
-
-  await prisma.userAiProfile.upsert({
-    where: { userId },
-    create: {
-      userId,
-      commonToolIds,
-      negativePatterns: negativePatterns ?? undefined,
-    },
-    update: {
-      commonToolIds,
-      negativePatterns: negativePatterns ?? undefined,
-    },
-  });
-}
-
 /** thumbs-up Q&A를 LearnedQaPair에 저장 */
 export async function saveLearnedQaPair(input: {
   userId: string;

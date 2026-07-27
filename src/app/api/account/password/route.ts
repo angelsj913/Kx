@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { requireUserId } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
-import { checkPasswordStrength } from "@/lib/password";
+import { BCRYPT_COST, checkPasswordStrength } from "@/lib/password";
 import { friendlyError } from "@/lib/errors";
 import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
 import { issueOtp, verifyOtp } from "@/lib/otp";
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
     // 비밀번호 변경 시 sessionVersion을 올려 다른 기기의 기존 JWT를 모두 무효화한다.
     await prisma.user.update({
       where: { id: user.id },

@@ -49,16 +49,6 @@ export interface ZeffRuntimeContext {
   citations: ChatCitation[];
 }
 
-export async function buildZeffRuntimeInstruction(args: {
-  userId: string;
-  workspaceId: string | null;
-  query: string;
-  language?: string | null;
-}): Promise<string> {
-  const ctx = await buildZeffRuntimeContext(args);
-  return ctx.instruction;
-}
-
 export async function buildZeffRuntimeContext(args: {
   userId: string;
   workspaceId: string | null;

@@ -24,14 +24,25 @@
 
 ## Actions this turn
 
-1. Cap `effectiveModelTier` so quality never exceeds plan `modelTier`
-2. Narrow `shouldUseWebSearch`
-3. Null-safe Context Dock snippet
-4. Moderation before user persist + attachment filename probe
-5. Wire `maxOutputTokens` into generate path (gemini + openai-compat)
-6. Remove unused PPT slide master
-7. Fix imagePrompt typo
-8. Re-lint / tsc / push PR
+1. Cap `effectiveModelTier` so quality never exceeds plan `modelTier` — **DONE**
+2. Narrow `shouldUseWebSearch` — **DONE** (weak RAG ∧ legal/factual/current-events)
+3. Null-safe Context Dock snippet — **DONE**
+4. Moderation before user persist + attachment filename probe — **DONE**
+5. Wire `maxOutputTokens` into generate path (gemini + openai-compat) — **DONE**
+6. Remove unused PPT slide master — **DONE**
+7. Fix imagePrompt typo — **DONE**
+8. Re-lint / tsc / push PR — **DONE**
+
+## Verification (runtime)
+
+```
+effectiveModelTier('standard','high') → standard
+effectiveModelTier('priority','high') → priority
+shouldUseWebSearch('hello', null) → false
+shouldUseWebSearch('흉기 소지 법', null) → true
+npm run lint → exit 0 (2 pre-existing warnings)
+npx tsc --noEmit → pass
+```
 
 ## Deferred (not wrong, out of minimal-fix scope)
 

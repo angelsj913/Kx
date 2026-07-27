@@ -175,6 +175,16 @@ const ZEFF_TOOL: AgentToolSpec = {
       return { terminal: false, text: `알 수 없는 도구입니다: ${toolId}` };
     }
     if (!instruction) return { terminal: false, text: "요청 내용이 비어 있습니다." };
+
+    const { moderateInput } = await import("@/lib/moderation");
+    const mod = moderateInput(instruction);
+    if (!mod.allowed && mod.category !== "allowed") {
+      return {
+        terminal: false,
+        text: "요청이 안전 정책에 의해 차단되어 도구를 실행할 수 없습니다.",
+      };
+    }
+
     ctx.onStatus?.(`${toolId} 생성 중…`);
     const result = await runToolGeneration({
       toolId,

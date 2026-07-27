@@ -16,6 +16,10 @@ export async function requireSecurityAdmin() {
   if (!isAdminSession(session) || !session.user?.id) {
     return null;
   }
+  const { isAdminMfaVerified } = await import("@/lib/adminMfa");
+  if (!(await isAdminMfaVerified(session.user.id))) {
+    return null;
+  }
   return session;
 }
 

@@ -183,9 +183,3 @@ export function buildImagePrompt(rawInput: string): string {
 
   return prompt;
 }
-
-/** golden eval — still-life drift 회귀 방지 */
-export function imagePromptPassesGolden(prompt: string): boolean {
-  if (/still life object on a table/i.test(prompt)) return false;
-  return prompt.includes("Draw exactly what the user asked for");
-}

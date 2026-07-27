@@ -916,12 +916,24 @@ export default function ChatWorkspace({
                       outputType={m.outputType}
                       deck={
                         m.outputType === "pptx" && m.resultData
-                          ? JSON.parse(m.resultData)
+                          ? (() => {
+                              try {
+                                return JSON.parse(m.resultData);
+                              } catch {
+                                return undefined;
+                              }
+                            })()
                           : undefined
                       }
                       workbook={
                         m.outputType === "xlsx" && m.resultData
-                          ? JSON.parse(m.resultData)
+                          ? (() => {
+                              try {
+                                return JSON.parse(m.resultData);
+                              } catch {
+                                return undefined;
+                              }
+                            })()
                           : undefined
                       }
                       file={
@@ -973,12 +985,25 @@ export default function ChatWorkspace({
                   </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
-                    <StructuredResultView
-                      key={m.id}
-                      id={m.id}
-                      kind={m.structuredKind as StructuredKind}
-                      data={JSON.parse(m.resultData)}
-                    />
+                    {(() => {
+                      try {
+                        const data = JSON.parse(m.resultData);
+                        return (
+                          <StructuredResultView
+                            key={m.id}
+                            id={m.id}
+                            kind={m.structuredKind as StructuredKind}
+                            data={data}
+                          />
+                        );
+                      } catch {
+                        return (
+                          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                            구조화 결과를 표시할 수 없습니다.
+                          </p>
+                        );
+                      }
+                    })()}
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                     <ModelFeedback
                       messageId={m.id}

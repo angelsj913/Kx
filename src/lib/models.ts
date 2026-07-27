@@ -122,7 +122,6 @@ const DS_PRO: ModelDef = {
   model: "deepseek-v4-pro",
   cheap: true,
 };
-export const DEEPSEEK_MODELS: ModelDef[] = [DS_FLASH, DS_CHAT, DS_PRO];
 
 // ── OpenRouter free ──
 export const OPENROUTER_FREE_CHAT: ModelDef[] = [
@@ -150,19 +149,6 @@ export const AGENT_MODELS: ModelDef[] = [
   { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", free: true },
   { provider: "deepseek", model: "deepseek-chat", cheap: true },
 ];
-
-/** Pro/Professional은 DeepSeek(툴콜 안정)·강한 무료 모델을 앞으로. */
-export function agentModelsForTier(tier: ModelTier = "standard"): ModelDef[] {
-  const base = AGENT_MODELS;
-  if (tier === "standard") return base;
-  const deepseek = base.filter((m) => m.provider === "deepseek");
-  const rest = base.filter((m) => m.provider !== "deepseek");
-  if (tier === "top") {
-    return [...deepseek, ...rest];
-  }
-  // priority: deepseek chat 우선, 이어서 무료 풀
-  return [...deepseek, ...rest];
-}
 
 export const MAX_FREE_ATTEMPTS = 6;
 
@@ -337,20 +323,6 @@ export async function buildVisionCandidates(): Promise<ModelDef[]> {
   return available;
 }
 
-/** 이미지 생성 비용 순위 — 무료(Pollinations) → Gemini → OpenRouter paid. */
-export const IMAGE_GEN_COST_ORDER: ImageGenCandidate[] = [
-  {
-    provider: "pollinations",
-    model: process.env.POLLINATIONS_IMAGE_MODEL || "flux",
-    free: true,
-  },
-  { provider: "gemini", model: "gemini-2.5-flash-image", free: true },
-  {
-    provider: "openrouter",
-    model: process.env.OPENROUTER_IMAGE_MODEL || "bytedance-seed/seedream-4.5",
-  },
-];
-
 /**
  * 이미지 생성 후보 — 비용 오름차순 단일 폴백 체인.
  * rank 0: Pollinations(완전 무료, 키 불필요)
@@ -403,7 +375,6 @@ const MULTI_CHAIN: ModelDef[] = interleaveFreePaid(
 );
 
 export const FALLBACK_MODELS: ModelDef[] = TEXT_CHAIN;
-export const MULTIMODAL_MODELS: ModelDef[] = MULTI_CHAIN;
 
 export function modelsForTier(
   tier: ModelTier,

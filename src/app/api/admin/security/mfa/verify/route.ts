@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const gate = await requireAdminApi();
+  const gate = await requireAdminApi({ skipMfa: true });
   if (gate instanceof NextResponse) return gate;
   const email = gate.user.email;
   if (!email) {

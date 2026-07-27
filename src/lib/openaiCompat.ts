@@ -669,11 +669,6 @@ export async function getOpenRouterVisionModelsPaid(): Promise<string[]> {
   }
 }
 
-/** @deprecated Use getOpenRouterVisionModelsFree() for interleaved vision routing. */
-export async function getOpenRouterVisionModels(): Promise<string[]> {
-  return getOpenRouterVisionModelsFree();
-}
-
 /**
  * 비용 순서 OpenRouter 이미지 폴백 (primary 제외).
  * API 카탈로그 전체를 쓰지 않는다 — 크레딧 부족 시 40+회 연쇄 실패를 막기 위해

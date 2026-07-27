@@ -70,12 +70,6 @@ export function useScrollProgress<T extends HTMLElement>(opts?: { topOffset?: nu
   return { sectionRef, p, reducedMotion, mounted };
 }
 
-/** 균등 밴드 scene index (히스테리시스 없음). */
-export function sceneIndex(p: number, count: number): number {
-  if (count <= 1) return 0;
-  return Math.min(count - 1, Math.floor(p * count));
-}
-
 /**
  * 경계에서 바로 넘어가지 않도록 sticky 버퍼를 둔 scene index.
  * sticky=0.08 → 각 장면 경계의 8% 구간에서는 이전 장면을 유지(전진 시).

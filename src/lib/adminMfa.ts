@@ -10,7 +10,13 @@ function sign(payload: string, secret: string) {
 }
 
 export function adminMfaSecret() {
-  return process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev-admin-mfa";
+  const secret =
+    process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET (또는 NEXTAUTH_SECRET)이 필요합니다.");
+  }
+  return "dev-admin-mfa";
 }
 
 export async function setAdminMfaVerified(userId: string) {
@@ -22,7 +28,8 @@ export async function setAdminMfaVerified(userId: string) {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/admin",
+    // /api/admin/** 도 쿠키를 보내야 API MFA 게이트가 동작한다
+    path: "/",
     maxAge: TTL_MS / 1000,
   });
 }
@@ -34,7 +41,13 @@ export async function isAdminMfaVerified(userId: string): Promise<boolean> {
   const [payload, sig] = raw.split(".");
   if (!payload || !sig) return false;
   const expected = sign(payload, adminMfaSecret());
-  if (sig !== expected) return false;
+  try {
+    const a = Buffer.from(sig, "utf8");
+    const b = Buffer.from(expected, "utf8");
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  } catch {
+    return false;
+  }
   const [uid, expStr] = payload.split(":");
   if (uid !== userId) return false;
   const exp = Number(expStr);

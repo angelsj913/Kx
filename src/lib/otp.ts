@@ -97,25 +97,36 @@ export async function verifyOtp(
 }
 
 /**
- * 최근(30분 이내) 인증에 성공(소비)한 기록이 있는지 — 회원가입 최종 처리·비밀번호
- * 재설정 직전 재확인용. 이 함수가 false를 반환하는 이유는 "코드를 아예 발송한 적
- * 없음"(가입 안 된 이메일로 비번 재설정 시도 등)과 "인증을 아직 안 함"을 구분하지
- * 않는다 — 둘 다 같은 일반 메시지로 처리되게 해서, 계정 존재 여부가 이 단계에서
- * 새어나가지 않게 한다.
+ * 최근 인증에 성공(소비)한 기록을 **한 번만** 소모한다.
+ * signup / reset-password 최종 처리용 — 두 번째 호출은 false.
+ * (구 hasRecentVerifiedOtp 는 30분 창에서 재사용 가능해 ATO 위험)
  */
-export async function hasRecentVerifiedOtp(
+export async function consumeRecentVerifiedOtp(
   identifier: string,
-  purpose: OtpPurpose
+  purpose: OtpPurpose,
 ): Promise<boolean> {
   const row = await prisma.verificationCode.findFirst({
     where: {
       identifier,
       purpose,
-      consumedAt: { not: null, gte: new Date(Date.now() - 30 * 60 * 1000) },
+      consumedAt: { not: null, gte: new Date(Date.now() - 10 * 60 * 1000) },
     },
     orderBy: { consumedAt: "desc" },
   });
-  return !!row;
+  if (!row) return false;
+
+  const deleted = await prisma.verificationCode.deleteMany({
+    where: { id: row.id },
+  });
+  return deleted.count === 1;
+}
+
+/** @deprecated Prefer consumeRecentVerifiedOtp for signup/reset completion. */
+export async function hasRecentVerifiedOtp(
+  identifier: string,
+  purpose: OtpPurpose
+): Promise<boolean> {
+  return consumeRecentVerifiedOtp(identifier, purpose);
 }
 
 type MailResult = {
