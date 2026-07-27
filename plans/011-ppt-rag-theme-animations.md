@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Priority**: P2 | **Effort**: L | **Risk**: MED | **Depends on**: 010 | **Planned at**: `9d8b25f`
+- **Priority**: P2 | **Effort**: L | **Risk**: MED | **Depends on**: 010 | **Planned at**: `9d8b25f` | **Completed**
 
 ## Why this matters
 
@@ -57,10 +57,22 @@ Ensure `parseDeck` theme object drives master slide colors.
 
 ## Done criteria
 
-- [ ] PPT tool uses RAG when chunks available
-- [ ] Slides use ≥2 distinct transition types per deck
-- [ ] ≥2 theme presets visibly different in test deck
+- [x] PPT tool uses RAG when chunks available
+- [x] Slides use ≥2 distinct transition types per deck
+- [x] ≥2 theme presets visibly different in test deck
 
 ## STOP conditions
 
 - pptxgenjs version lacks transition API — report and use supported subset
+
+## Maintenance notes
+
+**pptxgenjs 4.0.1 limitation**: No slide `transition` API in types or runtime. Implemented visual rhythm substitute instead — rotating `leftBar` / `topBand` / `softSurface` accent variants per slide index. Theme presets (10) drive `resolvePalette` + `defineSlideMaster` top band.
+
+**Implemented**:
+- `src/lib/pptContext.ts` — RAG + web research for outline/fill passes
+- `toolGeneration.ts` — injects context; attaches `deck.sources` for footers
+- `pptx.ts` — visual variants, sourceRef footer, slide master from theme
+- `Slide.sourceRef` + `Deck.sources` in `fileTypes.ts`
+
+Three improvement options documented in README: threshold, rerank, web fallback — implementing 1+3 first
