@@ -20,7 +20,10 @@ export async function GET(
 
   const chatSession = await prisma.chatSession.findFirst({
     where: { id, ...(await itemAccessWhere(session.user.id)) },
-    include: { history: { orderBy: { createdAt: "asc" } } },
+    include: {
+      history: { orderBy: { createdAt: "asc" } },
+      libraryItem: { select: { id: true, title: true, fileName: true } },
+    },
   });
 
   if (!chatSession) {

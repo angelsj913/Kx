@@ -213,6 +213,35 @@ function buildContextSources(messages: Msg[]): ContextSource[] {
   return [];
 }
 
+interface AttachedLibraryItem {
+  id: string;
+  title: string;
+  fileName?: string;
+}
+
+const MAX_ATTACHED_LIBRARY = 8;
+
+function mergeAttachedLibrary(
+  citationSources: ContextSource[],
+  attached: AttachedLibraryItem[],
+): ContextSource[] {
+  if (!attached.length) return citationSources;
+  const seen = new Set(citationSources.map((s) => s.id));
+  const merged: ContextSource[] = [];
+  for (const item of attached) {
+    const id = `lib:${item.id}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    merged.push({
+      id,
+      title: item.title,
+      snippet: item.fileName ?? item.title,
+      source: "library",
+    });
+  }
+  return [...merged, ...citationSources];
+}
+
 function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
   const list: ChatArtifact[] = [];
   for (const m of messages) {
@@ -342,6 +371,7 @@ export default function ChatWorkspace({
   const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
+  const [attachedLibrary, setAttachedLibrary] = useState<AttachedLibraryItem[]>([]);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [attachAccept, setAttachAccept] = useState("");
   const [qualityTier, setQualityTier] = useState<QualityTier>(() => readStoredQualityTier());
@@ -417,6 +447,7 @@ export default function ChatWorkspace({
   useEffect(() => {
     // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
     setMessages([]);
+    setAttachedLibrary([]);
     setError("");
     setStatusKey(null);
     if (!sessionId) return;
@@ -427,6 +458,15 @@ export default function ChatWorkspace({
         const data = await res.json();
         if (!ignore && res.ok) {
           setMessages((data.session.history ?? []).map((m: Msg) => ({ ...m })));
+          const lib = data.session.libraryItem as
+            | { id: string; title: string; fileName?: string }
+            | null
+            | undefined;
+          if (lib?.id) {
+            setAttachedLibrary([
+              { id: lib.id, title: lib.title, fileName: lib.fileName },
+            ]);
+          }
         }
       } catch {
         // 무시
@@ -691,6 +731,12 @@ export default function ChatWorkspace({
         form.append("text", text);
         if (sessionId) form.append("sessionId", sessionId);
         if (quickToolId) form.append("quickToolId", quickToolId);
+        if (attachedLibrary.length) {
+          form.append(
+            "libraryItemIds",
+            JSON.stringify(attachedLibrary.map((a) => a.id)),
+          );
+        }
         for (const f of filesToUpload) form.append("files", f);
         return form;
       },
@@ -714,6 +760,12 @@ export default function ChatWorkspace({
       form.append("text", text);
       form.append("sessionId", sessionId);
       form.append("editMessageId", id);
+      if (attachedLibrary.length) {
+        form.append(
+          "libraryItemIds",
+          JSON.stringify(attachedLibrary.map((a) => a.id)),
+        );
+      }
       return form;
     });
   }
@@ -730,6 +782,12 @@ export default function ChatWorkspace({
       const form = new FormData();
       form.append("regenerate", "1");
       form.append("sessionId", sessionId);
+      if (attachedLibrary.length) {
+        form.append(
+          "libraryItemIds",
+          JSON.stringify(attachedLibrary.map((a) => a.id)),
+        );
+      }
       return form;
     });
   }
@@ -764,7 +822,23 @@ export default function ChatWorkspace({
   }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
-  const contextSources = useMemo(() => buildContextSources(messages), [messages]);
+  const contextSources = useMemo(
+    () => mergeAttachedLibrary(buildContextSources(messages), attachedLibrary),
+    [messages, attachedLibrary],
+  );
+
+  function attachLibraryItem(item: AttachedLibraryItem) {
+    setAttachedLibrary((prev) => {
+      if (prev.some((p) => p.id === item.id)) return prev;
+      if (prev.length >= MAX_ATTACHED_LIBRARY) return prev;
+      return [...prev, item];
+    });
+    setKbOpen(false);
+    if (!panelOpen) {
+      setPanelOpen(true);
+      window.localStorage.setItem(PANEL_OPEN_KEY, "1");
+    }
+  }
 
   function scrollToMessage(id?: string) {
     if (!id) return;
@@ -1264,6 +1338,30 @@ export default function ChatWorkspace({
             </div>
           )}
 
+          {attachedLibrary.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachedLibrary.map((item) => (
+                <span
+                  key={item.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-800 dark:text-emerald-200"
+                >
+                  <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                  <span className="max-w-[10rem] truncate">{item.title}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAttachedLibrary((prev) => prev.filter((a) => a.id !== item.id))
+                    }
+                    className="text-emerald-600/70 hover:text-red-500 dark:text-emerald-300/70 dark:hover:text-red-400"
+                    aria-label={t("library.delete")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
           {(listening || speaking) && (
             <div className="mb-2 flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/30 dark:text-blue-200">
               <span
@@ -1334,6 +1432,13 @@ export default function ChatWorkspace({
                 open={kbOpen}
                 onClose={() => setKbOpen(false)}
                 onOpenBookChat={onOpenBookChat}
+                onAttachToChat={(item) =>
+                  attachLibraryItem({
+                    id: item.id,
+                    title: item.title,
+                    fileName: item.fileName,
+                  })
+                }
               />
             </div>
 

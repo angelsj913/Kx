@@ -19,8 +19,8 @@
 | ponytail | Dead code | `defineSlideMaster(ZEFF_MASTER)` never used | **FIX** — remove |
 | ponytail + code-review | Typo | `전동\s*드rill` in imagePrompt | **FIX** |
 | code-review | Minor | Jailbreak hard-block vs plan strip | Keep (stricter; intentional) |
-| code-review | Minor | Golden harness skips `{cases:[]}` shape | **DEFER** — harness change separate |
-| code-review | Minor | Context Dock missing attachedLibraryIds | **DEFER** — plan MVP citations-only OK |
+| code-review | Minor | Golden harness skips `{cases:[]}` shape | **FIX** — loadGoldenCases wrapper |
+| code-review | Minor | Context Dock missing attachedLibraryIds | **FIX** — composer attach + Context Dock chips |
 
 ## Actions this turn
 
@@ -32,9 +32,10 @@
 6. Remove unused PPT slide master — **DONE**
 7. Fix imagePrompt typo — **DONE**
 8. Agent citation `resultData` on agent route — **DONE**
-9. Re-lint / tsc / push PR — **DONE**
+9. Golden harness `{cases:[]}` + moderation/image-prompt — **DONE**
+10. Context Dock attached-library chips — **DONE**
+11. Re-lint / tsc / push PR — **DONE**
 
 ## Deferred (not wrong, out of minimal-fix scope)
 
-- Eval harness wrapper support for moderation/image-prompt goldens
-- Composer attached-library chips in Context Dock
+(none — all review DEFER items closed)

@@ -16,13 +16,23 @@ const GOLDEN_DIR = join(ROOT, "docs/eval/golden");
 const live = process.argv.includes("--live");
 const results = [];
 
-function pass(name, detail) {
+function pass(name: string, detail?: string) {
   results.push({ name, ok: true, detail });
   console.log("PASS", name, detail ?? "");
 }
-function fail(name, detail) {
+function fail(name: string, detail?: string) {
   results.push({ name, ok: false, detail });
   console.log("FAIL", name, detail ?? "");
+}
+
+/** Golden JSON: raw array or `{ cases: [...] }` wrapper. */
+function loadGoldenCases(raw: unknown): Record<string, unknown>[] {
+  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
+  if (raw && typeof raw === "object") {
+    const cases = (raw as { cases?: unknown }).cases;
+    if (Array.isArray(cases)) return cases as Record<string, unknown>[];
+  }
+  return [];
 }
 
 // 1) smoke-tools
@@ -42,13 +52,49 @@ if (!existsSync(GOLDEN_DIR)) {
   let passed = 0;
 
   for (const file of files) {
-    const cases = JSON.parse(readFileSync(join(GOLDEN_DIR, file), "utf8"));
-    if (!Array.isArray(cases)) continue;
-    for (const c of cases) {
+    const cases = loadGoldenCases(JSON.parse(readFileSync(join(GOLDEN_DIR, file), "utf8")));
+    if (!cases.length) continue;
+    for (let ci = 0; ci < cases.length; ci++) {
+      const c = cases[ci]!;
       total++;
-      const name = `${file}::${c.id}`;
+      const name = `${file}::${String(c.id ?? ci)}`;
       try {
-        if (c.type === "ppt_parse") {
+        if (file === "moderation.json") {
+          const { moderateInput } = await import("../src/lib/moderation.ts");
+          const result = moderateInput(String(c.input ?? ""));
+          const expectBlocked = c.expect === "blocked";
+          const ok = expectBlocked ? !result.allowed : result.allowed;
+          if (ok) {
+            pass(name, expectBlocked ? result.category : "allowed");
+            passed++;
+          } else {
+            fail(
+              name,
+              `expected ${String(c.expect)}, got ${result.allowed ? "allowed" : result.category}`,
+            );
+          }
+        } else if (file === "image-prompt.json") {
+          const { buildImagePrompt } = await import("../src/lib/imagePrompt.ts");
+          const prompt = buildImagePrompt(String(c.input ?? ""));
+          const mustInclude = (c.mustInclude as string[] | undefined) ?? [];
+          const mustNotInclude = (c.mustNotInclude as string[] | undefined) ?? [];
+          const missing = mustInclude.filter((s) => !prompt.includes(s));
+          const forbidden = mustNotInclude.filter((s) => prompt.includes(s));
+          if (missing.length === 0 && forbidden.length === 0) {
+            pass(name, `${prompt.length} chars`);
+            passed++;
+          } else {
+            fail(
+              name,
+              [
+                missing.length ? `missing: ${missing.join(", ")}` : "",
+                forbidden.length ? `forbidden: ${forbidden.join(", ")}` : "",
+              ]
+                .filter(Boolean)
+                .join("; "),
+            );
+          }
+        } else if (c.type === "ppt_parse") {
           const { parseDeck } = await import("../src/lib/pptx.ts");
           parseDeck(JSON.stringify(c.input));
           pass(name);

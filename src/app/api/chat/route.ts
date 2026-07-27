@@ -36,6 +36,47 @@ import { logSecurityEvent } from "@/lib/security/program";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const MAX_ATTACHED_LIBRARY = 8;
+
+function parseLibraryItemIds(raw: unknown): string[] {
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((x): x is string => typeof x === "string" && !!x.trim())
+          .map((x) => x.trim());
+      }
+    } catch {
+      /* comma-separated fallback */
+    }
+    return raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((x): x is string => typeof x === "string" && !!x.trim())
+      .map((x) => x.trim());
+  }
+  return [];
+}
+
+async function resolveAttachedLibraryIds(
+  userId: string,
+  ids: string[],
+): Promise<string[]> {
+  const unique = [...new Set(ids)].slice(0, MAX_ATTACHED_LIBRARY);
+  if (!unique.length) return [];
+  const access = await itemAccessWhere(userId);
+  const items = await prisma.libraryItem.findMany({
+    where: { id: { in: unique }, ...access },
+    select: { id: true },
+  });
+  return items.map((i) => i.id);
+}
+
 interface StoredAttachment {
   url: string;
   filename: string;
@@ -69,6 +110,7 @@ export async function POST(request: Request) {
   let editMessageId: string | null = null;
   let qualityTier: QualityTier = "medium";
   const uploads: File[] = [];
+  let libraryItemIdsRaw: string[] = [];
 
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
@@ -78,6 +120,7 @@ export async function POST(request: Request) {
     regenerate = form.get("regenerate") === "1";
     editMessageId = (form.get("editMessageId") as string) || null;
     qualityTier = parseQualityTier(form.get("qualityTier"));
+    libraryItemIdsRaw = parseLibraryItemIds(form.get("libraryItemIds"));
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
     }
@@ -102,6 +145,7 @@ export async function POST(request: Request) {
     regenerate = body?.regenerate === true;
     editMessageId = typeof body?.editMessageId === "string" ? body.editMessageId : null;
     qualityTier = parseQualityTier(body?.qualityTier);
+    libraryItemIdsRaw = parseLibraryItemIds(body?.libraryItemIds);
   }
 
   // 재생성: 새 텍스트 없이 세션의 마지막 사용자 메시지를 그대로 재사용한다(아래에서 채움).
@@ -360,6 +404,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }
 
+  const attachedLibraryIds = await resolveAttachedLibraryIds(userId, libraryItemIdsRaw);
+
   const encoder = new TextEncoder();
   let streamCancelled = false;
   const stream = new ReadableStream({
@@ -444,6 +490,7 @@ export async function POST(request: Request) {
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
             language: userLanguage,
+            libraryItemIds: attachedLibraryIds,
           });
 
           const agentCitationPayload =
@@ -769,6 +816,7 @@ export async function POST(request: Request) {
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
             language: userLanguage,
+            libraryItemIds: attachedLibraryIds,
           });
 
           const result = await runBackendRoute({

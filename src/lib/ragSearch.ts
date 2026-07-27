@@ -42,13 +42,22 @@ export async function retrieveChunks(input: {
   userId: string;
   workspaceId?: string | null;
   libraryItemId?: string | null;
+  /** 여러 서재 항목으로 검색 범위를 제한할 때 */
+  libraryItemIds?: string[];
   query: string;
   k?: number;
 }): Promise<RetrieveResult> {
   const k = input.k ?? 6;
+  const scopedIds =
+    input.libraryItemIds?.filter(Boolean) ??
+    (input.libraryItemId ? [input.libraryItemId] : []);
   const where = {
     ...listWhere({ workspaceId: input.workspaceId ?? null }, input.userId),
-    ...(input.libraryItemId ? { libraryItemId: input.libraryItemId } : {}),
+    ...(scopedIds.length === 1
+      ? { libraryItemId: scopedIds[0] }
+      : scopedIds.length > 1
+        ? { libraryItemId: { in: scopedIds } }
+        : {}),
   };
 
   const chunks = await prisma.documentChunk.findMany({

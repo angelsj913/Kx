@@ -54,11 +54,20 @@ export async function buildZeffRuntimeContext(args: {
   workspaceId: string | null;
   query: string;
   language?: string | null;
+  /** composer에서 첨부한 서재 항목 — RAG 검색 범위 제한 */
+  libraryItemIds?: string[];
 }): Promise<ZeffRuntimeContext> {
   const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt()}`];
   const query = args.query.trim();
   let citations: ChatCitation[] = [];
   let maxRagScore: number | null = null;
+  const scopedIds = args.libraryItemIds?.filter(Boolean) ?? [];
+
+  if (scopedIds.length) {
+    sections.push(
+      `[첨부된 서재 문서 ${scopedIds.length}건]\n아래 ID의 문서만 우선 참고합니다: ${scopedIds.join(", ")}`,
+    );
+  }
 
   if (query) {
     try {
@@ -71,6 +80,7 @@ export async function buildZeffRuntimeContext(args: {
         workspaceId: args.workspaceId,
         query,
         k: RAG_TOP_K,
+        ...(scopedIds.length ? { libraryItemIds: scopedIds } : {}),
       });
 
       const ragRelevant =
@@ -123,6 +133,7 @@ export async function assembleRuntimeContext(args: {
   workspaceId: string | null;
   query: string;
   language?: string | null;
+  libraryItemIds?: string[];
 }): Promise<ZeffRuntimeContext> {
   return buildZeffRuntimeContext(args);
 }
