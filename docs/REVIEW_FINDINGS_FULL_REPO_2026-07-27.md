@@ -56,11 +56,14 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 - account password: `BCRYPT_COST`
 - Ponytail cuts: LibraryView, AdminAccessDenied, prompts barrel, dead exports/constants
 
-## Deferred (logged)
+## Follow-up implemented (deferred → done)
 
-- Public Blob → private
-- Workspace membership revoke on kick
-- sessionVersion fail-open
-- review/rag quota
-- library blob ownership finalize
-- Paymentwall blind downgrade
+| Item | Status |
+|------|--------|
+| Quota + rate limit `/api/review/generate` | DONE (chat quota + 20/hr) |
+| Quota + rate limit `/api/rag/index` | DONE (chat quota + 30/hr) |
+| Library blob finalize ownership | DONE (`library/${userId}/` on token + finalize) |
+| Paymentwall blind downgrade | DONE (grantedPlan + matching paid order) |
+| Workspace kick access revoke | DONE (`itemAccessWhere` / `listWhere` membership for team rows) |
+| Public Blob → private | **STOP** — signed-URL UX across chat/library/citations; dedicated PR |
+| sessionVersion fail-open | still deferred (availability tradeoff) |

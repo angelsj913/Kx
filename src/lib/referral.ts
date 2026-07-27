@@ -10,6 +10,7 @@
  * - 추천인당 성사 상한 (REFERRAL_MAX_PER_REFERRER)
  * - 추천 보상으로 쌓을 수 있는 Pro 잔여일 상한 (REFERRAL_MAX_GRANT_DAYS)
  */
+import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 
 export const REFERRAL_REWARD_DAYS = 7;
@@ -22,7 +23,7 @@ export const REFERRAL_MAX_GRANT_DAYS = 28;
 function randomCode(): string {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   let s = "";
-  for (let i = 0; i < 8; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 8; i++) s += alphabet[randomInt(alphabet.length)];
   return s;
 }
 
@@ -59,13 +60,17 @@ function extendedUntilCapped(current: Date | null, days: number, maxDays: number
   return new Date(Math.min(proposed, cap));
 }
 
-async function grantProDays(userId: string, days: number): Promise<void> {
-  const s = await prisma.userSettings.findUnique({
+async function grantProDays(
+  userId: string,
+  days: number,
+  db: Pick<typeof prisma, "userSettings"> = prisma,
+): Promise<void> {
+  const s = await db.userSettings.findUnique({
     where: { userId },
     select: { grantedPlanUntil: true },
   });
   const until = extendedUntilCapped(s?.grantedPlanUntil ?? null, days, REFERRAL_MAX_GRANT_DAYS);
-  await prisma.userSettings.upsert({
+  await db.userSettings.upsert({
     where: { userId },
     create: { userId, grantedPlan: "pro", grantedPlanUntil: until },
     update: { grantedPlan: "pro", grantedPlanUntil: until },
@@ -121,13 +126,35 @@ export async function redeemReferral(userId: string, codeRaw: string): Promise<R
     };
   }
 
-  await prisma.referral.create({
-    data: { referrerId: referrer.id, referredUserId: userId },
-  });
-  await Promise.all([
-    grantProDays(referrer.id, REFERRAL_REWARD_DAYS),
-    grantProDays(userId, REFERRAL_REWARD_DAYS),
-  ]);
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 트랜잭션 안에서도 한도·중복을 재확인 (경쟁 조건)
+      const dup = await tx.referral.findUnique({ where: { referredUserId: userId } });
+      if (dup) throw new Error("ALREADY");
+      const count = await tx.referral.count({ where: { referrerId: referrer.id } });
+      if (count >= REFERRAL_MAX_PER_REFERRER) throw new Error("LIMIT");
+
+      await tx.referral.create({
+        data: { referrerId: referrer.id, referredUserId: userId },
+      });
+      await grantProDays(referrer.id, REFERRAL_REWARD_DAYS, tx);
+      await grantProDays(userId, REFERRAL_REWARD_DAYS, tx);
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "ALREADY") {
+      return { ok: false, error: "이미 추천 코드를 사용했습니다." };
+    }
+    if (err instanceof Error && err.message === "LIMIT") {
+      return {
+        ok: false,
+        error: `이 추천 코드는 초대 한도(${REFERRAL_MAX_PER_REFERRER}명)에 도달했습니다.`,
+      };
+    }
+    // unique 제약 경쟁
+    const again = await prisma.referral.findUnique({ where: { referredUserId: userId } });
+    if (again) return { ok: false, error: "이미 추천 코드를 사용했습니다." };
+    throw err;
+  }
 
   return { ok: true, rewardDays: REFERRAL_REWARD_DAYS };
 }
