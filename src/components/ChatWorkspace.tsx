@@ -7,7 +7,6 @@ import {
   Send,
   Paperclip,
   X,
-  Sparkles,
   User,
   FileText,
   ImageIcon,
@@ -762,8 +761,8 @@ export default function ChatWorkspace({
         >
           {messages.length === 0 && !loading && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 shadow-lg shadow-blue-600/30">
-                <Sparkles className="h-7 w-7 text-white" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/60">
+                <Logo size="sm" withWordmark={false} />
               </div>
               <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("chat.empty")}</p>
               <p className="max-w-sm text-xs text-slate-400 dark:text-slate-500">
@@ -870,8 +869,8 @@ export default function ChatWorkspace({
                 }}
                 className="flex gap-2.5"
               >
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/60">
+                  <Logo size="sm" withWordmark={false} />
                 </div>
                 {m.outputType === "pptx" || m.outputType === "xlsx" ? (
                   <div className="min-w-0 flex-1">
@@ -919,10 +918,11 @@ export default function ChatWorkspace({
                       <a
                         href={m.fileUrl}
                         download={m.fileName || "image.png"}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        title={t("chat.download")}
+                        aria-label={t("chat.download")}
                       >
-                        <Download className="h-3 w-3" />
-                        {t("chat.download")}
+                        <Download className="h-3.5 w-3.5" />
                       </a>
                     </div>
                     <ModelFeedback
@@ -974,18 +974,18 @@ export default function ChatWorkspace({
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
                     {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        <CopyButton text={m.text} />
+                        <CopyButton text={m.text} iconOnly />
                         {m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
                           !loading && (
                             <button
                               type="button"
                               onClick={() => void regenerateLast()}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
                               title={t("chat.regenerate")}
+                              aria-label={t("chat.regenerate")}
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              {t("chat.regenerate")}
+                              <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           )}
                       </div>
@@ -998,13 +998,14 @@ export default function ChatWorkspace({
                             download={m.fileName}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300"
+                            className="inline-flex items-center justify-center rounded-lg border border-blue-500/40 bg-blue-600/10 p-1.5 text-blue-700 dark:text-blue-300"
+                            title={t("chat.saveMd")}
+                            aria-label={t("chat.saveMd")}
                           >
-                            <Download className="h-3 w-3" />
-                            {t("chat.saveMd")}
+                            <Download className="h-3.5 w-3.5" />
                           </a>
                         )}
-                        <CopyButton text={m.text} />
+                        <CopyButton text={m.text} iconOnly />
                         <button
                           type="button"
                           onClick={() =>
@@ -1013,20 +1014,22 @@ export default function ChatWorkspace({
                               m.text,
                             )
                           }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("resultPanel.saveTxt")}
+                          aria-label={t("resultPanel.saveTxt")}
                         >
-                          TXT
+                          <FileText className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() =>
                             openPrintableHtml(m.fileName ?? t("chat.zeffDocument"), m.text)
                           }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("chat.printToPdfTitle")}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.printPdf")}
+                          aria-label={t("chat.printPdf")}
                         >
-                          <Printer className="h-3 w-3" />
-                          {t("chat.printPdf")}
+                          <Printer className="h-3.5 w-3.5" />
                         </button>
                         {m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
@@ -1034,11 +1037,11 @@ export default function ChatWorkspace({
                             <button
                               type="button"
                               onClick={() => void regenerateLast()}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
                               title={t("chat.regenerate")}
+                              aria-label={t("chat.regenerate")}
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              {t("chat.regenerate")}
+                              <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           )}
                       </div>
@@ -1058,8 +1061,13 @@ export default function ChatWorkspace({
 
           {/* AI 작업 중 — 응답이 시작되기 전에는 로고 스핀만 표시한다. */}
           {loading && !streamingId && (
-            <div className="flex h-10 items-center">
+            <div className="flex items-center gap-2.5">
               <Logo size="sm" withWordmark={false} spin />
+              {statusKey && (
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-300">
+                  {t(statusKey as Parameters<typeof t>[0])}
+                </span>
+              )}
             </div>
           )}
 
@@ -1076,7 +1084,7 @@ export default function ChatWorkspace({
         >
           <div className="mb-1.5 flex h-4 items-center px-1">
             <AnimatePresence mode="wait">
-              {statusKey && (
+              {statusKey && !(loading && !streamingId) && (
                 <motion.span
                   key={statusKey}
                   initial={{ opacity: 0, x: -4 }}

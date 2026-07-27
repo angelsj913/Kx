@@ -78,9 +78,9 @@ Hide text spans on feedback buttons; use `title` attribute.
 
 ## Done criteria
 
-- [ ] “모델 시도 중…” appears next to spinning logo, not above + menu
-- [ ] Model messages show Logo not Sparkles
-- [ ] Action row has no visible “복사/재생성/좋아요” text (aria-label present)
+- [x] “모델 시도 중…” appears next to spinning logo, not above + menu
+- [x] Model messages show Logo not Sparkles
+- [x] Action row has no visible “복사/재생성/좋아요” text (aria-label present)
 
 ## STOP conditions
 
