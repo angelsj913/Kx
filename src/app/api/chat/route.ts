@@ -28,6 +28,9 @@ import {
 } from "@/lib/attachmentLoader";
 import { embedTexts } from "@/lib/embeddings";
 import { isProviderSkipped } from "@/lib/providerHealth";
+import { moderateInput } from "@/lib/moderation";
+import { getModerationMessage } from "@/lib/moderationPolicy";
+import { logSecurityEvent } from "@/lib/security/program";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -337,6 +340,41 @@ export async function POST(request: Request) {
       }
 
       try {
+        if (text.trim()) {
+          const mod = moderateInput(text);
+          if (!mod.allowed && mod.category !== "allowed") {
+            if (mod.log) {
+              await logSecurityEvent("moderation_blocked", userId, {
+                category: mod.category,
+                rule: mod.matchedRule,
+              });
+            }
+            const policyText = getModerationMessage(
+              mod.category,
+              userLanguage,
+            );
+            const assistantRow = await prisma.chatHistory.create({
+              data: {
+                sessionId: resolvedSessionId,
+                role: "model",
+                text: policyText,
+                agentId: `moderation:${mod.category}`,
+              },
+            });
+            await prisma.chatSession.update({
+              where: { id: resolvedSessionId },
+              data: { updatedAt: new Date() },
+            });
+            await releaseReservations();
+            send({
+              type: "done",
+              sessionId: resolvedSessionId,
+              message: assistantRow,
+            });
+            return;
+          }
+        }
+
         if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
           // ── 에이전트: 도구를 스스로 골라 연쇄 호출 (멀티스텝 자동 승격 포함) ──
           send({
