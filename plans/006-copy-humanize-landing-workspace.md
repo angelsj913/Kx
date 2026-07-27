@@ -51,9 +51,9 @@ Humanize `chat.emptyHint`, `panel.emptyHint.*` — shorter, conversational.
 
 ## Done criteria
 
-- [ ] No “~지향합니다” more than once across company.about+vision
-- [ ] Prototype bullets state “experimental” clearly
-- [ ] Grep: `rg "함께 만들어|혁신적인|원활한" src/lib/landingI18n` → reduced or zero
+- [x] No “~지향합니다” more than once across company.about+vision
+- [x] Prototype bullets state “experimental” clearly
+- [x] Grep: `rg "함께 만들어|혁신적인|원활한" src/lib/landingI18n` → reduced or zero
 
 ## STOP conditions
 
