@@ -180,6 +180,7 @@ const ZEFF_TOOL: AgentToolSpec = {
       toolId,
       text: instruction,
       userId: ctx.userId,
+      workspaceId: ctx.workspaceId,
       modelTier: ctx.modelTier,
     });
     return { terminal: true, artifact: toArtifact(result) };

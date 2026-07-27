@@ -57,10 +57,19 @@ export interface Slide {
   bulletsRight?: string[];
   notes?: string;
   layout?: SlideLayout;
+  /** 참고 자료 번호 (RAG/웹 컨텍스트의 [n] 또는 web-n) */
+  sourceRef?: number;
   /** 표 데이터 */
   table?: SlideTable;
   /** 이해를 돕는 다이어그램 */
   diagram?: SlideDiagram;
+}
+
+export interface DeckSource {
+  n: number;
+  title: string;
+  source: "library" | "web";
+  url?: string;
 }
 
 export interface Deck {
@@ -68,6 +77,8 @@ export interface Deck {
   subtitle?: string;
   theme?: DeckTheme;
   slides: Slide[];
+  /** PPT 생성 시 주입된 RAG/웹 출처 (슬라이드 footer·notes용) */
+  sources?: DeckSource[];
 }
 
 export interface SheetData {

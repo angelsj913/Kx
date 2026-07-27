@@ -23,6 +23,11 @@ import {
 } from "./pipelineLog";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
+import {
+  buildPptResearchContext,
+  formatPptFillContext,
+  formatPptOutlineContext,
+} from "./pptContext";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
 import {
   parseStructured,
@@ -52,6 +57,7 @@ export interface ToolGenerationInput {
   audio?: { data: string; mimeType: string };
   images?: { data: string; mimeType: string }[];
   userId: string;
+  workspaceId?: string | null;
   modelTier?: ModelTier;
   onAttempt?: (info: AttemptInfo) => void;
   onUploadStart?: () => void;
@@ -617,11 +623,23 @@ export async function runToolGeneration(
     let deck;
     let pptRaw = raw;
 
+    const queryText = (input.text ?? "").trim();
+    const pptResearch = queryText
+      ? await buildPptResearchContext({
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          query: queryText,
+        })
+      : { sources: [], hasSources: false };
+
+    const outlineContext = formatPptOutlineContext(pptResearch.sources);
+    const fillContext = formatPptFillContext(pptResearch.sources);
+
     // 2-pass: outline → fill (품질·구조 안정화)
     try {
       const outlineTool: ToolDef = {
         ...tool,
-        systemInstruction: PPT_OUTLINE_INSTRUCTION,
+        systemInstruction: [PPT_OUTLINE_INSTRUCTION, outlineContext].filter(Boolean).join("\n\n"),
       };
       const outlineText = await geminiGenerateForTool({
         tool: outlineTool,
@@ -630,7 +648,14 @@ export async function runToolGeneration(
       });
       const fillTool: ToolDef = {
         ...tool,
-        systemInstruction: `${tool.systemInstruction}\n\n${PPT_FILL_INSTRUCTION_PREFIX}\n\n[아웃라인]\n${outlineText}`,
+        systemInstruction: [
+          tool.systemInstruction,
+          PPT_FILL_INSTRUCTION_PREFIX,
+          fillContext,
+          `[아웃라인]\n${outlineText}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       };
       const filled = await generateWithFallback({
         tool: fillTool,
@@ -652,6 +677,18 @@ export async function runToolGeneration(
       const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
       console.error("[toolGeneration] pptx parse", msg, pptRaw.slice(0, 400));
       throw new Error(msg);
+    }
+
+    if (pptResearch.hasSources) {
+      deck = {
+        ...deck,
+        sources: pptResearch.sources.map((s) => ({
+          n: s.n,
+          title: s.title,
+          source: s.source,
+          url: s.url,
+        })),
+      };
     }
 
     let validation = validateDeck(deck);

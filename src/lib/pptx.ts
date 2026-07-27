@@ -2,6 +2,7 @@ import PptxGenJS from "pptxgenjs";
 import {
   extractJson,
   type Deck,
+  type DeckSource,
   type DeckTheme,
   type Slide,
   type SlideDiagram,
@@ -12,6 +13,11 @@ import {
 const FONT = "Malgun Gothic";
 const W = 13.333;
 const H = 7.5;
+
+/** pptxgenjs 4.x에는 slide transition API가 없어 시각 리듬(액센트·배경)으로 대체한다. */
+type SlideVisualVariant = "leftBar" | "topBand" | "softSurface";
+
+const SLIDE_VISUAL_VARIANTS: SlideVisualVariant[] = ["leftBar", "topBand", "softSurface"];
 
 export interface ResolvedPalette {
   primary: string;
@@ -313,6 +319,10 @@ export function parseDeck(raw: string): Deck {
             typeof slide.notes === "string" && slide.notes.trim()
               ? slide.notes.trim().slice(0, 1000)
               : undefined,
+          sourceRef:
+            typeof slide.sourceRef === "number" && slide.sourceRef > 0
+              ? Math.floor(slide.sourceRef)
+              : undefined,
           layout,
           table,
           diagram,
@@ -334,6 +344,7 @@ function addFooter(
   total: number,
   pal: ResolvedPalette,
   light = true,
+  sourceLine?: string,
 ) {
   const muted = light ? pal.muted : "94A3B8";
   const line = light ? pal.surfaceAlt : "1E293B";
@@ -348,12 +359,24 @@ function addFooter(
   slide.addText(deckTitle.slice(0, 40), {
     x: 0.55,
     y: H - 0.38,
-    w: 8,
+    w: sourceLine ? 6.5 : 8,
     h: 0.28,
     fontSize: 9,
     fontFace: FONT,
     color: muted,
   });
+  if (sourceLine) {
+    slide.addText(sourceLine, {
+      x: 7.2,
+      y: H - 0.38,
+      w: 3.5,
+      h: 0.28,
+      fontSize: 8,
+      fontFace: FONT,
+      color: pal.primary,
+      align: "right",
+    });
+  }
   slide.addText(`${page} / ${total}`, {
     x: W - 2.2,
     y: H - 0.38,
@@ -364,6 +387,64 @@ function addFooter(
     color: muted,
     align: "right",
   });
+}
+
+function sourceLabel(ref: number, sources?: DeckSource[]): string | undefined {
+  if (!sources?.length) return `출처 [${ref}]`;
+  const hit = sources.find((s) => s.n === ref);
+  if (!hit) return `출처 [${ref}]`;
+  const tag = hit.source === "web" ? `web-${hit.n}` : String(hit.n);
+  const title = hit.title.slice(0, 18);
+  return `출처 ${tag} · ${title}`;
+}
+
+function applyVisualVariant(
+  slide: PptxGenJS.Slide,
+  variant: SlideVisualVariant,
+  pal: ResolvedPalette,
+) {
+  if (variant === "topBand") {
+    slide.addShape("rect", {
+      x: 0,
+      y: 0,
+      w: W,
+      h: 0.14,
+      fill: { color: pal.primary },
+      line: { color: pal.primary },
+    });
+    slide.addShape("rect", {
+      x: 0,
+      y: 0.14,
+      w: W,
+      h: 0.06,
+      fill: { color: pal.accent },
+      line: { color: pal.accent },
+    });
+    return;
+  }
+
+  if (variant === "softSurface") {
+    slide.background = { color: pal.surface };
+    slide.addShape("ellipse", {
+      x: W - 2.4,
+      y: H - 2.6,
+      w: 2.2,
+      h: 2.2,
+      fill: { color: pal.primarySoft },
+      line: { color: pal.primarySoft },
+    });
+    slide.addShape("rect", {
+      x: 0,
+      y: 0,
+      w: 0.08,
+      h: H,
+      fill: { color: pal.accent },
+      line: { color: pal.accent },
+    });
+    return;
+  }
+
+  addAccentBar(slide, pal);
 }
 
 function addAccentBar(slide: PptxGenJS.Slide, pal: ResolvedPalette) {
@@ -688,6 +769,22 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
   pptx.title = deck.title;
   pptx.subject = deck.subtitle || `ZEFF · ${pal.name}`;
 
+  pptx.defineSlideMaster({
+    title: "ZEFF_MASTER",
+    background: { color: pal.white },
+    objects: [
+      {
+        rect: {
+          x: 0,
+          y: 0,
+          w: W,
+          h: 0.08,
+          fill: { color: pal.primary },
+        },
+      },
+    ],
+  });
+
   const bodyCount = deck.slides.length;
   const totalPages = 1 + bodyCount;
 
@@ -889,8 +986,10 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     }
 
     const slide = pptx.addSlide();
-    slide.background = { color: pal.white };
-    addAccentBar(slide, pal);
+    const visualVariant = SLIDE_VISUAL_VARIANTS[idx % SLIDE_VISUAL_VARIANTS.length]!;
+    slide.background = { color: visualVariant === "softSurface" ? pal.surface : pal.white };
+    applyVisualVariant(slide, visualVariant, pal);
+    const sourceLine = s.sourceRef ? sourceLabel(s.sourceRef, deck.sources) : undefined;
 
     const badge =
       layout === "agenda"
@@ -1040,7 +1139,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     }
 
     if (s.notes) slide.addNotes(s.notes);
-    addFooter(slide, deck.title, page, totalPages, pal, true);
+    addFooter(slide, deck.title, page, totalPages, pal, true, sourceLine);
   });
 
   return (await pptx.write({ outputType: "base64" })) as string;

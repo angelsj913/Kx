@@ -557,6 +557,7 @@ export async function POST(request: Request) {
             toolId: quickToolId,
             text: toolText,
             userId,
+            workspaceId: chatSession.workspaceId ?? null,
             modelTier,
             audio:
               quickTool?.inputType === "audio"
