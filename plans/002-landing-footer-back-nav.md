@@ -73,9 +73,9 @@ Files to grep: `BackButton` imports under `src/app/` and `src/components/landing
 
 ## Done criteria
 
-- [ ] Footer links right-aligned above contact block
-- [ ] `/about` → Back → `/` (not `/vision` from tab history)
-- [ ] `npm run lint` exit 0
+- [x] Footer links right-aligned above contact block
+- [x] `/about` → Back → `/` (not `/vision` from tab history)
+- [x] `npm run lint` exit 0
 
 ## STOP conditions
 

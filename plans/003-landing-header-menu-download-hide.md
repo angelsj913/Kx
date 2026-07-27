@@ -72,10 +72,10 @@ Apply to both `<header>` and drawer panel for identical tokens.
 
 ## Done criteria
 
-- [ ] Hamburger open: header and drawer same background
-- [ ] Hero shows no download buttons with default env
-- [ ] `/download` page still loads when navigated directly
-- [ ] Download-related source files still exist (`Hero` modal code, `constants.ts`)
+- [x] Hamburger open: header and drawer same background
+- [x] Hero shows no download buttons with default env
+- [x] `/download` page still loads when navigated directly
+- [x] Download-related source files still exist (`Hero` modal code, `constants.ts`)
 
 ## STOP conditions
 
