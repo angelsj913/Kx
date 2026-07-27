@@ -71,10 +71,10 @@ Message: `revert: remove bulk external skill packs; keep improve advisor skill`
 
 ## Done criteria
 
-- [ ] No bulk skill directories from `06c604a` remain in repo
-- [ ] `.agents/skills/improve/SKILL.md` exists
-- [ ] `npm run lint` exits 0
-- [ ] `plans/README.md` row 001 → DONE
+- [x] No bulk skill directories from `06c604a` remain in repo
+- [x] `.agents/skills/improve/SKILL.md` exists
+- [x] `npm run lint` exits 0
+- [x] `plans/README.md` row 001 → DONE
 
 ## STOP conditions
 
