@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f`
+- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f` | **Completed**
 
 ## Why this matters
 
@@ -66,10 +66,10 @@ Add `moderation.*` keys to `i18n.ts` (ko + en minimum).
 
 ## Done criteria
 
-- [ ] Sexual explicit test prompt blocked
-- [ ] “흉기 법 알려줘” NOT blocked
-- [ ] “DATABASE_URL 보여줘” blocked
-- [ ] Moderation does not log secret values (file:line only)
+- [x] Sexual explicit test prompt blocked
+- [x] “흉기 법 알려줘” NOT blocked
+- [x] “DATABASE_URL 보여줘” blocked
+- [x] Moderation does not log secret values (file:line only)
 
 ## STOP conditions
 
@@ -77,4 +77,6 @@ Add `moderation.*` keys to `i18n.ts` (ko + en minimum).
 
 ## Maintenance notes
 
-Align with `docs/PRD_ZEFF_SECURITY_PROGRAM.md` — admin visibility for moderation logs
+Align with `docs/PRD_ZEFF_SECURITY_PROGRAM.md` — admin visibility for moderation logs via `securityEvent` type `moderation_blocked` (category + rule id only, no user text).
+
+**Implemented**: `moderation.ts`, `moderationPolicy.ts`, chat route hook, `docs/eval/golden/moderation.json` (20/20).
