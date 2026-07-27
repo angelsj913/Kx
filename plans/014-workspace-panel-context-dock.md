@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Priority**: P3 | **Effort**: M | **Risk**: LOW | **Depends on**: 008 | **Planned at**: `9d8b25f`
+- **Priority**: P3 | **Effort**: M | **Risk**: LOW | **Depends on**: 008 | **Planned at**: `9d8b25f` | **Done**: 2026-07-27
 
 ## Why this matters
 
@@ -53,8 +53,8 @@ Nothing-style mono labels, compact row, max 5 visible + “+N”.
 
 ## Done criteria
 
-- [ ] After RAG answer, sources appear as chips in right panel
-- [ ] Empty state when no context attached
+- [x] After RAG answer, sources appear as chips in right panel
+- [x] Empty state when no context attached
 
 ## STOP conditions
 

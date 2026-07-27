@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useT, type AppDictKey } from "@/lib/i18n";
 import {
   FileText,
@@ -38,6 +38,16 @@ export interface TerminalLine {
   text: string;
   level?: "info" | "ok" | "error" | "warn";
 }
+
+export interface ContextSource {
+  id: string;
+  title: string;
+  snippet: string;
+  source?: "library" | "web";
+  url?: string;
+}
+
+const CONTEXT_CHIP_MAX = 5;
 
 const TAB_META: { id: PanelTab; labelKey: AppDictKey; icon: typeof FolderOpen }[] = [
   { id: "files", labelKey: "panel.tab.files", icon: FolderOpen },
@@ -87,6 +97,7 @@ export default function ChatRightPanel({
   tab,
   onTabChange,
   artifacts,
+  contextSources,
   terminalLines,
   loading,
   onSelectArtifact,
@@ -97,6 +108,7 @@ export default function ChatRightPanel({
   tab: PanelTab;
   onTabChange: (t: PanelTab) => void;
   artifacts: ChatArtifact[];
+  contextSources: ContextSource[];
   terminalLines: TerminalLine[];
   loading: boolean;
   onSelectArtifact?: (a: ChatArtifact) => void;
@@ -166,6 +178,8 @@ export default function ChatRightPanel({
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      <ContextDock sources={contextSources} />
 
       <div className="flex gap-1 border-b border-slate-200 p-1.5 dark:border-slate-800">
         {visibleTabs.map(({ id, labelKey, icon: Icon }) => (
@@ -295,6 +309,107 @@ export default function ChatRightPanel({
         )}
       </div>
     </aside>
+  );
+}
+
+function ContextDock({ sources }: { sources: ContextSource[] }) {
+  const t = useT();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const visible = sources.slice(0, CONTEXT_CHIP_MAX);
+  const overflow = sources.length - visible.length;
+
+  return (
+    <section className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
+      <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        {t("panel.context.title")}
+      </p>
+      {sources.length === 0 ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+          {t("panel.context.empty")}
+        </p>
+      ) : (
+        <>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {visible.map((s) => {
+              const active = expandedId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setExpandedId(active ? null : s.id)}
+                  className={`max-w-full truncate rounded-md border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors ${
+                    active
+                      ? "border-[var(--mode-accent)]/50 bg-[var(--mode-accent)]/10 text-[var(--mode-accent)]"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
+                  }`}
+                  title={s.title}
+                >
+                  {s.source === "web" ? "web · " : ""}
+                  {s.title}
+                </button>
+              );
+            })}
+            {overflow > 0 && (
+              <span
+                className="inline-flex items-center rounded-md border border-dashed border-slate-300 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-400 dark:border-slate-600 dark:text-slate-500"
+                title={sources
+                  .slice(CONTEXT_CHIP_MAX)
+                  .map((s) => s.title)
+                  .join(", ")}
+              >
+                +{overflow}
+              </span>
+            )}
+          </div>
+          {expandedId && (
+            <ContextSnippet
+              source={sources.find((s) => s.id === expandedId)!}
+              onClose={() => setExpandedId(null)}
+            />
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function ContextSnippet({
+  source,
+  onClose,
+}: {
+  source: ContextSource;
+  onClose: () => void;
+}) {
+  const t = useT();
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 truncate text-[11px] font-medium text-slate-700 dark:text-slate-200">
+          {source.title}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 font-mono text-[9px] uppercase tracking-wide text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+        >
+          {t("chat.closePreview")}
+        </button>
+      </div>
+      <p className="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+        {source.snippet}
+      </p>
+      {source.url && (
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1.5 inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-wide text-[var(--mode-accent)] hover:underline"
+        >
+          <ExternalLink className="h-3 w-3" aria-hidden />
+          {t("chat.openNewTab")}
+        </a>
+      )}
+    </div>
   );
 }
 

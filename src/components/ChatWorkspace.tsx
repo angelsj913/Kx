@@ -50,6 +50,7 @@ import Logo from "@/components/ui/Logo";
 import type { QualityTier } from "@/lib/qualityTier";
 import ChatRightPanel, {
   type ChatArtifact,
+  type ContextSource,
   type PanelTab,
   type TerminalLine,
 } from "./ChatRightPanel";
@@ -184,6 +185,32 @@ function readStoredOpen(): boolean {
   const v = window.localStorage.getItem(PANEL_OPEN_KEY);
   if (v === null) return window.matchMedia("(min-width: 768px)").matches;
   return v !== "0";
+}
+
+function buildContextSources(messages: Msg[]): ContextSource[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "model" || m.streaming) continue;
+    const citations = parseCitationsFromResultData(m.resultData);
+    if (!citations.length) continue;
+    const seen = new Set<string>();
+    const sources: ContextSource[] = [];
+    for (const c of citations) {
+      const id =
+        c.libraryItemId ?? (c.url ? `web:${c.url}` : `cite:${c.n}:${c.title}`);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      sources.push({
+        id,
+        title: c.title,
+        snippet: c.snippet,
+        url: c.url,
+        source: c.source ?? (c.url && !c.libraryItemId ? "web" : "library"),
+      });
+    }
+    return sources;
+  }
+  return [];
 }
 
 function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
@@ -737,6 +764,7 @@ export default function ChatWorkspace({
   }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
+  const contextSources = useMemo(() => buildContextSources(messages), [messages]);
 
   function scrollToMessage(id?: string) {
     if (!id) return;
@@ -1423,6 +1451,7 @@ export default function ChatWorkspace({
           tab={panelTab}
           onTabChange={setPanelTab}
           artifacts={artifacts}
+          contextSources={contextSources}
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
@@ -1454,6 +1483,7 @@ export default function ChatWorkspace({
                 tab={panelTab}
                 onTabChange={setPanelTab}
                 artifacts={artifacts}
+                contextSources={contextSources}
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {
