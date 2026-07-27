@@ -148,6 +148,38 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name);
             passed++;
           } else fail(name, `got ${tool}`);
+        } else if (c.type === "skill_pack") {
+          const { selectSkillPacks } = await import("../src/lib/skills/index.ts");
+          const got = selectSkillPacks(String(c.text ?? "")).map((p) => p.id);
+          const expected = (c.expectedSkills as string[] | undefined) ?? [];
+          const ok =
+            expected.length > 0 &&
+            expected.every((id) => got.includes(id as (typeof got)[number]));
+          if (ok) {
+            pass(name, got.join(","));
+            passed++;
+          } else {
+            fail(name, `got [${got.join(",")}], expected [${expected.join(",")}]`);
+          }
+        } else if (c.type === "agent_escalate") {
+          const { shouldEscalateToAgent } = await import("../src/lib/skills/index.ts");
+          const got = shouldEscalateToAgent(String(c.text ?? ""));
+          if (got === !!c.expectedEscalate) {
+            pass(name, String(got));
+            passed++;
+          } else {
+            fail(name, `got ${got}, expected ${!!c.expectedEscalate}`);
+          }
+        } else if (c.type === "verify_risk") {
+          const { draftVerifyRiskScore } = await import("../src/lib/backendRoute.ts");
+          const score = draftVerifyRiskScore(String(c.text ?? ""));
+          const minRisk = Number(c.minRisk ?? 0);
+          if (score >= minRisk) {
+            pass(name, `risk=${score}`);
+            passed++;
+          } else {
+            fail(name, `risk=${score} < minRisk=${minRisk}`);
+          }
         } else if (c.type === "docx_build") {
           const { buildDocxBase64, parseMarkdownSections } = await import("../src/lib/docx.ts");
           const doc = parseMarkdownSections(c.markdown);

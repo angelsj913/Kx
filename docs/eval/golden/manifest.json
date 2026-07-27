@@ -1,5 +1,6 @@
 {
-  "version": "2026.07.22",
-  "categories": ["rag", "math", "ppt", "lecture", "images", "intent", "docx", "chat"],
-  "targetCount": 59
+  "version": "2026.07.28",
+  "categories": ["rag", "math", "ppt", "lecture", "images", "intent", "docx", "chat", "moderation", "image-prompt"],
+  "notes": "MIN_RETRIEVAL_SCORE default 0.35 (plan 010). hybrid_score goldens updated for gate.",
+  "targetCount": 84
 }
