@@ -21,7 +21,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [010](./010-rag-threshold-web-search.md) | RAG relevance gate + web search fallback | P1 | L | — | DONE |
 | [011](./011-ppt-rag-theme-animations.md) | PPT RAG integration + theme/animation diversity | P2 | L | 010 | DONE |
 | [012](./012-ai-input-moderation.md) | AI input/output moderation layer | P1 | L | — | DONE |
-| [013](./013-legal-deep-research-update.md) | Legal pages via deep-research | P1 | L | — | TODO |
+| [013](./013-legal-deep-research-update.md) | Legal pages via deep-research | P1 | L | — | DONE |
 | [014](./014-workspace-panel-context-dock.md) | Workspace right panel — Context Dock MVP | P3 | M | 008 | TODO |
 | [015](./015-image-gen-quality-spike.md) | Image generation quality spike (approval gate) | P2 | M | — | BLOCKED |
 

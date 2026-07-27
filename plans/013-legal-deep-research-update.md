@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f`
+- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Planned at**: `9d8b25f` | **Completed**
 
 ## Why this matters
 
@@ -63,9 +63,9 @@ Implement articles; no `[placeholder]` strings remain.
 
 ## Done criteria
 
-- [ ] Terms include: service definition, AI disclaimer, payment/refund, termination, governing law
-- [ ] Privacy includes: OAuth data, subprocessors, retention, user rights, contact
-- [ ] Placeholders eliminated or replaced with owner-approved values
+- [x] Terms include: service definition, AI disclaimer, payment/refund, termination, governing law
+- [x] Privacy includes: OAuth data, subprocessors, retention, user rights, contact
+- [x] Placeholders eliminated or replaced with owner-approved values
 
 ## STOP conditions
 
