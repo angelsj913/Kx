@@ -14,14 +14,13 @@ const LEGAL_FACTUAL_RE =
 const CURRENT_EVENTS_RE =
   /최신|뉴스|오늘|현재|요즘|recent|latest|news|today|breaking|202[4-9]/i;
 
-/** RAG가 약하거나 법률·사실·시사 질의일 때 웹 검색을 시도한다. */
+/** RAG가 약하고 법률·사실·시사 질의일 때 웹 검색을 시도한다. */
 export function shouldUseWebSearch(query: string, maxRagScore?: number | null): boolean {
   const q = query.trim();
   if (!q) return false;
 
-  if (maxRagScore == null || maxRagScore < MIN_CITATION_SCORE) {
-    return true;
-  }
+  const weakRag = maxRagScore == null || maxRagScore < MIN_CITATION_SCORE;
+  if (!weakRag) return false;
 
   return LEGAL_FACTUAL_RE.test(q) || CURRENT_EVENTS_RE.test(q);
 }

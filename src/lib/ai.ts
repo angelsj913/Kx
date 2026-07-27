@@ -265,7 +265,11 @@ export interface StreamFallbackResult extends FallbackResult {
 
 function invokeModelStream(
   m: ModelDef,
-  opts: { systemInstruction: string; messages: ChatMessage[] },
+  opts: {
+    systemInstruction: string;
+    messages: ChatMessage[];
+    maxOutputTokens?: number;
+  },
   onDelta: (delta: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
@@ -276,6 +280,7 @@ function invokeModelStream(
       messages: opts.messages,
       onDelta,
       signal,
+      maxOutputTokens: opts.maxOutputTokens,
     });
   }
   return compatChatReplyStream({
@@ -285,6 +290,7 @@ function invokeModelStream(
     model: m.model,
     onDelta,
     signal,
+    maxTokens: opts.maxOutputTokens,
   });
 }
 
@@ -301,6 +307,7 @@ export async function chatReplyWithFallbackStream(args: {
   messages: ChatMessage[];
   candidates?: ModelDef[];
   modelTier?: ModelTier;
+  maxOutputTokens?: number;
   onAttempt?: (info: AttemptInfo) => void;
   onDelta: (delta: string) => void;
   signal?: AbortSignal;
@@ -332,7 +339,11 @@ export async function chatReplyWithFallbackStream(args: {
     try {
       const text = await invokeModelStream(
         m,
-        { systemInstruction: args.systemInstruction, messages: args.messages },
+        {
+          systemInstruction: args.systemInstruction,
+          messages: args.messages,
+          maxOutputTokens: args.maxOutputTokens,
+        },
         (delta) => {
           committed = true;
           accumulated += delta;

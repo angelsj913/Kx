@@ -769,22 +769,6 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
   pptx.title = deck.title;
   pptx.subject = deck.subtitle || `ZEFF · ${pal.name}`;
 
-  pptx.defineSlideMaster({
-    title: "ZEFF_MASTER",
-    background: { color: pal.white },
-    objects: [
-      {
-        rect: {
-          x: 0,
-          y: 0,
-          w: W,
-          h: 0.08,
-          fill: { color: pal.primary },
-        },
-      },
-    ],
-  });
-
   const bodyCount = deck.slides.length;
   const totalPages = 1 + bodyCount;
 

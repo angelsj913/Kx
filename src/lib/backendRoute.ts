@@ -190,6 +190,7 @@ export async function runBackendRoute(args: {
       .join("\n\n"),
     messages: args.messages,
     candidates,
+    maxOutputTokens: qualitySettings.maxOutputTokens,
     signal: args.signal,
     onDelta: (delta) => args.onDelta?.(stripHanja(delta)),
     onAttempt: (info) => {

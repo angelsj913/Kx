@@ -308,6 +308,7 @@ async function callCompat(
   messages: OAIMessage[],
   jsonMode = false,
   apiKey?: string,
+  maxTokens?: number,
 ): Promise<string> {
   const key = requireKey(cfg, apiKey);
   const res = await fetch(cfg.baseUrl, {
@@ -321,6 +322,7 @@ async function callCompat(
       model,
       messages,
       ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+      ...(maxTokens ? { max_tokens: maxTokens } : {}),
     }),
   });
 
@@ -359,6 +361,7 @@ async function callCompatStream(
   onDelta: (delta: string) => void,
   apiKey?: string,
   signal?: AbortSignal,
+  maxTokens?: number,
 ): Promise<string> {
   const key = requireKey(cfg, apiKey);
   const res = await fetch(cfg.baseUrl, {
@@ -368,7 +371,12 @@ async function callCompatStream(
       "Content-Type": "application/json",
       ...(cfg.extraHeaders ?? {}),
     },
-    body: JSON.stringify({ model, messages, stream: true }),
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: true,
+      ...(maxTokens ? { max_tokens: maxTokens } : {}),
+    }),
     signal,
   });
 
@@ -459,6 +467,7 @@ export async function compatChatReply(opts: {
   messages: ChatMessage[];
   model?: string;
   apiKey?: string;
+  maxTokens?: number;
 }): Promise<string> {
   const cfg = PROVIDER_CONFIG[opts.provider];
   return callCompat(
@@ -476,6 +485,7 @@ export async function compatChatReply(opts: {
     ],
     false,
     opts.apiKey,
+    opts.maxTokens,
   );
 }
 
@@ -487,6 +497,7 @@ export async function compatChatReplyStream(opts: {
   model?: string;
   apiKey?: string;
   signal?: AbortSignal;
+  maxTokens?: number;
 }): Promise<string> {
   const cfg = PROVIDER_CONFIG[opts.provider];
   return callCompatStream(
@@ -505,6 +516,7 @@ export async function compatChatReplyStream(opts: {
     opts.onDelta,
     opts.apiKey,
     opts.signal,
+    opts.maxTokens,
   );
 }
 

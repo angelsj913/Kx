@@ -35,7 +35,7 @@ const KO_SUBJECTS: [RegExp, string][] = [
   [/망치/g, "a hammer"],
   [/드라이버/g, "a screwdriver"],
   [/렌치|스패너/g, "a wrench"],
-  [/드릴|전동\s*드rill/gi, "a power drill"],
+  [/드릴|전동\s*드릴/gi, "a power drill"],
   [/톱|전동\s*톱/g, "a saw"],
   [/펜치|플라이어/g, "pliers"],
   [/아메리카노/g, "americano coffee"],

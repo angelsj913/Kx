@@ -317,6 +317,9 @@ function ContextDock({ sources }: { sources: ContextSource[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const visible = sources.slice(0, CONTEXT_CHIP_MAX);
   const overflow = sources.length - visible.length;
+  const expanded = expandedId
+    ? sources.find((s) => s.id === expandedId)
+    : undefined;
 
   return (
     <section className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
@@ -361,9 +364,9 @@ function ContextDock({ sources }: { sources: ContextSource[] }) {
               </span>
             )}
           </div>
-          {expandedId && (
+          {expanded && (
             <ContextSnippet
-              source={sources.find((s) => s.id === expandedId)!}
+              source={expanded}
               onClose={() => setExpandedId(null)}
             />
           )}

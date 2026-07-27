@@ -213,6 +213,17 @@ export async function POST(request: Request) {
   }
   const resolvedSessionId = chatSession.id;
 
+  // 입력 검열 — 사용자 메시지·첨부 저장 / 장기 기억 학습 전에 수행
+  const moderationSubject = text.trim()
+    ? text
+    : uploads.map((f) => f.name).filter(Boolean).join("\n");
+  const earlyMod =
+    !regenerate && moderationSubject.trim()
+      ? moderateInput(moderationSubject)
+      : null;
+  const moderationBlocked =
+    earlyMod != null && !earlyMod.allowed && earlyMod.category !== "allowed";
+
   let storedAttachments: StoredAttachment[] = [];
   let inlineFiles: { data: string; mimeType: string }[] = [];
   try {
@@ -255,13 +266,32 @@ export async function POST(request: Request) {
       await prisma.chatHistory.deleteMany({
         where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
       });
-      await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
-      const reloaded = await reloadAttachmentsFromMessage(target.attachments);
-      storedAttachments = reloaded.stored;
-      inlineFiles = reloaded.inline;
+      const editText = moderationBlocked ? "[요청이 정책에 의해 차단됨]" : text;
+      await prisma.chatHistory.update({ where: { id: target.id }, data: { text: editText } });
+      if (!moderationBlocked) {
+        const reloaded = await reloadAttachmentsFromMessage(target.attachments);
+        storedAttachments = reloaded.stored;
+        inlineFiles = reloaded.inline;
+      }
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: { updatedAt: new Date() },
+      });
+    } else if (moderationBlocked) {
+      // 차단: 원문·첨부를 저장하지 않고 placeholder만 남긴다 (학습도 스킵)
+      await prisma.chatHistory.create({
+        data: {
+          sessionId: resolvedSessionId,
+          role: "user",
+          text: "[요청이 정책에 의해 차단됨]",
+        },
+      });
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionId },
+        data: {
+          updatedAt: new Date(),
+          ...(!chatSession.title ? { title: "차단된 요청" } : {}),
+        },
       });
     } else {
       // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
@@ -340,39 +370,36 @@ export async function POST(request: Request) {
       }
 
       try {
-        if (text.trim()) {
-          const mod = moderateInput(text);
-          if (!mod.allowed && mod.category !== "allowed") {
-            if (mod.log) {
-              await logSecurityEvent("moderation_blocked", userId, {
-                category: mod.category,
-                rule: mod.matchedRule,
-              });
-            }
-            const policyText = getModerationMessage(
-              mod.category,
-              userLanguage,
-            );
-            const assistantRow = await prisma.chatHistory.create({
-              data: {
-                sessionId: resolvedSessionId,
-                role: "model",
-                text: policyText,
-                agentId: `moderation:${mod.category}`,
-              },
+        if (moderationBlocked && earlyMod && earlyMod.category !== "allowed") {
+          if (earlyMod.log) {
+            await logSecurityEvent("moderation_blocked", userId, {
+              category: earlyMod.category,
+              rule: earlyMod.matchedRule,
             });
-            await prisma.chatSession.update({
-              where: { id: resolvedSessionId },
-              data: { updatedAt: new Date() },
-            });
-            await releaseReservations();
-            send({
-              type: "done",
-              sessionId: resolvedSessionId,
-              message: assistantRow,
-            });
-            return;
           }
+          const policyText = getModerationMessage(
+            earlyMod.category,
+            userLanguage,
+          );
+          const assistantRow = await prisma.chatHistory.create({
+            data: {
+              sessionId: resolvedSessionId,
+              role: "model",
+              text: policyText,
+              agentId: `moderation:${earlyMod.category}`,
+            },
+          });
+          await prisma.chatSession.update({
+            where: { id: resolvedSessionId },
+            data: { updatedAt: new Date() },
+          });
+          await releaseReservations();
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: assistantRow,
+          });
+          return;
         }
 
         if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
