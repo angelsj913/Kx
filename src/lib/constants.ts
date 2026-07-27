@@ -10,25 +10,17 @@ export const GEO_COOKIE = "zeff-geo-lang";
 
 // ZEFF AI 데스크톱 설치 파일 — GitHub Release 자산으로 배포
 export const REPO = "https://github.com/angelsj913/Kx";
-export const REPO_SLUG = "angelsj913/Kx";
 /** 파일명에 zeffai 포함 (요청 사항) */
 export const WINDOWS_FILENAME = "zeffai.installer.exe";
 export const MAC_FILENAME = "zeffai-mac.dmg";
 export const WINDOWS_DOWNLOAD_URL = `${REPO}/releases/latest/download/${WINDOWS_FILENAME}`;
 export const MAC_DOWNLOAD_URL = `${REPO}/releases/latest/download/${MAC_FILENAME}`;
-export const ALL_RELEASES_URL = `${REPO}/releases`;
-
-/** 공식 홈 (데스크톱·모바일·결제·약관 공통) */
-export const OFFICIAL_SITE = "https://zeffai.com";
-export const LEGAL_TERMS_URL = `${OFFICIAL_SITE}/support/legal#terms`;
-export const LEGAL_PRIVACY_URL = `${OFFICIAL_SITE}/support/legal#privacy`;
 
 /**
  * Google Play 스토어 링크 — 심사 통과 후 실제 URL로 교체
  * 예: https://play.google.com/store/apps/details?id=com.zeffai.app
  */
 export const PLAY_STORE_URL = "";
-export const ANDROID_PACKAGE_ID = "com.zeffai.app";
 
 export const APP_VERSION = "1.0.0";
 export const SYSTEM_REQUIREMENTS = {

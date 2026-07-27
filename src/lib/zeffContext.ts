@@ -38,16 +38,7 @@ export interface ZeffRuntimeContext {
   citations: RankedChunk[];
 }
 
-export async function buildZeffRuntimeInstruction(args: {
-  userId: string;
-  workspaceId: string | null;
-  query: string;
-  language?: string | null;
-}): Promise<string> {
-  const ctx = await buildZeffRuntimeContext(args);
-  return ctx.instruction;
-}
-
+/** free chat / agent / quick-tool 경로가 공유하는 런타임 컨텍스트 조립. */
 export async function buildZeffRuntimeContext(args: {
   userId: string;
   workspaceId: string | null;
@@ -97,17 +88,4 @@ export async function buildZeffRuntimeContext(args: {
   }
 
   return { instruction: sections.join("\n\n"), citations };
-}
-
-/**
- * free chat / agent / quick-tool 경로가 공유하는 런타임 컨텍스트 조립.
- * (내부적으로 buildZeffRuntimeContext와 동일 — 진입점을 하나로 고정)
- */
-export async function assembleRuntimeContext(args: {
-  userId: string;
-  workspaceId: string | null;
-  query: string;
-  language?: string | null;
-}): Promise<ZeffRuntimeContext> {
-  return buildZeffRuntimeContext(args);
 }
