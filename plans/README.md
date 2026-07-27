@@ -17,7 +17,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [006](./006-copy-humanize-landing-workspace.md) | Humanize landing + workspace copy | P1 | M | — | DONE |
 | [007](./007-admin-panel-discovery.md) | Restore admin panel discoverability | P1 | S | — | DONE |
 | [008](./008-chat-composer-ux-polish.md) | Loading placement, logo avatar, icon-only actions | P1 | M | — | DONE |
-| [009](./009-chat-intent-quality-tier.md) | Fix PPT meta-intent + quality presets + placeholders | P1 | M | — | TODO |
+| [009](./009-chat-intent-quality-tier.md) | Fix PPT meta-intent + quality presets + placeholders | P1 | M | — | DONE |
 | [010](./010-rag-threshold-web-search.md) | RAG relevance gate + web search fallback | P1 | L | — | TODO |
 | [011](./011-ppt-rag-theme-animations.md) | PPT RAG integration + theme/animation diversity | P2 | L | 010 | TODO |
 | [012](./012-ai-input-moderation.md) | AI input/output moderation layer | P1 | L | — | TODO |

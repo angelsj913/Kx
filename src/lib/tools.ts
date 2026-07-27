@@ -899,7 +899,7 @@ export const TOOLS: ToolDef[] = [
     inputType: "text",
     outputType: "markdown",
     systemInstruction: "",
-    placeholder: "예) 우리 서재에서 A를 찾아 요약하고, 그걸로 발표 자료 만들어줘",
+    placeholder: "예) 서재 PDF 핵심만 요약해줘",
     submitLabel: "실행",
     fileBaseName: "agent-result",
   },

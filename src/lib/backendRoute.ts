@@ -10,6 +10,10 @@ import { chatReplyWithFallback, chatReplyWithFallbackStream, type AttemptInfo } 
 import { stripHanja } from "./textSanitize";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {
+  resolveQualityTierSettings,
+  type QualityTier,
+} from "./qualityTier";
+import {
   modelsForTier,
   modelsForVerify,
   buildVisionCandidates,
@@ -134,6 +138,7 @@ export async function runBackendRoute(args: {
   hasFiles: boolean;
   messages: ChatMessage[];
   modelTier?: ModelTier;
+  qualityTier?: QualityTier;
   extraSystemInstruction?: string;
   citations?: RankedChunk[];
   onStage?: (e: RouteStageEvent) => void;
@@ -143,6 +148,7 @@ export async function runBackendRoute(args: {
   signal?: AbortSignal;
 }): Promise<BackendRouteResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
+  const qualitySettings = resolveQualityTierSettings(args.qualityTier ?? "medium");
   const stages: RouteStage[] = [];
   const providersTried = new Set<string>();
 
@@ -211,19 +217,26 @@ export async function runBackendRoute(args: {
   // ── 3. verify ──
   const draftLen = draft.text.trim().length;
   const risk = draftVerifyRiskScore(draft.text);
-  const shouldVerify =
+  const verifyMode = qualitySettings.verifyMode;
+  let shouldVerify =
+    verifyMode !== "off" &&
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
     !draft.interrupted &&
-    draftLen > 600 &&
-    (tier === "top" ||
+    draftLen > (verifyMode === "deep" ? 200 : 600);
+
+  if (shouldVerify && verifyMode === "light") {
+    shouldVerify =
+      tier === "top" ||
       tier === "priority" ||
-      (tier === "standard" && risk >= 3)) &&
-    (tier === "top" ? risk >= 1 : risk >= 2);
+      (tier === "standard" && risk >= 3);
+  } else if (shouldVerify && verifyMode === "deep") {
+    shouldVerify = risk >= 1 || tier === "top";
+  }
 
   if (shouldVerify) {
     stages.push("verify");
-    const deep = tier === "top";
+    const deep = verifyMode === "deep" || tier === "top";
     args.onStage?.({
       stage: "verify",
       key: deep ? "status.route.verify.deep" : "status.route.verify.light",

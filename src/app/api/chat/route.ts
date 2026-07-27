@@ -13,6 +13,11 @@ import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption }
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
+import {
+  effectiveModelTier,
+  parseQualityTier,
+  type QualityTier,
+} from "@/lib/qualityTier";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
 import { assembleRuntimeContext } from "@/lib/zeffContext";
@@ -58,6 +63,7 @@ export async function POST(request: Request) {
   let quickToolId: string | null = null;
   let regenerate = false;
   let editMessageId: string | null = null;
+  let qualityTier: QualityTier = "medium";
   const uploads: File[] = [];
 
   if (contentType.includes("multipart/form-data")) {
@@ -67,6 +73,7 @@ export async function POST(request: Request) {
     quickToolId = (form.get("quickToolId") as string) || null;
     regenerate = form.get("regenerate") === "1";
     editMessageId = (form.get("editMessageId") as string) || null;
+    qualityTier = parseQualityTier(form.get("qualityTier"));
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
     }
@@ -90,6 +97,7 @@ export async function POST(request: Request) {
     quickToolId = typeof body?.quickToolId === "string" ? body.quickToolId : null;
     regenerate = body?.regenerate === true;
     editMessageId = typeof body?.editMessageId === "string" ? body.editMessageId : null;
+    qualityTier = parseQualityTier(body?.qualityTier);
   }
 
   // 재생성: 새 텍스트 없이 세션의 마지막 사용자 메시지를 그대로 재사용한다(아래에서 채움).
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
-    modelTier = getPlanOrFree(settings?.plan).modelTier;
+    modelTier = effectiveModelTier(getPlanOrFree(settings?.plan).modelTier, qualityTier);
     userLanguage = settings?.language ?? null;
     quota = await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
@@ -686,6 +694,7 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
+            qualityTier,
             extraSystemInstruction: extraSystemInstruction.instruction,
             citations: extraSystemInstruction.citations,
             signal: request.signal,

@@ -47,6 +47,7 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
+import type { QualityTier } from "@/lib/qualityTier";
 import ChatRightPanel, {
   type ChatArtifact,
   type PanelTab,
@@ -63,6 +64,13 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 
 const PANEL_WIDTH_KEY = "kx.chat.rightPanelWidth";
 const PANEL_OPEN_KEY = "kx.chat.rightPanelOpen";
+const QUALITY_STORAGE_KEY = "zeff.chat.qualityTier";
+
+function readStoredQualityTier(): QualityTier {
+  if (typeof window === "undefined") return "medium";
+  const v = window.localStorage.getItem(QUALITY_STORAGE_KEY);
+  return v === "low" || v === "high" ? v : "medium";
+}
 const PANEL_MIN = 240;
 const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
@@ -309,6 +317,7 @@ export default function ChatWorkspace({
   const [kbOpen, setKbOpen] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [attachAccept, setAttachAccept] = useState("");
+  const [qualityTier, setQualityTier] = useState<QualityTier>(() => readStoredQualityTier());
   const fileRef = useRef<HTMLInputElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
   const kbRef = useRef<HTMLDivElement | null>(null);
@@ -474,6 +483,7 @@ export default function ChatWorkspace({
 
     try {
       const form = buildForm();
+      form.append("qualityTier", qualityTier);
       const res = await wsFetch("/api/chat", {
         method: "POST",
         body: form,
@@ -1097,6 +1107,26 @@ export default function ChatWorkspace({
                 </motion.span>
               )}
             </AnimatePresence>
+          </div>
+
+          <div className="mb-2 flex flex-wrap items-center justify-end gap-1 px-1" role="group" aria-label={t("chat.quality.label")}>
+            {(["low", "medium", "high"] as const).map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => {
+                  setQualityTier(tier);
+                  window.localStorage.setItem(QUALITY_STORAGE_KEY, tier);
+                }}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  qualityTier === tier
+                    ? "bg-blue-600 text-white dark:bg-blue-500"
+                    : "border border-slate-300 bg-white text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                }`}
+              >
+                {t(`chat.quality.${tier}`)}
+              </button>
+            ))}
           </div>
 
           {activeQuickTool && (

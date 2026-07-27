@@ -65,9 +65,9 @@ Replace `tools.ts:902` with e.g. “예) 서재 PDF 핵심만 요약해줘”
 
 ## Done criteria
 
-- [ ] Meta PPT question returns conversational answer, no pptx error
-- [ ] Quality selector visible in composer, persisted in localStorage
-- [ ] No “발표 자료 만들어줘” in agent placeholder
+- [x] Meta PPT question returns conversational answer, no pptx error
+- [x] Quality selector visible in composer, persisted in localStorage
+- [x] No “발표 자료 만들어줘” in agent placeholder
 
 ## STOP conditions
 

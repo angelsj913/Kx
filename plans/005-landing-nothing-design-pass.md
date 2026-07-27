@@ -60,9 +60,9 @@ Toggle `ThemeToggle` — light and dark both first-class.
 
 ## Done criteria
 
-- [ ] Google Fonts loaded for Space Grotesk, Space Mono, Doto
-- [ ] Hero has exactly one red accent element
-- [ ] No gradient on UI chrome (hero background glow OK if subtle)
+- [x] Google Fonts loaded for Space Grotesk, Space Mono, Doto
+- [x] Hero has exactly one red accent element
+- [x] No gradient on UI chrome (hero background glow OK if subtle)
 
 ## STOP conditions
 
