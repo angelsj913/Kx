@@ -18,8 +18,8 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 | Critical | `otp.ts` + reset/signup | `hasRecentVerifiedOtp` 30m window reusable by anyone after victim verifies | **FIX** — single-use consume |
 | High/Med | `adminMfa.ts` + `requireAdmin.ts` | MFA cookie `path:/admin` never sent to `/api/admin/**`; APIs skip MFA; `"dev-admin-mfa"` fallback | **FIX** |
 | Medium | Blob `access:public` chat/library | URL = read access | **FIX** — private + `/api/files` proxy |
-| Medium | `itemAccessWhere` | Removed members keep uploader access | DEFER (tenancy redesign) |
-| Medium | `auth.ts` jwt | sessionVersion fail-open | DEFER (availability tradeoff; note only) |
+| Medium | `itemAccessWhere` | Removed members keep uploader access | **FIX** — membership required for team rows |
+| Medium | `auth.ts` jwt | sessionVersion fail-open | **FIX** — 5s recheck, fail-closed after 3× DB fail |
 
 ## Bugbot (full repo)
 
@@ -34,9 +34,9 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 |----------|----------|---------|--------|
 | Important | `ChatWorkspace.tsx` | Uncaught `JSON.parse(resultData)` crashes chat | **FIX** |
 | Important | `account/password` | bcrypt cost 10 vs `BCRYPT_COST` 12 | **FIX** |
-| Important | review/rag quota | Unmetered AI spend | DEFER |
-| Important | library finalize | Blob URL ownership | DEFER |
-| Important | pingback downgrade | Blind `plan:free` | DEFER |
+| Important | review/rag quota | Unmetered AI spend | **FIX** — chat quota + rate limits |
+| Important | library finalize | Blob URL ownership | **FIX** — `library/${userId}/` prefix |
+| Important | pingback downgrade | Blind `plan:free` | **FIX** — grantedPlan + paid order check |
 
 ## Ponytail (dead code, 0 callers verified)
 
@@ -69,3 +69,4 @@ Prior turn only audited the UX-overhaul PR diff. This pass covers **all 355 TS/T
 | sessionVersion fail-open | **DONE** — 5s recheck, missing `sv` reject, 3× DB fail → fail-closed |
 | Chat history PATCH tenancy | **DONE** — `itemAccessWhere` |
 | Referral entropy + txn | **DONE** — `randomInt` + `$transaction` |
+| Agent citation `resultData` | **DONE** — agent route persists `assembleRuntimeContext` citations |

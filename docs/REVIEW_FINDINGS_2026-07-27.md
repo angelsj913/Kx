@@ -15,7 +15,7 @@
 | bugbot + code-review | Medium | `maxOutputTokens` never applied | **FIX** — wire through chat generate path |
 | code-review | Important | `shouldUseWebSearch` always true on weak RAG | **FIX** — require legal/factual/current-events intent |
 | bugbot | Medium | Context Dock `sources.find()!` crash | **FIX** — null-safe expand |
-| bugbot | Medium | Agent path omits citation `resultData` | **DEFER** — larger agent persist change; log only |
+| bugbot | Medium | Agent path omits citation `resultData` | **FIX** — persist `agentContext.citations` |
 | ponytail | Dead code | `defineSlideMaster(ZEFF_MASTER)` never used | **FIX** — remove |
 | ponytail + code-review | Typo | `전동\s*드rill` in imagePrompt | **FIX** |
 | code-review | Minor | Jailbreak hard-block vs plan strip | Keep (stricter; intentional) |
@@ -31,21 +31,10 @@
 5. Wire `maxOutputTokens` into generate path (gemini + openai-compat) — **DONE**
 6. Remove unused PPT slide master — **DONE**
 7. Fix imagePrompt typo — **DONE**
-8. Re-lint / tsc / push PR — **DONE**
-
-## Verification (runtime)
-
-```
-effectiveModelTier('standard','high') → standard
-effectiveModelTier('priority','high') → priority
-shouldUseWebSearch('hello', null) → false
-shouldUseWebSearch('흉기 소지 법', null) → true
-npm run lint → exit 0 (2 pre-existing warnings)
-npx tsc --noEmit → pass
-```
+8. Agent citation `resultData` on agent route — **DONE**
+9. Re-lint / tsc / push PR — **DONE**
 
 ## Deferred (not wrong, out of minimal-fix scope)
 
-- Agent citation `resultData` persistence
 - Eval harness wrapper support for moderation/image-prompt goldens
 - Composer attached-library chips in Context Dock

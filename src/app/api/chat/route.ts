@@ -446,6 +446,11 @@ export async function POST(request: Request) {
             language: userLanguage,
           });
 
+          const agentCitationPayload =
+            agentContext.citations.length > 0
+              ? JSON.stringify({ citations: agentContext.citations })
+              : undefined;
+
           const agentResult = await runAgentRoute({
             text,
             messages: agentMessages,
@@ -484,7 +489,7 @@ export async function POST(request: Request) {
               attempts: agentResult.attempts,
               outputType: art?.outputType,
               structuredKind: art?.structuredKind,
-              resultData: art?.resultData,
+              resultData: art?.resultData ?? agentCitationPayload,
               fileUrl: art?.fileUrl,
               fileName: art?.fileName,
             },
