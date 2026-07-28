@@ -26,7 +26,7 @@ User wants PPT with varied animations/colors and topic-matched templates. PPT qu
 
 1. User outline confirmation step (optional modal)
 2. Reference PPT upload → extract colors/fonts
-3. Domain template JSON in `data/templates/ppt/*.json`
+3. Domain template JSON in `src/data/ppt-templates/*.json` — **DONE** (plan 018)
 
 ## Scope
 

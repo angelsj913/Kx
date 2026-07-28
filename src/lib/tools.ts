@@ -77,7 +77,7 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
   "title": "발표 전체 제목 (12~28자, 매력적으로)",
   "subtitle": "대상·목적·분량 (예: 중학생 대상 10분 발표)",
   "theme": {
-    "preset": "science|nature|medical|business|tech|education|creative|energy|finance|default",
+    "preset": "science|nature|medical|business|tech|education|creative|energy|finance|legal|startup|healthcare|default",
     "primary": "선택 hex 예 0369A1",
     "secondary": "선택 hex 예 0C4A6E",
     "accent": "선택 hex 예 22D3EE"
@@ -109,6 +109,9 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
 필수 품질 규칙:
 1) 표지는 시스템 자동 생성 → slides에는 본문만. 10~14장 권장 (내용 꽉 채움).
 2) theme.preset 은 주제에 맞게 고른다.
+   - 법률·계약·컴플라이언스 → legal
+   - 스타트업·피치·투자 라운드 → startup
+   - 병원·임상·환자 → healthcare
    - 생물·물리·화학·실험 → science
    - 환경·생태·식물 → nature
    - 의학·건강 → medical

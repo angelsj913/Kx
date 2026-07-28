@@ -91,8 +91,6 @@ export async function runSecurityAgent(args: {
   const msgs = toToolMessages(args.history ?? [], text);
   const toolsUsed: string[] = [];
   let totalAttempts = 0;
-  let lastProvider = "";
-  let lastModel = "";
 
   for (let iter = 0; iter < MAX_ITERS; iter++) {
     const turn = await agentTurnWithFallback({
@@ -104,8 +102,6 @@ export async function runSecurityAgent(args: {
       allFailedErrorMessage: "보안 에이전트 모델 호출에 모두 실패했습니다.",
     });
     totalAttempts += turn.attempts;
-    lastProvider = turn.provider;
-    lastModel = turn.model;
 
     if (turn.toolCalls.length === 0) {
       const finalText = stripHanja(turn.content).trim() || "요청을 처리했습니다.";

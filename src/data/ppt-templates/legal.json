@@ -1,0 +1,16 @@
+{
+  "id": "legal",
+  "label": "Legal / Compliance",
+  "keywords": ["법률", "법", "계약", "규정", "소송", "컴플라이언스", "legal", "compliance", "contract", "policy"],
+  "palette": {
+    "primary": "1E293B",
+    "secondary": "0F172A",
+    "accent": "94A3B8",
+    "primarySoft": "E2E8F0",
+    "text": "0F172A",
+    "muted": "64748B",
+    "white": "FFFFFF",
+    "surface": "F8FAFC",
+    "surfaceAlt": "F1F5F9"
+  }
+}

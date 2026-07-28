@@ -9,6 +9,7 @@ import {
   type SlideLayout,
   type SlideTable,
 } from "./fileTypes";
+import { domainPaletteById, inferDomainTemplateId } from "@/lib/pptTemplates";
 
 const FONT = "Malgun Gothic";
 const W = 13.333;
@@ -168,8 +169,10 @@ function hex(raw: string | undefined, fallback: string): string {
   return /^[0-9A-F]{6}$/.test(s) ? s : fallback;
 }
 
-/** 키워드로 테마 추정 (AI가 preset 안 줄 때) */
+/** 키워드로 테마 추정 (AI가 preset 안 줄 때) — 도메인 JSON 템플릿 우선 */
 export function inferThemePreset(title: string, subtitle?: string): string {
+  const domain = inferDomainTemplateId(title, subtitle);
+  if (domain) return domain;
   const t = `${title} ${subtitle ?? ""}`.toLowerCase();
   if (/세포|생물|물리|화학|과학|우주|실험|분자|유전자|분열/.test(t)) return "science";
   if (/환경|자연|생태|기후|식물|숲|지구|그린/.test(t)) return "nature";
@@ -185,7 +188,7 @@ export function inferThemePreset(title: string, subtitle?: string): string {
 
 export function resolvePalette(theme: DeckTheme | undefined, title: string, subtitle?: string): ResolvedPalette {
   const presetKey = String(theme?.preset || inferThemePreset(title, subtitle)).toLowerCase();
-  const base = PRESETS[presetKey] ?? PRESETS.default;
+  const base = PRESETS[presetKey] ?? domainPaletteById(presetKey) ?? PRESETS.default;
   return {
     ...base,
     primary: hex(theme?.primary, base.primary),

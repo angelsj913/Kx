@@ -1,0 +1,16 @@
+{
+  "id": "startup",
+  "label": "Startup Pitch",
+  "keywords": ["스타트업", "피치", "투자", "시드", "pitch", "startup", "vc", "investor", "라운드"],
+  "palette": {
+    "primary": "7C3AED",
+    "secondary": "4C1D95",
+    "accent": "F97316",
+    "primarySoft": "EDE9FE",
+    "text": "1E1B4B",
+    "muted": "64748B",
+    "white": "FFFFFF",
+    "surface": "F5F3FF",
+    "surfaceAlt": "FFF7ED"
+  }
+}

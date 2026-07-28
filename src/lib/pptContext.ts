@@ -1,4 +1,5 @@
 import { retrieveChunks } from "@/lib/ragSearch";
+import { isRagRerankEnabled } from "@/lib/ragRerank";
 import { MIN_CITATION_SCORE } from "@/lib/ragHybrid";
 import { searchWeb, shouldUseWebSearch } from "@/lib/webSearch";
 
@@ -64,7 +65,8 @@ export async function buildPptResearchContext(args: {
       userId: args.userId,
       workspaceId: args.workspaceId,
       query,
-      k: 4,
+      k: 3,
+      rerank: isRagRerankEnabled(),
     });
 
     const ragRelevant =

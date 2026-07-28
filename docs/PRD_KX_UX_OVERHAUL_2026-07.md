@@ -114,7 +114,7 @@ Evidence verified at `9d8b25f`. Full table: [`plans/README.md`](../plans/README.
 
 1. RAG-informed outline + footnotes — plan 011
 2. Optional user outline confirmation — future
-3. Domain template library `data/templates/ppt/*.json` — future
+3. Domain template library `src/data/ppt-templates/*.json` — plan 018
 
 ---
 
