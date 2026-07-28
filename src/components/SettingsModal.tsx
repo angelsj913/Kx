@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -154,7 +156,7 @@ export default function SettingsModal({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-              {tab === "general" && <GeneralPanel />}
+              {tab === "general" && <GeneralPanel onClose={onClose} />}
               {tab === "privacy" && <PrivacyPanel />}
               {tab === "security" && <SecurityPanel />}
               {tab === "billing" && <BillingPanel />}
@@ -176,8 +178,11 @@ export default function SettingsModal({
   );
 }
 
-function GeneralPanel() {
+function GeneralPanel({ onClose }: { onClose: () => void }) {
   const t = useT();
+  const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin === true;
   const { settings, updateLanguage } = useSettings();
   // 서버 설정이 진실 소스 (effect로 로컬 state 동기화하지 않음)
   const lang: AppLanguage =
@@ -187,6 +192,24 @@ function GeneralPanel() {
 
   return (
     <div className="space-y-6">
+      {isAdmin && (
+        <section className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {t("settings.adminConsole")}
+          </h3>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/admin");
+            }}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {t("settings.adminConsole")}
+          </button>
+        </section>
+      )}
       <section>
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {t("settings.language.label")}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight, Shield, Wrench } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import Logo from "@/components/ui/Logo";
@@ -24,6 +26,8 @@ export default function Sidebar({
   onDeleteSession: (id: string) => void;
 }) {
   const t = useT();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin === true;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const pendingSession = sessions.find((s) => s.id === pendingDeleteId);
@@ -131,7 +135,51 @@ export default function Sidebar({
         </ul>
       </div>
 
-      <div className="mt-auto shrink-0 border-t border-[var(--workspace-border)]">
+      {isAdmin && (
+        <div
+          className={`mt-auto shrink-0 space-y-0.5 border-t border-[var(--workspace-border)] ${
+            isCollapsed ? "p-1.5" : "p-2"
+          }`}
+        >
+          {isCollapsed ? (
+            <>
+              <Link
+                href="/admin"
+                title={t("profile.adminPanel")}
+                className="flex h-10 w-full items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-400"
+              >
+                <Wrench size={ICON} />
+              </Link>
+              <Link
+                href="/admin/security"
+                title={t("profile.securityPanel")}
+                className="flex h-10 w-full items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-400"
+              >
+                <Shield size={ICON} />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-300"
+              >
+                <Wrench size={ICON} className="shrink-0" />
+                {t("profile.adminPanel")}
+              </Link>
+              <Link
+                href="/admin/security"
+                className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-300"
+              >
+                <Shield size={ICON} className="shrink-0" />
+                {t("profile.securityPanel")}
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className={`shrink-0 border-t border-[var(--workspace-border)] ${isAdmin ? "" : "mt-auto"}`}>
         <ProfileMenu collapsed={isCollapsed} />
       </div>
 
