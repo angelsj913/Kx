@@ -1,4 +1,4 @@
-import { sendEmail } from "@/lib/mail";
+import { sendMail } from "@/lib/mail";
 
 /** 워크스페이스 초대 메일 */
 export async function sendWorkspaceInviteEmail(opts: {
@@ -78,7 +78,20 @@ export async function sendWorkspaceInviteEmail(opts: {
 </body>
 </html>`.trim();
 
-  return sendEmail({ to: opts.to, subject, text, html });
+  const result = await sendMail({
+    to: opts.to,
+    subject,
+    text,
+    html,
+    throwIfUnconfigured: true,
+  });
+  if (result.sent) {
+    return { mode: result.mode === "none" ? "dev-log" : result.mode };
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(result.error ?? "이메일 발송에 실패했습니다.");
+  }
+  return { mode: "dev-log" };
 }
 
 function escapeHtml(s: string): string {

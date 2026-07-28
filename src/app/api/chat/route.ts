@@ -23,7 +23,7 @@ import {
 } from "@/lib/qualityTier";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
-import { assembleRuntimeContext } from "@/lib/zeffContext";
+import { buildZeffRuntimeContext } from "@/lib/zeffContext";
 import { shouldEscalateToAgent } from "@/lib/skills";
 import {
   loadInlineFromStored,
@@ -571,7 +571,7 @@ export async function POST(request: Request) {
             }
           }
 
-          const agentContext = await assembleRuntimeContext({
+          const agentContext = await buildZeffRuntimeContext({
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
@@ -945,7 +945,7 @@ export async function POST(request: Request) {
             );
           }
 
-          const extraSystemInstruction = await assembleRuntimeContext({
+          const extraSystemInstruction = await buildZeffRuntimeContext({
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             query: text,

@@ -17,16 +17,17 @@ import type { WorkspaceSummary as ServerWorkspaceSummary } from "@/lib/workspace
 // 타입만 가져온다(빌드 시 지워짐) — workspace.ts의 서버 전용 런타임 코드는 클라이언트 번들에 포함되지 않는다.
 export type WorkspaceSummary = Omit<ServerWorkspaceSummary, "createdAt">;
 
-const WS_KEY_PREFIX = "kx.activeWorkspace";
-/** 레거시(전역) 키 — 사용자별 키로 이전 후 제거 */
-const WS_KEY_LEGACY = "kx.activeWorkspace";
+// 사용자별 키: `kx.activeWorkspace.<userId>`
+// 레거시 전역 키(마이그레이션용): `kx.activeWorkspace` (userId 없음)
+const WS_STORAGE_BASE = "kx.activeWorkspace";
+const WS_KEY_LEGACY = WS_STORAGE_BASE;
 
 /** wsFetch 가 동기적으로 읽을 현재 활성 워크스페이스 (Provider 가 갱신) */
 let currentActiveWorkspaceId: string | null = null;
 
 function storageKey(userId: string | null | undefined): string | null {
   if (!userId) return null;
-  return `${WS_KEY_PREFIX}.${userId}`;
+  return `${WS_STORAGE_BASE}.${userId}`;
 }
 
 /** 활성 워크스페이스 헤더를 자동으로 붙이는 fetch 래퍼. */
