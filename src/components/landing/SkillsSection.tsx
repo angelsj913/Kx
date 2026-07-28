@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 import { useScrollProgress, stickySceneIndex, sceneLocalProgress } from "@/lib/landingScroll";
+import LandingLight3D from "@/components/landing/LandingLight3D";
 
 const SCENE_COUNT = 3;
 
@@ -28,6 +29,7 @@ function SceneBackground({ sceneId, progress }: { sceneId: string; progress: num
           className="pointer-events-none absolute -right-[10%] top-[8%] h-[55%] w-[55%] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.18),transparent_68%)]"
           style={{ opacity: fade }}
         />
+        <LandingLight3D className="absolute right-[4%] top-[10%] h-[min(52vw,22rem)] w-[min(52vw,22rem)] opacity-70 sm:right-[6%] sm:top-[12%]" />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-end pr-[6%] pt-[12%]">
           <div className="grid grid-cols-3 gap-3 opacity-[0.55]" style={{ transform: `translateY(${(1 - progress) * 12}px)` }}>
             {Array.from({ length: 6 }).map((_, i) => (

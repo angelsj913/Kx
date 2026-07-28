@@ -10,6 +10,7 @@ import {
   PLAY_STORE_URL,
 } from "@/lib/constants";
 import { useLandingT } from "@/lib/landingI18n";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import Logo from "@/components/ui/Logo";
 
 type OS = "windows" | "mac" | "android";
@@ -27,6 +28,7 @@ const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
 export default function Hero() {
   const t = useLandingT();
   const { status } = useSession();
+  const reducedMotion = useReducedMotion();
   const isLoggedIn = status === "authenticated";
   const startHref = isLoggedIn ? "/app" : "/login?callbackUrl=%2Fapp";
   const [selected, setSelected] = useState<OS | null>(null);
@@ -64,7 +66,30 @@ export default function Hero() {
 
   return (
     <section id="about" className="relative overflow-hidden bg-transparent pb-14 pt-28 sm:pb-20 sm:pt-36">
-      <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        {reducedMotion ? (
+          <img
+            src="/landing/hero-poster.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/landing/hero-poster.jpg"
+          >
+            <source src="/landing/hero-loop.mp4" type="video/mp4" />
+          </video>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/75 via-white/55 to-white/85 dark:from-slate-950/80 dark:via-slate-950/65 dark:to-slate-950/90" />
+      </div>
+
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
         <span className="landing-label hero-fade-up mb-5 inline-block text-[10px] font-medium text-[color:var(--landing-text-muted)]">
           {t("hero.badge")}
         </span>
