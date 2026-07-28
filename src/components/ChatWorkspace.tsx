@@ -462,11 +462,15 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
 
 export default function ChatWorkspace({
   sessionId,
+  openLibrary = false,
+  onLibraryOpened,
   onSessionCreated,
   onTurnSaved,
   onOpenBookChat,
 }: {
   sessionId: string | null;
+  openLibrary?: boolean;
+  onLibraryOpened?: () => void;
   onSessionCreated: (id: string) => void;
   onTurnSaved: () => void;
   onOpenBookChat: (sessionId: string) => void;
@@ -492,6 +496,13 @@ export default function ChatWorkspace({
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
   const [attachedLibrary, setAttachedLibrary] = useState<AttachedLibraryItem[]>([]);
+
+  useEffect(() => {
+    if (!openLibrary) return;
+    setKbOpen(true);
+    onLibraryOpened?.();
+  }, [openLibrary, onLibraryOpened]);
+
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [attachAccept, setAttachAccept] = useState("");
   const [qualityTier, setQualityTier] = useState<QualityTier>(() => readStoredQualityTier());

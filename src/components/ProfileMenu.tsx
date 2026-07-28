@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Settings, UserRound, Sun, Moon, Home, Wrench } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useTheme } from "next-themes";
+import { useThemePreference } from "@/lib/themePreference";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
 import SettingsModal, { type SettingsTab } from "./SettingsModal";
@@ -46,13 +46,13 @@ export default function ProfileMenu({
   const userId = session?.user?.id ?? null;
   const settingsHook = useSettings(userId);
   const searchParams = useSearchParams();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, toggleLightDark } = useThemePreference();
+  const isDark = resolvedTheme === "dark";
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>("general");
   const [loggingOut, setLoggingOut] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
     if (!open) return;
@@ -171,7 +171,7 @@ export default function ProfileMenu({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
+                onClick={toggleLightDark}
                 className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 {isDark ? <Sun className={ICON} /> : <Moon className={ICON} />}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -18,6 +19,12 @@ import {
   Check,
   Trash2,
   MessageCircle,
+  Plus,
+  BookOpen,
+  Wrench,
+  Monitor,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import SecurityPanel from "@/components/settings/SecurityPanel";
@@ -31,6 +38,7 @@ import {
   type AppDictKey,
 } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
+import { THEME_PREFERENCES, useThemePreference } from "@/lib/themePreference";
 import { COMPANY_INFO } from "@/lib/legalContent";
 
 export type SettingsTab =
@@ -185,50 +193,103 @@ function GeneralPanel({ onClose }: { onClose: () => void }) {
   const t = useT();
   const router = useRouter();
   const { data: session } = useSession();
-  const isAdmin = session?.user?.isAdmin === true;
+  const user = session?.user;
+  const isAdmin = user?.isAdmin === true;
   const { settings, updateLanguage } = useSettings();
-  // 서버 설정이 진실 소스 (effect로 로컬 state 동기화하지 않음)
+  const { mounted: themeMounted, preference: themePreference, setThemePreference } =
+    useThemePreference();
+
   const lang: AppLanguage =
     settings?.language && LANGUAGE_ORDER.includes(settings.language as AppLanguage)
       ? (settings.language as AppLanguage)
       : "ko";
 
+  const plan = isPlanId(settings?.plan) ? settings!.plan : "free";
+  const planLabelKey =
+    plan === "free"
+      ? "sidebar.plan.free"
+      : plan === "pro"
+        ? "sidebar.plan.pro"
+        : "sidebar.plan.professional";
+
+  const displayLabel = (() => {
+    const name = user?.name?.trim();
+    if (name) return name;
+    const email = user?.email?.trim();
+    if (email) return email.split("@")[0] || email;
+    return t("profile.defaultUser");
+  })();
+
+  const initials = (() => {
+    const name = user?.name?.trim();
+    if (name) {
+      const parts = name.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    }
+    const email = user?.email?.trim();
+    if (email) return email.slice(0, 2).toUpperCase();
+    return displayLabel.slice(0, 2).toUpperCase();
+  })();
+
+  const themeIcons = {
+    system: Monitor,
+    light: Sun,
+    dark: Moon,
+  } as const;
+
+  function navigate(action: "newChat" | "library" | "admin") {
+    onClose();
+    if (action === "admin") {
+      router.push("/admin");
+      return;
+    }
+    router.push(action === "newChat" ? "/app?newChat=1" : "/app?library=1");
+  }
+
   return (
-    <div className="space-y-6">
-      {isAdmin && (
-        <section className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+    <div className="space-y-7">
+      <div className="flex items-center gap-4 border-b border-slate-200 pb-6 dark:border-slate-800">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-sm font-semibold text-white">
+          {user?.image ? (
+            <Image src={user.image} alt="" width={48} height={48} className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
+              {displayLabel}
+            </p>
+            <span className="rounded-full bg-blue-600/10 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+              {t(planLabelKey)}
+            </span>
+          </div>
+          {user?.email && (
+            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+          )}
+        </div>
+      </div>
+
+      <section className="space-y-2.5">
+        <div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {t("settings.adminConsole")}
+            {t("settings.language.label")}
           </h3>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              router.push("/admin");
-            }}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
-          >
-            <ExternalLink className="h-4 w-4" />
-            {t("settings.adminConsole")}
-          </button>
-        </section>
-      )}
-      <section>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {t("settings.language.label")}
-        </h3>
-        <p className="mt-1 text-xs text-slate-500">{t("settings.language.hint")}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+          <p className="mt-0.5 text-xs text-slate-500">{t("settings.language.hint")}</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {LANGUAGE_ORDER.map((l) => (
             <button
               key={l}
               type="button"
-              onClick={async () => {
-                await updateLanguage(l);
-              }}
-              className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+              onClick={() => void updateLanguage(l)}
+              className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                 lang === l
-                  ? "border-blue-500 bg-blue-600/10 text-blue-700 dark:text-blue-300"
+                  ? "border-blue-600 bg-blue-600/10 text-blue-700 dark:border-blue-500 dark:text-blue-300"
                   : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300"
               }`}
             >
@@ -237,6 +298,80 @@ function GeneralPanel({ onClose }: { onClose: () => void }) {
           ))}
         </div>
       </section>
+
+      <section className="space-y-2.5">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {t("settings.general.theme.label")}
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">{t("settings.general.theme.hint")}</p>
+        </div>
+        <div
+          className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/50"
+          role="group"
+          aria-label={t("settings.general.theme.label")}
+        >
+          {THEME_PREFERENCES.map((opt) => {
+            const Icon = themeIcons[opt];
+            const active = themeMounted && themePreference === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setThemePreference(opt)}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {t(`settings.general.theme.${opt}`)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="space-y-2.5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          {t("settings.general.quickActions.label")}
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("newChat")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-blue-500/40 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-500/40 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+          >
+            <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {t("settings.general.quickActions.newChat")}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("library")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-blue-500/40 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-500/40 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+          >
+            <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {t("settings.general.quickActions.library")}
+          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => navigate("admin")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-950/30"
+            >
+              <Wrench className="h-4 w-4" />
+              {t("settings.adminConsole")}
+            </button>
+          )}
+        </div>
+      </section>
+
+      <p className="border-t border-slate-200 pt-5 text-xs leading-relaxed text-slate-500 dark:border-slate-800 dark:text-slate-400">
+        {t("settings.general.shortcuts.line1")}
+        <br />
+        {t("settings.general.shortcuts.line2")}
+      </p>
     </div>
   );
 }
