@@ -1,6 +1,11 @@
 # App Shell · Auth · Settings · Landing Experience Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+| Field | Value |
+|-------|--------|
+| **Status** | **DONE** — all tasks 1–11 complete on branch `cursor/app-shell-auth-landing-a14a` |
+| **Done** | 2026-07-28 |
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 >
 > **Spec:** [`docs/superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md`](../specs/2026-07-28-app-shell-auth-settings-landing-design.md)  
 > **PRD:** [`docs/PRD_APP_SHELL_AUTH_SETTINGS_2026-07.md`](../../PRD_APP_SHELL_AUTH_SETTINGS_2026-07.md)  
@@ -53,7 +58,7 @@
 **Interfaces:**
 - Produces: `clampPanelWidth({ containerWidth, sidebarWidth, panelWidth, chatMin?, panelMin?, panelMax?, gutter? }): { width: number; shouldCollapse: boolean }`
 
-- [ ] **Step 1: Add pure helper**
+- [x] **Step 1: Add pure helper**
 
 ```ts
 // src/lib/chatPanelLayout.ts
@@ -86,7 +91,7 @@ export function clampPanelWidth(input: {
 }
 ```
 
-- [ ] **Step 2: Add eval golden cases**
+- [x] **Step 2: Add eval golden cases**
 
 ```json
 [
@@ -115,12 +120,12 @@ export function clampPanelWidth(input: {
 
 Wire `chat_panel_clamp` in `scripts/eval-ai.mts` importing `clampPanelWidth`.
 
-- [ ] **Step 3: Run eval**
+- [x] **Step 3: Run eval**
 
 Run: `npm run eval:ai`  
 Expected: new goldens PASS; total failed = 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/chatPanelLayout.ts docs/eval/golden scripts/eval-ai.mts
@@ -139,7 +144,7 @@ git commit -m "feat(layout): clampPanelWidth helper + eval goldens (wave A)"
 - Consumes: `clampPanelWidth` from Task 1
 - Sidebar expanded width is `w-72` (288px) / collapsed `w-16` (64px) — pass measured or known width
 
-- [ ] **Step 1: Add resize effect after panel state**
+- [x] **Step 1: Add resize effect after panel state**
 
 ```tsx
 // Inside ChatWorkspace, after panelWidth/panelOpen state:
@@ -171,16 +176,16 @@ useEffect(() => {
 
 Add `data-sidebar` on `Sidebar` root. Add `id="app-chat-shell"` on the flex row wrapping chat+panel in `app/page.tsx` or ChatWorkspace outer flex.
 
-- [ ] **Step 2: Media safety**
+- [x] **Step 2: Media safety**
 
 Ensure inline generated images in message list use `className` including `max-w-full h-auto` (artifact modal already has `w-full`).
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `npx tsc --noEmit && npm run lint`  
 Manual: open panel, shrink window ~900px — chat remains ≥ ~320px or panel collapses.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -am "fix(chat): reclamp right panel on window resize (wave A)"
@@ -201,7 +206,7 @@ git commit -am "fix(chat): reclamp right panel on window resize (wave A)"
 - Consumes: `isAdminEmail` / session `user.isAdmin`
 - Produces: visible links `/admin`, `/admin/security` for admins only
 
-- [ ] **Step 1: Confirm JWT**
+- [x] **Step 1: Confirm JWT**
 
 In `src/auth.ts` jwt callback, ensure:
 
@@ -211,7 +216,7 @@ token.isAdmin = isAdminEmail(token.email as string | undefined);
 
 and session callback copies `session.user.isAdmin = !!token.isAdmin`.
 
-- [ ] **Step 2: Sidebar footer (admin only)**
+- [x] **Step 2: Sidebar footer (admin only)**
 
 ```tsx
 {isAdmin && (
@@ -224,15 +229,15 @@ and session callback copies `session.user.isAdmin = !!token.isAdmin`.
 
 Add i18n keys `profile.securityPanel` in `src/lib/i18n.ts` / locale files used by `useT`.
 
-- [ ] **Step 3: SettingsModal General or footer**
+- [x] **Step 3: SettingsModal General or footer**
 
 When `session?.user?.isAdmin`, show button closing modal + `router.push("/admin")`.
 
-- [ ] **Step 4: Ops note in PR body**
+- [x] **Step 4: Ops note in PR body**
 
 Remind: set `ADMIN_EMAILS=zeff@zeffai.com` on Vercel.
 
-- [ ] **Step 5: Verify + commit**
+- [x] **Step 5: Verify + commit**
 
 ```bash
 npx tsc --noEmit && npm run lint
@@ -254,7 +259,7 @@ git commit -am "feat(admin): sidebar + settings discovery links (wave B)"
 - Produces: `POST /api/auth/complete-password` `{ password }` for authenticated Google user without `passwordHash`
 - Produces: redirect rule after Google: no password → `/signup?from=google`
 
-- [ ] **Step 1: Auth.js same-email linking**
+- [x] **Step 1: Auth.js same-email linking**
 
 In Google provider config:
 
@@ -267,7 +272,7 @@ Google({
 
 Document in comment: linking allowed only for verified Google emails.
 
-- [ ] **Step 2: Post-login gate**
+- [x] **Step 2: Post-login gate**
 
 Add middleware or client check on `/app`: if session user lacks password and `needsPasswordComplete` cookie/flag — prefer server redirect in a small `src/lib/authComplete.ts` called from `app/app/layout.tsx`:
 
@@ -287,7 +292,7 @@ export async function requirePasswordComplete() {
 
 Call from `src/app/app/layout.tsx` (and optionally skip for `/signup`).
 
-- [ ] **Step 3: Signup UI for `from=google`**
+- [x] **Step 3: Signup UI for `from=google`**
 
 When `searchParams.from === "google"`:
 - Prefill email read-only from session
@@ -307,11 +312,11 @@ await prisma.user.update({
 return NextResponse.json({ ok: true });
 ```
 
-- [ ] **Step 4: Login page**
+- [x] **Step 4: Login page**
 
 Keep Google button; after OAuth, gate handles redirect. Add signup link copy for password setup.
 
-- [ ] **Step 5: Verify + commit**
+- [x] **Step 5: Verify + commit**
 
 ```bash
 npx tsc --noEmit && npm run lint
@@ -332,7 +337,7 @@ git commit -am "feat(auth): Google users complete Zeff password (wave C)"
 - Produces: `GET /api/account/auth-methods` → `{ hasPassword: boolean, google: { linked: boolean, email?: string } }`
 - Produces: `POST /api/account/oauth/google/unlink` — deletes Google `Account` row only if `passwordHash` set
 
-- [ ] **Step 1: auth-methods route**
+- [x] **Step 1: auth-methods route**
 
 ```ts
 const session = await auth();
@@ -340,7 +345,7 @@ const session = await auth();
 return NextResponse.json({ hasPassword: !!user.passwordHash, google: { linked, email } });
 ```
 
-- [ ] **Step 2: unlink route**
+- [x] **Step 2: unlink route**
 
 ```ts
 if (!user.passwordHash) {
@@ -349,14 +354,14 @@ if (!user.passwordHash) {
 await prisma.account.deleteMany({ where: { userId, provider: "google" } });
 ```
 
-- [ ] **Step 3: SecurityPanel UI**
+- [x] **Step 3: SecurityPanel UI**
 
 Section “연결된 계정”:
 - If !google.linked → button `signIn("google", { callbackUrl })`
 - If linked → badge + unlink button (disabled with tooltip if !hasPassword)
 - If !hasPassword → link to `/signup?from=google` or inline password form calling complete-password
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 ```bash
 npx tsc --noEmit && npm run lint
@@ -376,7 +381,7 @@ git commit -am "feat(settings): Google link/unlink in Security (wave D)"
 - Consumes: `useSettings`, session user, plan label if available
 - Produces: denser General UI; theme preference in `localStorage` key e.g. `kx.theme` = `system|light|dark`
 
-- [ ] **Step 1: Implement GeneralPanel layout**
+- [x] **Step 1: Implement GeneralPanel layout**
 
 Structure:
 1. Account hero row (avatar initials, name, email, plan chip)
@@ -387,11 +392,11 @@ Structure:
 
 Use frontend-design skill; no card spam; match app slate/blue tokens.
 
-- [ ] **Step 2: Theme sync**
+- [x] **Step 2: Theme sync**
 
 On change, update the same mechanism ProfileMenu moon toggle uses (read that code and unify on one helper `src/lib/themePreference.ts` if duplicated).
 
-- [ ] **Step 3: Verify + commit**
+- [x] **Step 3: Verify + commit**
 
 ```bash
 npx tsc --noEmit && npm run lint
@@ -411,15 +416,15 @@ git commit -am "feat(settings): trendy General tab layout (wave E)"
 - Consumes: scroll helpers from `landingScroll.ts`
 - Produces: sticky section `id="features"` with scenes for **문서·발표자료** and **공유 서재**
 
-- [ ] **Step 1: Refactor scenes array**
+- [x] **Step 1: Refactor scenes array**
 
 Keep only two throttle scenes (docs/PPT + library). Move AI 요약 / 강의 분석 to a compact static strip above or drop from throttle (Wave H places office strip separately).
 
-- [ ] **Step 2: Sticky height ~320vh**, sticky viewport, progress-driven opacity/transform — mirror patterns already in `WorkLectureScroll.tsx`.
+- [x] **Step 2: Sticky height ~320vh**, sticky viewport, progress-driven opacity/transform — mirror patterns already in `WorkLectureScroll.tsx`.
 
-- [ ] **Step 3: reduced-motion media query** → two static full-width blocks.
+- [x] **Step 3: reduced-motion media query** → two static full-width blocks.
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 ```bash
 npx tsc --noEmit && npm run lint
@@ -438,15 +443,15 @@ git commit -am "feat(landing): FeatureShowcase throttle for PPT + library (wave 
 - Same scroll primitives as Task 7
 - CTAs: `/design`, app/login hrefs unchanged
 
-- [ ] **Step 1: Replace card grid with sticky 3-scene throttle** (`id="skills"`, ~360vh).
+- [x] **Step 1: Replace card grid with sticky 3-scene throttle** (`id="skills"`, ~360vh).
 
 Per scene: eyebrow optional (not overpowering brand), title, one sentence, text CTA — full-bleed visual background (gradient/image), **no cards**.
 
-- [ ] **Step 2: Keep post-throttle CTA band** to `/app` or login.
+- [x] **Step 2: Keep post-throttle CTA band** to `/app` or login.
 
-- [ ] **Step 3: reduced-motion** → stacked sections without sticky scrubbing.
+- [x] **Step 3: reduced-motion** → stacked sections without sticky scrubbing.
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 ```bash
 git commit -am "feat(landing): SkillsSection scroll throttle (wave G)"
@@ -475,13 +480,13 @@ git commit -am "feat(landing): SkillsSection scroll throttle (wave G)"
 </main>
 ```
 
-- [ ] **Step 1: Update `page.tsx` imports and order** as above.
+- [x] **Step 1: Update `page.tsx` imports and order** as above.
 
-- [ ] **Step 2: Header anchors** → `#skills`, `#features`, `#pricing` matching section ids.
+- [x] **Step 2: Header anchors** → `#skills`, `#features`, `#pricing` matching section ids.
 
-- [ ] **Step 3: Shorten WorkspaceIntro** to one headline + one sentence + one CTA (no competing feature grid).
+- [x] **Step 3: Shorten WorkspaceIntro** to one headline + one sentence + one CTA (no competing feature grid).
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 ```bash
 git commit -am "feat(landing): reorder IA Hero→Skills→Features→Office→Intro→Pricing (wave H)"
@@ -501,7 +506,7 @@ git commit -am "feat(landing): reorder IA Hero→Skills→Features→Office→In
 - Hero mounts `<video muted loop playsInline poster=...>` behind content when motion OK
 - `LandingLight3D` CSS 3D (prefer) floated in Skills scene 0 or Feature scene 0 via prop slot
 
-- [ ] **Step 1: Hero video layer**
+- [x] **Step 1: Hero video layer**
 
 ```tsx
 <video
@@ -519,13 +524,13 @@ git commit -am "feat(landing): reorder IA Hero→Skills→Features→Office→In
 
 Wrap with `useReducedMotion()` — if true, show poster `<img>` only.
 
-- [ ] **Step 2: LandingLight3D**
+- [x] **Step 2: LandingLight3D**
 
 CSS perspective + rotating subtle plane (no three.js unless already depended). `IntersectionObserver` to pause animation offscreen.
 
-- [ ] **Step 3: Place 3D in one throttle scene** (Skills “콘텐츠 자동화”).
+- [x] **Step 3: Place 3D in one throttle scene** (Skills “콘텐츠 자동화”).
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 ```bash
 git add public/landing src/components/landing
@@ -542,7 +547,7 @@ git commit -m "feat(landing): hero video loop + light 3D accent (wave I)"
 - Create: `plans/024-app-shell-auth-landing.md` stub pointing to this superpowers plan (optional, match repo convention)
 - Modify: `plans/README.md` rows 024+
 
-- [ ] **Step 1: Full verify**
+- [x] **Step 1: Full verify**
 
 ```bash
 npm run lint && npx tsc --noEmit && npm run eval:ai
@@ -550,9 +555,9 @@ npm run lint && npx tsc --noEmit && npm run eval:ai
 
 Expected: exit 0 / all goldens pass.
 
-- [ ] **Step 2: Update docs statuses + plans README**
+- [x] **Step 2: Update docs statuses + plans README**
 
-- [ ] **Step 3: Push + update PR**
+- [x] **Step 3: Push + update PR**
 
 ```bash
 git push -u origin cursor/app-shell-auth-landing-a14a

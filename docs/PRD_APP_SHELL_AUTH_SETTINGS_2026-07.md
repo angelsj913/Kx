@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Spec approved — plan ready (`docs/superpowers/plans/2026-07-28-app-shell-auth-settings-landing.md`) |
+| **Status** | **Implemented / Done** — branch `cursor/app-shell-auth-landing-a14a`, waves A–I shipped |
 | **Date** | 2026-07-28 |
 | **Base** | `main` @ merge `03eaa6b` |
 | **Full design spec** | [`docs/superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md`](./superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md) |

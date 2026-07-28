@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Spec approved — implementation plan ready |
+| **Status** | **Implemented** — waves A–I on branch `cursor/app-shell-auth-landing-a14a` |
 | **Date** | 2026-07-28 |
 | **Planned at** | `main` @ `03eaa6b` |
 | **Approach** | Single PRD, waves **A → B → C+D → E → F → G → H → I** |
