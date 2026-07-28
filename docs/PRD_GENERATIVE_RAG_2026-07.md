@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Draft — approved for spec writing |
+| **Status** | Approved — Phase 1 implementation ready |
 | **Date** | 2026-07-28 |
 | **Supersedes** | `docs/PRD_UNIFIED_RAG_2026-07.md` (retrieval-only scope) |
 | **Scope** | Generation-first RAG: reports, presentations, study materials |
