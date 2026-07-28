@@ -69,5 +69,19 @@
     "expectSlides": 1,
     "expectPreset": "startup"
   },
+  {
+    "id": "ppt-theme-scheme-1",
+    "type": "ppt_theme_scheme",
+    "xml": "<a:clrScheme name=\"Office\"><a:dk1><a:srgbClr val=\"0F172A\"/></a:dk1><a:lt1><a:srgbClr val=\"FFFFFF\"/></a:lt1><a:dk2><a:srgbClr val=\"1E3A8A\"/></a:dk2><a:accent1><a:srgbClr val=\"2563EB\"/></a:accent1><a:accent2><a:srgbClr val=\"F59E0B\"/></a:accent2></a:clrScheme>",
+    "expectPrimary": "2563EB",
+    "expectAccent": "F59E0B"
+  },
+  {
+    "id": "ppt-theme-scheme-2",
+    "type": "ppt_theme_scheme",
+    "xml": "<a:accent1><a:sysClr val=\"windowText\" lastClr=\"112233\"/></a:accent1><a:accent2><a:srgbClr val=\"AABBCC\"/></a:accent2>",
+    "expectPrimary": null,
+    "expectAccent": "AABBCC"
+  },
   { "id": "ppt-live-skip", "type": "live_skip", "note": "2-pass PPT generation requires API" }
 ]

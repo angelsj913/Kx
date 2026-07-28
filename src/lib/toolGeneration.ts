@@ -39,7 +39,7 @@ import {
   type PracticeSet,
   type MathGraph,
 } from "./structured";
-import type { Deck, Workbook } from "./fileTypes";
+import type { Deck, DeckTheme, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
 import {
@@ -67,6 +67,8 @@ export interface ToolGenerationInput {
   pptStage?: "full" | "outline" | "fill";
   /** fill 단계에 넘길 아웃라인 JSON (또는 PptOutlineDraft JSON) */
   pptOutlineJson?: string;
+  /** Reference PPT에서 추출한 테마 (색) */
+  themeOverride?: import("./fileTypes").DeckTheme;
 }
 
 interface Meta {
@@ -449,6 +451,14 @@ async function runPptxGeneration(
     if (!draft.slides.length) {
       throw new Error("PPT 아웃라인에 슬라이드가 없습니다. 다시 시도해 주세요.");
     }
+    if (input.themeOverride) {
+      draft = {
+        ...draft,
+        primary: input.themeOverride.primary ?? draft.primary,
+        secondary: input.themeOverride.secondary ?? draft.secondary,
+        accent: input.themeOverride.accent ?? draft.accent,
+      };
+    }
     return {
       tool,
       outputType: "structured",
@@ -463,6 +473,7 @@ async function runPptxGeneration(
   let meta: Meta = { provider: "gemini", model: "pptx", attempts: 0 };
 
   let outlineForFill = "";
+  let fillThemeFromOutline: DeckTheme | undefined;
   if (stage === "fill") {
     if (!input.pptOutlineJson?.trim()) {
       throw new Error("확정할 PPT 아웃라인이 없습니다.");
@@ -470,6 +481,14 @@ async function runPptxGeneration(
     try {
       const draft = parsePptOutline(input.pptOutlineJson, queryText);
       outlineForFill = formatOutlineForFill(draft);
+      if (draft.primary || draft.secondary || draft.accent) {
+        fillThemeFromOutline = {
+          preset: draft.themePreset,
+          primary: draft.primary,
+          secondary: draft.secondary,
+          accent: draft.accent,
+        };
+      }
     } catch {
       throw new Error("PPT 아웃라인 형식이 올바르지 않습니다.");
     }
@@ -546,6 +565,20 @@ async function runPptxGeneration(
     throw new Error(msg);
   }
 
+  const themeMerge: DeckTheme | undefined = {
+    ...(fillThemeFromOutline ?? {}),
+    ...(input.themeOverride ?? {}),
+  };
+  if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset) {
+    deck = {
+      ...deck,
+      theme: {
+        ...(deck.theme ?? {}),
+        ...themeMerge,
+      },
+    };
+  }
+
   if (pptResearch.hasSources) {
     deck = {
       ...deck,
@@ -571,13 +604,19 @@ async function runPptxGeneration(
         modelTier: input.modelTier,
         onAttempt: input.onAttempt,
       });
-      deck = parseDeck(retry.text);
-      meta = {
-        provider: retry.provider,
-        model: retry.model,
-        attempts: meta.attempts + retry.attempts,
-      };
-      validation = validateDeck(deck);
+        deck = parseDeck(retry.text);
+        meta = {
+          provider: retry.provider,
+          model: retry.model,
+          attempts: meta.attempts + retry.attempts,
+        };
+        if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset) {
+          deck = {
+            ...deck,
+            theme: { ...(deck.theme ?? {}), ...themeMerge },
+          };
+        }
+        validation = validateDeck(deck);
     } catch (retryErr) {
       console.warn("[toolGeneration] ppt validate retry failed", retryErr);
     }

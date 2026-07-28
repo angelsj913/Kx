@@ -608,6 +608,8 @@ export const TOOLS: ToolDef[] = [
       "예) 신제품 출시 전략 발표. 시장 현황, 타깃 고객, 마케팅 계획, 예상 매출을 포함해줘.",
     submitLabel: "PPT 파일 만들기",
     fileBaseName: "presentation",
+    acceptFiles:
+      ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,application/pdf,text/plain,.txt,.md",
   },
   {
     id: "excel",

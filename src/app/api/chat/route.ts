@@ -720,6 +720,28 @@ export async function POST(request: Request) {
             }
           }
 
+          let themeOverride: import("@/lib/fileTypes").DeckTheme | undefined;
+          if (quickToolId === "ppt") {
+            try {
+              const { extractThemeFromPptx, isPptxAttachment } = await import(
+                "@/lib/pptThemeExtract"
+              );
+              for (let i = 0; i < inlineFiles.length; i++) {
+                const f = inlineFiles[i]!;
+                const fname = storedAttachments[i]?.filename;
+                if (!isPptxAttachment(f.mimeType, fname)) continue;
+                const buf = Buffer.from(f.data, "base64");
+                const extracted = await extractThemeFromPptx(buf);
+                if (extracted) {
+                  themeOverride = extracted;
+                  break;
+                }
+              }
+            } catch (err) {
+              console.warn("[chat route] reference ppt theme extract skipped:", err);
+            }
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text: toolText,
@@ -728,6 +750,7 @@ export async function POST(request: Request) {
             modelTier,
             pptStage: resolvedPptStage,
             pptOutlineJson: pptOutlineJson ?? undefined,
+            themeOverride,
             audio:
               quickTool?.inputType === "audio"
                 ? inlineFiles[0]

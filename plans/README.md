@@ -30,6 +30,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [019](./019-ppt-outline-confirm.md) | PPT outline confirmation step | P2 | M | 011, 018 | DONE |
 | [020](./020-landing-ux-noto-login-skills.md) | Landing UX: Noto/white/blue, login loop, quality in +, 3 skills | P1 | L | — | DONE |
 | [021](./021-rag-engine-upgrade.md) | RAG: semantic chunk, BM25 hybrid, multi-query, assembler | P1 | L | 010, 017, 020 | DONE |
+| [022](./022-ppt-reference-theme.md) | Reference PPT theme extract (colors) | P2 | M | 011, 019 | DONE |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`
 

@@ -120,6 +120,22 @@ if (!existsSync(GOLDEN_DIR)) {
               `slides=${draft.slides.length} preset=${draft.themePreset} source=${draft.sourceText.slice(0, 20)}`,
             );
           }
+        } else if (c.type === "ppt_theme_scheme") {
+          const { parseClrSchemeFromThemeXml, schemeToDeckTheme } = await import(
+            "../src/lib/pptThemeExtract.ts"
+          );
+          const scheme = parseClrSchemeFromThemeXml(String(c.xml ?? ""));
+          const theme = schemeToDeckTheme(scheme);
+          const ep = c.expectPrimary as string | null;
+          const ea = c.expectAccent as string | null;
+          const primaryOk = ep == null ? !theme.primary : theme.primary === ep;
+          const accentOk = ea == null ? true : theme.accent === ea;
+          if (primaryOk && accentOk) {
+            pass(name, JSON.stringify(theme));
+            passed++;
+          } else {
+            fail(name, JSON.stringify(theme));
+          }
         } else if (c.type === "ppt_validate") {
           const { validateDeck } = await import("../src/lib/pptValidate.ts");
           const { parseDeck } = await import("../src/lib/pptx.ts");

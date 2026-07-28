@@ -32,6 +32,8 @@ export interface DeckTheme {
   primary?: string;
   secondary?: string;
   accent?: string;
+  /** Reference PPT에서 추출한 글꼴 (선택) */
+  fontFace?: string;
 }
 
 export interface SlideTable {

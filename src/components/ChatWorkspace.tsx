@@ -90,7 +90,7 @@ const ATTACH_FORMATS: {
     id: "doc",
     labelKey: "chat.attach.document",
     accept:
-      ".doc,.docx,.txt,.md,.hwp,.hwpx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".doc,.docx,.txt,.md,.hwp,.hwpx,.pptx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation",
     icon: FileText,
   },
   { id: "audio", labelKey: "chat.attach.audio", accept: "audio/*,.mp3,.wav,.m4a", icon: Mic },
