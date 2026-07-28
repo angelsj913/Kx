@@ -2,26 +2,24 @@ import { prisma } from "@/lib/prisma";
 import { listWhere } from "@/lib/workspace";
 import { embedQuery } from "@/lib/embeddings";
 import {
+  bm25RawScores,
   hybridScore,
-  keywordOverlapScore,
+  normalizeScores,
   passesRetrievalThreshold,
 } from "@/lib/ragHybrid";
 import { cosine } from "@/lib/rag";
 import { isRagRerankEnabled, RAG_RERANK_POOL, rerankChunks } from "@/lib/ragRerank";
+import { expandQueries, isMultiQueryEnabled } from "@/lib/ragMultiQuery";
 
 function cosineLocal(a: number[], b: number[]): number {
   return cosine(a, b);
 }
 
 /**
- * RAG 검색(검색만 — LLM 합성 없음). rag/search 라우트에 인라인돼 있던 로직을
- * HTTP와 무관하게 재사용 가능한 형태로 뽑아낸 것. 라우트와 에이전트 툴이 공용한다.
+ * RAG 검색(검색만 — LLM 합성 없음).
  *
- * 스코프: workspaceId가 주어지면 팀 자료, 없으면 개인 자료(userId). Request를 받지
- * 않으므로 호출부가 미리 멤버십/권한을 확인해야 한다(라우트의 auth + resolveScope,
- * 에이전트의 세션 workspaceId).
- *
- * 점수 게이트 통과 후 hybrid top-N(기본 20)을 모은 뒤, 활성화 시 LLM rerank로 top-k.
+ * 점수: 벡터 + BM25(후보 집합) 하이브리드. 멀티쿼리 시 쿼리별 max 점수.
+ * 게이트 통과 후 hybrid top-N을 LLM rerank(옵션).
  */
 export const RAG_CANDIDATE_LIMIT = 2000;
 
@@ -41,6 +39,8 @@ export interface RetrieveResult {
   empty: boolean;
   /** LLM rerank 적용 여부 */
   reranked?: boolean;
+  /** 멀티쿼리 확장 사용 여부 */
+  multiQuery?: boolean;
 }
 
 export async function retrieveChunks(input: {
@@ -77,18 +77,35 @@ export async function retrieveChunks(input: {
     return { ranked: [], provider: "local", empty: true };
   }
 
-  const { vector, provider } = await embedQuery(input.query);
-  const scored = chunks
-    .map((item) => {
-      const vectorScore = cosineLocal(vector, item.embedding);
-      const kw = keywordOverlapScore(input.query, item.content);
-      return { item, score: hybridScore(vectorScore, kw) };
-    })
+  const queries = await expandQueries(input.query);
+  const usedMulti = isMultiQueryEnabled() && queries.length > 1;
+  const contents = chunks.map((c) => c.content);
+
+  // chunkId → best hybrid score
+  const best = new Map<string, { item: (typeof chunks)[number]; score: number }>();
+  let provider = "local";
+
+  for (const q of queries) {
+    const embedded = await embedQuery(q);
+    provider = embedded.provider;
+    const bm25 = normalizeScores(bm25RawScores(q, contents));
+    for (let i = 0; i < chunks.length; i++) {
+      const item = chunks[i]!;
+      const vectorScore = cosineLocal(embedded.vector, item.embedding);
+      const score = hybridScore(vectorScore, bm25[i] ?? 0);
+      const prev = best.get(item.id);
+      if (!prev || score > prev.score) {
+        best.set(item.id, { item, score });
+      }
+    }
+  }
+
+  const scored = [...best.values()]
     .filter((r) => passesRetrievalThreshold(r.score))
     .sort((a, b) => b.score - a.score);
 
   if (scored.length === 0) {
-    return { ranked: [], provider, empty: false };
+    return { ranked: [], provider, empty: false, multiQuery: usedMulti };
   }
 
   const poolSize = Math.max(k, RAG_RERANK_POOL);
@@ -117,7 +134,7 @@ export async function retrieveChunks(input: {
       candidates: rankedPool,
       topK: k,
     });
-    return { ranked, provider, empty: false, reranked: true };
+    return { ranked, provider, empty: false, reranked: true, multiQuery: usedMulti };
   }
 
   return {
@@ -125,5 +142,6 @@ export async function retrieveChunks(input: {
     provider,
     empty: false,
     reranked: false,
+    multiQuery: usedMulti,
   };
 }

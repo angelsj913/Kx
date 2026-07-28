@@ -147,6 +147,47 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name, `score=${score.toFixed(3)}`);
             passed++;
           }
+        } else if (c.type === "chunk_semantic") {
+          const { chunkText } = await import("../src/lib/rag.ts");
+          const size = Number(c.size ?? 900);
+          const overlap = Number(c.overlap ?? 150);
+          const chunks = chunkText(String(c.input ?? ""), size, overlap);
+          const min = Number(c.expectMinChunks ?? 1);
+          const prefix = typeof c.mustContainChunkPrefix === "string" ? c.mustContainChunkPrefix : null;
+          const hasPrefix = prefix
+            ? chunks.some((ch) => ch.content.trimStart().startsWith(prefix))
+            : true;
+          if (chunks.length >= min && hasPrefix) {
+            pass(name, `n=${chunks.length}`);
+            passed++;
+          } else {
+            fail(name, `n=${chunks.length} prefix=${hasPrefix}`);
+          }
+        } else if (c.type === "multi_query") {
+          const { expandQueriesHeuristic } = await import("../src/lib/ragMultiQuery.ts");
+          const got = expandQueriesHeuristic(String(c.query ?? ""));
+          const min = Number(c.expectMin ?? 1);
+          if (got.length >= min && got[0] === String(c.query ?? "").trim()) {
+            pass(name, JSON.stringify(got));
+            passed++;
+          } else {
+            fail(name, JSON.stringify(got));
+          }
+        } else if (c.type === "bm25_prefer") {
+          const { bm25RawScores, normalizeScores } = await import("../src/lib/ragHybrid.ts");
+          const docs = (c.docs as string[]) ?? [];
+          const norms = normalizeScores(bm25RawScores(String(c.query ?? ""), docs));
+          let best = 0;
+          for (let i = 1; i < norms.length; i++) {
+            if ((norms[i] ?? 0) > (norms[best] ?? 0)) best = i;
+          }
+          const expect = Number(c.expectBestIndex ?? 0);
+          if (best === expect) {
+            pass(name, `best=${best}`);
+            passed++;
+          } else {
+            fail(name, `best=${best} scores=${JSON.stringify(norms)}`);
+          }
         } else if (c.type === "rerank_parse") {
           const { parseRerankOrder } = await import("../src/lib/ragRerank.ts");
           const got = parseRerankOrder(String(c.raw ?? ""), Number(c.candidateCount ?? 0));

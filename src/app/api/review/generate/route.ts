@@ -102,13 +102,33 @@ export async function POST(request: Request) {
     );
   }
 
+  // 색인된 청크가 있으면 RAG로 핵심 구간을 고르고, 없으면 기존 8k 슬라이스 폴백
+  let material = source.slice(0, 8000);
+  try {
+    const { retrieveChunks } = await import("@/lib/ragSearch");
+    const { isRagRerankEnabled } = await import("@/lib/ragRerank");
+    const found = await retrieveChunks({
+      userId,
+      workspaceId: scope.workspaceId ?? null,
+      libraryItemId,
+      query: `${item.title}\n핵심 개념 복습`,
+      k: 8,
+      rerank: isRagRerankEnabled(),
+    });
+    if (!found.empty && found.ranked.length) {
+      material = found.ranked.map((c) => c.content).join("\n\n").slice(0, 8000);
+    }
+  } catch (err) {
+    console.warn("[review/generate] RAG assemble skipped:", err);
+  }
+
   try {
     const result = await chatReplyWithFallback({
       systemInstruction: SYSTEM,
       messages: [
         {
           role: "user",
-          text: `다음 자료로 복습 카드 ${count}개를 JSON 배열로 만들어 주세요.\n\n---\n${source.slice(0, 8000)}`,
+          text: `다음 자료로 복습 카드 ${count}개를 JSON 배열로 만들어 주세요.\n\n---\n${material}`,
         },
       ],
     });

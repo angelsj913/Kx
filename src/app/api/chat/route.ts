@@ -681,11 +681,13 @@ export async function POST(request: Request) {
           if (quickToolId === "math-solve" && imageLike.length === 0 && text.trim()) {
             try {
               const { retrieveChunks } = await import("@/lib/ragSearch");
+              const { isRagRerankEnabled } = await import("@/lib/ragRerank");
               const found = await retrieveChunks({
                 userId,
                 workspaceId: chatSession.workspaceId ?? null,
                 query: text,
                 k: 3,
+                rerank: isRagRerankEnabled(),
               });
               if (found.ranked.length) {
                 toolText = [

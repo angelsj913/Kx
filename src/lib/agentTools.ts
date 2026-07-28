@@ -71,6 +71,7 @@ const KNOWLEDGE_SEARCH: AgentToolSpec = {
       workspaceId: ctx.workspaceId,
       query,
       k: 6,
+      rerank: true,
     });
     if (empty) return { terminal: false, text: "색인된 문서가 없습니다." };
     if (ranked.length === 0) return { terminal: false, text: "관련된 내용을 찾지 못했습니다." };
