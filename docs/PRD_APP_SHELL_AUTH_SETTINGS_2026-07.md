@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Draft — awaiting owner approval (revised landing scope) |
+| **Status** | Spec approved — plan ready (`docs/superpowers/plans/2026-07-28-app-shell-auth-settings-landing.md`) |
 | **Date** | 2026-07-28 |
 | **Base** | `main` @ merge `03eaa6b` |
 | **Full design spec** | [`docs/superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md`](./superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md) |
@@ -58,4 +58,4 @@
 2. On approval → implementation plan via `writing-plans`.  
 3. On plan approval → code with `/using-superpowers` workflow.
 
-**Owner action:** reply **스펙 승인** (or list change requests).
+**Owner action:** Spec approved. Choose plan execution mode (subagent-driven vs inline), then implement.

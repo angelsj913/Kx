@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Awaiting user review (revised — landing scope expanded) |
+| **Status** | Spec approved — implementation plan ready |
 | **Date** | 2026-07-28 |
 | **Planned at** | `main` @ `03eaa6b` |
 | **Approach** | Single PRD, waves **A → B → C+D → E → F → G → H → I** |

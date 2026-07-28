@@ -32,6 +32,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [021](./021-rag-engine-upgrade.md) | RAG: semantic chunk, BM25 hybrid, multi-query, assembler | P1 | L | 010, 017, 020 | DONE |
 | [022](./022-ppt-reference-theme.md) | Reference PPT theme extract (colors) | P2 | M | 011, 019 | DONE |
 | [023](./023-ppt-reference-font.md) | Reference PPT fontFace plumbing | P2 | S | 022 | DONE |
+| [024](./024-app-shell-auth-landing.md) | App shell · auth link · settings · landing A–I | P1 | XL | — | PLAN READY |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`
 
