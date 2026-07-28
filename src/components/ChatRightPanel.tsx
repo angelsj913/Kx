@@ -16,9 +16,13 @@ import {
   Eye,
   ImageIcon,
   ExternalLink,
+  ListOrdered,
+  Pencil,
+  Check,
+  Circle,
 } from "lucide-react";
 
-export type PanelTab = "files" | "terminal";
+export type PanelTab = "files" | "plan" | "terminal";
 
 export interface ChatArtifact {
   id: string;
@@ -30,6 +34,8 @@ export interface ChatArtifact {
   mimeType?: string | null;
   /** 메시지 id — 클릭 시 포커스용 */
   messageId?: string;
+  /** 타임라인 표시용 (ISO 또는 짧은 시각) */
+  timeLabel?: string;
 }
 
 export interface TerminalLine {
@@ -47,10 +53,20 @@ export interface ContextSource {
   url?: string;
 }
 
+export type PlanStepStatus = "pending" | "active" | "done" | "error";
+
+export interface PlanStep {
+  id: string;
+  label: string;
+  detail?: string;
+  status: PlanStepStatus;
+}
+
 const CONTEXT_CHIP_MAX = 5;
 
 const TAB_META: { id: PanelTab; labelKey: AppDictKey; icon: typeof FolderOpen }[] = [
   { id: "files", labelKey: "panel.tab.files", icon: FolderOpen },
+  { id: "plan", labelKey: "panel.tab.plan", icon: ListOrdered },
   { id: "terminal", labelKey: "panel.tab.terminal", icon: Terminal },
 ];
 
@@ -91,6 +107,10 @@ function kindLabel(kind: ChatArtifact["kind"], t: (key: AppDictKey) => string) {
   }
 }
 
+function isEditableArtifact(kind: ChatArtifact["kind"]) {
+  return kind === "pptx" || kind === "xlsx" || kind === "structured" || kind === "doc";
+}
+
 export default function ChatRightPanel({
   open,
   onToggle,
@@ -98,6 +118,7 @@ export default function ChatRightPanel({
   onTabChange,
   artifacts,
   contextSources,
+  planSteps,
   terminalLines,
   loading,
   onSelectArtifact,
@@ -109,6 +130,7 @@ export default function ChatRightPanel({
   onTabChange: (t: PanelTab) => void;
   artifacts: ChatArtifact[];
   contextSources: ContextSource[];
+  planSteps: PlanStep[];
   terminalLines: TerminalLine[];
   loading: boolean;
   onSelectArtifact?: (a: ChatArtifact) => void;
@@ -122,6 +144,7 @@ export default function ChatRightPanel({
   );
   const emptyHint = useMemo(() => {
     if (tab === "files") return t("panel.emptyHint.files");
+    if (tab === "plan") return t("panel.emptyHint.plan");
     return t("panel.emptyHint.terminal");
   }, [tab, t]);
 
@@ -204,66 +227,18 @@ export default function ChatRightPanel({
           artifacts.length === 0 ? (
             <EmptyState text={emptyHint} />
           ) : (
-            <ul className="space-y-2">
-              {artifacts.map((a) => {
-                const Icon = kindIcon(a.kind);
-                return (
-                  <li key={a.id}>
-                    <div className="group rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-blue-500/40 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-500/30">
-                      <button
-                        type="button"
-                        onClick={() => onSelectArtifact?.(a)}
-                        className="flex w-full items-start gap-2.5 text-left"
-                      >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                            {a.title}
-                          </span>
-                          <span className="mt-0.5 block truncate text-[11px] text-slate-500">
-                            {kindLabel(a.kind, t)}
-                            {a.subtitle ? ` · ${a.subtitle}` : ""}
-                          </span>
-                        </span>
-                      </button>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => onSelectArtifact?.(a)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                        >
-                          <Eye className="h-3 w-3" />
-                          {t("chat.openFile")}
-                        </button>
-                        {a.url && (
-                          <>
-                            <a
-                              href={a.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              {t("chat.openNewTab")}
-                            </a>
-                            <a
-                              href={a.url}
-                              download={a.fileName ?? undefined}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
-                            >
-                              <Download className="h-3 w-3" />
-                              {t("chat.download")}
-                            </a>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <OutputTimeline
+              artifacts={artifacts}
+              onSelectArtifact={onSelectArtifact}
+            />
+          )
+        )}
+
+        {tab === "plan" && (
+          planSteps.length === 0 ? (
+            <EmptyState text={emptyHint} />
+          ) : (
+            <PlanExecuteList steps={planSteps} loading={loading} />
           )
         )}
 
@@ -309,6 +284,176 @@ export default function ChatRightPanel({
         )}
       </div>
     </aside>
+  );
+}
+
+function OutputTimeline({
+  artifacts,
+  onSelectArtifact,
+}: {
+  artifacts: ChatArtifact[];
+  onSelectArtifact?: (a: ChatArtifact) => void;
+}) {
+  const t = useT();
+  return (
+    <ul className="relative space-y-0">
+      {artifacts.map((a, index) => {
+        const Icon = kindIcon(a.kind);
+        const editable = isEditableArtifact(a.kind);
+        const isLast = index === artifacts.length - 1;
+        return (
+          <li key={a.id} className="relative flex gap-3 pb-4">
+            <div className="flex w-4 shrink-0 flex-col items-center">
+              <span className="mt-1.5 h-2.5 w-2.5 rounded-full bg-[var(--mode-accent,#2563eb)] ring-2 ring-white dark:ring-slate-900" />
+              {!isLast && (
+                <span className="mt-1 w-px flex-1 bg-slate-200 dark:bg-slate-700" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-blue-500/40 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-blue-500/30">
+              <button
+                type="button"
+                onClick={() => onSelectArtifact?.(a)}
+                className="flex w-full items-start gap-2.5 text-left"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {a.title}
+                    </span>
+                    {a.timeLabel && (
+                      <span className="shrink-0 font-mono text-[9px] uppercase tracking-wide text-slate-400">
+                        {a.timeLabel}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                    {kindLabel(a.kind, t)}
+                    {a.subtitle ? ` · ${a.subtitle}` : ""}
+                  </span>
+                </span>
+              </button>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onSelectArtifact?.(a)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  {editable ? (
+                    <Pencil className="h-3 w-3" />
+                  ) : (
+                    <Eye className="h-3 w-3" />
+                  )}
+                  {editable ? t("panel.continueEditing") : t("chat.openFile")}
+                </button>
+                {a.url && (
+                  <>
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {t("chat.openNewTab")}
+                    </a>
+                    <a
+                      href={a.url}
+                      download={a.fileName ?? undefined}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm shadow-blue-600/20"
+                    >
+                      <Download className="h-3 w-3" />
+                      {t("chat.download")}
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function PlanExecuteList({
+  steps,
+  loading,
+}: {
+  steps: PlanStep[];
+  loading: boolean;
+}) {
+  const t = useT();
+  return (
+    <ol className="space-y-2">
+      {steps.map((step, i) => {
+        const done = step.status === "done";
+        const active = step.status === "active";
+        const err = step.status === "error";
+        return (
+          <li
+            key={step.id}
+            className={`rounded-xl border px-3 py-2.5 ${
+              err
+                ? "border-red-300/60 bg-red-50/80 dark:border-red-500/30 dark:bg-red-950/30"
+                : active
+                  ? "border-blue-500/40 bg-blue-600/5 dark:bg-blue-500/10"
+                  : done
+                    ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10"
+                    : "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50"
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                  err
+                    ? "bg-red-500/15 text-red-600"
+                    : done
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : active
+                        ? "bg-blue-600/15 text-blue-700 dark:text-blue-300"
+                        : "bg-slate-200/80 text-slate-400 dark:bg-slate-800"
+                }`}
+              >
+                {err ? (
+                  <Circle className="h-3 w-3" />
+                ) : done ? (
+                  <Check className="h-3 w-3" />
+                ) : active && loading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <span className="font-mono text-[9px] font-bold">{i + 1}</span>
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                  <span className="mr-1.5 font-mono text-[9px] uppercase tracking-wide text-slate-400">
+                    {t("panel.stepPrefix")} {i + 1}
+                  </span>
+                  {step.label}
+                </p>
+                {step.detail && (
+                  <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">
+                    {step.detail}
+                  </p>
+                )}
+                <p className="mt-1 font-mono text-[9px] uppercase tracking-wide text-slate-400">
+                  {err
+                    ? t("panel.plan.failed")
+                    : done
+                      ? t("panel.plan.done")
+                      : active
+                        ? t("panel.plan.running")
+                        : t("panel.plan.pending")}
+                </p>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

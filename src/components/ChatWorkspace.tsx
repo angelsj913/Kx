@@ -52,6 +52,7 @@ import ChatRightPanel, {
   type ChatArtifact,
   type ContextSource,
   type PanelTab,
+  type PlanStep,
   type TerminalLine,
 } from "./ChatRightPanel";
 import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
@@ -146,6 +147,7 @@ interface Msg {
   resultData?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  createdAt?: string | null;
   /** 클라이언트 전용 — 실시간 스트리밍 중인 임시 말풍선인지 (DB에는 저장되지 않음) */
   streaming?: boolean;
   /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
@@ -242,9 +244,110 @@ function mergeAttachedLibrary(
   return [...merged, ...citationSources];
 }
 
+function formatArtifactTime(createdAt?: string | null): string | undefined {
+  if (!createdAt) return undefined;
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function seedPlanSteps(
+  quickToolId: string | null,
+  t: (key: AppDictKey) => string,
+): PlanStep[] {
+  if (quickToolId === "agent") {
+    return [
+      { id: "understand", label: t("panel.plan.step.understand"), status: "active" },
+      { id: "tools", label: t("panel.plan.step.tools"), status: "pending" },
+      { id: "answer", label: t("panel.plan.step.answer"), status: "pending" },
+    ];
+  }
+  if (quickToolId) {
+    return [
+      { id: "tool", label: t("panel.plan.step.tool"), status: "active", detail: quickToolId },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ];
+  }
+  return [
+    { id: "route", label: t("panel.plan.step.route"), status: "active" },
+    { id: "generate", label: t("panel.plan.step.generate"), status: "pending" },
+    { id: "verify", label: t("panel.plan.step.verify"), status: "pending" },
+  ];
+}
+
+function advancePlanSteps(
+  steps: PlanStep[],
+  statusKey: string | null | undefined,
+): PlanStep[] {
+  if (!steps.length || !statusKey) return steps;
+  const markThrough = (activeId: string) => {
+    let found = false;
+    return steps.map((s) => {
+      if (s.id === activeId) {
+        found = true;
+        return { ...s, status: "active" as const };
+      }
+      if (!found && s.status !== "error") {
+        return { ...s, status: "done" as const };
+      }
+      if (found && s.status === "active") {
+        return { ...s, status: "pending" as const };
+      }
+      return s;
+    });
+  };
+
+  if (
+    statusKey.includes("agent") ||
+    statusKey.includes("route.start") ||
+    statusKey.includes("selecting")
+  ) {
+    if (steps.some((s) => s.id === "tools")) return markThrough("tools");
+    if (steps.some((s) => s.id === "route")) return markThrough("route");
+  }
+  if (
+    statusKey.includes("generate") ||
+    statusKey.includes("ai.trying") ||
+    statusKey.includes("quicktool") ||
+    statusKey.includes("file.uploading")
+  ) {
+    if (steps.some((s) => s.id === "answer")) return markThrough("answer");
+    if (steps.some((s) => s.id === "generate")) return markThrough("generate");
+    if (steps.some((s) => s.id === "tool")) return markThrough("tool");
+    if (steps.some((s) => s.id === "save")) return markThrough("save");
+  }
+  if (statusKey.includes("verify")) {
+    if (steps.some((s) => s.id === "verify")) return markThrough("verify");
+  }
+  return steps;
+}
+
+function finishPlanSteps(steps: PlanStep[], ok: boolean): PlanStep[] {
+  if (!steps.length) return steps;
+  if (ok) {
+    return steps.map((s) =>
+      s.status === "error" ? s : { ...s, status: "done" as const },
+    );
+  }
+  let hitActive = false;
+  return steps.map((s) => {
+    if (s.status === "active" || (!hitActive && s.status === "pending")) {
+      hitActive = true;
+      return { ...s, status: "error" as const };
+    }
+    if (s.status === "pending") return s;
+    return s;
+  });
+}
+
 function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
   const list: ChatArtifact[] = [];
   for (const m of messages) {
+    const timeLabel = formatArtifactTime(m.createdAt);
     if (m.role === "user" && m.attachments?.length) {
       for (let i = 0; i < m.attachments.length; i++) {
         const a = m.attachments[i];
@@ -257,6 +360,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
           fileName: a.filename,
           mimeType: a.mimeType,
           messageId: m.id,
+          timeLabel,
         });
       }
     }
@@ -276,6 +380,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "xlsx") {
       let title = m.fileName || t("artifact.spreadsheet");
@@ -292,6 +397,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "image") {
       list.push({
@@ -302,6 +408,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "structured" && m.structuredKind) {
       let title: string = m.structuredKind;
@@ -316,6 +423,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         title,
         subtitle: t("artifact.structuredResult"),
         messageId: m.id,
+        timeLabel,
       });
     } else if (
       m.outputType === "markdown" ||
@@ -334,6 +442,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     }
   }
@@ -392,6 +501,7 @@ export default function ChatWorkspace({
   const [panelTab, setPanelTab] = useState<PanelTab>("files");
   const [previewArtifact, setPreviewArtifact] = useState<ChatArtifact | null>(null);
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
+  const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const dragging = useRef(false);
 
   const pushTerminal = useCallback((text: string, level: TerminalLine["level"] = "info") => {
@@ -538,11 +648,16 @@ export default function ChatWorkspace({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function runGeneration(buildForm: () => FormData, opts: { spokenTurn?: boolean } = {}) {
+  async function runGeneration(
+    buildForm: () => FormData,
+    opts: { spokenTurn?: boolean; quickToolId?: string | null } = {},
+  ) {
     const spokenTurn = !!opts.spokenTurn;
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
+    setPlanSteps(seedPlanSteps(opts.quickToolId ?? null, t));
+    setPanelTab((prev) => (prev === "terminal" ? prev : "plan"));
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -583,6 +698,7 @@ export default function ChatWorkspace({
           if (event.type === "status") {
             const key = event.key ?? null;
             setStatusKey(key);
+            setPlanSteps((prev) => advancePlanSteps(prev, key));
             if (key?.startsWith("status.route.verify")) setRefining(true);
             if (key) {
               let label = key;
@@ -637,6 +753,7 @@ export default function ChatWorkspace({
         }
         if (spokenTurn && doneMessage.text) speak(doneMessage.text);
         pushTerminal(doneInterrupted ? "done ✱ interrupted" : "done ✓ response ready", "ok");
+        setPlanSteps((prev) => finishPlanSteps(prev, !doneInterrupted));
         if (
           doneMessage.outputType === "pptx" ||
           doneMessage.outputType === "xlsx" ||
@@ -649,6 +766,8 @@ export default function ChatWorkspace({
             "ok",
           );
         }
+      } else {
+        setPlanSteps((prev) => finishPlanSteps(prev, true));
       }
       onTurnSaved();
     } catch (err) {
@@ -660,10 +779,12 @@ export default function ChatWorkspace({
           );
         }
         pushTerminal("stopped › user requested cancel", "info");
+        setPlanSteps((prev) => finishPlanSteps(prev, false));
       } else {
         const msg = err instanceof Error ? err.message : t("common.unknownError");
         setError(msg);
         pushTerminal(`error ✗ ${msg}`, "error");
+        setPlanSteps((prev) => finishPlanSteps(prev, false));
       }
     } finally {
       abortRef.current = null;
@@ -740,7 +861,7 @@ export default function ChatWorkspace({
         for (const f of filesToUpload) form.append("files", f);
         return form;
       },
-      { spokenTurn },
+      { spokenTurn, quickToolId },
     );
   }
 
@@ -767,7 +888,7 @@ export default function ChatWorkspace({
         );
       }
       return form;
-    });
+    }, { quickToolId: activeQuickTool?.id ?? null });
   }
 
   /** 마지막 assistant 응답 재생성 — 그 응답만 지우고 같은 질문으로 다시 생성한다. */
@@ -789,7 +910,7 @@ export default function ChatWorkspace({
         );
       }
       return form;
-    });
+    }, { quickToolId: activeQuickTool?.id ?? null });
   }
 
   function stopGeneration() {
@@ -1582,6 +1703,7 @@ export default function ChatWorkspace({
           onTabChange={setPanelTab}
           artifacts={artifacts}
           contextSources={contextSources}
+          planSteps={planSteps}
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
@@ -1614,6 +1736,7 @@ export default function ChatWorkspace({
                 onTabChange={setPanelTab}
                 artifacts={artifacts}
                 contextSources={contextSources}
+                planSteps={planSteps}
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {

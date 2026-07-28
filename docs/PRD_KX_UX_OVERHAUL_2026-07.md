@@ -95,8 +95,8 @@ Evidence verified at `9d8b25f`. Full table: [`plans/README.md`](../plans/README.
 ## 4. Workspace panel ideas (product record)
 
 1. **Context Dock** — plan 014 (MVP)
-2. **Output Timeline** — deferred
-3. **Plan + Execute split** — deferred
+2. **Output Timeline** — plan 016
+3. **Plan + Execute split** — plan 016
 
 ---
 
