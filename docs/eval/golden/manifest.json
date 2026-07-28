@@ -1,6 +1,6 @@
 {
   "version": "2026.07.28b",
-  "categories": ["rag", "math", "ppt", "lecture", "images", "intent", "docx", "chat", "moderation", "image-prompt", "rerank"],
+  "categories": ["rag", "math", "ppt", "lecture", "images", "intent", "docx", "chat", "moderation", "image-prompt", "rerank", "layout"],
   "notes": "MIN_RETRIEVAL_SCORE default 0.35 (plan 010). LLM rerank parse goldens (plan 017).",
-  "targetCount": 88
+  "targetCount": 91
 }
