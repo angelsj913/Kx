@@ -24,11 +24,8 @@ function SceneBackground({ sceneId, progress }: { sceneId: string; progress: num
 
   if (sceneId === "design") {
     return (
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/40">
-        <div
-          className="pointer-events-none absolute -right-[10%] top-[8%] h-[55%] w-[55%] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.18),transparent_68%)]"
-          style={{ opacity: fade }}
-        />
+      <div className="absolute inset-0 overflow-hidden bg-transparent">
+        <div className="landing-scene-accent" style={{ opacity: fade }} />
         <LandingLight3D className="absolute right-[4%] top-[10%] h-[min(52vw,22rem)] w-[min(52vw,22rem)] opacity-70 sm:right-[6%] sm:top-[12%]" />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-end pr-[6%] pt-[12%]">
           <div className="grid grid-cols-3 gap-3 opacity-[0.55]" style={{ transform: `translateY(${(1 - progress) * 12}px)` }}>
@@ -49,11 +46,8 @@ function SceneBackground({ sceneId, progress }: { sceneId: string; progress: num
 
   if (sceneId === "stem") {
     return (
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-blue-50/80 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30">
-        <div
-          className="pointer-events-none absolute left-[5%] top-[15%] h-[50%] w-[50%] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.14),transparent_70%)]"
-          style={{ opacity: fade }}
-        />
+      <div className="absolute inset-0 overflow-hidden bg-transparent">
+        <div className="landing-scene-accent" style={{ opacity: fade * 0.85 }} />
         <svg
           className="pointer-events-none absolute bottom-[12%] right-[8%] h-[42%] w-[42%] text-blue-600/20 dark:text-blue-400/15"
           viewBox="0 0 200 200"
@@ -73,11 +67,8 @@ function SceneBackground({ sceneId, progress }: { sceneId: string; progress: num
   }
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/35">
-      <div
-        className="pointer-events-none absolute right-[12%] top-[20%] h-[45%] w-[45%] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.16),transparent_68%)]"
-        style={{ opacity: fade }}
-      />
+    <div className="absolute inset-0 overflow-hidden bg-transparent">
+      <div className="landing-scene-accent" style={{ opacity: fade * 0.9 }} />
       <div className="pointer-events-none absolute bottom-[14%] left-[8%] w-[38%] space-y-2" style={{ opacity: 0.35 + progress * 0.4 }}>
         <div className="h-1.5 w-full rounded-full bg-slate-300/80 dark:bg-slate-600/60" />
         <div className="h-1.5 w-[85%] rounded-full bg-slate-200/80 dark:bg-slate-700/60" />
@@ -158,7 +149,7 @@ function ReducedMotionSkills({ scenes, appHref }: { scenes: SkillScene[]; appHre
         </div>
       </section>
 
-      <section className="border-y border-slate-200/80 bg-[var(--landing-bg-soft)] py-14 dark:border-slate-800">
+      <section className="landing-section-rule py-14">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <h2 className="text-xl font-bold tracking-tight text-[color:var(--landing-text-primary)] sm:text-2xl">
             {t("skills.band.title")}
@@ -287,7 +278,7 @@ export default function SkillsSection() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200/80 bg-[var(--landing-bg-soft)] py-14 dark:border-slate-800">
+      <section className="landing-section-rule py-14">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <h2 className="text-xl font-bold tracking-tight text-[color:var(--landing-text-primary)] sm:text-2xl">
             {t("skills.band.title")}

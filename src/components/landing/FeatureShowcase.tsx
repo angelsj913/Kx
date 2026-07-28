@@ -244,7 +244,7 @@ export default function FeatureShowcase() {
         <div className="sticky top-0 flex min-h-[100svh] items-center py-16 sm:py-20">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(37,99,235,0.10),transparent_38%)] dark:bg-[radial-gradient(circle_at_75%_45%,rgba(59,130,246,0.14),transparent_38%)]"
+            className="landing-scene-accent"
           />
           <div className="relative mx-auto w-full max-w-6xl px-6">
             <SectionHeader title={title} subtitle={subtitle} />

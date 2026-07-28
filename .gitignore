@@ -59,6 +59,16 @@ android/*.keystore
 # prisma generated client
 /src/generated/prisma
 
+# agent skills — commit curated landing/design skills only; bulk packs stay local
+.agents/skills/*
+!.agents/skills/improve/
+!.agents/skills/design-motion-principles/
+!.agents/skills/animate/
+!.agents/skills/guardrail-design/
+!.agents/skills/trust-calibration/
+!.agents/skills/animation-principles/
+!.agents/skills/color-system/
+
 # local large dataset artifacts
 /docs/datasets/zeff-ai-training-100000.jsonl
 /docs/datasets/zeff-ai-training-100000.messages.jsonl

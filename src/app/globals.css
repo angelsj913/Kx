@@ -13,7 +13,7 @@
   color-scheme: light;
   --landing-bg: #ffffff;
   --landing-bg-soft: #f8fafc;
-  --landing-gradient-start: #f0f5ff;
+  --landing-gradient-start: #ffffff;
   --landing-gradient: linear-gradient(
     180deg,
     var(--landing-gradient-start) 0%,
@@ -29,7 +29,7 @@
   color-scheme: dark;
   --landing-bg: #0a1120;
   --landing-bg-soft: #0f172a;
-  --landing-gradient-start: #0c1528;
+  --landing-gradient-start: #0a1120;
   --landing-gradient: linear-gradient(
     180deg,
     var(--landing-gradient-start) 0%,
@@ -195,34 +195,24 @@ body {
 /* ── Landing tokens (plan 020) — Noto / white / blue; supersedes nothing-design cream/red ── */
 .landing-shell {
   --landing-bg: #ffffff;
-  --landing-bg-soft: #f8fafc;
   --landing-text-primary: #0f172a;
   --landing-text-muted: #64748b;
   --landing-accent: #2563eb;
-  --landing-gradient-start: #ffffff;
-  --landing-gradient: linear-gradient(
-    180deg,
-    var(--landing-gradient-start) 0%,
-    var(--landing-bg-soft) 48%,
-    var(--landing-bg) 100%
-  );
+  --landing-accent-muted: rgba(37, 99, 235, 0.1);
+  --landing-border: rgba(226, 232, 240, 0.8);
   --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(37, 99, 235, 0.08), transparent 65%);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --landing-enter-duration: 280ms;
   font-family: var(--font-noto-kr), var(--font-geist-sans), sans-serif;
   color: var(--landing-text-primary);
 }
 .dark .landing-shell {
   --landing-bg: #0a1120;
-  --landing-bg-soft: #0f172a;
   --landing-text-primary: rgba(248, 250, 252, 0.94);
   --landing-text-muted: rgba(148, 163, 184, 0.85);
   --landing-accent: #3b82f6;
-  --landing-gradient-start: #0a1120;
-  --landing-gradient: linear-gradient(
-    180deg,
-    var(--landing-gradient-start) 0%,
-    var(--landing-bg-soft) 50%,
-    var(--landing-bg) 100%
-  );
+  --landing-accent-muted: rgba(59, 130, 246, 0.14);
+  --landing-border: rgba(51, 65, 85, 0.6);
   --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 65%);
 }
 .landing-label {
@@ -254,8 +244,21 @@ body {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  background: var(--landing-glow), var(--landing-gradient);
+  background: var(--landing-glow);
   z-index: 0;
+}
+.landing-section-rule {
+  border-top: 1px solid var(--landing-border);
+}
+.landing-scene-accent {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 70% 40%,
+    var(--landing-accent-muted),
+    transparent 55%
+  );
 }
 .landing-shell > *:not(header) {
   position: relative;
