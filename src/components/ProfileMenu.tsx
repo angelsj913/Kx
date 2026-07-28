@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Settings, UserRound, Sun, Moon, Home, Wrench } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +10,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
-import SettingsModal from "./SettingsModal";
+import SettingsModal, { type SettingsTab } from "./SettingsModal";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const PLAN_LABEL_KEY = {
@@ -44,9 +45,11 @@ export default function ProfileMenu({
   const { data: session, status } = useSession();
   const userId = session?.user?.id ?? null;
   const settingsHook = useSettings(userId);
+  const searchParams = useSearchParams();
   const { resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>("general");
   const [loggingOut, setLoggingOut] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const isDark = resolvedTheme === "dark";
@@ -68,6 +71,13 @@ export default function ProfileMenu({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (searchParams.get("settings") !== "security") return;
+    setOpen(false);
+    setSettingsInitialTab("security");
+    setSettingsOpen(true);
+  }, [searchParams]);
 
   // 계정 전환 시 메뉴 초기: 루트 key={userId} + 레이아웃 WorkspaceProvider key 로 리마운트
 
@@ -174,6 +184,7 @@ export default function ProfileMenu({
               role="menuitem"
               onClick={() => {
                 setOpen(false);
+                setSettingsInitialTab("general");
                 setSettingsOpen(true);
               }}
               className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -218,7 +229,11 @@ export default function ProfileMenu({
         )}
       </AnimatePresence>
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal
+        initialTab={settingsInitialTab}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }

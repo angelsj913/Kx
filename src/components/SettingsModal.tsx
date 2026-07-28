@@ -33,7 +33,7 @@ import {
 import { useSettings } from "@/lib/useSettings";
 import { COMPANY_INFO } from "@/lib/legalContent";
 
-type Tab =
+export type SettingsTab =
   | "general"
   | "privacy"
   | "security"
@@ -43,7 +43,7 @@ type Tab =
   | "support"
   | "about";
 
-const TABS: { id: Tab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
+const TABS: { id: SettingsTab; labelKey: AppDictKey; icon: typeof Settings2 }[] = [
   { id: "general", labelKey: "settings.tab.general", icon: Settings2 },
   { id: "privacy", labelKey: "settings.tab.privacy", icon: Shield },
   { id: "security", labelKey: "settings.tab.security", icon: Lock },
@@ -61,14 +61,16 @@ const LEGAL_LINKS: { labelKey: AppDictKey; href: string }[] = [
 ];
 
 export default function SettingsModal({
+  initialTab = "general",
   open,
   onClose,
 }: {
+  initialTab?: SettingsTab;
   open: boolean;
   onClose: () => void;
 }) {
   const t = useT();
-  const [tab, setTab] = useState<Tab>("general");
+  const [tab, setTab] = useState<SettingsTab>(initialTab);
   // SSR/포털용 마운트 여부 — effect setState 대신 useSyncExternalStore
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -78,6 +80,7 @@ export default function SettingsModal({
 
   useEffect(() => {
     if (!open) return;
+    setTab(initialTab);
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -89,7 +92,7 @@ export default function SettingsModal({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [initialTab, open, onClose]);
 
   if (!open || !mounted) return null;
 
