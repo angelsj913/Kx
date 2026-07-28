@@ -11,6 +11,7 @@
     "build": "prisma generate && node scripts/db-push-retry.mjs && next build",
     "db:push": "node scripts/db-push-retry.mjs",
     "db:verify": "node scripts/verify-db-cutover.mjs",
+    "db:encode-url": "node scripts/encode-supabase-url.mjs",
     "start": "next start",
     "lint": "eslint",
     "rag:index:zeff": "npx tsx scripts/index-zeff-rag.mjs",

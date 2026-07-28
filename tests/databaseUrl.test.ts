@@ -67,3 +67,19 @@ test("diagnose flags pooler URL with postgres username and no ref", () => {
     if (prev !== undefined) process.env.SUPABASE_PROJECT_REF = prev;
   }
 });
+
+test("diagnose flags placeholder password", () => {
+  const result = diagnoseDatabaseUrl(
+    "postgresql://postgres.ghxqylmopbtazxwyimyg:YOUR-PASSWORD@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres",
+  );
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.code, "placeholder_password");
+});
+
+test("diagnose flags unencoded hash in password", () => {
+  const result = diagnoseDatabaseUrl(
+    "postgresql://postgres:pass#word@db.ghxqylmopbtazxwyimyg.supabase.co:5432/postgres",
+  );
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.code, "unencoded_password_hash");
+});

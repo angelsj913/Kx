@@ -55,15 +55,48 @@ function ensurePoolerUsername(parsed, ref) {
   if (parsed.username === "postgres") parsed.username = `postgres.${ref}`;
 }
 
+function isPlaceholderPassword(password) {
+  if (!password) return true;
+  const p = password.trim();
+  if (!p) return true;
+  return /^(?:\[)?YOUR[-_]?PASSWORD(?:\])?$/i.test(p) || /^<password>$/i.test(p) || p === "changeme";
+}
+
+function hasUnencodedHashInUserinfo(raw) {
+  const trimmed = raw.trim();
+  const schemeIdx = trimmed.indexOf("://");
+  if (schemeIdx === -1) return false;
+  const atIdx = trimmed.indexOf("@", schemeIdx + 3);
+  if (atIdx === -1) return false;
+  const userinfo = trimmed.slice(schemeIdx + 3, atIdx);
+  return userinfo.includes("#");
+}
+
 /** Detect common URL mistakes (unencoded @/# in password breaks parsing). */
 export function diagnoseDatabaseUrl(raw) {
   if (!raw?.trim()) return { ok: false, code: "missing", message: "DATABASE_URL is not set" };
 
+  const trimmed = raw.trim();
+
+  if (hasUnencodedHashInUserinfo(trimmed)) {
+    return {
+      ok: false,
+      code: "unencoded_password_hash",
+      message:
+        "DATABASE_URL contains an unencoded # in the password (# starts a URL fragment and truncates the password). Encode # as %23.",
+    };
+  }
+
   let parsed;
   try {
-    parsed = new URL(raw.trim());
+    parsed = new URL(trimmed);
   } catch {
-    return { ok: false, code: "invalid_url", message: "DATABASE_URL is not a valid URL" };
+    return {
+      ok: false,
+      code: "invalid_url",
+      message:
+        "DATABASE_URL is not a valid URL. If the password contains @ or #, URL-encode it first (@ → %40, # → %23).",
+    };
   }
 
   const host = parsed.hostname;
@@ -77,7 +110,7 @@ export function diagnoseDatabaseUrl(raw) {
     };
   }
 
-  const afterScheme = raw.trim().replace(/^postgresql:\/\//i, "");
+  const afterScheme = trimmed.replace(/^postgresql:\/\//i, "");
   const atCount = (afterScheme.match(/@/g) || []).length;
   if (atCount > 1) {
     return {
@@ -85,6 +118,15 @@ export function diagnoseDatabaseUrl(raw) {
       code: "unencoded_password",
       message:
         "DATABASE_URL appears to contain an unencoded @ in the password. Encode special characters (@ → %40, # → %23).",
+    };
+  }
+
+  if (isPlaceholderPassword(parsed.password)) {
+    return {
+      ok: false,
+      code: "placeholder_password",
+      message:
+        "DATABASE_URL still contains a placeholder password (e.g. YOUR-PASSWORD). Set the real Supabase database password from Dashboard → Database → Database password.",
     };
   }
 
@@ -100,6 +142,16 @@ export function diagnoseDatabaseUrl(raw) {
 
   return { ok: true, ref, username: parsed.username, host };
 }
+
+export const P1000_HELP = `Supabase rejected the database password (Prisma P1000).
+The pooler host and username look correct — update DATABASE_URL in Vercel:
+  1. Supabase Dashboard → Project Settings → Database → Reset database password
+  2. Encode the password: node -e "console.log(encodeURIComponent('YOUR_NEW_PASSWORD'))"
+  3. Set DATABASE_URL (direct URI is fine; build rewrites to pooler):
+     postgresql://postgres:ENCODED_PASSWORD@db.ghxqylmopbtazxwyimyg.supabase.co:5432/postgres
+  4. Use the DATABASE password — not anon/service_role API keys
+  5. Redeploy (or run: npm run db:encode-url locally to build the URI)
+Emergency: set SKIP_DB_PUSH=1 in Vercel to deploy the app without schema push.`;
 
 function appendQueryParams(url, params) {
   for (const [key, value] of Object.entries(params)) {

@@ -67,6 +67,23 @@ function ensurePoolerUsername(parsed: URL, ref: string | null): void {
   }
 }
 
+function isPlaceholderPassword(password: string): boolean {
+  if (!password) return true;
+  const p = password.trim();
+  if (!p) return true;
+  return /^(?:\[)?YOUR[-_]?PASSWORD(?:\])?$/i.test(p) || /^<password>$/i.test(p) || p === "changeme";
+}
+
+function hasUnencodedHashInUserinfo(raw: string): boolean {
+  const trimmed = raw.trim();
+  const schemeIdx = trimmed.indexOf("://");
+  if (schemeIdx === -1) return false;
+  const atIdx = trimmed.indexOf("@", schemeIdx + 3);
+  if (atIdx === -1) return false;
+  const userinfo = trimmed.slice(schemeIdx + 3, atIdx);
+  return userinfo.includes("#");
+}
+
 export type DatabaseUrlDiagnosis =
   | { ok: true; ref: string | null; username: string; host: string }
   | { ok: false; code: string; message: string };
@@ -76,11 +93,27 @@ export function diagnoseDatabaseUrl(raw?: string | null): DatabaseUrlDiagnosis {
     return { ok: false, code: "missing", message: "DATABASE_URL is not set" };
   }
 
+  const trimmed = raw.trim();
+
+  if (hasUnencodedHashInUserinfo(trimmed)) {
+    return {
+      ok: false,
+      code: "unencoded_password_hash",
+      message:
+        "DATABASE_URL contains an unencoded # in the password (# starts a URL fragment and truncates the password). Encode # as %23.",
+    };
+  }
+
   let parsed: URL;
   try {
-    parsed = new URL(raw.trim());
+    parsed = new URL(trimmed);
   } catch {
-    return { ok: false, code: "invalid_url", message: "DATABASE_URL is not a valid URL" };
+    return {
+      ok: false,
+      code: "invalid_url",
+      message:
+        "DATABASE_URL is not a valid URL. If the password contains @ or #, URL-encode it first (@ → %40, # → %23).",
+    };
   }
 
   const host = parsed.hostname;
@@ -96,7 +129,7 @@ export function diagnoseDatabaseUrl(raw?: string | null): DatabaseUrlDiagnosis {
     };
   }
 
-  const afterScheme = raw.trim().replace(/^postgresql:\/\//i, "");
+  const afterScheme = trimmed.replace(/^postgresql:\/\//i, "");
   const atCount = (afterScheme.match(/@/g) || []).length;
   if (atCount > 1) {
     return {
@@ -104,6 +137,15 @@ export function diagnoseDatabaseUrl(raw?: string | null): DatabaseUrlDiagnosis {
       code: "unencoded_password",
       message:
         "DATABASE_URL appears to contain an unencoded @ in the password. Encode special characters (@ → %40, # → %23).",
+    };
+  }
+
+  if (isPlaceholderPassword(parsed.password)) {
+    return {
+      ok: false,
+      code: "placeholder_password",
+      message:
+        "DATABASE_URL still contains a placeholder password (e.g. YOUR-PASSWORD). Set the real Supabase database password from Dashboard → Database → Database password.",
     };
   }
 

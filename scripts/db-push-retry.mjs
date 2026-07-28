@@ -9,6 +9,7 @@ import { config as loadEnv } from "dotenv";
 import {
   diagnoseDatabaseUrl,
   maskDatabaseUrl,
+  P1000_HELP,
   resolveMigrateDatabaseUrl,
 } from "./supabaseDatabaseUrl.mjs";
 
@@ -104,6 +105,9 @@ async function main() {
   }
 
   console.error(`[db-push-retry] failed after ${MAX_ATTEMPTS} attempts`);
+  if (diagnosis.ok) {
+    console.error(`[db-push-retry]\n${P1000_HELP}`);
+  }
   process.exit(1);
 }
 
