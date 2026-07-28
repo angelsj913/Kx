@@ -151,3 +151,4 @@ Detail: [`plans/012-ai-input-moderation.md`](../plans/012-ai-input-moderation.md
 |---------|------|--------|
 | v1 | 2026-07-27 | Initial draft PRD |
 | v2 | 2026-07-27 | Rebuilt with shadcn/improve audit → `plans/` handoffs |
+| v2.1 | 2026-07-28 | Follow-on product/RAG wave → [`PRD_PRODUCT_RAG_UPGRADE_2026-07.md`](./PRD_PRODUCT_RAG_UPGRADE_2026-07.md) (plans 020–021) |
