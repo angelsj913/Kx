@@ -64,13 +64,15 @@ Trim or demote: long `WorkLectureScroll` / dense showcase copy. Keep Pricing.
 
 | # | Strategy | Current | Plan |
 |---|----------|---------|------|
-| 1 | Semantic chunking (headers/paragraphs) | Char window 900 + soft breaks ([`rag.ts`](../src/lib/rag.ts)) | **021** |
-| 2 | Hybrid search (vector + BM25-style) | Vector + token/bigram overlap ([`ragHybrid.ts`](../src/lib/ragHybrid.ts)) — not BM25 | **021** upgrade keyword leg |
-| 3 | Multi-query expansion | Absent | **021** |
-| 4 | Two-stage rerank | **DONE** plan 017 — extend to agent/math paths | **021** (coverage) |
-| 5 | Universal context assembler | `zeffContext` + `pptContext`; flashcards use raw slice | **021** — review/flashcards + tools |
+| 1 | Semantic chunking (headers/paragraphs) | **DONE** — header/paragraph pack in [`rag.ts`](../src/lib/rag.ts) | **021** |
+| 2 | Hybrid search (vector + BM25-style) | **DONE** — BM25 over candidate set ([`ragHybrid.ts`](../src/lib/ragHybrid.ts)) | **021** |
+| 3 | Multi-query expansion | **DONE** — heuristic (+ optional LLM); `RAG_MULTI_QUERY=0` | **021** |
+| 4 | Two-stage rerank | **DONE** — chat/PPT/agent/math paths | 017 + **021** |
+| 5 | Universal context assembler | **DONE** — zeff/ppt + review flashcards when indexed | **021** |
 
 PRD §5 items from prior overhaul (threshold 0.35, web fallback, LLM rerank) remain shipped (010/017).
+
+**Re-index note:** Existing `DocumentChunk` rows keep old boundaries until the library item is re-uploaded or re-indexed. New uploads use semantic chunking.
 
 ---
 
