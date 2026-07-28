@@ -80,6 +80,21 @@ const ru: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "Единое резюме записей на доске и устных объяснений",
   "lecture.highlight3": "Автоматическое выделение ключевых моментов для повторения",
 
+  "features.title": "Вот для чего Zeff",
+  "features.subtitle": "Мы отобрали только те функции, которыми реально пользуются каждый день.",
+  "features.strip.summary.tag": "ИИ-конспект",
+  "features.strip.summary.title": "Загрузите материал — останется только суть",
+  "features.strip.lecture.tag": "Анализ лекций",
+  "features.strip.lecture.title": "Видео и звук — в единый конспект",
+  "features.docs.tag": "Документы и презентации",
+  "features.docs.title": "Опишите суть — получите черновик",
+  "features.docs.desc":
+    "Просто скажите, что нужно, и получите черновик в Word, PPT или Excel — затем откройте его в панели справа для предпросмотра.",
+  "features.library.tag": "Общая библиотека",
+  "features.library.title": "Личные и командные материалы — вместе",
+  "features.library.desc":
+    "Ведите отдельно личную библиотеку и общую библиотеку командного рабочего пространства, а через Book Chat общайтесь с любым документом напрямую.",
+
   "grid.title": "Набор функций ZEFF AI",
   "grid.subtitle": "Всё это доступно сразу в рабочем пространстве после входа в аккаунт.",
   "grid.bookChat.label": "Book Chat",

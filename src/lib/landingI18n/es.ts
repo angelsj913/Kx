@@ -80,6 +80,21 @@ const es: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "Resumen unificado de la pizarra y la explicación oral",
   "lecture.highlight3": "Extracción automática de puntos de repaso",
 
+  "features.title": "Para esto está Zeff",
+  "features.subtitle": "Elegimos solo las funciones que realmente se usan todos los días.",
+  "features.strip.summary.tag": "Resumen con IA",
+  "features.strip.summary.title": "Sube el material, quédate solo con lo esencial",
+  "features.strip.lecture.tag": "Análisis de clases",
+  "features.strip.lecture.title": "Video y audio, en una sola nota",
+  "features.docs.tag": "Documentos · Presentaciones",
+  "features.docs.title": "Indica lo esencial y obtén un borrador",
+  "features.docs.desc":
+    "Dile solo lo que necesitas y obtén borradores en Word, PPT o Excel, listos para abrir y previsualizar en el panel derecho.",
+  "features.library.tag": "Biblioteca compartida",
+  "features.library.title": "Tu material y el del equipo, en un solo lugar",
+  "features.library.desc":
+    "Gestiona por separado tu biblioteca personal y la biblioteca compartida del espacio de equipo, y conversa directamente con cualquier documento mediante Book Chat.",
+
   "grid.title": "El conjunto de funciones de ZEFF AI",
   "grid.subtitle": "Disponibles directamente en tu espacio de trabajo en cuanto inicies sesión.",
   "grid.bookChat.label": "Book Chat",

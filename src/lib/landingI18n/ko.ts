@@ -76,6 +76,21 @@ const ko = {
   "lecture.highlight2": "판서·구두 설명 통합 요약",
   "lecture.highlight3": "복습 포인트 자동 추출",
 
+  "features.title": "이럴 때, Zeff",
+  "features.subtitle": "화면 안에서 실제로 매일 쓰이는 기능만 골라 담았습니다.",
+  "features.strip.summary.tag": "AI 요약",
+  "features.strip.summary.title": "자료를 넣으면 핵심만 남습니다",
+  "features.strip.lecture.tag": "강의 분석",
+  "features.strip.lecture.title": "영상과 음성을 한 장의 노트로",
+  "features.docs.tag": "문서 · 발표자료",
+  "features.docs.title": "핵심만 말하면 초안이 나옵니다",
+  "features.docs.desc":
+    "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열 수 있습니다.",
+  "features.library.tag": "공유 서재",
+  "features.library.title": "내 자료와 팀 자료를 한곳에서",
+  "features.library.desc":
+    "개인·팀 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
+
   "grid.title": "ZEFF AI 기능 모음",
   "grid.subtitle": "채팅, 파일 생성·미리보기, 다국어 워크스페이스까지 — 로그인 후 바로 사용하세요.",
   "grid.bookChat.label": "Book Chat",

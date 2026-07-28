@@ -80,6 +80,21 @@ const de: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "Einheitliche Zusammenfassung von Tafelbild und mündlicher Erklärung",
   "lecture.highlight3": "Automatische Extraktion von Wiederholungspunkten",
 
+  "features.title": "Genau dafür ist Zeff da",
+  "features.subtitle": "Wir haben nur die Funktionen ausgewählt, die im Alltag wirklich genutzt werden.",
+  "features.strip.summary.tag": "KI-Zusammenfassung",
+  "features.strip.summary.title": "Material rein, nur das Wesentliche bleibt",
+  "features.strip.lecture.tag": "Vorlesungsanalyse",
+  "features.strip.lecture.title": "Video und Ton, in einer einzigen Notiz",
+  "features.docs.tag": "Dokumente · Präsentationen",
+  "features.docs.title": "Nur das Wesentliche nennen, der Entwurf ist fertig",
+  "features.docs.desc":
+    "Sagen Sie einfach, was Sie brauchen, und erhalten Sie Entwürfe für Word, PPT oder Excel — direkt im rechten Panel zur Vorschau geöffnet.",
+  "features.library.tag": "Geteilte Bibliothek",
+  "features.library.title": "Eigene und Team-Materialien an einem Ort",
+  "features.library.desc":
+    "Verwalten Sie eine persönliche Bibliothek getrennt von der geteilten Bibliothek des Team-Workspace und sprechen Sie über Book Chat direkt mit jedem Dokument.",
+
   "grid.title": "Die ZEFF-AI-Funktionsübersicht",
   "grid.subtitle": "Nach der Anmeldung sofort im Arbeitsbereich nutzbar.",
   "grid.bookChat.label": "Book Chat",

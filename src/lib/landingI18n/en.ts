@@ -81,6 +81,21 @@ const en: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "Unified summary of writing and spoken explanation",
   "lecture.highlight3": "Automatic extraction of review points",
 
+  "features.title": "This is where Zeff fits",
+  "features.subtitle": "We picked only the features people actually reach for every day.",
+  "features.strip.summary.tag": "AI Summary",
+  "features.strip.summary.title": "Drop in the material, keep what matters",
+  "features.strip.lecture.tag": "Lecture Analysis",
+  "features.strip.lecture.title": "Video and audio into one note",
+  "features.docs.tag": "Docs · Slides",
+  "features.docs.title": "Give the gist, get a draft",
+  "features.docs.desc":
+    "Tell it what you need and get Word, PPT, or Excel drafts — open them in the right panel to preview.",
+  "features.library.tag": "Shared Library",
+  "features.library.title": "Personal and team materials together",
+  "features.library.desc":
+    "Keep personal and team libraries separate, then chat with any document through Book Chat.",
+
   "grid.title": "The ZEFF AI feature set",
   "grid.subtitle": "Everything below is ready to use in your workspace the moment you log in.",
   "grid.bookChat.label": "Book Chat",

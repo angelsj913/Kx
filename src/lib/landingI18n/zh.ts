@@ -73,6 +73,21 @@ const zh: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "板书与口头讲解的统合总结",
   "lecture.highlight3": "自动提取复习要点",
 
+  "features.title": "这些场景，交给 Zeff",
+  "features.subtitle": "只挑选了大家在屏幕中每天真正会用到的功能。",
+  "features.strip.summary.tag": "AI摘要",
+  "features.strip.summary.title": "放入资料，只留下重点",
+  "features.strip.lecture.tag": "讲座分析",
+  "features.strip.lecture.title": "把视频和音频，整理成一份笔记",
+  "features.docs.tag": "文档·演示文稿",
+  "features.docs.title": "只需说出重点，草稿即可完成",
+  "features.docs.desc":
+    "只要告诉它你需要的内容，就能生成 Word·PPT·Excel 草稿，并可在右侧面板中直接打开预览。",
+  "features.library.tag": "共享资料库",
+  "features.library.title": "把个人资料和团队资料放在一处",
+  "features.library.desc":
+    "分别管理个人资料库与团队工作区共享资料库，并可通过 Book Chat 直接与文档对话。",
+
   "grid.title": "ZEFF AI 功能一览",
   "grid.subtitle": "登录后即可在工作空间中直接使用以下功能。",
   "grid.bookChat.label": "Book Chat",

@@ -80,6 +80,21 @@ const fr: Record<keyof typeof ko, string> = {
   "lecture.highlight2": "Résumé unifié des notes au tableau et des explications orales",
   "lecture.highlight3": "Extraction automatique des points à réviser",
 
+  "features.title": "C'est là que Zeff intervient",
+  "features.subtitle": "Nous n'avons retenu que les fonctions réellement utilisées au quotidien.",
+  "features.strip.summary.tag": "Résumé IA",
+  "features.strip.summary.title": "Déposez le contenu, ne gardez que l'essentiel",
+  "features.strip.lecture.tag": "Analyse de cours",
+  "features.strip.lecture.title": "Vidéo et audio réunis en une seule note",
+  "features.docs.tag": "Documents · Présentations",
+  "features.docs.title": "Donnez l'essentiel, obtenez un brouillon",
+  "features.docs.desc":
+    "Indiquez simplement ce dont vous avez besoin pour obtenir des brouillons Word, PPT ou Excel, à ouvrir directement dans le panneau de droite pour les prévisualiser.",
+  "features.library.tag": "Bibliothèque partagée",
+  "features.library.title": "Vos documents et ceux de l'équipe, au même endroit",
+  "features.library.desc":
+    "Gérez séparément une bibliothèque personnelle et la bibliothèque partagée de l'espace de travail d'équipe, et discutez directement avec n'importe quel document via Book Chat.",
+
   "grid.title": "L'ensemble des fonctionnalités de ZEFF AI",
   "grid.subtitle": "Disponibles directement dans votre espace de travail dès la connexion.",
   "grid.bookChat.label": "Book Chat",
