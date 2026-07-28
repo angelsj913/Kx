@@ -396,6 +396,20 @@ const ko = {
   "downloadPage.version": "버전",
   "downloadPage.smartScreenTitle": "설치 중 보안 경고가 뜨나요?",
   "downloadPage.smartScreen": "Windows에서 'Windows의 PC 보호'(SmartScreen)나 '알 수 없는 게시자' 경고가 보이면 [추가 정보] → [실행]을 눌러 설치하세요. 아직 코드 서명 인증서 적용 전이라 표시되는 정상 경고입니다. macOS에서 '확인되지 않은 개발자' 경고가 나오면 파일을 마우스 오른쪽 클릭 → [열기]를 선택하세요.",
+  "skills.eyebrow": "핵심 스킬",
+  "skills.title": "차별화되는 세 가지",
+  "skills.subtitle": "긴 기능 나열 대신, 실제로 쓰이는 강력한 스킬만 골랐습니다.",
+  "skills.design.title": "콘텐츠 자동화",
+  "skills.design.desc": "인스타 캐러셀 기획·카피·이미지까지 한 흐름으로. Higgsfield 연동 준비 중.",
+  "skills.design.cta": "디자인 살펴보기",
+  "skills.stem.title": "STEM 전문 분석",
+  "skills.stem.desc": "수학·과학·공학 개념을 정밀하게 해설하고 클린 다이어그램으로 보여 줍니다.",
+  "skills.stem.cta": "워크스페이스에서 풀기",
+  "skills.report.title": "지능형 리포트",
+  "skills.report.desc": "서재 자료를 근거로 전문 보고서·주간 보고 초안을 만듭니다.",
+  "skills.report.cta": "리포트 시작하기",
+  "skills.band.title": "서재 근거로, 바로 결과물까지",
+  "skills.band.subtitle": "질문만으로 끝내지 않습니다. 자료에 묶인 답과 문서·슬라이드 초안을 같은 자리에서 이어 갑니다."
 } as const;
 
 export default ko;

@@ -6,7 +6,7 @@
 
 ## Status
 
-- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Depends on**: none (visually supersedes 005) | **Category**: direction | **Planned at**: `a78c6d6` | **Status**: TODO
+- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Depends on**: none (visually supersedes 005) | **Category**: direction | **Planned at**: `a78c6d6` | **Status**: DONE | **Done**: 2026-07-28
 
 ## Why this matters
 
@@ -89,11 +89,11 @@ npx tsc --noEmit
 
 ## Done criteria
 
-- [ ] Landing: Noto-first, white/light shell, blue CTA, no `01` chrome
-- [ ] Logged-in startWeb → `/app`; login respects `callbackUrl`
-- [ ] Quality tier only inside `+` menu
-- [ ] Three skill cards + `/design` placeholder
-- [ ] lint / tsc pass
+- [x] Landing: Noto-first, white/light shell, blue CTA, no `01` chrome
+- [x] Logged-in startWeb → `/app`; login respects `callbackUrl`
+- [x] Quality tier only inside `+` menu
+- [x] Three skill cards + `/design` placeholder
+- [x] lint / tsc pass
 
 ## STOP conditions
 

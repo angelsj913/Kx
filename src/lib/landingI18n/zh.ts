@@ -388,6 +388,20 @@ const zh: Record<keyof typeof ko, string> = {
   "downloadPage.version": "版本",
   "downloadPage.smartScreenTitle": "安装时出现安全警告？",
   "downloadPage.smartScreen": "如果 Windows 显示“Windows 已保护你的电脑”(SmartScreen) 或“未知发布者”警告，请点击“更多信息”→“仍要运行”进行安装。这只是因为应用尚未进行代码签名，可放心继续。在 macOS 上如果出现“无法验证开发者”警告，请右键点击文件→“打开”。",
+  "skills.eyebrow": "Core skills",
+  "skills.title": "Three things that set us apart",
+  "skills.subtitle": "Fewer feature lists — just the skills that change how you work.",
+  "skills.design.title": "Content automation",
+  "skills.design.desc": "Carousel planning, copy, and images in one flow. Higgsfield integration coming soon.",
+  "skills.design.cta": "Explore design",
+  "skills.stem.title": "STEM analysis",
+  "skills.stem.desc": "Precise science, math, and engineering explanations with clean diagrams.",
+  "skills.stem.cta": "Solve in workspace",
+  "skills.report.title": "Intelligent reports",
+  "skills.report.desc": "Draft professional and weekly reports grounded in your library.",
+  "skills.report.cta": "Start a report",
+  "skills.band.title": "From library evidence to deliverables",
+  "skills.band.subtitle": "Answers stay tied to your sources — then continue into docs and slides in the same place."
 };
 
 export default zh;

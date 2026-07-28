@@ -7,10 +7,7 @@ import AdminDeniedBanner from "@/components/landing/AdminDeniedBanner";
 import LandingViewportScale from "@/components/landing/LandingViewportScale";
 
 const WorkspaceIntro = dynamic(() => import("@/components/landing/WorkspaceIntro"));
-const WorkLectureScroll = dynamic(() => import("@/components/landing/WorkLectureScroll"));
-const FeatureGrid = dynamic(() => import("@/components/landing/FeatureGrid"));
-const WhyZeff = dynamic(() => import("@/components/landing/WhyZeff"));
-const FeatureShowcase = dynamic(() => import("@/components/landing/FeatureShowcase"));
+const SkillsSection = dynamic(() => import("@/components/landing/SkillsSection"));
 const PricingLead = dynamic(() => import("@/components/landing/PricingLead"));
 const Pricing = dynamic(() => import("@/components/landing/Pricing"));
 
@@ -25,10 +22,7 @@ export default function Landing() {
         <main>
           <Hero />
           <WorkspaceIntro />
-          <WorkLectureScroll />
-          <FeatureGrid />
-          <WhyZeff />
-          <FeatureShowcase />
+          <SkillsSection />
           <PricingLead />
           <Pricing />
         </main>

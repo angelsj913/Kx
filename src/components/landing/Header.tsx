@@ -151,7 +151,7 @@ export default function Header() {
                 </button>
                 <Link
                   href="/app"
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.985] sm:px-5"
+                  className="rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.985] sm:px-5"
                 >
                   {t("header.startWeb")}
                 </Link>
@@ -160,7 +160,7 @@ export default function Header() {
               // min-h/px 는 rem 이 아니라 px 이라 모바일 rem 축소(globals.css)의 영향을 받지 않는다.
               // 글자만 작아지고 탭 영역은 44px 를 유지한다.
               <Link
-                href="/login"
+                href="/login?callbackUrl=%2Fapp"
                 className="inline-flex min-h-[44px] items-center px-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
               >
                 {t("header.login")}

@@ -394,6 +394,20 @@ const ja: Record<keyof typeof ko, string> = {
   "downloadPage.version": "バージョン",
   "downloadPage.smartScreenTitle": "インストール中にセキュリティ警告が出ますか？",
   "downloadPage.smartScreen": "Windowsで「WindowsによってPCが保護されました」(SmartScreen)や「不明な発行元」の警告が出た場合は、[詳細情報]→[実行]を押してインストールしてください。まだコード署名証明書を適用していないため表示される正常な警告です。macOSで「未確認の開発元」警告が出た場合は、ファイルを右クリック→[開く]を選択してください。",
+  "skills.eyebrow": "Core skills",
+  "skills.title": "Three things that set us apart",
+  "skills.subtitle": "Fewer feature lists — just the skills that change how you work.",
+  "skills.design.title": "Content automation",
+  "skills.design.desc": "Carousel planning, copy, and images in one flow. Higgsfield integration coming soon.",
+  "skills.design.cta": "Explore design",
+  "skills.stem.title": "STEM analysis",
+  "skills.stem.desc": "Precise science, math, and engineering explanations with clean diagrams.",
+  "skills.stem.cta": "Solve in workspace",
+  "skills.report.title": "Intelligent reports",
+  "skills.report.desc": "Draft professional and weekly reports grounded in your library.",
+  "skills.report.cta": "Start a report",
+  "skills.band.title": "From library evidence to deliverables",
+  "skills.band.subtitle": "Answers stay tied to your sources — then continue into docs and slides in the same place."
 };
 
 export default ja;

@@ -28,7 +28,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [017](./017-rag-llm-rerank.md) | RAG LLM rerank top-20 → top-k | P1 | M | 010 | DONE |
 | [018](./018-ppt-domain-templates.md) | PPT domain templates + research rerank | P2 | M | 011, 017 | DONE |
 | [019](./019-ppt-outline-confirm.md) | PPT outline confirmation step | P2 | M | 011, 018 | DONE |
-| [020](./020-landing-ux-noto-login-skills.md) | Landing UX: Noto/white/blue, login loop, quality in +, 3 skills | P1 | L | — | TODO |
+| [020](./020-landing-ux-noto-login-skills.md) | Landing UX: Noto/white/blue, login loop, quality in +, 3 skills | P1 | L | — | DONE |
 | [021](./021-rag-engine-upgrade.md) | RAG: semantic chunk, BM25 hybrid, multi-query, assembler | P1 | L | 010, 017, 020 | TODO |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`

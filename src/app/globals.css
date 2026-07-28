@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-noto-kr), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -44,7 +44,7 @@
 body {
   background: var(--landing-bg);
   color: #0f172a;
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-kr), var(--font-geist-sans), Arial, Helvetica, sans-serif;
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -140,46 +140,47 @@ body {
   }
 }
 
-/* ── Nothing-design landing tokens (plan 005) — scoped to .landing-shell only ── */
+/* ── Landing tokens (plan 020) — Noto / white / blue; supersedes nothing-design cream/red ── */
 .landing-shell {
-  --landing-bg: #f5f3ee;
-  --landing-bg-soft: #ebe8e1;
-  --landing-text-primary: rgba(26, 26, 26, 0.9);
-  --landing-text-muted: rgba(26, 26, 26, 0.55);
-  --landing-accent: #d71921;
-  --landing-gradient-start: #f5f3ee;
+  --landing-bg: #ffffff;
+  --landing-bg-soft: #f8fafc;
+  --landing-text-primary: #0f172a;
+  --landing-text-muted: #64748b;
+  --landing-accent: #2563eb;
+  --landing-gradient-start: #ffffff;
   --landing-gradient: linear-gradient(
     180deg,
     var(--landing-gradient-start) 0%,
     var(--landing-bg-soft) 48%,
     var(--landing-bg) 100%
   );
-  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(26, 26, 26, 0.04), transparent 65%);
-  font-family: var(--font-space-grotesk), var(--font-noto-kr), sans-serif;
+  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(37, 99, 235, 0.08), transparent 65%);
+  font-family: var(--font-noto-kr), var(--font-geist-sans), sans-serif;
   color: var(--landing-text-primary);
 }
 .dark .landing-shell {
-  --landing-bg: #141414;
-  --landing-bg-soft: #1c1c1c;
-  --landing-text-primary: rgba(245, 243, 238, 0.92);
-  --landing-text-muted: rgba(245, 243, 238, 0.5);
-  --landing-accent: #d71921;
-  --landing-gradient-start: #141414;
+  --landing-bg: #0a1120;
+  --landing-bg-soft: #0f172a;
+  --landing-text-primary: rgba(248, 250, 252, 0.94);
+  --landing-text-muted: rgba(148, 163, 184, 0.85);
+  --landing-accent: #3b82f6;
+  --landing-gradient-start: #0a1120;
   --landing-gradient: linear-gradient(
     180deg,
     var(--landing-gradient-start) 0%,
     var(--landing-bg-soft) 50%,
     var(--landing-bg) 100%
   );
-  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(245, 243, 238, 0.05), transparent 65%);
+  --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 65%);
 }
 .landing-label {
-  font-family: var(--font-space-mono), ui-monospace, monospace;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-noto-kr), sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 500;
 }
 .landing-display {
-  font-family: var(--font-doto), var(--font-space-mono), ui-monospace, monospace;
+  font-family: var(--font-noto-kr), sans-serif;
 }
 
 /* ── 랜딩 배경: 그라데이션을 "뷰포트에 고정"한다 ──

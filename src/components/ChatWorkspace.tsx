@@ -1424,26 +1424,6 @@ export default function ChatWorkspace({
             </AnimatePresence>
           </div>
 
-          <div className="mb-2 flex flex-wrap items-center justify-end gap-1 px-1" role="group" aria-label={t("chat.quality.label")}>
-            {(["low", "medium", "high"] as const).map((tier) => (
-              <button
-                key={tier}
-                type="button"
-                onClick={() => {
-                  setQualityTier(tier);
-                  window.localStorage.setItem(QUALITY_STORAGE_KEY, tier);
-                }}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  qualityTier === tier
-                    ? "bg-blue-600 text-white dark:bg-blue-500"
-                    : "border border-slate-300 bg-white text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                }`}
-              >
-                {t(`chat.quality.${tier}`)}
-              </button>
-            ))}
-          </div>
-
           {activeQuickTool && (
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
@@ -1585,6 +1565,30 @@ export default function ChatWorkspace({
                     transition={{ duration: 0.2, ease: "easeInOut" }}
                     className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                   >
+                    <div className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {t("chat.quality.label")}
+                      </p>
+                      <div className="flex flex-wrap gap-1" role="group" aria-label={t("chat.quality.label")}>
+                        {(["low", "medium", "high"] as const).map((tier) => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => {
+                              setQualityTier(tier);
+                              window.localStorage.setItem(QUALITY_STORAGE_KEY, tier);
+                            }}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                              qualityTier === tier
+                                ? "bg-blue-600 text-white dark:bg-blue-500"
+                                : "border border-slate-300 bg-white text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                            }`}
+                          >
+                            {t(`chat.quality.${tier}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     {featureGroups.map((g) => (
                       <QuickToolGroup
                         key={g.id}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Download, Apple, Smartphone, X, ArrowRight } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
@@ -25,6 +26,9 @@ const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
 
 export default function Hero() {
   const t = useLandingT();
+  const { status } = useSession();
+  const isLoggedIn = status === "authenticated";
+  const startHref = isLoggedIn ? "/app" : "/login?callbackUrl=%2Fapp";
   const [selected, setSelected] = useState<OS | null>(null);
 
   const playReady = Boolean(PLAY_STORE_URL);
@@ -65,11 +69,7 @@ export default function Hero() {
           {t("hero.badge")}
         </span>
 
-        <p className="landing-display hero-fade-up hero-delay-1 text-5xl font-bold tabular-nums leading-none text-[color:var(--landing-text-primary)] sm:text-7xl" aria-hidden>
-          01
-        </p>
-
-        <h1 className="hero-fade-up hero-delay-1 mt-4 max-w-4xl text-3xl font-bold leading-[1.14] tracking-tight text-[color:var(--landing-text-primary)] sm:text-5xl">
+        <h1 className="hero-fade-up hero-delay-1 mt-2 max-w-4xl text-3xl font-bold leading-[1.14] tracking-tight text-[color:var(--landing-text-primary)] sm:text-5xl">
           {t("hero.title.line1")}
           <br />
           <span className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-4 sm:gap-x-4">
@@ -86,7 +86,7 @@ export default function Hero() {
 
         {!SHOW_DOWNLOAD_CTA && (
           <Link
-            href="/login"
+            href={startHref}
             className="hero-fade-up hero-delay-3 mt-10 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[var(--landing-accent)] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
           >
             {t("header.startWeb")}
@@ -100,9 +100,6 @@ export default function Hero() {
               id="download"
               className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
             >
-              {/* nowrap 은 버튼이 나란히 놓이는 md 이상에서만 건다. 모바일은 w-full 로 쌓이는데,
-                  긴 언어(독일어 "Für Windows herunterladen" 등)에서 줄바꿈이 막히면
-                  글자가 화면 밖으로 나가 가로 스크롤이 생긴다. */}
               <button
                 type="button"
                 onClick={() => setSelected("windows")}
@@ -143,6 +140,10 @@ export default function Hero() {
             </p>
           </>
         )}
+
+        <div className="hero-fade-up hero-delay-4 mt-14 opacity-80">
+          <Logo size="md" className="!items-center" />
+        </div>
       </div>
 
       {SHOW_DOWNLOAD_CTA && info && (
@@ -179,14 +180,11 @@ export default function Hero() {
                     ? t("hero.modal.androidNote")
                     : t("hero.modal.instruction")}
                 </p>
-                {/* GitHub 릴리스 URL은 교차 출처라 download 속성이 무시된다(GitHub이
-                    Content-Disposition으로 강제 다운로드). 새 탭으로 열어 인앱 브라우저
-                    (인스타그램 등)에서도 시스템 브라우저로 넘어가 받을 확률을 높인다. */}
                 <a
                   href={info.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--landing-accent)] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-opacity hover:opacity-90"
                 >
                   <Download className="h-4 w-4" />
                   {selected === "android"

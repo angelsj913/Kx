@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { signIn } from "next-auth/react";
-import Image from "next/image";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useLandingT } from "@/lib/landingI18n";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/ui/Logo";
 import { useIsDesktopClient } from "@/lib/useIsDesktopClient";
 
 function GoogleIcon() {
@@ -20,18 +21,39 @@ function GoogleIcon() {
   );
 }
 
+/** same-origin relative path only */
+function safeCallbackUrl(raw: string | null | undefined, fallback = "/app"): string {
+  if (!raw) return fallback;
+  const v = raw.trim();
+  if (!v.startsWith("/") || v.startsWith("//") || v.includes("://")) return fallback;
+  return v;
+}
+
 function LoginCard() {
   const t = useLandingT();
-  // 데스크탑 앱은 마케팅 홈이 차단돼 있으므로 로그인 후 바로 워크스페이스로 보낸다.
   const isDesktop = useIsDesktopClient();
-  const callbackUrl = isDesktop ? "/app" : "/";
+  const searchParams = useSearchParams();
+  const { status } = useSession();
+  const callbackUrl = useMemo(
+    () =>
+      safeCallbackUrl(
+        searchParams.get("callbackUrl"),
+        isDesktop ? "/app" : "/app",
+      ),
+    [searchParams, isDesktop],
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // 2단계 인증: 기본 로그인은 그대로, 2FA를 켠 계정만 코드 입력 단계로 넘어간다.
   const [stage, setStage] = useState<"credentials" | "2fa">("credentials");
   const [code, setCode] = useState("");
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      window.location.replace(callbackUrl);
+    }
+  }, [status, callbackUrl]);
 
   async function finishSignIn(otp?: string) {
     const res = await signIn("credentials", {
@@ -55,7 +77,6 @@ function LoginCard() {
     setError("");
     setLoading(true);
     try {
-      // 이 계정이 2FA를 쓰는지 먼저 확인(비밀번호도 여기서 검증). 켜져 있으면 코드 발송.
       const res = await fetch("/api/account/2fa/login-challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,7 +88,6 @@ function LoginCard() {
         setLoading(false);
         return;
       }
-      // 2FA 미사용(또는 자격증명 불일치) — 평소대로 로그인 시도(오류 메시지 일관 유지).
       await finishSignIn();
     } catch {
       setError(t("login.error"));
@@ -87,19 +107,25 @@ function LoginCard() {
     }
   }
 
-  return (
-    <div className="relative flex min-h-dvh flex-col items-center justify-start overflow-hidden bg-slate-50 px-6 pb-10 pt-24 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100 sm:justify-center sm:pt-6">
-      <div className="pointer-events-none absolute -top-48 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
+  if (status === "authenticated" || status === "loading") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-white text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+        …
+      </div>
+    );
+  }
 
+  return (
+    <div className="relative flex min-h-dvh flex-col items-center justify-start overflow-hidden bg-white px-6 pb-10 pt-24 text-slate-900 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] dark:bg-slate-950 dark:text-slate-100 sm:justify-center sm:pt-6">
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4">
-        {/* 데스크탑 앱에서는 뒤로가기(→ 마케팅 홈)를 숨긴다 */}
         {isDesktop ? <span /> : <BackButton fallbackHref="/" forceFallback />}
         <ThemeToggle />
       </div>
 
-      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900">
-        <Image src="/logo-zeff.png" alt="ZEFF AI" width={48} height={48} priority className="mx-auto rounded-xl dark:hidden" />
-        <Image src="/logo-zeff-dark.png" alt="ZEFF AI" width={48} height={48} priority className="mx-auto hidden rounded-xl dark:block" />
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex justify-center">
+          <Logo size="lg" />
+        </div>
         <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-slate-50">{t("login.title")}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("login.subtitle")}</p>
 
@@ -110,15 +136,6 @@ function LoginCard() {
         >
           <GoogleIcon />
           {t("login.google")}
-        </button>
-
-        <button
-          type="button"
-          disabled
-          title={t("login.apple")}
-          className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500"
-        >
-          {t("login.apple")}
         </button>
 
         <div className="mt-6 flex items-center gap-3">
@@ -155,7 +172,7 @@ function LoginCard() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
+              className="flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-6 py-3 text-sm font-semibold text-white transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
             >
               {t("login.submit")}
             </button>
@@ -186,7 +203,7 @@ function LoginCard() {
             <button
               type="submit"
               disabled={loading || code.length < 6}
-              className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
+              className="flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-6 py-3 text-sm font-semibold text-white transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-blue-500 active:scale-95 disabled:opacity-60"
             >
               {t("login.2fa.verify")}
             </button>
