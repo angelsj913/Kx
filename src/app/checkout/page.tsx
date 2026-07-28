@@ -8,6 +8,7 @@ import { Loader2, CreditCard, AlertCircle, Check } from "lucide-react";
 import BackButton from "@/components/ui/BackButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { PLANS, isPlanId, formatAmount, type PlanId } from "@/lib/plans";
+import { existingSubscriptionMessage } from "@/lib/checkoutMessaging";
 import { setAppLanguage, useT, type AppLanguage } from "@/lib/i18n";
 import { LANGUAGE_ORDER } from "@/lib/languages";
 
@@ -68,6 +69,16 @@ function CheckoutInner() {
         if (res.status === 401 || data?.needLogin) {
           router.replace(
             `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}`)}`,
+          );
+          return;
+        }
+        if (res.status === 409 && data?.manageSubscription) {
+          const currentPlan =
+            typeof data?.currentPlan === "string" ? data.currentPlan : "";
+          setState("error");
+          setError(
+            existingSubscriptionMessage(currentPlan, planId) ??
+              (data?.error ?? ct("checkout.prepareFail")),
           );
           return;
         }

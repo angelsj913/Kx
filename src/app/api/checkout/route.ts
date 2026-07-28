@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         {
           error: "이미 구독 중입니다. 요금제 변경과 해지는 고객센터로 문의해 주세요.",
           manageSubscription: true,
+          currentPlan: settings.plan,
         },
         { status: 409 }
       );
