@@ -1,0 +1,41 @@
+{
+  "cases": [
+    {
+      "id": "report-web",
+      "query": "2026 AI 규제 동향 리포트 작성해줘",
+      "plan": "pro",
+      "expectSkill": "report",
+      "expectRoute": "web_first"
+    },
+    {
+      "id": "study-doc",
+      "query": "내가 올린 미적분 노트로 시험 대비 정리해줘",
+      "plan": "pro",
+      "hasLibraryContext": true,
+      "expectSkill": "study",
+      "expectRoute": "doc_first"
+    },
+    {
+      "id": "study-hybrid",
+      "query": "내 노트가 최신 수능 경향과 얼마나 맞는지 비교해줘",
+      "plan": "pro",
+      "hasLibraryContext": true,
+      "expectSkill": "study",
+      "expectRoute": "hybrid"
+    },
+    {
+      "id": "presentation-web",
+      "query": "AI ethics 12-slide presentation 만들어줘",
+      "plan": "pro",
+      "expectSkill": "presentation",
+      "expectRoute": "web_first"
+    },
+    {
+      "id": "inline-web",
+      "query": "광합성이 뭐야?",
+      "plan": "free",
+      "expectSkill": "inline",
+      "expectRoute": "web_first"
+    }
+  ]
+}

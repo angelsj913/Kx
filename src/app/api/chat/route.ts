@@ -11,7 +11,9 @@ import { getTool } from "@/lib/tools";
 import { friendlyError } from "@/lib/errors";
 import { itemAccessWhere, resolveScope, WorkspaceError } from "@/lib/workspace";
 import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption } from "@/lib/usage";
-import { getPlanOrFree } from "@/lib/plans";
+import { getPlanOrFree, type PlanId } from "@/lib/plans";
+import { decideGenerativeRoute } from "@/lib/generativeRouter";
+import { runGenerativeRag, shouldUseGenerativeRag } from "@/lib/generativeRag";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
 import {
@@ -182,11 +184,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "대화를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  // 퀵툴 미선택 시 문장 의도로 자동 라우팅 (예: "ppt 만들어줘" → 실제 .pptx 생성)
+  // 퀵툴 미선택 시 문장 의도로 자동 라우팅 — generative RAG가 우선, 아니면 기존 퀵툴
   const autoDetectedTool = !quickToolId && text ? detectQuickToolFromText(text) : null;
-  if (autoDetectedTool) {
-    quickToolId = autoDetectedTool;
-  }
 
   // 전역 AI 킬스위치 · 일일 한도 · 사용자 차단 · 쿼터 · 설정 병렬
   const { isAiGloballyEnabled, reserveAiDailySlot, refundAiDailySlot } = await import(
@@ -195,6 +194,7 @@ export async function POST(request: Request) {
   const { touchUserActivity } = await import("@/lib/activity");
   let modelTier: "standard" | "priority" | "top" = "standard";
   let userLanguage: string | null = null;
+  let userPlan: PlanId = "free";
   let quota: QuotaConsumption | null = null;
   let dailySlot: { periodKey: string } | null = null;
 
@@ -237,6 +237,7 @@ export async function POST(request: Request) {
       );
     }
     modelTier = effectiveModelTier(getPlanOrFree(settings?.plan).modelTier, qualityTier);
+    userPlan = getPlanOrFree(settings?.plan).id;
     userLanguage = settings?.language ?? null;
     const isPptFill = quickToolId === "ppt" && (pptStage === "fill" || !!pptOutlineJson);
     quota = await assertAndConsumeQuota(userId, quickToolId, {
@@ -479,13 +480,74 @@ export async function POST(request: Request) {
           return;
         }
 
-        if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
+        const generativePreview = decideGenerativeRoute(text, {
+          plan: userPlan,
+          hasLibraryContext: attachedLibraryIds.length > 0,
+          attachedFileIds: attachedLibraryIds,
+        });
+        const useGenerativePath =
+          !quickToolId &&
+          shouldUseGenerativeRag({ skill: generativePreview.skill }) &&
+          generativePreview.skill !== "inline";
+
+        const effectiveQuickTool = quickToolId ?? autoDetectedTool;
+
+        if (useGenerativePath) {
+          send({
+            type: "status",
+            key: "status.generative.start",
+            sessionId: resolvedSessionId,
+            detail: generativePreview.skill,
+          });
+
+          const genResult = await runGenerativeRag({
+            query: text,
+            userId,
+            workspaceId: chatSession.workspaceId ?? null,
+            plan: userPlan,
+            attachments: attachedLibraryIds,
+            hasLibraryContext: attachedLibraryIds.length > 0,
+            modelTier,
+            onAttempt: () =>
+              send({ type: "status", key: "status.ai.trying", sessionId: resolvedSessionId }),
+            onUploadStart: () =>
+              send({ type: "status", key: "status.file.uploading", sessionId: resolvedSessionId }),
+          });
+
+          send({ type: "delta", sessionId: resolvedSessionId, text: genResult.summary + "\n\n" });
+
+          const assistantRow = await prisma.chatHistory.create({
+            data: {
+              sessionId: resolvedSessionId,
+              role: "model",
+              text: genResult.body,
+              agentId: `generative:${genResult.skill}:${genResult.mode}`,
+              provider: genResult.meta.provider,
+              modelName: genResult.meta.model,
+              outputType: genResult.outputType ?? "markdown",
+              structuredKind: genResult.structuredKind,
+              resultData: genResult.resultPayload,
+              fileUrl: genResult.fileUrl,
+              fileName: genResult.fileName,
+            },
+          });
+          await prisma.chatSession.update({
+            where: { id: resolvedSessionId },
+            data: { updatedAt: new Date() },
+          });
+
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: mapMessageFilesForClient(assistantRow),
+          });
+        } else if (effectiveQuickTool === "agent" || (!effectiveQuickTool && shouldEscalateToAgent(text))) {
           // ── 에이전트: 도구를 스스로 골라 연쇄 호출 (멀티스텝 자동 승격 포함) ──
           send({
             type: "status",
             key: "status.route.start",
             sessionId: resolvedSessionId,
-            detail: quickToolId === "agent" ? "agent" : "agent-auto",
+            detail: effectiveQuickTool === "agent" ? "agent" : "agent-auto",
           });
 
           const AGENT_HISTORY_LIMIT = 16;
@@ -576,7 +638,8 @@ export async function POST(request: Request) {
             message: mapMessageFilesForClient(assistantRow),
             interrupted: agentResult.interrupted,
           });
-        } else if (quickToolId) {
+        } else if (effectiveQuickTool) {
+          quickToolId = effectiveQuickTool;
           send({
             type: "status",
             key: "status.quicktool.generating",

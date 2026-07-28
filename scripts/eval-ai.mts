@@ -43,11 +43,33 @@ const smoke = spawnSync("npx", ["tsx", "scripts/smoke-tools.mts"], {
 if (smoke.status === 0) pass("smoke-tools.mts", "all checks");
 else fail("smoke-tools.mts", smoke.stderr?.slice(0, 200) || smoke.stdout?.slice(0, 200));
 
+// generative routing gold set
+const generativeRoutingPath = join(GOLDEN_DIR, "generative-routing.json");
+if (existsSync(generativeRoutingPath)) {
+  const { decideGenerativeRoute } = await import("../src/lib/generativeRouter.ts");
+  const routingCases = loadGoldenCases(
+    JSON.parse(readFileSync(generativeRoutingPath, "utf8")),
+  );
+  for (const c of routingCases) {
+    const d = decideGenerativeRoute(String(c.query ?? ""), {
+      plan: (c.plan as "free" | "pro" | "professional") ?? "free",
+      hasLibraryContext: Boolean(c.hasLibraryContext),
+    });
+    const ok = d.skill === c.expectSkill && d.route === c.expectRoute;
+    if (ok) pass(`generative-routing::${String(c.id ?? c.query)}`);
+    else fail(`generative-routing::${String(c.id ?? c.query)}`, `got ${d.skill}/${d.route}`);
+  }
+} else {
+  fail("generative-routing.json", "missing");
+}
+
 // 2) golden JSON cases
 if (!existsSync(GOLDEN_DIR)) {
   fail("golden-dir", "docs/eval/golden missing");
 } else {
-  const files = readdirSync(GOLDEN_DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json");
+  const files = readdirSync(GOLDEN_DIR).filter(
+    (f) => f.endsWith(".json") && f !== "manifest.json" && f !== "generative-routing.json",
+  );
   let total = 0;
   let passed = 0;
 
