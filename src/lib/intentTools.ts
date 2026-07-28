@@ -9,9 +9,23 @@
 
 const URL_RE_FOR_INTENT = /https?:\/\/[^\s<>"')\]]+/gi;
 
+function isMetaOrInformationalToolQuery(text: string): boolean {
+  const asksAboutAiOrHow =
+    /무슨\s*ai|어떤\s*ai|what\s+ai|which\s+(ai|model)|어떻게\s*(작동|동작|하나|해)|뭐로\s*(하나|해|만드)/i.test(
+      text,
+    );
+  const isQuestion = /[?？]|(?:하나요|인가요|일까요|궁금|알려\s*줘|알려줘)/i.test(text);
+  const imperativeCreate =
+    /(만들어\s*줘|만들어주|생성해\s*줘|생성해줘|작성해\s*줘|해\s*줘|해줘)\s*$/i.test(text.trim()) ||
+    /\b(make|create|generate|draft)\s+(me\s+)?(a\s+)?(ppt|slides|presentation)/i.test(text);
+  return asksAboutAiOrHow && isQuestion && !imperativeCreate;
+}
+
 export function detectQuickToolFromText(text: string): string | null {
   const t = text.trim();
   if (!t) return null;
+
+  if (isMetaOrInformationalToolQuery(t)) return null;
 
   // ── PPT 파일 (.pptx) ──
   const wantsPpt =

@@ -77,7 +77,7 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
   "title": "발표 전체 제목 (12~28자, 매력적으로)",
   "subtitle": "대상·목적·분량 (예: 중학생 대상 10분 발표)",
   "theme": {
-    "preset": "science|nature|medical|business|tech|education|creative|energy|finance|default",
+    "preset": "science|nature|medical|business|tech|education|creative|energy|finance|legal|startup|healthcare|default",
     "primary": "선택 hex 예 0369A1",
     "secondary": "선택 hex 예 0C4A6E",
     "accent": "선택 hex 예 22D3EE"
@@ -100,7 +100,8 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
           { "label": "단계명", "desc": "짧은 설명" }
         ]
       },
-      "notes": "발표자 노트 3~5문장 (구어체·예시·비유)"
+      "notes": "발표자 노트 3~5문장 (구어체·예시·비유)",
+      "sourceRef": 1
     }
   ]
 }
@@ -108,6 +109,9 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
 필수 품질 규칙:
 1) 표지는 시스템 자동 생성 → slides에는 본문만. 10~14장 권장 (내용 꽉 채움).
 2) theme.preset 은 주제에 맞게 고른다.
+   - 법률·계약·컴플라이언스 → legal
+   - 스타트업·피치·투자 라운드 → startup
+   - 병원·임상·환자 → healthcare
    - 생물·물리·화학·실험 → science
    - 환경·생태·식물 → nature
    - 의학·건강 → medical
@@ -132,9 +136,10 @@ const PPT_INSTRUCTION = `너는 대기업·학교 발표를 수백 건 만든 �
    - 표·다이어그램 슬라이드를 전체의 30% 이상 포함(최소 table 1장 + diagram 1장).
    - 전문 용어 + 쉬운 비유를 같이.
 5) notes: 발표자가 그대로 읽을 수 있는 3~5문장 대본(각 슬라이드마다), 청중 질문 예상 1개 포함 가능.
-6) 모든 텍스트 한국어. 빈 slides/빈 bullets/빈 table 금지. bullets가 비면 안 된다.
-7) 같은 레이아웃을 연속 2장 이상 반복하지 말고, 각 장에 대비·흐름·비교·강조 중 하나의 시각적 리듬을 넣는다.
-8) JSON 외 문자 금지.`;
+6) [참고 자료]가 제공되면 sourceRef에 출처 번호를 넣고 notes 마지막에 '출처 [n]'을 명시한다. 자료에 없는 사실은 넣지 않는다.
+7) 모든 텍스트 한국어. 빈 slides/빈 bullets/빈 table 금지. bullets가 비면 안 된다.
+8) 같은 레이아웃을 연속 2장 이상 반복하지 말고, 각 장에 대비·흐름·비교·강조 중 하나의 시각적 리듬을 넣는다.
+9) JSON 외 문자 금지.`;
 
 const EXCEL_INSTRUCTION = `너는 대기업 사무 전문가이다. 사용자가 원하는 보고서/표 요구사항을 입력하면, 엑셀로 바로 저장할 수 있는 표 데이터를 설계해야 한다.
 
@@ -603,6 +608,8 @@ export const TOOLS: ToolDef[] = [
       "예) 신제품 출시 전략 발표. 시장 현황, 타깃 고객, 마케팅 계획, 예상 매출을 포함해줘.",
     submitLabel: "PPT 파일 만들기",
     fileBaseName: "presentation",
+    acceptFiles:
+      ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,application/pdf,text/plain,.txt,.md",
   },
   {
     id: "excel",
@@ -899,7 +906,7 @@ export const TOOLS: ToolDef[] = [
     inputType: "text",
     outputType: "markdown",
     systemInstruction: "",
-    placeholder: "예) 우리 서재에서 A를 찾아 요약하고, 그걸로 발표 자료 만들어줘",
+    placeholder: "예) 서재 PDF 핵심만 요약해줘",
     submitLabel: "실행",
     fileBaseName: "agent-result",
   },

@@ -318,25 +318,25 @@ const ja: Record<keyof typeof ko, string> = {
 
   "company.about.title": "会社紹介",
   "company.about.body1":
-    "ZEFF AIは「思考の速さで働く」というシンプルな目標から出発しました。繰り返しの文書作業や情報探索に費やす時間を減らし、人が本当に集中すべき判断と創作に時間を取り戻すこと — それが私たちの製品の方向性です。",
+    "化学・物理学の Zeff（有効核電荷）は、電子が他の電子に遮られて感じる「実際の」原子核からの引力を指します。",
   "company.about.body2":
-    "状況に応じて複数のAIモデルを自動的に組み合わせるバックステージエンジンの上に、オフィスワーカーと学生の誰もが一日で慣れ親しめるシンプルなインターフェースを重ねました。技術を隠し、結果で証明すること — それが私たちのチームの働き方です。",
+    "名前を Zeff にした理由も同じです。毎日増える資料の中で、本当に大事な部分はノイズに埋もれがち。Zeff はその遮りを一枚ずつ剥がし、今必要な核だけをはっきり残します。",
   "company.about.body3":
-    "小さなチームですが、製品を実際に使う人が作るという原則を守っています。毎週実際のユーザーフィードバックを検討し、その結果を最速で製品に反映しています。",
+    "大きな約束より、毎日開く道具であることを目指しています。チームもこの製品で実際に働き、不便な点は翌週に直します。技術より結果で示します。",
   "company.vision.title": "将来性",
   "company.vision.body1":
-    "現在のZEFF AIはオフィス生産性と学習支援という二本の軸から始まりますが、私たちが描く姿は「個人の知的作業全体をつなぐワークスペース」です。会話、文書、資料、学習記録が一つの文脈の中で自然につながる体験を目指しています。",
+    "いまの Zeff は文書作業と学習から始まりました。これからは、散らばった会話・資料・記録が一つの文脈につながる場所を作りたいと考えています。",
   "company.vision.body2":
-    "AIモデルのエコシステムは急速に変化しており、私たちは特定のモデルに依存しないマルチエージェント構造を中核資産としています。より優れたモデルが登場すれば、利用者が何も変更しなくても、その性能は静かにサービスへ反映されます。",
+    "一つのモデルに縛られない設計です。状況に合うエンジンが静かに動き、より良いモデルが出ても、ユーザーはそのままで性能だけ追従します。",
   "company.vision.body3":
-    "次の段階として、チーム単位のコラボレーション機能と、教育機関・企業向けのカスタム導入オプションを準備しています。個人生産性ツールから出発し、組織が共に使う知識インフラへと拡張することが次の目標です。",
+    "次は一緒に使う体験です。チームで同じ資料を共有し、学校や会社がそれぞれのやり方で使えるよう準備中です。個人の机から始め、人と人の知識をつなぐ方向へ、急がず続けます。",
   "company.prototype.title": "開発中のプロトタイプ",
   "company.prototype.body1":
-    "現在社内で実験中の機能を先行してご紹介します。以下の項目は安定化前の段階であり、正式リリースの時期や形は変わる可能性があります。",
-  "company.prototype.item1": "チームワークスペース — 複数人が同じセッションとライブラリを共有するコラボレーションモード",
-  "company.prototype.item2": "音声対話モード — タイピングせずに話しかけて答えを聞くインターフェース",
-  "company.prototype.item3": "自動復習スケジューラー — ライブラリに保存した資料をもとに最適な復習タイミングを提案",
-  "company.prototype.item4": "企業向けデータコネクタ — 社内文書ストレージと連携し、組織の知識を横断検索",
+    "まだ実験段階の機能です。以下は安定化前のため、公開時期や形は変わる可能性があります。",
+  "company.prototype.item1": "チームワークスペース — 複数人でセッションとライブラリを共有（実験）",
+  "company.prototype.item2": "音声対話モード — 話しかけて答えを聞く UI（実験）",
+  "company.prototype.item3": "自動復習スケジューラー — ライブラリ資料から復習タイミングを提案（実験）",
+  "company.prototype.item4": "企業向けデータコネクタ — 社内ストレージ連携検索（実験）",
 
   "footer.terms": "利用規約",
   "footer.privacy": "プライバシーポリシー",
@@ -394,6 +394,20 @@ const ja: Record<keyof typeof ko, string> = {
   "downloadPage.version": "バージョン",
   "downloadPage.smartScreenTitle": "インストール中にセキュリティ警告が出ますか？",
   "downloadPage.smartScreen": "Windowsで「WindowsによってPCが保護されました」(SmartScreen)や「不明な発行元」の警告が出た場合は、[詳細情報]→[実行]を押してインストールしてください。まだコード署名証明書を適用していないため表示される正常な警告です。macOSで「未確認の開発元」警告が出た場合は、ファイルを右クリック→[開く]を選択してください。",
+  "skills.eyebrow": "Core skills",
+  "skills.title": "Three things that set us apart",
+  "skills.subtitle": "Fewer feature lists — just the skills that change how you work.",
+  "skills.design.title": "Content automation",
+  "skills.design.desc": "Carousel planning, copy, and images in one flow. Higgsfield integration coming soon.",
+  "skills.design.cta": "Explore design",
+  "skills.stem.title": "STEM analysis",
+  "skills.stem.desc": "Precise science, math, and engineering explanations with clean diagrams.",
+  "skills.stem.cta": "Solve in workspace",
+  "skills.report.title": "Intelligent reports",
+  "skills.report.desc": "Draft professional and weekly reports grounded in your library.",
+  "skills.report.cta": "Start a report",
+  "skills.band.title": "From library evidence to deliverables",
+  "skills.band.subtitle": "Answers stay tied to your sources — then continue into docs and slides in the same place."
 };
 
 export default ja;

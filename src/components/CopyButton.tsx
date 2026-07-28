@@ -11,9 +11,11 @@ import { useT } from "@/lib/i18n";
 export default function CopyButton({
   text,
   className,
+  iconOnly = false,
 }: {
   text: string;
   className?: string;
+  iconOnly?: boolean;
 }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
@@ -30,22 +32,25 @@ export default function CopyButton({
       .catch(() => {});
   };
 
+  const label = copied ? t("chat.copied") : t("chat.copy");
+
   return (
     <button
       type="button"
       onClick={onCopy}
-      title={copied ? t("chat.copied") : t("chat.copy")}
+      title={label}
+      aria-label={label}
       className={
         className ??
-        "inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition-colors dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+        `inline-flex items-center ${iconOnly ? "justify-center p-1.5" : "gap-1 px-2.5 py-1"} rounded-lg border border-slate-300 bg-white text-[11px] font-medium text-slate-600 transition-colors dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300`
       }
     >
       {copied ? (
-        <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+        <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
       ) : (
-        <Copy className="h-3 w-3" />
+        <Copy className="h-3.5 w-3.5" />
       )}
-      {copied ? `${t("chat.copied")}!` : t("chat.copy")}
+      {!iconOnly && (copied ? `${t("chat.copied")}!` : t("chat.copy"))}
     </button>
   );
 }

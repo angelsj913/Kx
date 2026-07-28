@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Upload, Trash2, MessageCircle, FileText, X, RefreshCw } from "lucide-react";
+import { BookOpen, Upload, Trash2, MessageCircle, FileText, X, RefreshCw, Link2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useT } from "@/lib/i18n";
 import { useWorkspace, wsFetch } from "@/lib/workspaceClient";
 
@@ -23,12 +24,15 @@ export default function KnowledgeBaseSheet({
   open,
   onClose,
   onOpenBookChat,
+  onAttachToChat,
 }: {
   open: boolean;
   onClose: () => void;
   onOpenBookChat: (sessionId: string) => void;
+  onAttachToChat?: (item: LibraryItemSummary) => void;
 }) {
   const t = useT();
+  const { data: session } = useSession();
   const { activeId } = useWorkspace();
   const [tab, setTab] = useState<LibraryTab>("mine");
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
@@ -103,9 +107,11 @@ export default function KnowledgeBaseSheet({
     setItems(cacheRef.current[tab]!);
 
     try {
+      const ownerId = session?.user?.id;
+      if (!ownerId) throw new Error(t("library.errors.uploadFailed"));
       const { upload } = await import("@vercel/blob/client");
-      const blob = await upload(`library/${Date.now()}-${file.name}`, file, {
-        access: "public",
+      const blob = await upload(`library/${ownerId}/${Date.now()}-${file.name}`, file, {
+        access: "private",
         handleUploadUrl: "/api/library/blob-upload",
       });
       const init: RequestInit = {
@@ -284,7 +290,18 @@ export default function KnowledgeBaseSheet({
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="mt-2 flex gap-1.5">
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {onAttachToChat && (
+                      <button
+                        type="button"
+                        onClick={() => onAttachToChat(item)}
+                        disabled={item.pending}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 py-1.5 text-[11px] font-semibold text-emerald-800 disabled:opacity-50 dark:text-emerald-200"
+                      >
+                        <Link2 className="h-3 w-3" />
+                        {t("library.attachToChat")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => void onBookChat(item.id)}

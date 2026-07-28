@@ -29,6 +29,15 @@ const BOILERPLATE = [
 
 /** 긴 구 → 짧은 구 순. 한글은 단어 단위로만 치환 */
 const KO_SUBJECTS: [RegExp, string][] = [
+  [/멀티\s*툴|멀티툴|multi[\s-]?tool/gi, "assorted hand tools and power tools"],
+  [/도구\s*함|툴박스|공구함|toolbox/gi, "an open toolbox with assorted tools"],
+  [/공구|수공구/g, "hand tools"],
+  [/망치/g, "a hammer"],
+  [/드라이버/g, "a screwdriver"],
+  [/렌치|스패너/g, "a wrench"],
+  [/드릴|전동\s*드릴/gi, "a power drill"],
+  [/톱|전동\s*톱/g, "a saw"],
+  [/펜치|플라이어/g, "pliers"],
   [/아메리카노/g, "americano coffee"],
   [/카페라떼|카페\s*라떼/g, "cafe latte"],
   [/카푸치노/g, "cappuccino"],
@@ -71,6 +80,9 @@ const KO_SUBJECTS: [RegExp, string][] = [
 const PERSON_HINT =
   /사람|인물|초상|얼굴|여자|남자|소녀|소년|아이|아동|여성|남성|portrait|person|people|woman|man|girl|boy|human|face|selfie/i;
 
+const TOOL_OBJECT_HINT =
+  /tool|hammer|wrench|screwdriver|drill|pliers|saw|toolbox|멀티|공구|도구|망치|드라이버|렌치|드릴|톱|펜치/i;
+
 function extractUserRequest(raw: string): string {
   let text = raw.replace(CONTEXT_PREFIX, "").trim();
   const reqIdx = text.lastIndexOf("[요청]");
@@ -88,51 +100,86 @@ function detectStyle(text: string): string {
   return "clean realistic photo, soft natural lighting";
 }
 
+function stripBoilerplate(text: string): string {
+  let subject = text;
+  for (const re of BOILERPLATE) subject = subject.replace(re, " ");
+  return subject.replace(/\s+/g, " ").trim();
+}
+
+function translateSubjects(text: string): string {
+  let subject = text;
+  for (const [re, en] of KO_SUBJECTS) {
+    subject = subject.replace(re, ` ${en} `);
+  }
+  return subject
+    .replace(/[가-힣]+/g, " ")
+    .replace(/[^\w\s,.-]/g, " ")
+    .replace(/\b(\w+)\s+\1\b/gi, "$1")
+    .replace(/\ba\s+a\b/gi, "a")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** 번역·정규화 후에도 subject가 비면 원문 의도를 최대한 보존한다. */
+function fallbackSubject(request: string): string {
+  let subject = stripBoilerplate(request);
+  for (const [re, en] of KO_SUBJECTS) {
+    subject = subject.replace(re, ` ${en} `);
+  }
+  subject = subject
+    .replace(/[^\w\s,.-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (subject.length >= 2) return subject;
+  const raw = extractUserRequest(request).slice(0, 120).trim();
+  return raw
+    ? `visual illustration matching the user description: ${raw}`
+    : "a clear single object on a neutral background";
+}
+
 /**
  * 채팅/도구 입력을 Pollinations·이미지 API용 영문 시각 프롬프트로 변환.
  */
 export function buildImagePrompt(rawInput: string): string {
   const request = extractUserRequest(rawInput);
-  let subject = request;
-  for (const re of BOILERPLATE) subject = subject.replace(re, " ");
-
   const style = detectStyle(request);
   const wantsPerson = PERSON_HINT.test(request);
+  const wantsTools = TOOL_OBJECT_HINT.test(request);
 
-  for (const [re, en] of KO_SUBJECTS) {
-    subject = subject.replace(re, ` ${en} `);
-  }
-
-  // 번역되지 않은 한글·조사 제거 (영문 토큰만 남김)
-  subject = subject
-    .replace(/[가-힣]+/g, " ")
-    .replace(/[^\w\s,.-]/g, " ")
-    .replace(/\b(\w+)\s+\1\b/gi, "$1") // "computer computer" → "computer"
-    .replace(/\ba\s+a\b/gi, "a")
-    .replace(/\s+/g, " ")
-    .trim();
+  let subject = translateSubjects(stripBoilerplate(request));
 
   if (!subject || subject.length < 2) {
-    subject = "a simple still life object on a table";
+    subject = fallbackSubject(request);
   }
 
   const parts = [
-    subject,
+    "Draw exactly what the user asked for.",
+    `Main subject: ${subject}`,
     style,
     "high quality, sharp focus, well composed",
     "no text, no watermark, no logo",
   ];
+
+  if (wantsTools) {
+    parts.push(
+      "show the requested tools or objects clearly as the focal point",
+      "avoid unrelated still life, flowers, bread, food, scenery, random decorative objects",
+    );
+  }
+
   if (!wantsPerson) {
     parts.push(
       "no people, no human, no person, no face, no portrait, no hands, no silhouette of a person, no anthropomorphic shapes",
     );
   }
 
-  return parts
+  const prompt = parts
     .join(", ")
     .replace(/\s+,/g, ",")
     .replace(/,{2,}/g, ",")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 700);
+
+  return prompt;
 }

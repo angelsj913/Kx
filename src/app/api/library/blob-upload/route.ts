@@ -17,31 +17,38 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (userId instanceof NextResponse) return userId;
 
   const body = (await request.json()) as HandleUploadBody;
+  const prefix = `library/${userId}/`;
   try {
     const json = await handleUpload({
       request,
       body,
-      onBeforeGenerateToken: async () => ({
-        addRandomSuffix: true,
-        maximumSizeInBytes: MAX_UPLOAD_BYTES,
-        allowedContentTypes: [
-          "application/pdf",
-          "image/png",
-          "image/jpeg",
-          "image/webp",
-          "image/gif",
-          "text/plain",
-          "text/markdown",
-          "text/csv",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "application/vnd.ms-powerpoint",
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-          "application/vnd.ms-excel",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ],
-        tokenPayload: JSON.stringify({ userId }),
-      }),
+      onBeforeGenerateToken: async (pathname) => {
+        // 클라이언트가 넘긴 pathname 이 본인 prefix 인지 강제 — 타 사용자 경로 위조 차단
+        if (!pathname.startsWith(prefix)) {
+          throw new Error("업로드 경로가 올바르지 않습니다.");
+        }
+        return {
+          addRandomSuffix: true,
+          maximumSizeInBytes: MAX_UPLOAD_BYTES,
+          allowedContentTypes: [
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif",
+            "text/plain",
+            "text/markdown",
+            "text/csv",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          ],
+          tokenPayload: JSON.stringify({ userId }),
+        };
+      },
       // 완결은 별도 finalize(POST /api/library, JSON)에서 처리한다.
       onUploadCompleted: async () => {},
     });

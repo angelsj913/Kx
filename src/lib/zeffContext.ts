@@ -1,8 +1,20 @@
-import { retrieveChunks, type RankedChunk } from "@/lib/ragSearch";
+import { retrieveChunks } from "@/lib/ragSearch";
+import { MIN_CITATION_SCORE } from "@/lib/ragHybrid";
+import { isRagRerankEnabled } from "@/lib/ragRerank";
+import {
+  rankedChunksToCitations,
+  webHitsToCitations,
+  type ChatCitation,
+} from "@/lib/chatCitations";
 import { formatLearnedInstruction, retrieveLearnedContext } from "@/lib/userLearning";
 import { citationRules } from "@/lib/prompts/registry";
+import {
+  formatWebSearchInstruction,
+  searchWeb,
+  shouldUseWebSearch,
+} from "@/lib/webSearch";
 
-const RAG_TOP_K = 4;
+const RAG_TOP_K = 3;
 
 // 응답 언어 규칙: UI 설정 언어를 강요하지 않고, "사용자가 방금 입력한 언어"에 맞춰
 // 답한다. 설정이 영어인데 한국어로 물으면 영어를 강요해 언어가 섞이던 버그를 없앤다.
@@ -35,17 +47,7 @@ function buildZeffSystemPrompt(): string {
 
 export interface ZeffRuntimeContext {
   instruction: string;
-  citations: RankedChunk[];
-}
-
-export async function buildZeffRuntimeInstruction(args: {
-  userId: string;
-  workspaceId: string | null;
-  query: string;
-  language?: string | null;
-}): Promise<string> {
-  const ctx = await buildZeffRuntimeContext(args);
-  return ctx.instruction;
+  citations: ChatCitation[];
 }
 
 export async function buildZeffRuntimeContext(args: {
@@ -53,10 +55,20 @@ export async function buildZeffRuntimeContext(args: {
   workspaceId: string | null;
   query: string;
   language?: string | null;
+  /** composer에서 첨부한 서재 항목 — RAG 검색 범위 제한 */
+  libraryItemIds?: string[];
 }): Promise<ZeffRuntimeContext> {
   const sections = [`[ZEFF 운영 규칙]\n${buildZeffSystemPrompt()}`];
   const query = args.query.trim();
-  let citations: RankedChunk[] = [];
+  let citations: ChatCitation[] = [];
+  let maxRagScore: number | null = null;
+  const scopedIds = args.libraryItemIds?.filter(Boolean) ?? [];
+
+  if (scopedIds.length) {
+    sections.push(
+      `[첨부된 서재 문서 ${scopedIds.length}건]\n아래 ID의 문서만 우선 참고합니다: ${scopedIds.join(", ")}`,
+    );
+  }
 
   if (query) {
     try {
@@ -69,10 +81,16 @@ export async function buildZeffRuntimeContext(args: {
         workspaceId: args.workspaceId,
         query,
         k: RAG_TOP_K,
+        ...(scopedIds.length ? { libraryItemIds: scopedIds } : {}),
+        rerank: isRagRerankEnabled(),
       });
 
-      if (!empty && ranked.length) {
-        citations = ranked;
+      const ragRelevant =
+        !empty && ranked.length > 0 && ranked[0].score >= MIN_CITATION_SCORE;
+
+      if (ragRelevant) {
+        maxRagScore = ranked[0].score;
+        citations = rankedChunksToCitations(ranked);
         const context = ranked
           .map((r) => `[${r.n}] ${r.title}\n${r.content}`)
           .join("\n\n");
@@ -86,10 +104,19 @@ export async function buildZeffRuntimeContext(args: {
             context,
           ].join("\n"),
         );
-      } else if (!empty) {
+      } else if (!empty && ranked.length) {
+        maxRagScore = ranked[0].score;
         sections.push(
           "[검색 결과] 색인된 문서는 있으나 이번 질문과의 관련도가 낮습니다. 추측하지 말고 근거 부족을 명시하세요.",
         );
+      }
+
+      if (shouldUseWebSearch(query, maxRagScore)) {
+        const webHits = await searchWeb(query);
+        if (webHits.length) {
+          citations = [...citations, ...webHitsToCitations(webHits)];
+          sections.push(formatWebSearchInstruction(webHits));
+        }
       }
     } catch (err) {
       console.warn("[zeffContext] runtime context skipped:", err);
@@ -108,6 +135,7 @@ export async function assembleRuntimeContext(args: {
   workspaceId: string | null;
   query: string;
   language?: string | null;
+  libraryItemIds?: string[];
 }): Promise<ZeffRuntimeContext> {
   return buildZeffRuntimeContext(args);
 }

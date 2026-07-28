@@ -2,16 +2,23 @@ import PptxGenJS from "pptxgenjs";
 import {
   extractJson,
   type Deck,
+  type DeckSource,
   type DeckTheme,
   type Slide,
   type SlideDiagram,
   type SlideLayout,
   type SlideTable,
 } from "./fileTypes";
+import { domainPaletteById, inferDomainTemplateId } from "@/lib/pptTemplates";
 
 const FONT = "Malgun Gothic";
 const W = 13.333;
 const H = 7.5;
+
+/** pptxgenjs 4.x에는 slide transition API가 없어 시각 리듬(액센트·배경)으로 대체한다. */
+type SlideVisualVariant = "leftBar" | "topBand" | "softSurface";
+
+const SLIDE_VISUAL_VARIANTS: SlideVisualVariant[] = ["leftBar", "topBand", "softSurface"];
 
 export interface ResolvedPalette {
   primary: string;
@@ -24,10 +31,13 @@ export interface ResolvedPalette {
   surface: string;
   surfaceAlt: string;
   name: string;
+  /** Reference PPT 또는 DeckTheme에서 지정한 글꼴 */
+  fontFace: string;
 }
 
-/** 주제별 기본 팔레트 */
-const PRESETS: Record<string, ResolvedPalette> = {
+/** 주제별 기본 팔레트 (fontFace는 resolvePalette에서 채움) */
+type PalettePreset = Omit<ResolvedPalette, "fontFace">;
+const PRESETS: Record<string, PalettePreset> = {
   science: {
     name: "science",
     primary: "0369A1",
@@ -162,8 +172,10 @@ function hex(raw: string | undefined, fallback: string): string {
   return /^[0-9A-F]{6}$/.test(s) ? s : fallback;
 }
 
-/** 키워드로 테마 추정 (AI가 preset 안 줄 때) */
+/** 키워드로 테마 추정 (AI가 preset 안 줄 때) — 도메인 JSON 템플릿 우선 */
 export function inferThemePreset(title: string, subtitle?: string): string {
+  const domain = inferDomainTemplateId(title, subtitle);
+  if (domain) return domain;
   const t = `${title} ${subtitle ?? ""}`.toLowerCase();
   if (/세포|생물|물리|화학|과학|우주|실험|분자|유전자|분열/.test(t)) return "science";
   if (/환경|자연|생태|기후|식물|숲|지구|그린/.test(t)) return "nature";
@@ -177,14 +189,22 @@ export function inferThemePreset(title: string, subtitle?: string): string {
   return "default";
 }
 
+/** OOXML `+mj-lt` 등 플레이스홀더·이상치는 기본 글꼴로 폴백 */
+export function resolveFontFace(theme: DeckTheme | undefined): string {
+  const f = theme?.fontFace?.trim();
+  if (!f || f.startsWith("+") || f.length > 80) return FONT;
+  return f;
+}
+
 export function resolvePalette(theme: DeckTheme | undefined, title: string, subtitle?: string): ResolvedPalette {
   const presetKey = String(theme?.preset || inferThemePreset(title, subtitle)).toLowerCase();
-  const base = PRESETS[presetKey] ?? PRESETS.default;
+  const base = PRESETS[presetKey] ?? domainPaletteById(presetKey) ?? PRESETS.default;
   return {
     ...base,
     primary: hex(theme?.primary, base.primary),
     secondary: hex(theme?.secondary, base.secondary),
     accent: hex(theme?.accent, base.accent),
+    fontFace: resolveFontFace(theme),
   };
 }
 
@@ -287,6 +307,7 @@ export function parseDeck(raw: string): Deck {
       primary: typeof th.primary === "string" ? th.primary : undefined,
       secondary: typeof th.secondary === "string" ? th.secondary : undefined,
       accent: typeof th.accent === "string" ? th.accent : undefined,
+      fontFace: typeof th.fontFace === "string" ? th.fontFace : undefined,
     };
   } else if (typeof obj.theme === "string") {
     theme = { preset: obj.theme };
@@ -313,6 +334,10 @@ export function parseDeck(raw: string): Deck {
             typeof slide.notes === "string" && slide.notes.trim()
               ? slide.notes.trim().slice(0, 1000)
               : undefined,
+          sourceRef:
+            typeof slide.sourceRef === "number" && slide.sourceRef > 0
+              ? Math.floor(slide.sourceRef)
+              : undefined,
           layout,
           table,
           diagram,
@@ -334,6 +359,7 @@ function addFooter(
   total: number,
   pal: ResolvedPalette,
   light = true,
+  sourceLine?: string,
 ) {
   const muted = light ? pal.muted : "94A3B8";
   const line = light ? pal.surfaceAlt : "1E293B";
@@ -348,22 +374,92 @@ function addFooter(
   slide.addText(deckTitle.slice(0, 40), {
     x: 0.55,
     y: H - 0.38,
-    w: 8,
+    w: sourceLine ? 6.5 : 8,
     h: 0.28,
     fontSize: 9,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: muted,
   });
+  if (sourceLine) {
+    slide.addText(sourceLine, {
+      x: 7.2,
+      y: H - 0.38,
+      w: 3.5,
+      h: 0.28,
+      fontSize: 8,
+      fontFace: pal.fontFace,
+      color: pal.primary,
+      align: "right",
+    });
+  }
   slide.addText(`${page} / ${total}`, {
     x: W - 2.2,
     y: H - 0.38,
     w: 1.5,
     h: 0.28,
     fontSize: 9,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: muted,
     align: "right",
   });
+}
+
+function sourceLabel(ref: number, sources?: DeckSource[]): string | undefined {
+  if (!sources?.length) return `출처 [${ref}]`;
+  const hit = sources.find((s) => s.n === ref);
+  if (!hit) return `출처 [${ref}]`;
+  const tag = hit.source === "web" ? `web-${hit.n}` : String(hit.n);
+  const title = hit.title.slice(0, 18);
+  return `출처 ${tag} · ${title}`;
+}
+
+function applyVisualVariant(
+  slide: PptxGenJS.Slide,
+  variant: SlideVisualVariant,
+  pal: ResolvedPalette,
+) {
+  if (variant === "topBand") {
+    slide.addShape("rect", {
+      x: 0,
+      y: 0,
+      w: W,
+      h: 0.14,
+      fill: { color: pal.primary },
+      line: { color: pal.primary },
+    });
+    slide.addShape("rect", {
+      x: 0,
+      y: 0.14,
+      w: W,
+      h: 0.06,
+      fill: { color: pal.accent },
+      line: { color: pal.accent },
+    });
+    return;
+  }
+
+  if (variant === "softSurface") {
+    slide.background = { color: pal.surface };
+    slide.addShape("ellipse", {
+      x: W - 2.4,
+      y: H - 2.6,
+      w: 2.2,
+      h: 2.2,
+      fill: { color: pal.primarySoft },
+      line: { color: pal.primarySoft },
+    });
+    slide.addShape("rect", {
+      x: 0,
+      y: 0,
+      w: 0.08,
+      h: H,
+      fill: { color: pal.accent },
+      line: { color: pal.accent },
+    });
+    return;
+  }
+
+  addAccentBar(slide, pal);
 }
 
 function addAccentBar(slide: PptxGenJS.Slide, pal: ResolvedPalette) {
@@ -406,7 +502,7 @@ function addHeaderBand(
     w: 3,
     h: 0.26,
     fontSize: 10,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.primary,
     charSpacing: 2,
@@ -417,7 +513,7 @@ function addHeaderBand(
     w: 12,
     h: 0.5,
     fontSize: 22,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.text,
   });
@@ -428,7 +524,7 @@ function addHeaderBand(
       w: 12,
       h: 0.3,
       fontSize: 12,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       color: pal.muted,
     });
   }
@@ -474,7 +570,7 @@ function drawTable(
       { pt: 0.5, color: pal.primarySoft },
       { pt: 0.5, color: pal.primarySoft },
     ],
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     fontSize: 12,
     rowH: 0.42,
   });
@@ -515,7 +611,7 @@ function drawProcess(
       w: 0.56,
       h: 0.45,
       fontSize: 14,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.white,
       align: "center",
@@ -526,7 +622,7 @@ function drawProcess(
       w: boxW - 0.24,
       h: 0.7,
       fontSize: 13,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
       align: "center",
@@ -539,7 +635,7 @@ function drawProcess(
         w: boxW - 0.24,
         h: 0.55,
         fontSize: 11,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
         align: "center",
         valign: "top",
@@ -601,7 +697,7 @@ function drawCycle(
       w: 4.3,
       h: 0.55,
       fontSize: 15,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
     });
@@ -612,7 +708,7 @@ function drawCycle(
         w: 4.3,
         h: 0.7,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
       });
     }
@@ -659,7 +755,7 @@ function drawCards(
       w: boxW - 0.45,
       h: 0.55,
       fontSize: 14,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
     });
@@ -670,7 +766,7 @@ function drawCards(
         w: boxW - 0.45,
         h: boxH - 1.15,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
         valign: "top",
       });
@@ -725,7 +821,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8,
     h: 0.35,
     fontSize: 12,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.accent,
     charSpacing: 4,
@@ -736,7 +832,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8.5,
     h: 1.7,
     fontSize: 34,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.white,
     valign: "middle",
@@ -748,7 +844,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
       w: 8.5,
       h: 0.45,
       fontSize: 15,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       color: "CBD5E1",
     });
   }
@@ -766,7 +862,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8,
     h: 0.35,
     fontSize: 12,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: "94A3B8",
   });
   cover.addText(`1 / ${totalPages}`, {
@@ -775,7 +871,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 1.5,
     h: 0.3,
     fontSize: 11,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: "E2E8F0",
     align: "right",
   });
@@ -802,7 +898,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: 11,
         h: 0.35,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.accent,
         charSpacing: 3,
@@ -813,7 +909,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: 11,
         h: 1.2,
         fontSize: 30,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.white,
       });
@@ -824,7 +920,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: 11,
           h: 0.5,
           fontSize: 15,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: "CBD5E1",
         });
       }
@@ -850,7 +946,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: W - 1.6,
         h: 0.9,
         fontSize: 34,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.white,
         align: "center",
@@ -862,7 +958,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: W - 3,
           h: 0.5,
           fontSize: 16,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: "CBD5E1",
           align: "center",
         });
@@ -877,7 +973,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: W - 5,
             h: 2,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: "94A3B8",
             align: "center",
           },
@@ -889,8 +985,10 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     }
 
     const slide = pptx.addSlide();
-    slide.background = { color: pal.white };
-    addAccentBar(slide, pal);
+    const visualVariant = SLIDE_VISUAL_VARIANTS[idx % SLIDE_VISUAL_VARIANTS.length]!;
+    slide.background = { color: visualVariant === "softSurface" ? pal.surface : pal.white };
+    applyVisualVariant(slide, visualVariant, pal);
+    const sourceLine = s.sourceRef ? sourceLabel(s.sourceRef, deck.sources) : undefined;
 
     const badge =
       layout === "agenda"
@@ -925,7 +1023,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 12,
             h: 1.4,
             fontSize: 13,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 6,
             valign: "top",
@@ -949,7 +1047,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 12,
             h: 0.9,
             fontSize: 13,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 4,
             valign: "top",
@@ -993,7 +1091,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 5.45,
             h: 4.1,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 8,
             valign: "top",
@@ -1009,7 +1107,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 5.45,
             h: 4.1,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 8,
             valign: "top",
@@ -1031,7 +1129,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: 12,
           h: 4.7,
           fontSize: layout === "agenda" ? 16 : 14,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: pal.text,
           paraSpaceAfter: 8,
           valign: "top",
@@ -1040,7 +1138,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     }
 
     if (s.notes) slide.addNotes(s.notes);
-    addFooter(slide, deck.title, page, totalPages, pal, true);
+    addFooter(slide, deck.title, page, totalPages, pal, true, sourceLine);
   });
 
   return (await pptx.write({ outputType: "base64" })) as string;

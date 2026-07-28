@@ -149,27 +149,33 @@ export async function resolveScope(
 /**
  * 목록 조회용 where 절.
  * - 팀 워크스페이스: 해당 workspace 공유 항목만
- * - 개인 스코프: 내가 만든 대화 전부 (workspaceId null + 과거 팀 스코프 대화 포함)
- *   → 입장 시 「예전에 한 채팅」이 라이브러리에 바로 보이도록
+ * - 개인 스코프: workspaceId 가 null 인 내 항목만
+ *   (팀 자료는 멤버십이 있는 동안 팀 스코프에서만 — 퇴출 후 접근 차단)
  */
 export function listWhere(
   scope: { workspaceId: string | null },
   userId: string,
-): { workspaceId: string } | { userId: string } {
+): { workspaceId: string } | { userId: string; workspaceId: null } {
   return scope.workspaceId
     ? { workspaceId: scope.workspaceId }
-    : { userId };
+    : { userId, workspaceId: null };
 }
 
 /**
  * 단일 항목 접근용 where 조각.
- * 내가 만든 항목이거나, 내가 속한 워크스페이스의 공유 항목이면 접근 가능.
+ * - 개인 항목(workspaceId null): 소유자만
+ * - 팀 항목: 현재 멤버십이 있는 workspace 만 (업로더 userId 만으로는 부족)
  */
 export async function itemAccessWhere(userId: string) {
   const ids = await accessibleWorkspaceIds(userId);
   return ids.length
-    ? { OR: [{ userId }, { workspaceId: { in: ids } }] }
-    : { userId };
+    ? {
+        OR: [
+          { userId, workspaceId: null },
+          { workspaceId: { in: ids } },
+        ],
+      }
+    : { userId, workspaceId: null };
 }
 
 /** 짧은 초대 코드 (8자, 혼동 문자 제외). */

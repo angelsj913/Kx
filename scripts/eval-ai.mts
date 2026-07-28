@@ -16,13 +16,23 @@ const GOLDEN_DIR = join(ROOT, "docs/eval/golden");
 const live = process.argv.includes("--live");
 const results = [];
 
-function pass(name, detail) {
+function pass(name: string, detail?: string) {
   results.push({ name, ok: true, detail });
   console.log("PASS", name, detail ?? "");
 }
-function fail(name, detail) {
+function fail(name: string, detail?: string) {
   results.push({ name, ok: false, detail });
   console.log("FAIL", name, detail ?? "");
+}
+
+/** Golden JSON: raw array or `{ cases: [...] }` wrapper. */
+function loadGoldenCases(raw: unknown): Record<string, unknown>[] {
+  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
+  if (raw && typeof raw === "object") {
+    const cases = (raw as { cases?: unknown }).cases;
+    if (Array.isArray(cases)) return cases as Record<string, unknown>[];
+  }
+  return [];
 }
 
 // 1) smoke-tools
@@ -42,17 +52,108 @@ if (!existsSync(GOLDEN_DIR)) {
   let passed = 0;
 
   for (const file of files) {
-    const cases = JSON.parse(readFileSync(join(GOLDEN_DIR, file), "utf8"));
-    if (!Array.isArray(cases)) continue;
-    for (const c of cases) {
+    const cases = loadGoldenCases(JSON.parse(readFileSync(join(GOLDEN_DIR, file), "utf8")));
+    if (!cases.length) continue;
+    for (let ci = 0; ci < cases.length; ci++) {
+      const c = cases[ci]!;
       total++;
-      const name = `${file}::${c.id}`;
+      const name = `${file}::${String(c.id ?? ci)}`;
       try {
-        if (c.type === "ppt_parse") {
+        if (file === "moderation.json") {
+          const { moderateInput } = await import("../src/lib/moderation.ts");
+          const result = moderateInput(String(c.input ?? ""));
+          const expectBlocked = c.expect === "blocked";
+          const ok = expectBlocked ? !result.allowed : result.allowed;
+          if (ok) {
+            pass(name, expectBlocked ? result.category : "allowed");
+            passed++;
+          } else {
+            fail(
+              name,
+              `expected ${String(c.expect)}, got ${result.allowed ? "allowed" : result.category}`,
+            );
+          }
+        } else if (file === "image-prompt.json") {
+          const { buildImagePrompt } = await import("../src/lib/imagePrompt.ts");
+          const prompt = buildImagePrompt(String(c.input ?? ""));
+          const mustInclude = (c.mustInclude as string[] | undefined) ?? [];
+          const mustNotInclude = (c.mustNotInclude as string[] | undefined) ?? [];
+          const missing = mustInclude.filter((s) => !prompt.includes(s));
+          const forbidden = mustNotInclude.filter((s) => prompt.includes(s));
+          if (missing.length === 0 && forbidden.length === 0) {
+            pass(name, `${prompt.length} chars`);
+            passed++;
+          } else {
+            fail(
+              name,
+              [
+                missing.length ? `missing: ${missing.join(", ")}` : "",
+                forbidden.length ? `forbidden: ${forbidden.join(", ")}` : "",
+              ]
+                .filter(Boolean)
+                .join("; "),
+            );
+          }
+        } else if (c.type === "ppt_parse") {
           const { parseDeck } = await import("../src/lib/pptx.ts");
           parseDeck(JSON.stringify(c.input));
           pass(name);
           passed++;
+        } else if (c.type === "ppt_outline_parse") {
+          const { parsePptOutline } = await import("../src/lib/pptOutline.ts");
+          const draft = parsePptOutline(
+            JSON.stringify(c.input),
+            typeof c.sourceText === "string" ? c.sourceText : "",
+          );
+          const expectSlides = Number(c.expectSlides ?? 0);
+          const expectPreset = typeof c.expectPreset === "string" ? c.expectPreset : null;
+          if (
+            draft.slides.length === expectSlides &&
+            (expectPreset == null || draft.themePreset === expectPreset) &&
+            (typeof c.sourceText !== "string" || draft.sourceText === c.sourceText || !!draft.sourceText)
+          ) {
+            pass(name, `${draft.themePreset}/${draft.slides.length}`);
+            passed++;
+          } else {
+            fail(
+              name,
+              `slides=${draft.slides.length} preset=${draft.themePreset} source=${draft.sourceText.slice(0, 20)}`,
+            );
+          }
+        } else if (c.type === "ppt_theme_scheme") {
+          const { parseClrSchemeFromThemeXml, schemeToDeckTheme } = await import(
+            "../src/lib/pptThemeExtract.ts"
+          );
+          const scheme = parseClrSchemeFromThemeXml(String(c.xml ?? ""));
+          const theme = schemeToDeckTheme(scheme);
+          const ep = c.expectPrimary as string | null;
+          const ea = c.expectAccent as string | null;
+          const primaryOk = ep == null ? !theme.primary : theme.primary === ep;
+          const accentOk = ea == null ? true : theme.accent === ea;
+          if (primaryOk && accentOk) {
+            pass(name, JSON.stringify(theme));
+            passed++;
+          } else {
+            fail(name, JSON.stringify(theme));
+          }
+        } else if (c.type === "ppt_theme_font") {
+          const { parseLatinFontFromThemeXml } = await import(
+            "../src/lib/pptThemeExtract.ts"
+          );
+          const { resolveFontFace } = await import("../src/lib/pptx.ts");
+          const raw = parseLatinFontFromThemeXml(String(c.xml ?? ""));
+          const resolved = resolveFontFace(raw ? { fontFace: raw } : undefined);
+          const expect = c.expectFont as string | null;
+          const ok =
+            expect == null
+              ? resolved === "Malgun Gothic"
+              : resolved === expect;
+          if (ok) {
+            pass(name, resolved);
+            passed++;
+          } else {
+            fail(name, `raw=${raw} resolved=${resolved}`);
+          }
         } else if (c.type === "ppt_validate") {
           const { validateDeck } = await import("../src/lib/pptValidate.ts");
           const { parseDeck } = await import("../src/lib/pptx.ts");
@@ -80,6 +181,63 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name, `score=${score.toFixed(3)}`);
             passed++;
           }
+        } else if (c.type === "chunk_semantic") {
+          const { chunkText } = await import("../src/lib/rag.ts");
+          const size = Number(c.size ?? 900);
+          const overlap = Number(c.overlap ?? 150);
+          const chunks = chunkText(String(c.input ?? ""), size, overlap);
+          const min = Number(c.expectMinChunks ?? 1);
+          const prefix = typeof c.mustContainChunkPrefix === "string" ? c.mustContainChunkPrefix : null;
+          const hasPrefix = prefix
+            ? chunks.some((ch) => ch.content.trimStart().startsWith(prefix))
+            : true;
+          if (chunks.length >= min && hasPrefix) {
+            pass(name, `n=${chunks.length}`);
+            passed++;
+          } else {
+            fail(name, `n=${chunks.length} prefix=${hasPrefix}`);
+          }
+        } else if (c.type === "multi_query") {
+          const { expandQueriesHeuristic } = await import("../src/lib/ragMultiQuery.ts");
+          const got = expandQueriesHeuristic(String(c.query ?? ""));
+          const min = Number(c.expectMin ?? 1);
+          if (got.length >= min && got[0] === String(c.query ?? "").trim()) {
+            pass(name, JSON.stringify(got));
+            passed++;
+          } else {
+            fail(name, JSON.stringify(got));
+          }
+        } else if (c.type === "bm25_prefer") {
+          const { bm25RawScores, normalizeScores } = await import("../src/lib/ragHybrid.ts");
+          const docs = (c.docs as string[]) ?? [];
+          const norms = normalizeScores(bm25RawScores(String(c.query ?? ""), docs));
+          let best = 0;
+          for (let i = 1; i < norms.length; i++) {
+            if ((norms[i] ?? 0) > (norms[best] ?? 0)) best = i;
+          }
+          const expect = Number(c.expectBestIndex ?? 0);
+          if (best === expect) {
+            pass(name, `best=${best}`);
+            passed++;
+          } else {
+            fail(name, `best=${best} scores=${JSON.stringify(norms)}`);
+          }
+        } else if (c.type === "rerank_parse") {
+          const { parseRerankOrder } = await import("../src/lib/ragRerank.ts");
+          const got = parseRerankOrder(String(c.raw ?? ""), Number(c.candidateCount ?? 0));
+          const expected = c.expected as number[] | null;
+          const same =
+            expected === null
+              ? got === null
+              : Array.isArray(got) &&
+                got.length === expected.length &&
+                got.every((n, i) => n === expected[i]);
+          if (same) {
+            pass(name, JSON.stringify(got));
+            passed++;
+          } else {
+            fail(name, `got ${JSON.stringify(got)}`);
+          }
         } else if (c.type === "math_verify") {
           const { verifyMathSolve } = await import("../src/lib/mathVerify.ts");
           const result = verifyMathSolve(c.text);
@@ -102,6 +260,38 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name);
             passed++;
           } else fail(name, `got ${tool}`);
+        } else if (c.type === "skill_pack") {
+          const { selectSkillPacks } = await import("../src/lib/skills/index.ts");
+          const got = selectSkillPacks(String(c.text ?? "")).map((p) => p.id);
+          const expected = (c.expectedSkills as string[] | undefined) ?? [];
+          const ok =
+            expected.length > 0 &&
+            expected.every((id) => got.includes(id as (typeof got)[number]));
+          if (ok) {
+            pass(name, got.join(","));
+            passed++;
+          } else {
+            fail(name, `got [${got.join(",")}], expected [${expected.join(",")}]`);
+          }
+        } else if (c.type === "agent_escalate") {
+          const { shouldEscalateToAgent } = await import("../src/lib/skills/index.ts");
+          const got = shouldEscalateToAgent(String(c.text ?? ""));
+          if (got === !!c.expectedEscalate) {
+            pass(name, String(got));
+            passed++;
+          } else {
+            fail(name, `got ${got}, expected ${!!c.expectedEscalate}`);
+          }
+        } else if (c.type === "verify_risk") {
+          const { draftVerifyRiskScore } = await import("../src/lib/backendRoute.ts");
+          const score = draftVerifyRiskScore(String(c.text ?? ""));
+          const minRisk = Number(c.minRisk ?? 0);
+          if (score >= minRisk) {
+            pass(name, `risk=${score}`);
+            passed++;
+          } else {
+            fail(name, `risk=${score} < minRisk=${minRisk}`);
+          }
         } else if (c.type === "docx_build") {
           const { buildDocxBase64, parseMarkdownSections } = await import("../src/lib/docx.ts");
           const doc = parseMarkdownSections(c.markdown);

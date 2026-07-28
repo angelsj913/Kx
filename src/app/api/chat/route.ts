@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/apiAuth";
 import { put } from "@vercel/blob";
+import { BLOB_ACCESS, mapMessageFilesForClient } from "@/lib/blobAccess";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { runBackendRoute } from "@/lib/backendRoute";
@@ -13,6 +14,11 @@ import { assertAndConsumeQuota, refundQuota, QuotaError, type QuotaConsumption }
 import { getPlanOrFree } from "@/lib/plans";
 import { enrichVideoSummaryPrompt } from "@/lib/videoContext";
 import { detectQuickToolFromText, toolIntentLabel } from "@/lib/intentTools";
+import {
+  effectiveModelTier,
+  parseQualityTier,
+  type QualityTier,
+} from "@/lib/qualityTier";
 import type { ChatMessage } from "@/lib/gemini";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, MAX_CHAT_FILES } from "@/lib/constants";
 import { assembleRuntimeContext } from "@/lib/zeffContext";
@@ -23,9 +29,53 @@ import {
 } from "@/lib/attachmentLoader";
 import { embedTexts } from "@/lib/embeddings";
 import { isProviderSkipped } from "@/lib/providerHealth";
+import { moderateInput } from "@/lib/moderation";
+import { getModerationMessage } from "@/lib/moderationPolicy";
+import { logSecurityEvent } from "@/lib/security/program";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_ATTACHED_LIBRARY = 8;
+
+function parseLibraryItemIds(raw: unknown): string[] {
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((x): x is string => typeof x === "string" && !!x.trim())
+          .map((x) => x.trim());
+      }
+    } catch {
+      /* comma-separated fallback */
+    }
+    return raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((x): x is string => typeof x === "string" && !!x.trim())
+      .map((x) => x.trim());
+  }
+  return [];
+}
+
+async function resolveAttachedLibraryIds(
+  userId: string,
+  ids: string[],
+): Promise<string[]> {
+  const unique = [...new Set(ids)].slice(0, MAX_ATTACHED_LIBRARY);
+  if (!unique.length) return [];
+  const access = await itemAccessWhere(userId);
+  const items = await prisma.libraryItem.findMany({
+    where: { id: { in: unique }, ...access },
+    select: { id: true },
+  });
+  return items.map((i) => i.id);
+}
 
 interface StoredAttachment {
   url: string;
@@ -58,7 +108,11 @@ export async function POST(request: Request) {
   let quickToolId: string | null = null;
   let regenerate = false;
   let editMessageId: string | null = null;
+  let qualityTier: QualityTier = "medium";
   const uploads: File[] = [];
+  let libraryItemIdsRaw: string[] = [];
+  let pptStage: "full" | "outline" | "fill" | null = null;
+  let pptOutlineJson: string | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
@@ -67,6 +121,19 @@ export async function POST(request: Request) {
     quickToolId = (form.get("quickToolId") as string) || null;
     regenerate = form.get("regenerate") === "1";
     editMessageId = (form.get("editMessageId") as string) || null;
+    qualityTier = parseQualityTier(form.get("qualityTier"));
+    libraryItemIdsRaw = parseLibraryItemIds(form.get("libraryItemIds"));
+    const stageRaw = String(form.get("pptStage") ?? "").trim();
+    if (stageRaw === "outline" || stageRaw === "fill" || stageRaw === "full") {
+      pptStage = stageRaw;
+    } else if (form.get("confirmOutline") === "1") {
+      pptStage = "outline";
+    }
+    const outlineRaw = form.get("pptOutline");
+    if (typeof outlineRaw === "string" && outlineRaw.trim()) {
+      pptOutlineJson = outlineRaw.trim();
+      if (!pptStage) pptStage = "fill";
+    }
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
     }
@@ -90,6 +157,17 @@ export async function POST(request: Request) {
     quickToolId = typeof body?.quickToolId === "string" ? body.quickToolId : null;
     regenerate = body?.regenerate === true;
     editMessageId = typeof body?.editMessageId === "string" ? body.editMessageId : null;
+    qualityTier = parseQualityTier(body?.qualityTier);
+    libraryItemIdsRaw = parseLibraryItemIds(body?.libraryItemIds);
+    if (body?.pptStage === "outline" || body?.pptStage === "fill" || body?.pptStage === "full") {
+      pptStage = body.pptStage;
+    } else if (body?.confirmOutline === true || body?.confirmOutline === "1") {
+      pptStage = "outline";
+    }
+    if (typeof body?.pptOutline === "string" && body.pptOutline.trim()) {
+      pptOutlineJson = body.pptOutline.trim();
+      if (!pptStage) pptStage = "fill";
+    }
   }
 
   // 재생성: 새 텍스트 없이 세션의 마지막 사용자 메시지를 그대로 재사용한다(아래에서 채움).
@@ -158,10 +236,12 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
-    modelTier = getPlanOrFree(settings?.plan).modelTier;
+    modelTier = effectiveModelTier(getPlanOrFree(settings?.plan).modelTier, qualityTier);
     userLanguage = settings?.language ?? null;
+    const isPptFill = quickToolId === "ppt" && (pptStage === "fill" || !!pptOutlineJson);
     quota = await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
+      skipToolQuota: isPptFill,
     });
   } catch (err) {
     await releaseReservations();
@@ -202,6 +282,18 @@ export async function POST(request: Request) {
   }
   const resolvedSessionId = chatSession.id;
 
+  // 입력 검열 — 사용자 메시지·첨부 저장 / 장기 기억 학습 전에 수행
+  // regenerate 는 DB에 저장된 원문을 아래에서 다시 검열한다.
+  const moderationSubject = text.trim()
+    ? text
+    : uploads.map((f) => f.name).filter(Boolean).join("\n");
+  let earlyMod =
+    !regenerate && moderationSubject.trim()
+      ? moderateInput(moderationSubject)
+      : null;
+  let moderationBlocked =
+    earlyMod != null && !earlyMod.allowed && earlyMod.category !== "allowed";
+
   let storedAttachments: StoredAttachment[] = [];
   let inlineFiles: { data: string; mimeType: string }[] = [];
   try {
@@ -217,6 +309,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "재생성할 대화가 없습니다." }, { status: 400 });
       }
       text = lastUser.text;
+      const regenMod = text.trim() ? moderateInput(text) : null;
+      if (regenMod && !regenMod.allowed && regenMod.category !== "allowed") {
+        earlyMod = regenMod;
+        moderationBlocked = true;
+      }
       const reloaded = await reloadAttachmentsFromMessage(lastUser.attachments);
       storedAttachments = reloaded.stored;
       inlineFiles = reloaded.inline;
@@ -244,13 +341,32 @@ export async function POST(request: Request) {
       await prisma.chatHistory.deleteMany({
         where: { sessionId: resolvedSessionId, createdAt: { gt: target.createdAt } },
       });
-      await prisma.chatHistory.update({ where: { id: target.id }, data: { text } });
-      const reloaded = await reloadAttachmentsFromMessage(target.attachments);
-      storedAttachments = reloaded.stored;
-      inlineFiles = reloaded.inline;
+      const editText = moderationBlocked ? "[요청이 정책에 의해 차단됨]" : text;
+      await prisma.chatHistory.update({ where: { id: target.id }, data: { text: editText } });
+      if (!moderationBlocked) {
+        const reloaded = await reloadAttachmentsFromMessage(target.attachments);
+        storedAttachments = reloaded.stored;
+        inlineFiles = reloaded.inline;
+      }
       await prisma.chatSession.update({
         where: { id: resolvedSessionId },
         data: { updatedAt: new Date() },
+      });
+    } else if (moderationBlocked) {
+      // 차단: 원문·첨부를 저장하지 않고 placeholder만 남긴다 (학습도 스킵)
+      await prisma.chatHistory.create({
+        data: {
+          sessionId: resolvedSessionId,
+          role: "user",
+          text: "[요청이 정책에 의해 차단됨]",
+        },
+      });
+      await prisma.chatSession.update({
+        where: { id: resolvedSessionId },
+        data: {
+          updatedAt: new Date(),
+          ...(!chatSession.title ? { title: "차단된 요청" } : {}),
+        },
       });
     } else {
       // 첨부 업로드 병렬화 (순차 put 대비 체감 대폭 단축)
@@ -261,7 +377,7 @@ export async function POST(request: Request) {
           const blob = await put(
             `chat/${userId}/${resolvedSessionId}/${Date.now()}-${i}-${file.name}`,
             buf,
-            { access: "public", contentType: mimeType, addRandomSuffix: true },
+            { access: BLOB_ACCESS, contentType: mimeType, addRandomSuffix: true },
           );
           return {
             stored: {
@@ -312,6 +428,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: friendlyError(err) }, { status: 500 });
   }
 
+  const attachedLibraryIds = await resolveAttachedLibraryIds(userId, libraryItemIdsRaw);
+
   const encoder = new TextEncoder();
   let streamCancelled = false;
   const stream = new ReadableStream({
@@ -329,6 +447,38 @@ export async function POST(request: Request) {
       }
 
       try {
+        if (moderationBlocked && earlyMod && earlyMod.category !== "allowed") {
+          if (earlyMod.log) {
+            await logSecurityEvent("moderation_blocked", userId, {
+              category: earlyMod.category,
+              rule: earlyMod.matchedRule,
+            });
+          }
+          const policyText = getModerationMessage(
+            earlyMod.category,
+            userLanguage,
+          );
+          const assistantRow = await prisma.chatHistory.create({
+            data: {
+              sessionId: resolvedSessionId,
+              role: "model",
+              text: policyText,
+              agentId: `moderation:${earlyMod.category}`,
+            },
+          });
+          await prisma.chatSession.update({
+            where: { id: resolvedSessionId },
+            data: { updatedAt: new Date() },
+          });
+          await releaseReservations();
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: mapMessageFilesForClient(assistantRow),
+          });
+          return;
+        }
+
         if (quickToolId === "agent" || (!quickToolId && shouldEscalateToAgent(text))) {
           // ── 에이전트: 도구를 스스로 골라 연쇄 호출 (멀티스텝 자동 승격 포함) ──
           send({
@@ -364,7 +514,13 @@ export async function POST(request: Request) {
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
             language: userLanguage,
+            libraryItemIds: attachedLibraryIds,
           });
+
+          const agentCitationPayload =
+            agentContext.citations.length > 0
+              ? JSON.stringify({ citations: agentContext.citations })
+              : undefined;
 
           const agentResult = await runAgentRoute({
             text,
@@ -404,7 +560,7 @@ export async function POST(request: Request) {
               attempts: agentResult.attempts,
               outputType: art?.outputType,
               structuredKind: art?.structuredKind,
-              resultData: art?.resultData,
+              resultData: art?.resultData ?? agentCitationPayload,
               fileUrl: art?.fileUrl,
               fileName: art?.fileName,
             },
@@ -417,7 +573,7 @@ export async function POST(request: Request) {
           send({
             type: "done",
             sessionId: resolvedSessionId,
-            message: assistantRow,
+            message: mapMessageFilesForClient(assistantRow),
             interrupted: agentResult.interrupted,
           });
         } else if (quickToolId) {
@@ -525,11 +681,13 @@ export async function POST(request: Request) {
           if (quickToolId === "math-solve" && imageLike.length === 0 && text.trim()) {
             try {
               const { retrieveChunks } = await import("@/lib/ragSearch");
+              const { isRagRerankEnabled } = await import("@/lib/ragRerank");
               const found = await retrieveChunks({
                 userId,
                 workspaceId: chatSession.workspaceId ?? null,
                 query: text,
                 k: 3,
+                rerank: isRagRerankEnabled(),
               });
               if (found.ranked.length) {
                 toolText = [
@@ -545,11 +703,54 @@ export async function POST(request: Request) {
             }
           }
 
+          const resolvedPptStage =
+            quickToolId === "ppt"
+              ? pptStage ?? (pptOutlineJson ? "fill" : "outline")
+              : undefined;
+
+          if (resolvedPptStage === "fill" && pptOutlineJson) {
+            try {
+              const { parsePptOutline } = await import("@/lib/pptOutline");
+              const draft = parsePptOutline(pptOutlineJson);
+              if (draft.sourceText.trim()) {
+                toolText = draft.sourceText.trim();
+              }
+            } catch {
+              /* keep toolText */
+            }
+          }
+
+          let themeOverride: import("@/lib/fileTypes").DeckTheme | undefined;
+          if (quickToolId === "ppt") {
+            try {
+              const { extractThemeFromPptx, isPptxAttachment } = await import(
+                "@/lib/pptThemeExtract"
+              );
+              for (let i = 0; i < inlineFiles.length; i++) {
+                const f = inlineFiles[i]!;
+                const fname = storedAttachments[i]?.filename;
+                if (!isPptxAttachment(f.mimeType, fname)) continue;
+                const buf = Buffer.from(f.data, "base64");
+                const extracted = await extractThemeFromPptx(buf);
+                if (extracted) {
+                  themeOverride = extracted;
+                  break;
+                }
+              }
+            } catch (err) {
+              console.warn("[chat route] reference ppt theme extract skipped:", err);
+            }
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text: toolText,
             userId,
+            workspaceId: chatSession.workspaceId ?? null,
             modelTier,
+            pptStage: resolvedPptStage,
+            pptOutlineJson: pptOutlineJson ?? undefined,
+            themeOverride,
             audio:
               quickTool?.inputType === "audio"
                 ? inlineFiles[0]
@@ -586,7 +787,10 @@ export async function POST(request: Request) {
               fileName = result.file.filename;
             }
           } else if (result.outputType === "structured") {
-            replyText = `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
+            replyText =
+              result.structuredKind === "pptOutline"
+                ? "PPT 구성을 잡았어요. 슬라이드 제목·순서를 확인한 뒤 만들기를 눌러 주세요."
+                : `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
             resultData = result.resultData;
             structuredKind = result.structuredKind;
           } else if (result.outputType === "pptx") {
@@ -637,7 +841,11 @@ export async function POST(request: Request) {
             data: { updatedAt: new Date() },
           });
 
-          send({ type: "done", sessionId: resolvedSessionId, message: assistantRow });
+          send({
+            type: "done",
+            sessionId: resolvedSessionId,
+            message: mapMessageFilesForClient(assistantRow),
+          });
         } else {
           // ── 백엔드 라우트: 분류 → 생성 → (티어별) 정밀 검증 ──
           send({
@@ -679,6 +887,7 @@ export async function POST(request: Request) {
             workspaceId: chatSession.workspaceId ?? null,
             query: text,
             language: userLanguage,
+            libraryItemIds: attachedLibraryIds,
           });
 
           const result = await runBackendRoute({
@@ -686,6 +895,7 @@ export async function POST(request: Request) {
             hasFiles: inlineFiles.length > 0,
             messages,
             modelTier,
+            qualityTier,
             extraSystemInstruction: extraSystemInstruction.instruction,
             citations: extraSystemInstruction.citations,
             signal: request.signal,
@@ -738,7 +948,7 @@ export async function POST(request: Request) {
           send({
             type: "done",
             sessionId: resolvedSessionId,
-            message: assistantRow,
+            message: mapMessageFilesForClient(assistantRow),
             interrupted: result.interrupted,
           });
         }

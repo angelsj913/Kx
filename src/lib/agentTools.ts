@@ -2,6 +2,7 @@ import { evaluateExpr } from "@/lib/safeExpr";
 import type { ModelTier } from "@/lib/models";
 import type { OpenAIToolSchema } from "@/lib/openaiCompat";
 import { retrieveChunks } from "@/lib/ragSearch";
+import { searchWeb, formatWebSearchForAgent } from "@/lib/webSearch";
 import { runToolGeneration } from "@/lib/toolGeneration";
 
 /**
@@ -70,6 +71,7 @@ const KNOWLEDGE_SEARCH: AgentToolSpec = {
       workspaceId: ctx.workspaceId,
       query,
       k: 6,
+      rerank: true,
     });
     if (empty) return { terminal: false, text: "색인된 문서가 없습니다." };
     if (ranked.length === 0) return { terminal: false, text: "관련된 내용을 찾지 못했습니다." };
@@ -124,29 +126,10 @@ const WEB_SEARCH: AgentToolSpec = {
     if (!key) return { terminal: false, text: "웹 검색을 사용할 수 없습니다." };
     ctx.onStatus?.(`웹 검색 중… (${query.slice(0, 30)})`);
     try {
-      const res = await fetch("https://api.tavily.com/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: key,
-          query,
-          max_results: 5,
-          include_answer: true,
-        }),
-      });
-      if (!res.ok) return { terminal: false, text: `웹 검색 오류 (${res.status})` };
-      const data = (await res.json()) as {
-        answer?: string;
-        results?: { title?: string; url?: string; content?: string }[];
-      };
-      const parts: string[] = [];
-      if (data.answer) parts.push(`요약: ${data.answer}`);
-      (data.results ?? []).forEach((r, i) => {
-        parts.push(`[${i + 1}] ${r.title ?? ""} (${r.url ?? ""})\n${r.content ?? ""}`);
-      });
+      const hits = await searchWeb(query);
       return {
         terminal: false,
-        text: parts.join("\n\n") || "검색 결과가 없습니다.",
+        text: formatWebSearchForAgent(hits) || "검색 결과가 없습니다.",
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "웹 검색 실패";
@@ -193,11 +176,22 @@ const ZEFF_TOOL: AgentToolSpec = {
       return { terminal: false, text: `알 수 없는 도구입니다: ${toolId}` };
     }
     if (!instruction) return { terminal: false, text: "요청 내용이 비어 있습니다." };
+
+    const { moderateInput } = await import("@/lib/moderation");
+    const mod = moderateInput(instruction);
+    if (!mod.allowed && mod.category !== "allowed") {
+      return {
+        terminal: false,
+        text: "요청이 안전 정책에 의해 차단되어 도구를 실행할 수 없습니다.",
+      };
+    }
+
     ctx.onStatus?.(`${toolId} 생성 중…`);
     const result = await runToolGeneration({
       toolId,
       text: instruction,
       userId: ctx.userId,
+      workspaceId: ctx.workspaceId,
       modelTier: ctx.modelTier,
     });
     return { terminal: true, artifact: toArtifact(result) };

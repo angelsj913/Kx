@@ -29,10 +29,6 @@ function storageKey(userId: string | null | undefined): string | null {
   return `${WS_KEY_PREFIX}.${userId}`;
 }
 
-export function getActiveWorkspaceId(): string | null {
-  return currentActiveWorkspaceId;
-}
-
 /** 활성 워크스페이스 헤더를 자동으로 붙이는 fetch 래퍼. */
 export function wsFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const id = currentActiveWorkspaceId;

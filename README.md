@@ -29,6 +29,13 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Environment
+
+- `ADMIN_EMAILS` — comma-separated admin allowlist (required in production). Used by `/admin` routes and the header admin link. See `src/lib/admin.ts`.
+- `TAVILY_API_KEY` — optional. Enables web search fallback when RAG relevance is low (legal/factual queries). Used by `src/lib/webSearch.ts`.
+- `MIN_RETRIEVAL_SCORE` — optional, default `0.35`. Minimum hybrid score for RAG chunk retrieval.
+- `MIN_CITATION_SCORE` — optional, default `0.35`. Minimum top RAG score before library citations are shown.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

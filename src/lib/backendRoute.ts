@@ -10,6 +10,10 @@ import { chatReplyWithFallback, chatReplyWithFallbackStream, type AttemptInfo } 
 import { stripHanja } from "./textSanitize";
 import { detectQuickToolFromText, toolIntentLabel } from "./intentTools";
 import {
+  resolveQualityTierSettings,
+  type QualityTier,
+} from "./qualityTier";
+import {
   modelsForTier,
   modelsForVerify,
   buildVisionCandidates,
@@ -20,7 +24,7 @@ import {
 import type { ChatMessage } from "./gemini";
 import { listConfiguredProviders } from "./openaiCompat";
 import { chatVerifyLight, chatVerifyDeep, chatBaseSystem } from "./prompts/registry";
-import type { RankedChunk } from "./ragSearch";
+import type { ChatCitation } from "./chatCitations";
 import {
   formatSkillPackInstruction,
   selectSkillPacks,
@@ -51,8 +55,8 @@ export interface BackendRouteResult {
   providersTried?: string[];
   /** 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 (스트리밍 전용) */
   interrupted?: boolean;
-  /** RAG 출처 (ChatWorkspace citation cards) */
-  citations?: RankedChunk[];
+  /** RAG·웹 출처 (ChatWorkspace citation cards) */
+  citations?: ChatCitation[];
 }
 
 const VERIFY_LIGHT = chatVerifyLight;
@@ -134,8 +138,9 @@ export async function runBackendRoute(args: {
   hasFiles: boolean;
   messages: ChatMessage[];
   modelTier?: ModelTier;
+  qualityTier?: QualityTier;
   extraSystemInstruction?: string;
-  citations?: RankedChunk[];
+  citations?: ChatCitation[];
   onStage?: (e: RouteStageEvent) => void;
   onAttempt?: (info: AttemptInfo & { agentId: string; stage: RouteStage }) => void;
   /** 자유 채팅 초안 생성 델타를 실시간 중계한다(퀵툴 경로는 호출하지 않음). */
@@ -143,6 +148,7 @@ export async function runBackendRoute(args: {
   signal?: AbortSignal;
 }): Promise<BackendRouteResult> {
   const tier: ModelTier = args.modelTier ?? "standard";
+  const qualitySettings = resolveQualityTierSettings(args.qualityTier ?? "medium");
   const stages: RouteStage[] = [];
   const providersTried = new Set<string>();
 
@@ -184,6 +190,7 @@ export async function runBackendRoute(args: {
       .join("\n\n"),
     messages: args.messages,
     candidates,
+    maxOutputTokens: qualitySettings.maxOutputTokens,
     signal: args.signal,
     onDelta: (delta) => args.onDelta?.(stripHanja(delta)),
     onAttempt: (info) => {
@@ -211,19 +218,26 @@ export async function runBackendRoute(args: {
   // ── 3. verify ──
   const draftLen = draft.text.trim().length;
   const risk = draftVerifyRiskScore(draft.text);
-  const shouldVerify =
+  const verifyMode = qualitySettings.verifyMode;
+  let shouldVerify =
+    verifyMode !== "off" &&
     process.env.AI_SKIP_VERIFY !== "1" &&
     !args.hasFiles &&
     !draft.interrupted &&
-    draftLen > 600 &&
-    (tier === "top" ||
+    draftLen > (verifyMode === "deep" ? 200 : 600);
+
+  if (shouldVerify && verifyMode === "light") {
+    shouldVerify =
+      tier === "top" ||
       tier === "priority" ||
-      (tier === "standard" && risk >= 3)) &&
-    (tier === "top" ? risk >= 1 : risk >= 2);
+      (tier === "standard" && risk >= 3);
+  } else if (shouldVerify && verifyMode === "deep") {
+    shouldVerify = risk >= 1 || tier === "top";
+  }
 
   if (shouldVerify) {
     stages.push("verify");
-    const deep = tier === "top";
+    const deep = verifyMode === "deep" || tier === "top";
     args.onStage?.({
       stage: "verify",
       key: deep ? "status.route.verify.deep" : "status.route.verify.light",

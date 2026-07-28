@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Apple, Smartphone, Sparkles, X } from "lucide-react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Download, Apple, Smartphone, X, ArrowRight } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
   MAC_DOWNLOAD_URL,
@@ -20,8 +22,13 @@ function WindowsIcon({ className }: { className?: string }) {
   );
 }
 
+const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
+
 export default function Hero() {
   const t = useLandingT();
+  const { status } = useSession();
+  const isLoggedIn = status === "authenticated";
+  const startHref = isLoggedIn ? "/app" : "/login?callbackUrl=%2Fapp";
   const [selected, setSelected] = useState<OS | null>(null);
 
   const playReady = Boolean(PLAY_STORE_URL);
@@ -57,77 +64,89 @@ export default function Hero() {
 
   return (
     <section id="about" className="relative overflow-hidden bg-transparent pb-14 pt-28 sm:pb-20 sm:pt-36">
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
-
       <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
-        <span className="hero-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300">
-          <Sparkles className="h-3.5 w-3.5" />
+        <span className="landing-label hero-fade-up mb-5 inline-block text-[10px] font-medium text-[color:var(--landing-text-muted)]">
           {t("hero.badge")}
         </span>
 
-        <h1 className="hero-fade-up hero-delay-1 max-w-4xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+        <h1 className="hero-fade-up hero-delay-1 mt-2 max-w-4xl text-3xl font-bold leading-[1.14] tracking-tight text-[color:var(--landing-text-primary)] sm:text-5xl">
           {t("hero.title.line1")}
           <br />
-          <span className="mt-4 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-5 sm:gap-x-4">
-            <span className="text-4xl font-bold leading-none tracking-tight text-slate-900 sm:text-6xl dark:text-slate-50">
+          <span className="mt-3 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-3 sm:mt-4 sm:gap-x-4">
+            <span className="text-3xl font-bold leading-none tracking-tight sm:text-5xl">
               {t("hero.title.line2Prefix")}
             </span>
             <Logo size="hero" className="!items-center" />
           </span>
         </h1>
 
-        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
+        <p className="hero-fade-up hero-delay-2 mt-6 max-w-xl text-base leading-relaxed text-[color:var(--landing-text-muted)] sm:text-lg">
           {t("hero.subtitle")}
         </p>
 
-        <div
-          id="download"
-          className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
-        >
-          {/* nowrap 은 버튼이 나란히 놓이는 md 이상에서만 건다. 모바일은 w-full 로 쌓이는데,
-              긴 언어(독일어 "Für Windows herunterladen" 등)에서 줄바꿈이 막히면
-              글자가 화면 밖으로 나가 가로 스크롤이 생긴다. */}
-          <button
-            type="button"
-            onClick={() => setSelected("windows")}
-            className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] hover:bg-blue-500 active:scale-[0.98] sm:px-7 md:w-auto md:min-w-[11rem] md:flex-1 md:whitespace-nowrap"
+        {!SHOW_DOWNLOAD_CTA && (
+          <Link
+            href={startHref}
+            className="hero-fade-up hero-delay-3 mt-10 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[var(--landing-accent)] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
           >
-            <WindowsIcon className="h-6 w-6" />
-            {t("hero.download.windows")}
-            <Download className="ml-1 h-4 w-4 opacity-70 transition-transform duration-300 group-hover:translate-y-0.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelected("android")}
-            className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:scale-[1.02] hover:bg-emerald-500 active:scale-[0.98] sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
-          >
-            <Smartphone className="h-6 w-6" />
-            {t("hero.download.android")}
-            {!playReady && (
-              <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-50">
-                {t("hero.download.soon")}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelected("mac")}
-            className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-400 hover:scale-[1.02] active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
-          >
-            <Apple className="h-6 w-6" />
-            {t("hero.download.mac")}
-            <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              {t("hero.download.soon")}
-            </span>
-          </button>
-        </div>
+            {t("header.startWeb")}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
 
-        <p className="hero-fade-up hero-delay-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
-          {t("hero.download.note")}
-        </p>
+        {SHOW_DOWNLOAD_CTA && (
+          <>
+            <div
+              id="download"
+              className="hero-fade-up hero-delay-3 mt-10 flex w-full max-w-3xl scroll-mt-32 flex-col gap-3 md:flex-row md:flex-wrap md:justify-center"
+            >
+              <button
+                type="button"
+                onClick={() => setSelected("windows")}
+                className="group flex w-full items-center justify-center gap-3 rounded-full bg-[var(--landing-accent)] px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98] sm:px-7 md:w-auto md:min-w-[11rem] md:flex-1 md:whitespace-nowrap"
+              >
+                <WindowsIcon className="h-6 w-6" />
+                {t("hero.download.windows")}
+                <Download className="ml-1 h-4 w-4 opacity-70 transition-transform duration-300 group-hover:translate-y-0.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelected("android")}
+                className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 transition-colors hover:border-slate-400 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
+              >
+                <Smartphone className="h-6 w-6" />
+                {t("hero.download.android")}
+                {!playReady && (
+                  <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-50">
+                    {t("hero.download.soon")}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelected("mac")}
+                className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-4 text-base font-semibold text-slate-700 transition-colors hover:border-slate-400 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 sm:px-6 md:w-auto md:min-w-[12.5rem] md:flex-1 md:whitespace-nowrap"
+              >
+                <Apple className="h-6 w-6" />
+                {t("hero.download.mac")}
+                <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  {t("hero.download.soon")}
+                </span>
+              </button>
+            </div>
+
+            <p className="hero-fade-up hero-delay-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
+              {t("hero.download.note")}
+            </p>
+          </>
+        )}
+
+        <div className="hero-fade-up hero-delay-4 mt-14 opacity-80">
+          <Logo size="md" className="!items-center" />
+        </div>
       </div>
 
-      {info && (
+      {SHOW_DOWNLOAD_CTA && info && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
           role="dialog"
@@ -161,14 +180,11 @@ export default function Hero() {
                     ? t("hero.modal.androidNote")
                     : t("hero.modal.instruction")}
                 </p>
-                {/* GitHub 릴리스 URL은 교차 출처라 download 속성이 무시된다(GitHub이
-                    Content-Disposition으로 강제 다운로드). 새 탭으로 열어 인앱 브라우저
-                    (인스타그램 등)에서도 시스템 브라우저로 넘어가 받을 확률을 높인다. */}
                 <a
                   href={info.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--landing-accent)] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-opacity hover:opacity-90"
                 >
                   <Download className="h-4 w-4" />
                   {selected === "android"

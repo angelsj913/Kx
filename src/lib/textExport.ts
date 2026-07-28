@@ -12,11 +12,6 @@ export function downloadTextFile(filename: string, content: string, mime = "text
   URL.revokeObjectURL(url);
 }
 
-export function downloadMarkdown(filenameBase: string, markdown: string) {
-  const name = filenameBase.endsWith(".md") ? filenameBase : `${filenameBase}.md`;
-  downloadTextFile(name, markdown, "text/markdown;charset=utf-8");
-}
-
 /** 브라우저 인쇄 → PDF 저장용 HTML 창 */
 export function openPrintableHtml(title: string, markdown: string) {
   // 간단한 마크다운 → HTML (제목/목록/굵게 정도)

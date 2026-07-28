@@ -7,7 +7,6 @@ import {
   Send,
   Paperclip,
   X,
-  Sparkles,
   User,
   FileText,
   ImageIcon,
@@ -48,9 +47,12 @@ import type { StructuredKind } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
+import type { QualityTier } from "@/lib/qualityTier";
 import ChatRightPanel, {
   type ChatArtifact,
+  type ContextSource,
   type PanelTab,
+  type PlanStep,
   type TerminalLine,
 } from "./ChatRightPanel";
 import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
@@ -64,6 +66,13 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 
 const PANEL_WIDTH_KEY = "kx.chat.rightPanelWidth";
 const PANEL_OPEN_KEY = "kx.chat.rightPanelOpen";
+const QUALITY_STORAGE_KEY = "zeff.chat.qualityTier";
+
+function readStoredQualityTier(): QualityTier {
+  if (typeof window === "undefined") return "medium";
+  const v = window.localStorage.getItem(QUALITY_STORAGE_KEY);
+  return v === "low" || v === "high" ? v : "medium";
+}
 const PANEL_MIN = 240;
 const PANEL_MAX = 560;
 const PANEL_DEFAULT = 320;
@@ -81,7 +90,7 @@ const ATTACH_FORMATS: {
     id: "doc",
     labelKey: "chat.attach.document",
     accept:
-      ".doc,.docx,.txt,.md,.hwp,.hwpx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".doc,.docx,.txt,.md,.hwp,.hwpx,.pptx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation",
     icon: FileText,
   },
   { id: "audio", labelKey: "chat.attach.audio", accept: "audio/*,.mp3,.wav,.m4a", icon: Mic },
@@ -138,6 +147,7 @@ interface Msg {
   resultData?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  createdAt?: string | null;
   /** 클라이언트 전용 — 실시간 스트리밍 중인 임시 말풍선인지 (DB에는 저장되지 않음) */
   streaming?: boolean;
   /** 클라이언트 전용 — 첫 델타 이후 스트림이 끊겨 중단된 채로 마무리됐는지 */
@@ -179,9 +189,175 @@ function readStoredOpen(): boolean {
   return v !== "0";
 }
 
+function buildContextSources(messages: Msg[]): ContextSource[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "model" || m.streaming) continue;
+    const citations = parseCitationsFromResultData(m.resultData);
+    if (!citations.length) continue;
+    const seen = new Set<string>();
+    const sources: ContextSource[] = [];
+    for (const c of citations) {
+      const id =
+        c.libraryItemId ?? (c.url ? `web:${c.url}` : `cite:${c.n}:${c.title}`);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      sources.push({
+        id,
+        title: c.title,
+        snippet: c.snippet,
+        url: c.url,
+        source: c.source ?? (c.url && !c.libraryItemId ? "web" : "library"),
+      });
+    }
+    return sources;
+  }
+  return [];
+}
+
+interface AttachedLibraryItem {
+  id: string;
+  title: string;
+  fileName?: string;
+}
+
+const MAX_ATTACHED_LIBRARY = 8;
+
+function mergeAttachedLibrary(
+  citationSources: ContextSource[],
+  attached: AttachedLibraryItem[],
+): ContextSource[] {
+  if (!attached.length) return citationSources;
+  const seen = new Set(citationSources.map((s) => s.id));
+  const merged: ContextSource[] = [];
+  for (const item of attached) {
+    const id = `lib:${item.id}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    merged.push({
+      id,
+      title: item.title,
+      snippet: item.fileName ?? item.title,
+      source: "library",
+    });
+  }
+  return [...merged, ...citationSources];
+}
+
+function formatArtifactTime(createdAt?: string | null): string | undefined {
+  if (!createdAt) return undefined;
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function seedPlanSteps(
+  quickToolId: string | null,
+  t: (key: AppDictKey) => string,
+): PlanStep[] {
+  if (quickToolId === "agent") {
+    return [
+      { id: "understand", label: t("panel.plan.step.understand"), status: "active" },
+      { id: "tools", label: t("panel.plan.step.tools"), status: "pending" },
+      { id: "answer", label: t("panel.plan.step.answer"), status: "pending" },
+    ];
+  }
+  if (quickToolId === "ppt") {
+    return [
+      { id: "outline", label: t("panel.plan.step.outline"), status: "active" },
+      { id: "confirm", label: t("panel.plan.step.confirm"), status: "pending" },
+      { id: "fill", label: t("panel.plan.step.fill"), status: "pending" },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ];
+  }
+  if (quickToolId) {
+    return [
+      { id: "tool", label: t("panel.plan.step.tool"), status: "active", detail: quickToolId },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ];
+  }
+  return [
+    { id: "route", label: t("panel.plan.step.route"), status: "active" },
+    { id: "generate", label: t("panel.plan.step.generate"), status: "pending" },
+    { id: "verify", label: t("panel.plan.step.verify"), status: "pending" },
+  ];
+}
+
+function advancePlanSteps(
+  steps: PlanStep[],
+  statusKey: string | null | undefined,
+): PlanStep[] {
+  if (!steps.length || !statusKey) return steps;
+  const markThrough = (activeId: string) => {
+    let found = false;
+    return steps.map((s) => {
+      if (s.id === activeId) {
+        found = true;
+        return { ...s, status: "active" as const };
+      }
+      if (!found && s.status !== "error") {
+        return { ...s, status: "done" as const };
+      }
+      if (found && s.status === "active") {
+        return { ...s, status: "pending" as const };
+      }
+      return s;
+    });
+  };
+
+  if (
+    statusKey.includes("agent") ||
+    statusKey.includes("route.start") ||
+    statusKey.includes("selecting")
+  ) {
+    if (steps.some((s) => s.id === "tools")) return markThrough("tools");
+    if (steps.some((s) => s.id === "route")) return markThrough("route");
+  }
+  if (
+    statusKey.includes("generate") ||
+    statusKey.includes("ai.trying") ||
+    statusKey.includes("quicktool") ||
+    statusKey.includes("file.uploading")
+  ) {
+    if (steps.some((s) => s.id === "answer")) return markThrough("answer");
+    if (steps.some((s) => s.id === "generate")) return markThrough("generate");
+    if (steps.some((s) => s.id === "fill")) return markThrough("fill");
+    if (steps.some((s) => s.id === "outline")) return markThrough("outline");
+    if (steps.some((s) => s.id === "tool")) return markThrough("tool");
+    if (steps.some((s) => s.id === "save")) return markThrough("save");
+  }
+  if (statusKey.includes("verify")) {
+    if (steps.some((s) => s.id === "verify")) return markThrough("verify");
+  }
+  return steps;
+}
+
+function finishPlanSteps(steps: PlanStep[], ok: boolean): PlanStep[] {
+  if (!steps.length) return steps;
+  if (ok) {
+    return steps.map((s) =>
+      s.status === "error" ? s : { ...s, status: "done" as const },
+    );
+  }
+  let hitActive = false;
+  return steps.map((s) => {
+    if (s.status === "active" || (!hitActive && s.status === "pending")) {
+      hitActive = true;
+      return { ...s, status: "error" as const };
+    }
+    if (s.status === "pending") return s;
+    return s;
+  });
+}
+
 function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatArtifact[] {
   const list: ChatArtifact[] = [];
   for (const m of messages) {
+    const timeLabel = formatArtifactTime(m.createdAt);
     if (m.role === "user" && m.attachments?.length) {
       for (let i = 0; i < m.attachments.length; i++) {
         const a = m.attachments[i];
@@ -194,6 +370,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
           fileName: a.filename,
           mimeType: a.mimeType,
           messageId: m.id,
+          timeLabel,
         });
       }
     }
@@ -213,6 +390,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "xlsx") {
       let title = m.fileName || t("artifact.spreadsheet");
@@ -229,6 +407,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "image") {
       list.push({
@@ -239,6 +418,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     } else if (m.outputType === "structured" && m.structuredKind) {
       let title: string = m.structuredKind;
@@ -253,6 +433,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         title,
         subtitle: t("artifact.structuredResult"),
         messageId: m.id,
+        timeLabel,
       });
     } else if (
       m.outputType === "markdown" ||
@@ -271,6 +452,7 @@ function buildArtifacts(messages: Msg[], t: (key: AppDictKey) => string): ChatAr
         url: m.fileUrl,
         fileName: m.fileName,
         messageId: m.id,
+        timeLabel,
       });
     }
   }
@@ -308,8 +490,10 @@ export default function ChatWorkspace({
   const [translateTarget, setTranslateTarget] = useState<AppLanguage>("en");
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
+  const [attachedLibrary, setAttachedLibrary] = useState<AttachedLibraryItem[]>([]);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [attachAccept, setAttachAccept] = useState("");
+  const [qualityTier, setQualityTier] = useState<QualityTier>(() => readStoredQualityTier());
   const fileRef = useRef<HTMLInputElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
   const kbRef = useRef<HTMLDivElement | null>(null);
@@ -327,6 +511,7 @@ export default function ChatWorkspace({
   const [panelTab, setPanelTab] = useState<PanelTab>("files");
   const [previewArtifact, setPreviewArtifact] = useState<ChatArtifact | null>(null);
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
+  const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const dragging = useRef(false);
 
   const pushTerminal = useCallback((text: string, level: TerminalLine["level"] = "info") => {
@@ -382,6 +567,7 @@ export default function ChatWorkspace({
   useEffect(() => {
     // 세션 전환 시 이전 대화가 잠깐 남지 않도록 즉시 비움
     setMessages([]);
+    setAttachedLibrary([]);
     setError("");
     setStatusKey(null);
     if (!sessionId) return;
@@ -392,6 +578,15 @@ export default function ChatWorkspace({
         const data = await res.json();
         if (!ignore && res.ok) {
           setMessages((data.session.history ?? []).map((m: Msg) => ({ ...m })));
+          const lib = data.session.libraryItem as
+            | { id: string; title: string; fileName?: string }
+            | null
+            | undefined;
+          if (lib?.id) {
+            setAttachedLibrary([
+              { id: lib.id, title: lib.title, fileName: lib.fileName },
+            ]);
+          }
         }
       } catch {
         // 무시
@@ -463,11 +658,22 @@ export default function ChatWorkspace({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function runGeneration(buildForm: () => FormData, opts: { spokenTurn?: boolean } = {}) {
+  async function runGeneration(
+    buildForm: () => FormData,
+    opts: {
+      spokenTurn?: boolean;
+      quickToolId?: string | null;
+      preservePlan?: boolean;
+    } = {},
+  ) {
     const spokenTurn = !!opts.spokenTurn;
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
+    if (!opts.preservePlan) {
+      setPlanSteps(seedPlanSteps(opts.quickToolId ?? null, t));
+    }
+    setPanelTab((prev) => (prev === "terminal" ? prev : "plan"));
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -475,6 +681,7 @@ export default function ChatWorkspace({
 
     try {
       const form = buildForm();
+      form.append("qualityTier", qualityTier);
       const res = await wsFetch("/api/chat", {
         method: "POST",
         body: form,
@@ -507,6 +714,7 @@ export default function ChatWorkspace({
           if (event.type === "status") {
             const key = event.key ?? null;
             setStatusKey(key);
+            setPlanSteps((prev) => advancePlanSteps(prev, key));
             if (key?.startsWith("status.route.verify")) setRefining(true);
             if (key) {
               let label = key;
@@ -561,6 +769,7 @@ export default function ChatWorkspace({
         }
         if (spokenTurn && doneMessage.text) speak(doneMessage.text);
         pushTerminal(doneInterrupted ? "done ✱ interrupted" : "done ✓ response ready", "ok");
+        setPlanSteps((prev) => finishPlanSteps(prev, !doneInterrupted));
         if (
           doneMessage.outputType === "pptx" ||
           doneMessage.outputType === "xlsx" ||
@@ -573,6 +782,18 @@ export default function ChatWorkspace({
             "ok",
           );
         }
+        if (doneMessage.structuredKind === "pptOutline") {
+          setPlanSteps((prev) => {
+            if (!prev.some((s) => s.id === "confirm")) return prev;
+            return prev.map((s) => {
+              if (s.id === "outline") return { ...s, status: "done" as const };
+              if (s.id === "confirm") return { ...s, status: "active" as const };
+              return s;
+            });
+          });
+        }
+      } else {
+        setPlanSteps((prev) => finishPlanSteps(prev, true));
       }
       onTurnSaved();
     } catch (err) {
@@ -584,10 +805,12 @@ export default function ChatWorkspace({
           );
         }
         pushTerminal("stopped › user requested cancel", "info");
+        setPlanSteps((prev) => finishPlanSteps(prev, false));
       } else {
         const msg = err instanceof Error ? err.message : t("common.unknownError");
         setError(msg);
         pushTerminal(`error ✗ ${msg}`, "error");
+        setPlanSteps((prev) => finishPlanSteps(prev, false));
       }
     } finally {
       abortRef.current = null;
@@ -655,10 +878,45 @@ export default function ChatWorkspace({
         form.append("text", text);
         if (sessionId) form.append("sessionId", sessionId);
         if (quickToolId) form.append("quickToolId", quickToolId);
+        if (quickToolId === "ppt") form.append("pptStage", "outline");
+        if (attachedLibrary.length) {
+          form.append(
+            "libraryItemIds",
+            JSON.stringify(attachedLibrary.map((a) => a.id)),
+          );
+        }
         for (const f of filesToUpload) form.append("files", f);
         return form;
       },
-      { spokenTurn },
+      { spokenTurn, quickToolId },
+    );
+  }
+
+  async function confirmPptFill(draft: import("@/lib/pptOutline").PptOutlineDraft) {
+    if (loading || !sessionId) return;
+    const userText = t("structured.pptOutline.confirmUserMsg");
+    setPlanSteps([
+      { id: "outline", label: t("panel.plan.step.outline"), status: "done" },
+      { id: "confirm", label: t("panel.plan.step.confirm"), status: "done" },
+      { id: "fill", label: t("panel.plan.step.fill"), status: "active" },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `local-${Date.now()}`, role: "user", text: userText },
+    ]);
+    pushTerminal("$ zeff ppt fill — confirmed outline", "info");
+    await runGeneration(
+      () => {
+        const form = new FormData();
+        form.append("text", userText);
+        form.append("sessionId", sessionId);
+        form.append("quickToolId", "ppt");
+        form.append("pptStage", "fill");
+        form.append("pptOutline", JSON.stringify(draft));
+        return form;
+      },
+      { quickToolId: "ppt", preservePlan: true },
     );
   }
 
@@ -678,8 +936,14 @@ export default function ChatWorkspace({
       form.append("text", text);
       form.append("sessionId", sessionId);
       form.append("editMessageId", id);
+      if (attachedLibrary.length) {
+        form.append(
+          "libraryItemIds",
+          JSON.stringify(attachedLibrary.map((a) => a.id)),
+        );
+      }
       return form;
-    });
+    }, { quickToolId: activeQuickTool?.id ?? null });
   }
 
   /** 마지막 assistant 응답 재생성 — 그 응답만 지우고 같은 질문으로 다시 생성한다. */
@@ -694,8 +958,14 @@ export default function ChatWorkspace({
       const form = new FormData();
       form.append("regenerate", "1");
       form.append("sessionId", sessionId);
+      if (attachedLibrary.length) {
+        form.append(
+          "libraryItemIds",
+          JSON.stringify(attachedLibrary.map((a) => a.id)),
+        );
+      }
       return form;
-    });
+    }, { quickToolId: activeQuickTool?.id ?? null });
   }
 
   function stopGeneration() {
@@ -728,6 +998,23 @@ export default function ChatWorkspace({
   }, [messages]);
 
   const artifacts = useMemo(() => buildArtifacts(messages, t), [messages, t]);
+  const contextSources = useMemo(
+    () => mergeAttachedLibrary(buildContextSources(messages), attachedLibrary),
+    [messages, attachedLibrary],
+  );
+
+  function attachLibraryItem(item: AttachedLibraryItem) {
+    setAttachedLibrary((prev) => {
+      if (prev.some((p) => p.id === item.id)) return prev;
+      if (prev.length >= MAX_ATTACHED_LIBRARY) return prev;
+      return [...prev, item];
+    });
+    setKbOpen(false);
+    if (!panelOpen) {
+      setPanelOpen(true);
+      window.localStorage.setItem(PANEL_OPEN_KEY, "1");
+    }
+  }
 
   function scrollToMessage(id?: string) {
     if (!id) return;
@@ -762,8 +1049,8 @@ export default function ChatWorkspace({
         >
           {messages.length === 0 && !loading && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 shadow-lg shadow-blue-600/30">
-                <Sparkles className="h-7 w-7 text-white" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/60">
+                <Logo size="sm" withWordmark={false} />
               </div>
               <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{t("chat.empty")}</p>
               <p className="max-w-sm text-xs text-slate-400 dark:text-slate-500">
@@ -870,8 +1157,8 @@ export default function ChatWorkspace({
                 }}
                 className="flex gap-2.5"
               >
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/60">
+                  <Logo size="sm" withWordmark={false} />
                 </div>
                 {m.outputType === "pptx" || m.outputType === "xlsx" ? (
                   <div className="min-w-0 flex-1">
@@ -879,12 +1166,24 @@ export default function ChatWorkspace({
                       outputType={m.outputType}
                       deck={
                         m.outputType === "pptx" && m.resultData
-                          ? JSON.parse(m.resultData)
+                          ? (() => {
+                              try {
+                                return JSON.parse(m.resultData);
+                              } catch {
+                                return undefined;
+                              }
+                            })()
                           : undefined
                       }
                       workbook={
                         m.outputType === "xlsx" && m.resultData
-                          ? JSON.parse(m.resultData)
+                          ? (() => {
+                              try {
+                                return JSON.parse(m.resultData);
+                              } catch {
+                                return undefined;
+                              }
+                            })()
                           : undefined
                       }
                       file={
@@ -919,10 +1218,11 @@ export default function ChatWorkspace({
                       <a
                         href={m.fileUrl}
                         download={m.fileName || "image.png"}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                        title={t("chat.download")}
+                        aria-label={t("chat.download")}
                       >
-                        <Download className="h-3 w-3" />
-                        {t("chat.download")}
+                        <Download className="h-3.5 w-3.5" />
                       </a>
                     </div>
                     <ModelFeedback
@@ -935,12 +1235,37 @@ export default function ChatWorkspace({
                   </div>
                 ) : m.outputType === "structured" && m.structuredKind && m.resultData ? (
                   <div className="min-w-0 flex-1">
-                    <StructuredResultView
-                      key={m.id}
-                      id={m.id}
-                      kind={m.structuredKind as StructuredKind}
-                      data={JSON.parse(m.resultData)}
-                    />
+                    {(() => {
+                      try {
+                        const data = JSON.parse(m.resultData);
+                        if (m.structuredKind === "pptOutline") {
+                          return (
+                            <StructuredResultView
+                              key={m.id}
+                              id={m.id}
+                              kind="pptOutline"
+                              data={data}
+                              confirming={loading}
+                              onConfirmFill={confirmPptFill}
+                            />
+                          );
+                        }
+                        return (
+                          <StructuredResultView
+                            key={m.id}
+                            id={m.id}
+                            kind={m.structuredKind as StructuredKind}
+                            data={data}
+                          />
+                        );
+                      } catch {
+                        return (
+                          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                            구조화 결과를 표시할 수 없습니다.
+                          </p>
+                        );
+                      }
+                    })()}
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
                     <ModelFeedback
                       messageId={m.id}
@@ -974,18 +1299,18 @@ export default function ChatWorkspace({
                     {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
                     {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        <CopyButton text={m.text} />
+                        <CopyButton text={m.text} iconOnly />
                         {m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
                           !loading && (
                             <button
                               type="button"
                               onClick={() => void regenerateLast()}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
                               title={t("chat.regenerate")}
+                              aria-label={t("chat.regenerate")}
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              {t("chat.regenerate")}
+                              <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           )}
                       </div>
@@ -998,13 +1323,14 @@ export default function ChatWorkspace({
                             download={m.fileName}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-600/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:text-blue-300"
+                            className="inline-flex items-center justify-center rounded-lg border border-blue-500/40 bg-blue-600/10 p-1.5 text-blue-700 dark:text-blue-300"
+                            title={t("chat.saveMd")}
+                            aria-label={t("chat.saveMd")}
                           >
-                            <Download className="h-3 w-3" />
-                            {t("chat.saveMd")}
+                            <Download className="h-3.5 w-3.5" />
                           </a>
                         )}
-                        <CopyButton text={m.text} />
+                        <CopyButton text={m.text} iconOnly />
                         <button
                           type="button"
                           onClick={() =>
@@ -1013,20 +1339,22 @@ export default function ChatWorkspace({
                               m.text,
                             )
                           }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("resultPanel.saveTxt")}
+                          aria-label={t("resultPanel.saveTxt")}
                         >
-                          TXT
+                          <FileText className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() =>
                             openPrintableHtml(m.fileName ?? t("chat.zeffDocument"), m.text)
                           }
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("chat.printToPdfTitle")}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                          title={t("chat.printPdf")}
+                          aria-label={t("chat.printPdf")}
                         >
-                          <Printer className="h-3 w-3" />
-                          {t("chat.printPdf")}
+                          <Printer className="h-3.5 w-3.5" />
                         </button>
                         {m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
@@ -1034,11 +1362,11 @@ export default function ChatWorkspace({
                             <button
                               type="button"
                               onClick={() => void regenerateLast()}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
                               title={t("chat.regenerate")}
+                              aria-label={t("chat.regenerate")}
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              {t("chat.regenerate")}
+                              <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           )}
                       </div>
@@ -1058,8 +1386,13 @@ export default function ChatWorkspace({
 
           {/* AI 작업 중 — 응답이 시작되기 전에는 로고 스핀만 표시한다. */}
           {loading && !streamingId && (
-            <div className="flex h-10 items-center">
+            <div className="flex items-center gap-2.5">
               <Logo size="sm" withWordmark={false} spin />
+              {statusKey && (
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-300">
+                  {t(statusKey as Parameters<typeof t>[0])}
+                </span>
+              )}
             </div>
           )}
 
@@ -1076,7 +1409,7 @@ export default function ChatWorkspace({
         >
           <div className="mb-1.5 flex h-4 items-center px-1">
             <AnimatePresence mode="wait">
-              {statusKey && (
+              {statusKey && !(loading && !streamingId) && (
                 <motion.span
                   key={statusKey}
                   initial={{ opacity: 0, x: -4 }}
@@ -1173,6 +1506,30 @@ export default function ChatWorkspace({
             </div>
           )}
 
+          {attachedLibrary.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachedLibrary.map((item) => (
+                <span
+                  key={item.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-800 dark:text-emerald-200"
+                >
+                  <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                  <span className="max-w-[10rem] truncate">{item.title}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAttachedLibrary((prev) => prev.filter((a) => a.id !== item.id))
+                    }
+                    className="text-emerald-600/70 hover:text-red-500 dark:text-emerald-300/70 dark:hover:text-red-400"
+                    aria-label={t("library.delete")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
           {(listening || speaking) && (
             <div className="mb-2 flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/30 dark:text-blue-200">
               <span
@@ -1208,6 +1565,30 @@ export default function ChatWorkspace({
                     transition={{ duration: 0.2, ease: "easeInOut" }}
                     className="absolute bottom-full left-0 z-20 mb-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 max-md:fixed max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:left-3 max-md:right-3 max-md:w-auto dark:border-slate-700/60 dark:bg-slate-900/95 dark:shadow-black/40 dark:backdrop-blur-md"
                   >
+                    <div className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {t("chat.quality.label")}
+                      </p>
+                      <div className="flex flex-wrap gap-1" role="group" aria-label={t("chat.quality.label")}>
+                        {(["low", "medium", "high"] as const).map((tier) => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => {
+                              setQualityTier(tier);
+                              window.localStorage.setItem(QUALITY_STORAGE_KEY, tier);
+                            }}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                              qualityTier === tier
+                                ? "bg-blue-600 text-white dark:bg-blue-500"
+                                : "border border-slate-300 bg-white text-slate-600 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                            }`}
+                          >
+                            {t(`chat.quality.${tier}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     {featureGroups.map((g) => (
                       <QuickToolGroup
                         key={g.id}
@@ -1243,6 +1624,13 @@ export default function ChatWorkspace({
                 open={kbOpen}
                 onClose={() => setKbOpen(false)}
                 onOpenBookChat={onOpenBookChat}
+                onAttachToChat={(item) =>
+                  attachLibraryItem({
+                    id: item.id,
+                    title: item.title,
+                    fileName: item.fileName,
+                  })
+                }
               />
             </div>
 
@@ -1385,6 +1773,8 @@ export default function ChatWorkspace({
           tab={panelTab}
           onTabChange={setPanelTab}
           artifacts={artifacts}
+          contextSources={contextSources}
+          planSteps={planSteps}
           terminalLines={terminalLines}
           loading={loading}
           onSelectArtifact={openArtifact}
@@ -1416,6 +1806,8 @@ export default function ChatWorkspace({
                 tab={panelTab}
                 onTabChange={setPanelTab}
                 artifacts={artifacts}
+                contextSources={contextSources}
+                planSteps={planSteps}
                 terminalLines={terminalLines}
                 loading={loading}
                 onSelectArtifact={(a) => {

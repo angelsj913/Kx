@@ -1,17 +1,16 @@
 "use client";
 
-import { BookOpen, LibraryBig, MessagesSquare, ScanSearch, FileType2, Shuffle } from "lucide-react";
+import { MessagesSquare, ScanSearch, FileType2, Shuffle, GitCompareArrows } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
 
 export default function FeatureGrid() {
   const t = useLandingT();
 
-  // 실제 제공 기능 중심 — 공유 서재·파일 미리보기·팀 협업 반영
+  // 서재·Book Chat 스토리는 FeatureShowcase 04에서 담당 — 여기서는 중복 제거
   const items = [
-    { icon: BookOpen, label: t("grid.bookChat.label"), desc: t("grid.bookChat.desc") },
-    { icon: LibraryBig, label: t("grid.library.label"), desc: t("grid.library.desc") },
     { icon: MessagesSquare, label: t("grid.lectureChat.label"), desc: t("grid.lectureChat.desc") },
     { icon: ScanSearch, label: t("grid.examAnalysis.label"), desc: t("grid.examAnalysis.desc") },
+    { icon: GitCompareArrows, label: t("grid.examSimilarity.label"), desc: t("grid.examSimilarity.desc") },
     { icon: FileType2, label: t("grid.docConvert.label"), desc: t("grid.docConvert.desc") },
     { icon: Shuffle, label: t("grid.similarProblems.label"), desc: t("grid.similarProblems.desc") },
   ];

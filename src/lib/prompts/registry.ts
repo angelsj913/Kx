@@ -1,7 +1,5 @@
 /** 채팅·검증 프롬프트 — backendRoute에서 사용 */
 
-export const PROMPT_VERSION = "2026.07.22";
-
 export const chatVerifyLight = `너는 답변 품질을 가볍게 검수하는 에디터다.
 [초안]을 다듬어 **최종 답변만** 출력하라. 메타 코멘트 금지.
 오타·어색한 문장·빠진 핵심만 고치고, 구조를 크게 바꾸지 마라. 날조 금지.`;
@@ -25,7 +23,7 @@ export const PPT_OUTLINE_INSTRUCTION = `너는 프레젠테이션 기획자다. 
 {
   "title": "발표 제목",
   "subtitle": "대상·목적",
-  "theme": { "preset": "science|nature|medical|business|tech|education|creative|energy|finance|default" },
+  "theme": { "preset": "science|nature|medical|business|tech|education|creative|energy|finance|legal|startup|healthcare|default" },
   "slides": [
     { "layout": "agenda|section|content|twoColumn|table|process|cycle|cards|closing", "title": "슬라이드 제목", "subtitle": "한 줄 요약" }
   ]

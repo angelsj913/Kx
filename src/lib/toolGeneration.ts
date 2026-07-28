@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
+import { BLOB_ACCESS } from "@/lib/blobAccess";
 import {
   generateWithFallback,
   isOpenRouterCreditsError,
@@ -23,6 +24,12 @@ import {
 } from "./pipelineLog";
 import { getTool, type ToolDef } from "./tools";
 import { parseDeck, buildPptxBase64 } from "./pptx";
+import {
+  buildPptResearchContext,
+  formatPptFillContext,
+  formatPptOutlineContext,
+} from "./pptContext";
+import { formatOutlineForFill, parsePptOutline } from "./pptOutline";
 import { parseWorkbook, buildXlsxBase64 } from "./xlsx";
 import {
   parseStructured,
@@ -32,7 +39,7 @@ import {
   type PracticeSet,
   type MathGraph,
 } from "./structured";
-import type { Deck, Workbook } from "./fileTypes";
+import type { Deck, DeckTheme, Workbook } from "./fileTypes";
 import { exportHeader } from "./videoContext";
 import { stripHanja } from "./textSanitize";
 import {
@@ -52,9 +59,16 @@ export interface ToolGenerationInput {
   audio?: { data: string; mimeType: string };
   images?: { data: string; mimeType: string }[];
   userId: string;
+  workspaceId?: string | null;
   modelTier?: ModelTier;
   onAttempt?: (info: AttemptInfo) => void;
   onUploadStart?: () => void;
+  /** PPT: outline-only / fill-only / full 2-pass (default) */
+  pptStage?: "full" | "outline" | "fill";
+  /** fill 단계에 넘길 아웃라인 JSON (또는 PptOutlineDraft JSON) */
+  pptOutlineJson?: string;
+  /** Reference PPT에서 추출한 테마 (색) */
+  themeOverride?: import("./fileTypes").DeckTheme;
 }
 
 interface Meta {
@@ -399,6 +413,241 @@ async function parseStructuredWithRetry<T>(
   return { data, meta: finalMeta };
 }
 
+async function runPptxGeneration(
+  tool: ToolDef,
+  input: ToolGenerationInput,
+): Promise<ToolGenerationResult> {
+  const stage = input.pptStage ?? "full";
+  const queryText = (input.text ?? "").trim();
+  const pptResearch = queryText
+    ? await buildPptResearchContext({
+        userId: input.userId,
+        workspaceId: input.workspaceId,
+        query: queryText,
+      })
+    : { sources: [], hasSources: false };
+
+  const outlineContext = formatPptOutlineContext(pptResearch.sources);
+  const fillContext = formatPptFillContext(pptResearch.sources);
+
+  if (stage === "outline") {
+    const outlineTool: ToolDef = {
+      ...tool,
+      systemInstruction: [PPT_OUTLINE_INSTRUCTION, outlineContext].filter(Boolean).join("\n\n"),
+    };
+    const outlineText = await geminiGenerateForTool({
+      tool: outlineTool,
+      text: input.text,
+      images: input.images,
+    });
+    let draft;
+    try {
+      draft = parsePptOutline(outlineText, queryText);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "PPT 아웃라인 파싱 실패";
+      console.error("[toolGeneration] ppt outline parse", msg, outlineText.slice(0, 400));
+      throw new Error("PPT 아웃라인 형식이 올바르지 않습니다. 다시 시도해 주세요.");
+    }
+    if (!draft.slides.length) {
+      throw new Error("PPT 아웃라인에 슬라이드가 없습니다. 다시 시도해 주세요.");
+    }
+    if (input.themeOverride) {
+      draft = {
+        ...draft,
+        primary: input.themeOverride.primary ?? draft.primary,
+        secondary: input.themeOverride.secondary ?? draft.secondary,
+        accent: input.themeOverride.accent ?? draft.accent,
+        fontFace: input.themeOverride.fontFace ?? draft.fontFace,
+      };
+    }
+    return {
+      tool,
+      outputType: "structured",
+      structuredKind: "pptOutline",
+      data: draft,
+      resultData: JSON.stringify(draft),
+      meta: { provider: "gemini", model: "outline", attempts: 1 },
+    };
+  }
+
+  let pptRaw = "";
+  let meta: Meta = { provider: "gemini", model: "pptx", attempts: 0 };
+
+  let outlineForFill = "";
+  let fillThemeFromOutline: DeckTheme | undefined;
+  if (stage === "fill") {
+    if (!input.pptOutlineJson?.trim()) {
+      throw new Error("확정할 PPT 아웃라인이 없습니다.");
+    }
+    try {
+      const draft = parsePptOutline(input.pptOutlineJson, queryText);
+      outlineForFill = formatOutlineForFill(draft);
+      if (draft.primary || draft.secondary || draft.accent || draft.fontFace) {
+        fillThemeFromOutline = {
+          preset: draft.themePreset,
+          primary: draft.primary,
+          secondary: draft.secondary,
+          accent: draft.accent,
+          fontFace: draft.fontFace,
+        };
+      }
+    } catch {
+      throw new Error("PPT 아웃라인 형식이 올바르지 않습니다.");
+    }
+  }
+
+  // 2-pass (full) 또는 fill-only
+  try {
+    if (stage === "full") {
+      const outlineTool: ToolDef = {
+        ...tool,
+        systemInstruction: [PPT_OUTLINE_INSTRUCTION, outlineContext].filter(Boolean).join("\n\n"),
+      };
+      outlineForFill = await geminiGenerateForTool({
+        tool: outlineTool,
+        text: input.text,
+        images: input.images,
+      });
+      meta = { ...meta, attempts: meta.attempts + 1 };
+    }
+
+    const fillTool: ToolDef = {
+      ...tool,
+      systemInstruction: [
+        tool.systemInstruction,
+        PPT_FILL_INSTRUCTION_PREFIX,
+        fillContext,
+        `[아웃라인]\n${outlineForFill}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+    const filled = await generateWithFallback({
+      tool: fillTool,
+      text: input.text,
+      audio: input.audio,
+      images: input.images,
+      modelTier: input.modelTier,
+      onAttempt: input.onAttempt,
+    });
+    pptRaw = filled.text;
+    meta = {
+      provider: filled.provider,
+      model: filled.model,
+      attempts: meta.attempts + filled.attempts,
+    };
+  } catch (err) {
+    if (stage === "fill") throw err;
+    console.warn("[toolGeneration] ppt 2-pass fallback to single pass", err);
+    const fallback = await generateWithFallback({
+      tool,
+      text: input.text,
+      audio: input.audio,
+      images: input.images,
+      modelTier: input.modelTier,
+      onAttempt: input.onAttempt,
+    });
+    pptRaw = fallback.text;
+    meta = {
+      provider: fallback.provider,
+      model: fallback.model,
+      attempts: meta.attempts + fallback.attempts,
+    };
+  }
+
+  if (!pptRaw) throw new Error("AI가 빈 응답을 반환했습니다. 다시 시도해 주세요.");
+  pptRaw = stripHanja(pptRaw);
+
+  let deck;
+  try {
+    deck = parseDeck(pptRaw);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
+    console.error("[toolGeneration] pptx parse", msg, pptRaw.slice(0, 400));
+    throw new Error(msg);
+  }
+
+  const themeMerge: DeckTheme | undefined = {
+    ...(fillThemeFromOutline ?? {}),
+    ...(input.themeOverride ?? {}),
+  };
+  if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset || themeMerge.fontFace) {
+    deck = {
+      ...deck,
+      theme: {
+        ...(deck.theme ?? {}),
+        ...themeMerge,
+      },
+    };
+  }
+
+  if (pptResearch.hasSources) {
+    deck = {
+      ...deck,
+      sources: pptResearch.sources.map((s) => ({
+        n: s.n,
+        title: s.title,
+        source: s.source,
+        url: s.url,
+      })),
+    };
+  }
+
+  let validation = validateDeck(deck);
+  if (!validation.ok) {
+    try {
+      const retryTool: ToolDef = {
+        ...tool,
+        systemInstruction: `${tool.systemInstruction}\n\n[검증 실패 — 아래 문제를 고쳐 다시 JSON만 출력]\n${validation.issues.map((i) => i.message).join("\n")}`,
+      };
+      const retry = await generateWithFallback({
+        tool: retryTool,
+        text: input.text,
+        modelTier: input.modelTier,
+        onAttempt: input.onAttempt,
+      });
+        deck = parseDeck(retry.text);
+        meta = {
+          provider: retry.provider,
+          model: retry.model,
+          attempts: meta.attempts + retry.attempts,
+        };
+        if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset || themeMerge.fontFace) {
+          deck = {
+            ...deck,
+            theme: { ...(deck.theme ?? {}), ...themeMerge },
+          };
+        }
+        validation = validateDeck(deck);
+    } catch (retryErr) {
+      console.warn("[toolGeneration] ppt validate retry failed", retryErr);
+    }
+  }
+
+  input.onUploadStart?.();
+  const base64 = await buildPptxBase64(deck);
+  const safeName =
+    (deck.title || tool.fileBaseName).replace(/[\\/:*?"<>|]+/g, "").slice(0, 40) ||
+    tool.fileBaseName;
+  const blob = await put(
+    `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
+    Buffer.from(base64, "base64"),
+    { access: BLOB_ACCESS, contentType: PPTX_MIME, addRandomSuffix: true },
+  );
+  return {
+    tool,
+    outputType: "pptx",
+    preview: deck,
+    resultData: JSON.stringify(deck),
+    file: {
+      url: blob.url,
+      filename: `${safeName}.pptx`,
+      mimeType: PPTX_MIME,
+    },
+    meta,
+  };
+}
+
 /** /api/generate가 하던 파싱→빌드→업로드 로직을 히스토리 저장 없이 재사용 가능한 형태로 뽑아낸 것. */
 export async function runToolGeneration(
   input: ToolGenerationInput
@@ -437,6 +686,7 @@ export async function runToolGeneration(
       if (!hasText) throw new Error("이미지 설명을 입력해 주세요.");
       const prompt = buildImagePrompt(input.text!.trim());
       pipelineInfo("image-gen/generate", "prompt", prompt.slice(0, 200));
+      pipelineInfo("image-gen/generate", "user-request", input.text!.trim().slice(0, 120));
       const candidates = await imageGenerationCandidates();
       if (candidates.length === 0) {
         pipelineError("image-gen/candidates", "no providers with API keys");
@@ -529,7 +779,7 @@ export async function runToolGeneration(
       blob = await put(
         `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.${ext}`,
         Buffer.from(data, "base64"),
-        { access: "public", contentType: mimeType, addRandomSuffix: true },
+        { access: BLOB_ACCESS, contentType: mimeType, addRandomSuffix: true },
       );
       pipelineInfo("image-gen/blob-upload", "success", blob.url);
     } catch (err) {
@@ -557,6 +807,11 @@ export async function runToolGeneration(
         attempts: imageAttempts,
       },
     };
+  }
+
+  // PPT는 공통 single-pass 생성 전에 분기 (outline/fill/full)
+  if (tool.outputType === "pptx") {
+    return runPptxGeneration(tool, input);
   }
 
   const { text: rawText, provider, model, attempts } = await generateWithFallback({
@@ -613,96 +868,6 @@ export async function runToolGeneration(
     };
   }
 
-  if (tool.outputType === "pptx") {
-    let deck;
-    let pptRaw = raw;
-
-    // 2-pass: outline → fill (품질·구조 안정화)
-    try {
-      const outlineTool: ToolDef = {
-        ...tool,
-        systemInstruction: PPT_OUTLINE_INSTRUCTION,
-      };
-      const outlineText = await geminiGenerateForTool({
-        tool: outlineTool,
-        text: input.text,
-        images: input.images,
-      });
-      const fillTool: ToolDef = {
-        ...tool,
-        systemInstruction: `${tool.systemInstruction}\n\n${PPT_FILL_INSTRUCTION_PREFIX}\n\n[아웃라인]\n${outlineText}`,
-      };
-      const filled = await generateWithFallback({
-        tool: fillTool,
-        text: input.text,
-        audio: input.audio,
-        images: input.images,
-        modelTier: input.modelTier,
-        onAttempt: input.onAttempt,
-      });
-      pptRaw = filled.text;
-      meta = { provider: filled.provider, model: filled.model, attempts: meta.attempts + filled.attempts };
-    } catch (err) {
-      console.warn("[toolGeneration] ppt 2-pass fallback to single pass", err);
-    }
-
-    try {
-      deck = parseDeck(pptRaw);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "PPT 파싱 실패";
-      console.error("[toolGeneration] pptx parse", msg, pptRaw.slice(0, 400));
-      throw new Error(msg);
-    }
-
-    let validation = validateDeck(deck);
-    if (!validation.ok) {
-      try {
-        const retryTool: ToolDef = {
-          ...tool,
-          systemInstruction: `${tool.systemInstruction}\n\n[검증 실패 — 아래 문제를 고쳐 다시 JSON만 출력]\n${validation.issues.map((i) => i.message).join("\n")}`,
-        };
-        const retry = await generateWithFallback({
-          tool: retryTool,
-          text: input.text,
-          modelTier: input.modelTier,
-          onAttempt: input.onAttempt,
-        });
-        deck = parseDeck(retry.text);
-        meta = {
-          provider: retry.provider,
-          model: retry.model,
-          attempts: meta.attempts + retry.attempts,
-        };
-        validation = validateDeck(deck);
-      } catch (retryErr) {
-        console.warn("[toolGeneration] ppt validate retry failed", retryErr);
-      }
-    }
-
-    input.onUploadStart?.();
-    const base64 = await buildPptxBase64(deck);
-    const safeName = (deck.title || tool.fileBaseName)
-      .replace(/[\\/:*?"<>|]+/g, "")
-      .slice(0, 40) || tool.fileBaseName;
-    const blob = await put(
-      `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.pptx`,
-      Buffer.from(base64, "base64"),
-      { access: "public", contentType: PPTX_MIME, addRandomSuffix: true },
-    );
-    return {
-      tool,
-      outputType: "pptx",
-      preview: deck,
-      resultData: JSON.stringify(deck),
-      file: {
-        url: blob.url,
-        filename: `${safeName}.pptx`,
-        mimeType: PPTX_MIME,
-      },
-      meta,
-    };
-  }
-
   if (tool.outputType === "xlsx") {
     let wb;
     try {
@@ -732,7 +897,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.xlsx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: XLSX_MIME, addRandomSuffix: true },
+      { access: BLOB_ACCESS, contentType: XLSX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -757,7 +922,7 @@ export async function runToolGeneration(
     const blob = await put(
       `history/${input.userId}/${tool.fileBaseName}-${Date.now()}.docx`,
       Buffer.from(base64, "base64"),
-      { access: "public", contentType: DOCX_MIME, addRandomSuffix: true },
+      { access: BLOB_ACCESS, contentType: DOCX_MIME, addRandomSuffix: true },
     );
     return {
       tool,
@@ -784,7 +949,7 @@ export async function runToolGeneration(
       const blob = await put(
         `exports/${input.userId}/${tool.fileBaseName}-${Date.now()}.md`,
         body,
-        { access: "public", contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
+        { access: BLOB_ACCESS, contentType: "text/markdown; charset=utf-8", addRandomSuffix: true },
       );
       return {
         tool,

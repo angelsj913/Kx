@@ -10,6 +10,12 @@ import { indexLibraryItem } from "@/lib/ragIndexing";
 import { extractPdfText, hasUsableText } from "@/lib/pdfText";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/constants";
 import type { Prisma } from "@/generated/prisma/client";
+import {
+  BLOB_ACCESS,
+  fetchBlobBytes,
+  isVercelBlobUrl,
+  mapClientFileUrl,
+} from "@/lib/blobAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,7 +103,7 @@ export async function GET(request: Request) {
   ]);
 
   return NextResponse.json({
-    items,
+    items: items.map(mapClientFileUrl),
     usage: { used: count, max: plan.libraryMax, plan: plan.id },
     scope: mode === "auto" ? (scope.workspaceId ? "shared" : "personal") : mode,
     workspaceId: scope.workspaceId,
@@ -164,9 +170,22 @@ export async function POST(request: Request) {
       titleInput = String(body?.title ?? "").trim();
       const size = Number(body?.size ?? 0);
 
-      // 우리 Blob 스토어의 URL만 허용(임의 URL 인젝션 방지)
-      if (!/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(blobUrl)) {
+      // 우리 Blob 스토어의 URL만 허용 + 업로더 본인 pathname prefix
+      if (!isVercelBlobUrl(blobUrl)) {
         return NextResponse.json({ error: "유효하지 않은 업로드입니다." }, { status: 400 });
+      }
+      const ownerPrefix = `library/${userId}/`;
+      let decodedPath = blobUrl;
+      try {
+        decodedPath = decodeURIComponent(blobUrl);
+      } catch {
+        /* keep raw */
+      }
+      if (!decodedPath.includes(ownerPrefix) && !blobUrl.includes(ownerPrefix)) {
+        return NextResponse.json(
+          { error: "업로드한 파일의 소유자를 확인할 수 없습니다." },
+          { status: 403 },
+        );
       }
       if (size > MAX_UPLOAD_BYTES) {
         return NextResponse.json(
@@ -175,11 +194,11 @@ export async function POST(request: Request) {
         );
       }
       // 추출·색인을 위해 Blob 내용을 가져온다(작은 JSON 요청과 별개).
-      const fetched = await fetch(blobUrl);
-      if (!fetched.ok) {
+      const fetched = await fetchBlobBytes(blobUrl);
+      if (!fetched) {
         return NextResponse.json({ error: "업로드한 파일을 읽지 못했습니다." }, { status: 400 });
       }
-      buf = Buffer.from(await fetched.arrayBuffer());
+      buf = fetched;
     } else {
       const form = await request.formData();
       const file = form.get("file");
@@ -197,7 +216,7 @@ export async function POST(request: Request) {
       mimeType = file.type || "application/octet-stream";
       fileName = file.name;
       const blob = await put(`library/${userId}/${Date.now()}-${file.name}`, buf, {
-        access: "public",
+        access: BLOB_ACCESS,
         contentType: mimeType,
         addRandomSuffix: true,
       });
@@ -249,7 +268,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      item,
+      item: mapClientFileUrl(item),
       indexed,
       usage: { used: currentCount + 1, max: plan.libraryMax, plan: plan.id },
     });

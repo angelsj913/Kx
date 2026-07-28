@@ -77,29 +77,29 @@ export default function AnswerFeedbackButtons({
           type="button"
           disabled={busy || disabled}
           onClick={() => void submit(1)}
-          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+          className={`inline-flex items-center justify-center rounded-lg border p-1.5 text-[11px] font-medium transition-colors ${
             rating === 1
               ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
           }`}
           title="도움이 됐어요"
+          aria-label="도움이 됐어요"
         >
-          <ThumbsUp className="h-3 w-3" />
-          좋아요
+          <ThumbsUp className="h-3.5 w-3.5" />
         </button>
         <button
           type="button"
           disabled={busy || disabled}
           onClick={() => void submit(-1)}
-          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+          className={`inline-flex items-center justify-center rounded-lg border p-1.5 text-[11px] font-medium transition-colors ${
             rating === -1
               ? "border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-300"
               : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
           }`}
           title="아쉬워요"
+          aria-label="아쉬워요"
         >
-          <ThumbsDown className="h-3 w-3" />
-          아쉬워요
+          <ThumbsDown className="h-3.5 w-3.5" />
         </button>
       </div>
       {showReason && rating === -1 && (

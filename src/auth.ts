@@ -89,8 +89,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // 두고, DB 값과 어긋나면 토큰을 무효화(return null)해 "다른 기기 모두 로그아웃"을
       // 구현한다. Prisma 쿼리는 엣지 런타임(미들웨어)에서 실행할 수 없으므로 node에서만
       // 검사한다 — 엣지 미들웨어를 통과하더라도 실제 데이터 접근(API·RSC)은 node에서
-      // auth()를 다시 호출하므로 거기서 무효 토큰이 걸러진다. 오류 시엔 대량 로그아웃을
-      // 피하려 열림(fail-open) 처리한다.
+      // auth()를 다시 호출하므로 거기서 무효 토큰이 걸러진다.
       if (process.env.NEXT_RUNTIME !== "edge" && token.id) {
         try {
           if (user) {
@@ -101,11 +100,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
             token.sv = u?.sessionVersion ?? 0;
             token.svAt = Date.now();
+            token.svFails = 0;
           } else {
-            // 토큰 갱신 경로: 과도한 DB 부하를 막으려 15초에 한 번만 재검사
-            // (비밀번호 재설정·logout-all 후 무효화 창을 짧게 유지)
+            // 토큰 갱신 경로: 5초에 한 번 재검사 (비번 재설정·logout-all 무효화 창 축소)
             const last = typeof token.svAt === "number" ? token.svAt : 0;
-            if (Date.now() - last > 15_000) {
+            if (Date.now() - last > 5_000) {
               const u = await prisma.user.findUnique({
                 where: { id: String(token.id) },
                 select: { sessionVersion: true },
@@ -113,14 +112,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               if (u && typeof token.sv === "number" && u.sessionVersion !== token.sv) {
                 return null; // 버전 불일치 → 세션 무효화(로그아웃)
               }
+              // 로그인 직후 sv 가 비어 있으면 신뢰하지 않음
+              if (u && typeof token.sv !== "number") {
+                return null;
+              }
               if (u) {
                 token.sv = u.sessionVersion;
                 token.svAt = Date.now();
+                token.svFails = 0;
               }
             }
           }
         } catch {
-          /* DB 접근 실패 시 로그아웃시키지 않음(fail-open) */
+          // 일시 DB 장애는 1–2회 허용하되, 연속 실패가 쌓이면 탈취 JWT 연장 위험을
+          // 막기 위해 fail-closed 한다. svAt 은 올리지 않아 다음 요청에서 바로 재시도.
+          const fails = (typeof token.svFails === "number" ? token.svFails : 0) + 1;
+          token.svFails = fails;
+          if (fails >= 3) return null;
         }
       }
       // Google profile 에서 이메일이 오면 JWT 에 강제 반영 (세션 이메일 누락 방지)

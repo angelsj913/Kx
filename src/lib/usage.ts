@@ -105,7 +105,7 @@ export interface QuotaConsumption {
 export async function assertAndConsumeQuota(
   userId: string,
   quickToolId: string | null,
-  opts?: { isNewSession?: boolean },
+  opts?: { isNewSession?: boolean; skipToolQuota?: boolean },
 ): Promise<QuotaConsumption> {
   const planId = await getUserPlanId(userId);
   const plan = getPlanOrFree(planId);
@@ -121,6 +121,11 @@ export async function assertAndConsumeQuota(
         `동시 세션 한도(${plan.concurrentSessions}개)를 초과했습니다. ${plan.name} 플랜을 확인해 주세요.`,
       );
     }
+  }
+
+  // PPT 아웃라인 확인 후 fill — 이미 outline 단계에서 pptx 쿼터 소비
+  if (opts?.skipToolQuota) {
+    return { planId, feature, consumed: null };
   }
 
   if (feature === "pptx" || feature === "xlsx") {

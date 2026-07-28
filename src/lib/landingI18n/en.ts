@@ -334,21 +334,21 @@ const en: Record<keyof typeof ko, string> = {
   "company.about.body2":
     "That is exactly why we chose the name. Among the dozens of files and documents that pile up each day, the part that truly matters is always buried under noise. So what Zeff does is simple: peel back that shielding, layer by layer, and leave only the core you actually need clearly in view.",
   "company.about.body3":
-    "Rather than making grand promises, we aim to build a tool that quietly does its job — the kind you keep close and use every day. Our own team works with it every week, runs into the rough edges first, and smooths them out the week after. Prove it through results instead of leading with the technology — that is the one principle we won't change.",
+    "We'd rather build something you actually open every day than make big promises. Our team uses it weekly, hits the rough spots first, and fixes them the next week. Results over tech talk — that part won't change.",
   "company.vision.title": "Vision & Scalability",
   "company.vision.body1":
-    "Zeff begins today along two paths — documents and learning. But what we're looking toward sits a little further out: a space where scattered conversations, materials, and the day's records connect into a single context, so a person's entire intellectual workflow can move without a break. That is the next scene we're sketching.",
+    "Zeff started with documents and learning. Next, we want scattered chats, files, and daily notes to connect in one place.",
   "company.vision.body2":
-    "A good tool doesn't tie you to any one technology. Instead of leaning on a single model, we designed things so the engine best suited to the moment quietly does the work. When a better model arrives, its performance will already have settled into the service — without you changing a thing.",
+    "You're not locked to one model. The right engine runs quietly for the task, and when a better model ships, you keep working — the upgrade shows up inside the service.",
   "company.vision.body3":
-    "The next step is a shared experience. We're preparing for a team to pass the same material back and forth, and for schools and companies to put the tool to work in their own way. Starting on a personal desk and growing into the ground that connects knowledge between people — we'll walk that way steadily, without rushing and without stopping.",
+    "Shared use is next: teams passing the same material, schools and companies adapting it their way. We started on a personal desk and we're building toward knowledge that connects people — steadily, not in a rush.",
   "company.prototype.title": "Prototypes in Development",
   "company.prototype.body1":
-    "Here's an early look at what we're experimenting with internally. These items are pre-stabilization and their final timing and shape may change before release.",
-  "company.prototype.item1": "Team Workspace — a collaboration mode where multiple people share the same sessions and library",
-  "company.prototype.item2": "Voice conversation mode — ask and listen without typing a word",
-  "company.prototype.item3": "Automatic review scheduler — suggests the optimal time to revisit material saved in your library",
-  "company.prototype.item4": "Enterprise data connector — search organizational knowledge alongside internal document storage",
+    "Early experiments only. Items below are pre-release and may change before they ship.",
+  "company.prototype.item1": "Team Workspace — shared sessions and library for multiple people (experimental)",
+  "company.prototype.item2": "Voice conversation mode — ask and listen without typing (experimental)",
+  "company.prototype.item3": "Automatic review scheduler — suggests when to revisit library material (experimental)",
+  "company.prototype.item4": "Enterprise data connector — search org knowledge from internal storage (experimental)",
 
   "footer.terms": "Terms of Service",
   "footer.privacy": "Privacy Policy",
@@ -401,6 +401,20 @@ const en: Record<keyof typeof ko, string> = {
   "downloadPage.version": "Version",
   "downloadPage.smartScreenTitle": "Seeing a security warning during install?",
   "downloadPage.smartScreen": "If Windows shows a 'Windows protected your PC' (SmartScreen) or 'unknown publisher' warning, click More info → Run anyway. It appears only because the app isn't code-signed yet and is safe to proceed. On macOS, if you see an 'unidentified developer' warning, right-click the file → Open.",
+  "skills.eyebrow": "Core skills",
+  "skills.title": "Three things that set us apart",
+  "skills.subtitle": "Fewer feature lists — just the skills that change how you work.",
+  "skills.design.title": "Content automation",
+  "skills.design.desc": "Carousel planning, copy, and images in one flow. Higgsfield integration coming soon.",
+  "skills.design.cta": "Explore design",
+  "skills.stem.title": "STEM analysis",
+  "skills.stem.desc": "Precise science, math, and engineering explanations with clean diagrams.",
+  "skills.stem.cta": "Solve in workspace",
+  "skills.report.title": "Intelligent reports",
+  "skills.report.desc": "Draft professional and weekly reports grounded in your library.",
+  "skills.report.cta": "Start a report",
+  "skills.band.title": "From library evidence to deliverables",
+  "skills.band.subtitle": "Answers stay tied to your sources — then continue into docs and slides in the same place."
 };
 
 export default en;

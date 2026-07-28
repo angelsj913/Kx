@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { itemAccessWhere } from "@/lib/workspace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,13 +23,19 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { count } = await prisma.chatHistory.updateMany({
-    where: { id, session: { userId: session.user.id } },
-    data: { resultData: result },
+  const access = await itemAccessWhere(session.user.id);
+  const row = await prisma.chatHistory.findFirst({
+    where: { id, session: access },
+    select: { id: true },
   });
-  if (count === 0) {
+  if (!row) {
     return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 });
   }
+
+  await prisma.chatHistory.update({
+    where: { id: row.id },
+    data: { resultData: result },
+  });
 
   return NextResponse.json({ ok: true });
 }

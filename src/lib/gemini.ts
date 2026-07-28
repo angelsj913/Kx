@@ -165,6 +165,7 @@ export async function geminiChatReply(opts: {
   apiKey?: string;
   systemInstruction: string;
   messages: ChatMessage[];
+  maxOutputTokens?: number;
 }): Promise<string> {
   const ai = client(opts.apiKey);
 
@@ -181,7 +182,10 @@ export async function geminiChatReply(opts: {
   const response = await ai.models.generateContent({
     model: opts.model || DEFAULT_GEMINI_MODEL,
     contents,
-    config: { systemInstruction: opts.systemInstruction },
+    config: {
+      systemInstruction: opts.systemInstruction,
+      ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
+    },
   });
   throwIfSafetyBlocked(response);
   return response.text ?? "";
@@ -194,6 +198,7 @@ export async function geminiChatReplyStream(opts: {
   messages: ChatMessage[];
   onDelta: (delta: string) => void;
   signal?: AbortSignal;
+  maxOutputTokens?: number;
 }): Promise<string> {
   const ai = client(opts.apiKey);
 
@@ -212,6 +217,7 @@ export async function geminiChatReplyStream(opts: {
     contents,
     config: {
       systemInstruction: opts.systemInstruction,
+      ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
       ...(opts.signal ? { abortSignal: opts.signal } : {}),
     },
   });

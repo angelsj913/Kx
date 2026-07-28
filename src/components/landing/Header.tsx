@@ -26,11 +26,15 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/ui/Logo";
 
+const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
+
 const MENU_LINKS = [
   { href: "/about", icon: Building2, labelKey: "nav.about" as const },
   { href: "/vision", icon: TrendingUp, labelKey: "nav.potential" as const },
   { href: "/prototype", icon: FlaskConical, labelKey: "nav.prototype" as const },
-  { href: "/download", icon: Download, labelKey: "nav.download" as const },
+  ...(SHOW_DOWNLOAD_CTA
+    ? [{ href: "/download", icon: Download, labelKey: "nav.download" as const }]
+    : []),
   { href: "/support", icon: LifeBuoy, labelKey: "nav.support" as const },
 ];
 
@@ -67,16 +71,20 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [langOpen]);
 
+  const menuSurface =
+    "border-slate-900/[0.06] bg-white/85 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/85";
+  const scrolledSurface =
+    "border-slate-900/[0.06] bg-white/70 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/70";
+
   return (
     <>
       <header
         // 최상단에서는 배경을 아예 칠하지 않는다 — 배경이 없으면 헤더/본문 경계선이
         // 생길 수가 없다. 색을 맞추려던 과거 3번의 시도가 전부 재발한 이유가 이것이다.
         // 스크롤 후에는 프로스트 글래스로 전환해, 뒤 배경이 무엇이든 블러가 흡수한다.
+        // 햄버거가 열리면 드로어와 동일한 표면 토큰을 써서 이음새 색 차이를 없앤다.
         className={`fixed inset-x-0 top-0 z-50 border-b transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          scrolled
-            ? "border-slate-900/[0.06] bg-white/70 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/70"
-            : "border-transparent bg-transparent"
+          menuOpen ? menuSurface : scrolled ? scrolledSurface : "border-transparent bg-transparent"
         }`}
       >
         {/* 모바일에서 내용물 폭이 화면을 넘겨 로그인 버튼이 밖으로 밀려나 있었다.
@@ -143,7 +151,7 @@ export default function Header() {
                 </button>
                 <Link
                   href="/app"
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.985] sm:px-5"
+                  className="rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.985] sm:px-5"
                 >
                   {t("header.startWeb")}
                 </Link>
@@ -152,7 +160,7 @@ export default function Header() {
               // min-h/px 는 rem 이 아니라 px 이라 모바일 rem 축소(globals.css)의 영향을 받지 않는다.
               // 글자만 작아지고 탭 영역은 44px 를 유지한다.
               <Link
-                href="/login"
+                href="/login?callbackUrl=%2Fapp"
                 className="inline-flex min-h-[44px] items-center px-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
               >
                 {t("header.login")}
@@ -163,7 +171,7 @@ export default function Header() {
 
         <AnimatePresence>
           {menuOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-slate-900/[0.06] bg-white/85 backdrop-blur-xl backdrop-saturate-150 dark:border-white/[0.08] dark:bg-slate-950/85">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className={`overflow-hidden border-b ${menuSurface}`}>
               <nav className="mx-auto flex max-w-6xl flex-col px-4 py-4 sm:px-6">
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">
@@ -171,6 +179,17 @@ export default function Header() {
                     {t(labelKey)}
                   </Link>
                 ))}
+
+                {isAdmin && (
+                  <a
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-blue-700 transition-colors hover:bg-blue-600/10 dark:text-blue-300 dark:hover:bg-blue-600/10"
+                  >
+                    <Wrench className="h-4 w-4" />
+                    {t("header.adminPanel")}
+                  </a>
+                )}
 
                 {/* 언어 — 헤더에서 밀려난 모바일 전용. 데스크톱은 헤더 드롭다운이 그대로 있다 */}
                 <div className="mt-2 border-t border-slate-900/[0.06] pt-3 sm:hidden dark:border-white/[0.08]">

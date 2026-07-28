@@ -1,0 +1,16 @@
+{
+  "id": "healthcare",
+  "label": "Healthcare",
+  "keywords": ["병원", "의료", "임상", "환자", "헬스", "health", "hospital", "clinical", "pharma"],
+  "palette": {
+    "primary": "0891B2",
+    "secondary": "164E63",
+    "accent": "2DD4BF",
+    "primarySoft": "CFFAFE",
+    "text": "164E63",
+    "muted": "64748B",
+    "white": "FFFFFF",
+    "surface": "ECFEFF",
+    "surfaceAlt": "F8FAFC"
+  }
+}

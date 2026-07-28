@@ -399,6 +399,20 @@ const fr: Record<keyof typeof ko, string> = {
   "downloadPage.version": "Version",
   "downloadPage.smartScreenTitle": "Un avertissement de sécurité pendant l'installation ?",
   "downloadPage.smartScreen": "Si Windows affiche un avertissement « Windows a protégé votre ordinateur » (SmartScreen) ou « éditeur inconnu », cliquez sur Informations complémentaires → Exécuter quand même. Il apparaît uniquement parce que l'application n'est pas encore signée, et vous pouvez continuer en toute sécurité. Sur macOS, en cas d'avertissement « développeur non identifié », faites un clic droit sur le fichier → Ouvrir.",
+  "skills.eyebrow": "Core skills",
+  "skills.title": "Three things that set us apart",
+  "skills.subtitle": "Fewer feature lists — just the skills that change how you work.",
+  "skills.design.title": "Content automation",
+  "skills.design.desc": "Carousel planning, copy, and images in one flow. Higgsfield integration coming soon.",
+  "skills.design.cta": "Explore design",
+  "skills.stem.title": "STEM analysis",
+  "skills.stem.desc": "Precise science, math, and engineering explanations with clean diagrams.",
+  "skills.stem.cta": "Solve in workspace",
+  "skills.report.title": "Intelligent reports",
+  "skills.report.desc": "Draft professional and weekly reports grounded in your library.",
+  "skills.report.cta": "Start a report",
+  "skills.band.title": "From library evidence to deliverables",
+  "skills.band.subtitle": "Answers stay tied to your sources — then continue into docs and slides in the same place."
 };
 
 export default fr;

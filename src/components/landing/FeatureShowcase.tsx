@@ -4,14 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
-  ListChecks,
-  Lightbulb,
-  StickyNote,
   Play,
   Presentation,
-  Sparkles,
-  Users,
+  Table2,
   Check,
+  MessagesSquare,
 } from "lucide-react";
 import { useLocalCopy } from "@/lib/useLocalCopy";
 import type { LandingLanguage } from "@/lib/landingI18n";
@@ -28,26 +25,26 @@ const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy 
       {
         no: "01",
         tag: "AI 요약",
-        title: "자료를 넣으면, 핵심만 남습니다",
-        desc: "수업 자료나 PDF를 올리면 시험에 나올 법한 핵심을 정리해 요약본으로 돌려줍니다. 요약 옆의 퀴즈·개념·메모 탭으로 복습까지 자연스럽게 이어집니다.",
+        title: "자료를 넣으면 핵심만 남습니다",
+        desc: "PDF나 수업 자료를 올리면 시험에 나올 만한 핵심만 정리해 줍니다. 옆의 퀴즈·개념·메모 탭으로 복습까지 이어집니다.",
       },
       {
         no: "02",
         tag: "강의 분석",
-        title: "영상과 음성을, 한 장의 노트로",
-        desc: "강의 영상 링크 하나면 충분합니다. 화면 속 판서와 말소리를 함께 읽어 하나의 정리된 노트로 묶어 드립니다.",
+        title: "영상과 음성을 한 장의 노트로",
+        desc: "강의 링크 하나면 됩니다. 판서와 말소리를 함께 읽어 하나의 노트로 묶어 드립니다.",
       },
       {
         no: "03",
         tag: "문서 · 발표자료",
-        title: "핵심만 던지면, 초안이 완성됩니다",
-        desc: "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열어 미리볼 수 있습니다. 표와 서식까지 고려해 받은 그대로 다듬어 쓰기 좋습니다.",
+        title: "핵심만 말하면 초안이 나옵니다",
+        desc: "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열 수 있습니다.",
       },
       {
         no: "04",
         tag: "공유 서재",
         title: "내 자료와 팀 자료를 한곳에서",
-        desc: "개인 서재와 팀 워크스페이스 공유 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
+        desc: "개인·팀 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
       },
     ],
   },
@@ -58,26 +55,26 @@ const COPY: Partial<Record<LandingLanguage, ShowcaseCopy>> & { en: ShowcaseCopy 
       {
         no: "01",
         tag: "AI Summary",
-        title: "Drop in the material, keep only what matters",
-        desc: "Upload lecture notes or a PDF and get back a summary of the points most likely to show up on a test. Quiz, concept, and memo tabs sit right beside it, so review flows on naturally.",
+        title: "Drop in the material, keep what matters",
+        desc: "Upload a PDF or lecture notes and get back the points most likely to show up on a test. Quiz, concept, and memo tabs sit right beside it.",
       },
       {
         no: "02",
         tag: "Lecture Analysis",
-        title: "Video and audio, into a single note",
-        desc: "One lecture link is enough. Zeff reads the writing on screen and the spoken words together and ties them into one organized note.",
+        title: "Video and audio into one note",
+        desc: "One lecture link is enough. Zeff reads on-screen writing and spoken words together into a single note.",
       },
       {
         no: "03",
         tag: "Docs · Slides",
         title: "Give the gist, get a draft",
-        desc: "Tell it just what you need and get Word, PPT, or Excel drafts — then open them in the right-hand panel to preview. Formatting and tables included, ready to polish as-is.",
+        desc: "Tell it what you need and get Word, PPT, or Excel drafts — open them in the right panel to preview.",
       },
       {
         no: "04",
         tag: "Shared Library",
-        title: "Personal and team materials, together",
-        desc: "Keep a personal library and a team workspace shared library, then chat with any document through Book Chat.",
+        title: "Personal and team materials together",
+        desc: "Keep personal and team libraries separate, then chat with any document through Book Chat.",
       },
     ],
   },
@@ -281,65 +278,42 @@ function TextLine({ w, tone = "base" }: { w: string; tone?: "base" | "faint" | "
 }
 
 function MockSummary({ progress = 1 }: { progress?: number }) {
-  const summaryTabs = [
-    { Icon: FileText, active: true },
-    { Icon: ListChecks, active: false },
-    { Icon: Lightbulb, active: false },
-    { Icon: StickyNote, active: false },
-  ];
+  const bullets = ["핵심 개념 3개", "시험 출제 포인트", "복습 체크리스트"];
+  const visibleBullets = Math.max(1, Math.ceil(progress * bullets.length));
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="flex items-center gap-1.5 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
-        <span className="h-2.5 w-2.5 rounded-full bg-rose-300/80 dark:bg-slate-700" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80 dark:bg-slate-700" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80 dark:bg-slate-700" />
-        <span className="ml-2 h-3 w-24 rounded-full bg-slate-100 dark:bg-slate-800" />
+    <div className="relative flex gap-4">
+      {/* PDF stack */}
+      <div className="relative h-36 w-24 shrink-0">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="absolute inset-x-0 rounded border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
+            style={{ top: i * 6, height: "7.5rem", transform: `rotate(${i * 2 - 2}deg)`, zIndex: 3 - i }}
+          >
+            <div className="border-b border-slate-100 px-2 py-1 dark:border-slate-800">
+              <span className="inline-block rounded bg-rose-100 px-1 py-0.5 text-[7px] font-bold text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">PDF</span>
+            </div>
+            <div className="space-y-1 p-2">
+              <TextLine w="90%" tone="faint" />
+              <TextLine w="75%" tone="faint" />
+              <TextLine w="85%" tone="faint" />
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="grid grid-cols-[1fr_1.1fr] gap-2.5 p-3">
-        {/* 원본 문서 */}
-        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="h-2 w-1/2 rounded bg-slate-300 dark:bg-slate-600" />
-          <div className="space-y-1.5 pt-0.5">
-            <TextLine w="100%" tone="faint" />
-            <TextLine w="92%" tone="accent" />
-            <TextLine w="98%" tone="faint" />
-            <TextLine w="80%" tone="faint" />
-            <TextLine w="88%" tone="faint" />
-            <TextLine w="70%" tone="faint" />
-          </div>
-        </div>
-        {/* AI 요약 */}
-        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1">
-              {summaryTabs.map(({ Icon, active }, i) => (
-                <span
-                  key={i}
-                  className={`inline-flex items-center justify-center rounded-md p-1 ${
-                    active
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-                  }`}
-                >
-                  <Icon className="h-2.5 w-2.5" />
-                </span>
-              ))}
-            </div>
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[8px] font-semibold text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-              <Sparkles className="h-2 w-2" /> AI
-            </span>
-          </div>
-          <div className="space-y-1.5 pt-0.5">
-            {["96%", "88%", "92%", "78%"].map((w, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <Check className="h-2.5 w-2.5 shrink-0 text-blue-500" />
-                <TextLine w={w} tone={i === 1 ? "accent" : "base"} />
-              </div>
-            ))}
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-              <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${progress * 100}%` }} />
+      {/* 3 bullets */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center space-y-2">
+        {bullets.slice(0, visibleBullets).map((label, i) => (
+          <div key={label} className="flex items-start gap-2">
+            <Check className="mt-0.5 h-3 w-3 shrink-0 text-blue-600 dark:text-blue-400" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-medium text-slate-700 dark:text-slate-200">{label}</p>
+              <TextLine w={`${88 - i * 6}%`} tone={i === 0 ? "accent" : "faint"} />
             </div>
           </div>
+        ))}
+        <div className="mt-1 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="h-full rounded-full bg-blue-600 dark:bg-blue-400" style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
     </div>
@@ -347,45 +321,30 @@ function MockSummary({ progress = 1 }: { progress?: number }) {
 }
 
 function MockLecture({ progress = 0.65 }: { progress?: number }) {
-  // 파형(오디오) — 높이가 다른 막대로 실제 음성 트랙처럼 보이게.
-  const wave = [30, 55, 40, 70, 90, 60, 45, 75, 50, 85, 65, 40, 55, 80, 60, 35, 50, 72];
+  const wave = [28, 52, 38, 68, 88, 58, 42, 72, 48, 82, 62, 36, 54, 78, 56, 32, 46, 70];
+  const activeCount = Math.floor(progress * wave.length);
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="relative flex aspect-video items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-800">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg">
-          <Play className="h-4 w-4 translate-x-[1px] fill-current" />
-        </span>
-        <span className="absolute bottom-2 right-2 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-white">
-          08:12 / 12:04
-        </span>
-        {/* 하단 진행바 */}
-        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
-          <div className="h-full bg-blue-500" style={{ width: `${progress * 100}%` }} />
-        </div>
+    <div className="space-y-3">
+      <div className="flex h-10 items-end gap-[2px] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/60">
+        {wave.map((h, i) => (
+          <span
+            key={i}
+            className={`w-full rounded-sm ${i < activeCount ? "bg-slate-800 dark:bg-slate-200" : "bg-slate-200 dark:bg-slate-700"}`}
+            style={{ height: `${h}%` }}
+          />
+        ))}
       </div>
-      {/* 파형 + 자막 노트 */}
-      <div className="space-y-2.5 p-3">
-        <div className="flex h-8 items-center gap-[3px]">
-          {wave.map((h, i) => (
-            <span
-              key={i}
-              className={`w-full rounded-full ${i < Math.floor(progress * wave.length) ? "bg-blue-400/80 dark:bg-blue-500/60" : "bg-slate-200 dark:bg-slate-700"}`}
-              style={{ height: `${h}%` }}
-            />
-          ))}
+      <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-center gap-2">
+          <Play className="h-3 w-3 text-slate-500" fill="currentColor" />
+          <span className="font-mono text-[9px] tabular-nums text-slate-400">08:12</span>
         </div>
-        <div className="space-y-1.5">
-          {[
-            { t: "00:12", w: "82%" },
-            { t: "03:40", w: "70%" },
-          ].map(({ t, w }) => (
-            <div key={t} className="flex items-center gap-1.5">
-              <span className="rounded bg-slate-100 px-1 py-0.5 text-[8px] font-medium tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                {t}
-              </span>
-              <TextLine w={w} tone="faint" />
-            </div>
-          ))}
+        <p className="mt-2 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">
+          판서와 음성을 함께 읽어 한 장의 노트로 정리합니다.
+        </p>
+        <div className="mt-2 space-y-1">
+          <TextLine w="92%" tone="faint" />
+          <TextLine w="78%" tone="faint" />
         </div>
       </div>
     </div>
@@ -393,97 +352,102 @@ function MockLecture({ progress = 0.65 }: { progress?: number }) {
 }
 
 function MockDocs({ slideIndex = 0 }: { slideIndex?: number }) {
+  const tabs = [
+    { id: "docx", label: "DOCX", Icon: FileText },
+    { id: "pptx", label: "PPTX", Icon: Presentation },
+    { id: "xlsx", label: "XLSX", Icon: Table2 },
+  ] as const;
+  const activeTab = slideIndex % 3;
+
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="grid grid-cols-2 gap-2.5">
-        {/* Word 문서 + 표 */}
-        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-1">
-            <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span className="h-2 w-10 rounded bg-slate-200 dark:bg-slate-700" />
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
+      <div className="flex border-b border-slate-200 dark:border-slate-700">
+        {tabs.map(({ id, label, Icon }, i) => (
+          <span
+            key={id}
+            className={`flex flex-1 items-center justify-center gap-1 px-2 py-2 text-[9px] font-semibold ${
+              i === activeTab
+                ? "border-b-2 border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100"
+                : "text-slate-400"
+            }`}
+          >
+            <Icon className="h-3 w-3" />
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="p-3">
+        {activeTab === 0 && (
+          <div className="space-y-2">
+            <TextLine w="65%" />
+            <TextLine w="100%" tone="faint" />
+            <TextLine w="88%" tone="faint" />
+            <div className="mt-2 overflow-hidden rounded border border-slate-200 dark:border-slate-700">
+              {[0, 1].map((r) => (
+                <div key={r} className="flex divide-x divide-slate-200 dark:divide-slate-700">
+                  {[0, 1, 2].map((c) => (
+                    <div key={c} className={`h-4 flex-1 ${r === 0 ? "bg-slate-100 dark:bg-slate-800" : "bg-white dark:bg-slate-900"}`} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          <TextLine w="70%" />
-          <TextLine w="100%" tone="faint" />
-          <TextLine w="90%" tone="faint" />
-          {/* 미니 표 */}
-          <div className="mt-1 overflow-hidden rounded border border-slate-200 dark:border-slate-700">
-            {[0, 1, 2].map((r) => (
-              <div key={r} className="flex divide-x divide-slate-200 dark:divide-slate-700">
-                {[0, 1, 2].map((c) => (
-                  <div
-                    key={c}
-                    className={`h-3 flex-1 ${
-                      r === 0 ? "bg-blue-50 dark:bg-blue-500/10" : "bg-white dark:bg-slate-900"
-                    } ${r === 0 || c === 0 ? "border-b border-slate-200 dark:border-slate-700" : ""}`}
-                  />
-                ))}
+        )}
+        {activeTab === 1 && (
+          <div className="space-y-2">
+            <TextLine w="50%" />
+            <div className="flex h-14 items-end gap-1.5 pt-1">
+              {[40, 65, 50, 85, 55].map((h, i) => (
+                <div key={i} className="flex-1 rounded-t bg-slate-700 dark:bg-slate-300" style={{ height: `${h}%` }} />
+              ))}
+            </div>
+          </div>
+        )}
+        {activeTab === 2 && (
+          <div className="space-y-1 font-mono text-[9px]">
+            {["A1", "B1", "C1"].map((cell, i) => (
+              <div key={cell} className="flex gap-2 border-b border-slate-100 py-1 dark:border-slate-800">
+                <span className="w-6 text-slate-400">{cell}</span>
+                <span className={`h-1.5 flex-1 rounded ${i === 1 ? "bg-slate-800 dark:bg-slate-200" : "bg-slate-200 dark:bg-slate-700"}`} />
               </div>
             ))}
           </div>
-        </div>
-        {/* PPT 슬라이드 + 막대 차트 */}
-        <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-1">
-            <Presentation className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span className="h-2 w-8 rounded bg-slate-200 dark:bg-slate-700" />
-          </div>
-          <TextLine w="60%" />
-          {/* 막대 차트 */}
-          <div className="flex h-12 items-end gap-1.5 pt-1">
-            {[45, 70, 55, 90, 65].map((h, i) => (
-              <div
-                key={i}
-                className={`flex-1 rounded-t bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 ${i === slideIndex % 5 ? "ring-2 ring-blue-300" : ""}`}
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-          <div className="h-px bg-slate-200 dark:bg-slate-700" />
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
 function MockLibrary() {
-  const files = [
-    { badge: "PDF", badgeCls: "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300", shared: false, w: "68%" },
-    { badge: "DOC", badgeCls: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300", shared: true, w: "80%" },
-    { badge: "XLS", badgeCls: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300", shared: true, w: "56%" },
+  const books = [
+    { spine: "PDF", h: "h-14", color: "bg-rose-200 dark:bg-rose-500/30" },
+    { spine: "DOC", h: "h-16", color: "bg-blue-200 dark:bg-blue-500/30" },
+    { spine: "XLS", h: "h-12", color: "bg-emerald-200 dark:bg-emerald-500/30" },
+    { spine: "PPT", h: "h-14", color: "bg-amber-200 dark:bg-amber-500/30" },
   ];
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-950 dark:shadow-none">
-      <div className="mb-2.5 flex gap-1.5">
-        <span className="rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm shadow-blue-600/30">
-          내 서재
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          <Users className="h-2.5 w-2.5" /> 공유 서재
-        </span>
-      </div>
-      <div className="space-y-1.5">
-        {files.map((f, i) => (
+    <div className="relative">
+      <div className="flex items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 pb-3 pt-8 dark:border-slate-700 dark:bg-slate-900/60">
+        <div className="absolute inset-x-4 bottom-3 h-1 rounded bg-slate-300 dark:bg-slate-600" aria-hidden />
+        {books.map((b) => (
           <div
-            key={i}
-            className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900"
+            key={b.spine}
+            className={`relative z-10 flex w-8 flex-col items-center justify-end rounded-t-sm border border-slate-300 ${b.color} ${b.h} dark:border-slate-600`}
           >
-            <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-[7px] font-bold ${f.badgeCls}`}
-            >
-              {f.badge}
+            <span className="mb-1 rotate-180 font-mono text-[7px] font-bold tracking-wider text-slate-600 [writing-mode:vertical-rl] dark:text-slate-300">
+              {b.spine}
             </span>
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="h-2 rounded bg-slate-300 dark:bg-slate-600" style={{ width: f.w }} />
-              <div className="h-1.5 w-1/3 rounded bg-slate-200 dark:bg-slate-800" />
-            </div>
-            {f.shared && (
-              <div className="flex -space-x-1">
-                <span className="h-3.5 w-3.5 rounded-full border border-white bg-blue-400 dark:border-slate-900" />
-                <span className="h-3.5 w-3.5 rounded-full border border-white bg-indigo-400 dark:border-slate-900" />
-              </div>
-            )}
           </div>
         ))}
+      </div>
+      <div className="absolute -right-1 top-2 max-w-[9rem] rounded-xl rounded-bl-sm border border-slate-200 bg-white px-2.5 py-2 shadow-lg dark:border-slate-600 dark:bg-slate-800">
+        <div className="flex items-center gap-1">
+          <MessagesSquare className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+          <span className="text-[9px] font-semibold text-slate-700 dark:text-slate-200">Book Chat</span>
+        </div>
+        <p className="mt-1 text-[8px] leading-snug text-slate-500 dark:text-slate-400">
+          이 문서에서 핵심 요약을 알려줘
+        </p>
       </div>
     </div>
   );

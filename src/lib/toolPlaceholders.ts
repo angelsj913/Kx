@@ -50,7 +50,7 @@ const PLACEHOLDERS: Record<string, PH> = {
     en: "e.g. A laptop and coffee cup under a blue sky, watercolor style",
   },
   agent: {
-    en: "e.g. Find A in my library, summarize it, and build a slide deck from it",
+    en: "e.g. Summarize the key points from a PDF in my library",
   },
   "doc-translate": { en: "Type the text to translate, or attach a document." },
   "exam-maker": {
