@@ -256,15 +256,12 @@ export default function SkillsSection() {
               <div className="grid items-end gap-10 lg:grid-cols-[1fr_auto]">
                 <SceneContent scene={activeScene} mounted={mounted} localP={sceneLocalProgress(p, SCENE_COUNT, activeIdx)} />
 
-                <div className="flex items-center gap-3 lg:flex-col lg:items-end lg:gap-4">
+                <ol
+                  className="flex list-none items-center gap-3 lg:flex-col lg:items-end lg:gap-4"
+                  aria-hidden="true"
+                >
                   {scenes.map((scene, i) => (
-                    <button
-                      key={scene.id}
-                      type="button"
-                      className="group flex items-center gap-2 text-left lg:flex-row-reverse"
-                      aria-current={i === activeIdx ? "step" : undefined}
-                      aria-label={scene.title}
-                    >
+                    <li key={scene.id} className="flex items-center gap-2 lg:flex-row-reverse">
                       <span
                         className={`block h-1.5 rounded-full transition-all duration-300 ${
                           i === activeIdx
@@ -279,9 +276,9 @@ export default function SkillsSection() {
                       >
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                    </button>
+                    </li>
                   ))}
-                </div>
+                </ol>
               </div>
             </div>
           </div>
