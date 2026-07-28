@@ -1,5 +1,8 @@
 # Unified RAG - Design Spec
 
+> **Superseded** by `docs/superpowers/specs/2026-07-28-generative-rag-design.md` (Approach 3 — Layered Generative RAG Platform).  
+> Evidence routing and citation sections below remain valid as L0/L1 substrate; generation skills and agentic layer are defined in the new spec.
+
 Companion to `docs/PRD_UNIFIED_RAG_2026-07.md`.
 
 ## Product shape

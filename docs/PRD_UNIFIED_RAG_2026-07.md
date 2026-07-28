@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | Draft - approved for spec writing |
+| **Status** | **Superseded** — see `docs/PRD_GENERATIVE_RAG_2026-07.md` (Approach 3) |
 | **Date** | 2026-07-28 |
 | **Scope** | New product RAG flow on top of existing document/library retrieval |
 | **Primary mode** | Web-first, documents/notes as supporting evidence |

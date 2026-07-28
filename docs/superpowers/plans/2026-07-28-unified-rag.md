@@ -1,5 +1,7 @@
 # Unified RAG Implementation Plan
 
+> **Superseded** — do not execute as-is. Use `docs/PRD_GENERATIVE_RAG_2026-07.md` and `docs/superpowers/specs/2026-07-28-generative-rag-design.md`. Implementation plan for Approach 3 will be written after spec approval.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a web-first unified RAG that routes between web, private documents, and hybrid retrieval while preserving existing document RAG assets.
