@@ -1,8 +1,8 @@
-# PRD: App Shell · Auth Linking · Settings · Landing Throttle
+# PRD: App Shell · Auth Linking · Settings · Landing Experience
 
 | Field | Value |
 |-------|--------|
-| **Status** | Draft — awaiting owner approval of design spec |
+| **Status** | Draft — awaiting owner approval (revised landing scope) |
 | **Date** | 2026-07-28 |
 | **Base** | `main` @ merge `03eaa6b` |
 | **Full design spec** | [`docs/superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md`](./superpowers/specs/2026-07-28-app-shell-auth-settings-landing-design.md) |
@@ -14,9 +14,12 @@
 
 | Decision | Choice |
 |----------|--------|
-| Packaging | **Single PRD**, waves **A → B → C+D → E → F** |
+| Packaging | **Single PRD**, waves **A → B → C+D → E → F → G → H → I** |
 | Auth model | Same email: Google + Zeff password on **one User** |
-| Landing throttle | FeatureShowcase **문서·발표자료** + **공유 서재** |
+| Feature throttle | **문서·발표자료** + **공유 서재** |
+| Skills throttle | SkillsSection **3 skills** (스크롤 스토리) |
+| Landing IA | Full reorder (Hero → Skills → Features → office strip → WorkspaceIntro → Pricing) |
+| Media | Hero **video loop** + **light 3D** accent on one scene |
 | Admin email | `zeff@zeffai.com` via **`ADMIN_EMAILS` env only** (no hardcode) |
 
 ---
@@ -30,7 +33,10 @@
 | **C** | Google → signup complete | New Google users set password before normal app use |
 | **D** | Settings · Security Google link | Link / unlink with password guards |
 | **E** | Settings · General redesign | Hero + language + theme + quick actions + shortcuts |
-| **F** | Landing throttle ×2 | Sticky scroll scenes for two features; reduced-motion fallback |
+| **F** | FeatureShowcase throttle ×2 | Sticky scenes for 문서·발표 + 서재 |
+| **G** | SkillsSection throttle ×3 | Sticky scenes for three skills |
+| **H** | Landing IA reorder | New section order + anchors; mount F/G |
+| **I** | Video + light 3D | Hero loop video; one decorative 3D layer; reduced-motion safe |
 
 ---
 
@@ -39,7 +45,9 @@
 - Hardcoded admin emails  
 - MFA relaxation  
 - Extra social IdPs  
-- SkillsSection throttle / full landing IA rewrite  
+- Live Higgsfield generation API  
+- Heavy WebGL product configurator / custom 3D engine  
+- In-agent brand film production (replaceable `public/landing` assets)  
 - Large new settings backend surface  
 
 ---
@@ -48,6 +56,6 @@
 
 1. Owner reviews the **design spec** (link above).  
 2. On approval → implementation plan via `writing-plans`.  
-3. On plan approval → code on branch `cursor/…-a14a` with `/using-superpowers` workflow.
+3. On plan approval → code with `/using-superpowers` workflow.
 
 **Owner action:** reply **스펙 승인** (or list change requests).

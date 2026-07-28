@@ -1,12 +1,13 @@
-# Design Spec: App Shell, Auth Linking, Settings & Landing Throttle
+# Design Spec: App Shell, Auth Linking, Settings & Landing Experience
 
 | Field | Value |
 |-------|--------|
-| **Status** | Awaiting user review (brainstorming gate) |
+| **Status** | Awaiting user review (revised — landing scope expanded) |
 | **Date** | 2026-07-28 |
 | **Planned at** | `main` @ `03eaa6b` |
-| **Approach** | Single PRD, wave execution A → B → C+D → E → F |
+| **Approach** | Single PRD, waves **A → B → C+D → E → F → G → H → I** |
 | **PRD twin** | [`docs/PRD_APP_SHELL_AUTH_SETTINGS_2026-07.md`](../../PRD_APP_SHELL_AUTH_SETTINGS_2026-07.md) |
+| **Revision** | Owner added: new video/3D, SkillsSection throttle, full landing IA reorder |
 
 ---
 
@@ -19,7 +20,10 @@
 | C | Google login skips Zeff password account | Google → Auth.js session directly; no `/signup` complete step for password |
 | D | No Google link/unlink in user Settings → Security | `SecurityPanel` has password/2FA only |
 | E | Settings → General feels empty | `GeneralPanel` is language select only |
-| F | Landing feature storytelling uneven | User wants **문서·발표자료** + **공유 서재** as scroll-throttle scenes |
+| F | Feature storytelling weak for core library/PPT | FeatureShowcase throttle not applied to **문서·발표자료** + **공유 서재**; component may be off the live page |
+| G | SkillsSection is a static 3-card grid | No scroll-progress storytelling for 콘텐츠 자동화 / STEM / 지능형 리포트 |
+| H | Landing IA is flat and incomplete | Live `page.tsx` is Hero → WorkspaceIntro → Skills → Pricing only; FeatureShowcase / WorkLectureScroll not in the tree; hierarchy unclear |
+| I | Hero/feature media lacks presence | No dedicated motion video / light 3D plane on landing |
 
 ---
 
@@ -32,25 +36,30 @@
 - One User per email: Google OAuth + credentials both work after password completion.
 - Settings → Security: link/unlink Google with safe guards.
 - Settings → General: dense, trendy layout without feature bloat.
-- Landing: throttle scroll for two FeatureShowcase items only.
+- Landing: throttle for FeatureShowcase targets **and** SkillsSection; **reorder full landing IA**; add **hero/feature video + light 3D** presence.
 
 **Non-goals**
 
 - Hardcoding admin emails in source.
 - Relaxing admin MFA for `/admin/security`.
 - Additional IdPs (Apple, etc.).
-- Full landing IA redesign or SkillsSection throttle.
 - Custom theme color pickers / notification center.
+- Live Higgsfield Instagram generation API (marketing `/design` only).
+- Heavy real-time WebGL product configurator or custom 3D engine beyond a light decorative layer.
+- Filming new brand shoots in-agent — use stock/placeholder MP4 + replaceable `public/` assets (owner may swap files later).
 
 ---
 
-## 3. Decisions (approved in brainstorming)
+## 3. Decisions (approved in brainstorming + revision)
 
 | Topic | Decision |
 |-------|----------|
-| Delivery | Single PRD, waves A → B → C+D → E → F |
+| Delivery | Single PRD, waves **A → B → C+D → E → F → G → H → I** |
 | Account model | Same email: add password to Google user (one User, two auth methods) |
-| Landing throttle targets | FeatureShowcase: **문서·발표자료** + **공유 서재** |
+| Feature throttle | FeatureShowcase: **문서·발표자료** + **공유 서재** |
+| Skills throttle | SkillsSection: all **3** skills (콘텐츠 자동화 · STEM · 지능형 리포트) |
+| Landing IA | Full reorder (see Wave H) |
+| Media | New loop video on hero (full-bleed) + light 3D/CSS-3D accent on one throttle scene |
 | Defaults (agent-owned) | Admin discovery in sidebar + settings link; General = hero + language + display + quick actions + shortcuts; panel auto-collapse when `CHAT_MIN` cannot fit |
 
 ---
@@ -155,22 +164,86 @@
 
 ---
 
-### Wave F — Landing throttle (two features)
+### Wave F — FeatureShowcase throttle (two features)
 
-**Files (primary):** `src/components/landing/FeatureShowcase.tsx`, `src/lib/landingScroll.ts`, `src/lib/landingI18n/*` copy as needed
+**Files (primary):** `src/components/landing/FeatureShowcase.tsx`, `src/lib/landingScroll.ts`, `src/lib/landingI18n/*`
 
 **Targets:** **문서·발표자료**, **공유 서재**
 
 **Behavior**
 
-1. Split FeatureShowcase: short/static track for AI 요약 + 강의 분석; throttle sticky track (`~300–360vh`) for the two targets using existing `useScrollProgress` / RAF lerp.
-2. One headline + one sentence + full-bleed visual per scene.
-3. `prefers-reduced-motion` → static two-card fallback.
-4. SkillsSection / Hero / Pricing structure unchanged this wave.
+1. Throttle sticky track (`~300–360vh`) for the two targets using existing `useScrollProgress` / RAF lerp.
+2. AI 요약 · 강의 분석: short static or minimal sticky strip (not full throttle), or fold into IA as secondary — Wave H decides final placement.
+3. One headline + one sentence + full-bleed visual per scene.
+4. `prefers-reduced-motion` → static two-card fallback.
 
 **Acceptance**
 
-- Scrolling the two features advances scenes; reduced-motion and mobile remain readable; Noto / white / blue CTA tone preserved.
+- Scrolling the two features advances scenes; reduced-motion and mobile remain readable.
+
+---
+
+### Wave G — SkillsSection throttle
+
+**Files (primary):** `src/components/landing/SkillsSection.tsx`, `src/lib/landingScroll.ts`, i18n `skills.*`
+
+**Targets:** 콘텐츠 자동화 (`/design`) · STEM · 지능형 리포트 (all three)
+
+**Behavior**
+
+1. Replace static 3-column card grid with sticky scroll-progress scenes (same scroll primitive as FeatureShowcase / WorkLectureScroll).
+2. Per skill: brand-safe headline, one supporting sentence, one CTA (existing hrefs), full-bleed visual plane — **no cards in the hero-like sticky frame**.
+3. CTA band to `/app` or login retained after the throttle block (or as final scene).
+4. `prefers-reduced-motion` → static stacked sections (not a card grid of chrome for chrome’s sake).
+
+**Acceptance**
+
+- All three skills animate through scroll scenes; links still work; reduced-motion fallback readable.
+
+---
+
+### Wave H — Full landing IA reorder
+
+**Files (primary):** `src/app/page.tsx`, landing section components, header anchor links / `landingI18n` nav if needed
+
+**Current live tree:** Header → Hero → WorkspaceIntro → SkillsSection → PricingLead → Pricing → Footer  
+(`FeatureShowcase` / `WorkLectureScroll` not mounted.)
+
+**Target IA (top → bottom)**
+
+1. **Hero** — brand-first; one H1; one sentence; one CTA group; **full-bleed video** (Wave I). No stats/schedules/cards in first viewport.
+2. **Skills throttle** (Wave G) — three core skills.
+3. **Feature throttle** (Wave F) — 문서·발표자료 + 공유 서재.
+4. **Proof / office strip** — slim reuse of WorkLectureScroll **or** a single compressed “office tools” band (PPT · 엑셀 · 강의) so prior investment is not orphaned; if too long, keep reduced-motion static trio only.
+5. **WorkspaceIntro** — shortened to one job (workspace promise), demoted below product stories.
+6. **PricingLead → Pricing**.
+7. **Footer**.
+
+**Nav anchors** update to match (`#skills`, `#features`, `#pricing`, etc.).
+
+**Acceptance**
+
+- First viewport passes brand test; section order matches table; no duplicate “same throttle screen” feeling between F and G (different copy/visual jobs).
+
+---
+
+### Wave I — New video + light 3D
+
+**Files (primary):** `src/components/landing/Hero.tsx`, optional `LandingMedia3D.tsx`, assets under `public/landing/`
+
+**Video**
+
+- Hero background: muted autoplay loop (`video` + poster image), `preload="metadata"`, respect `prefers-reduced-motion` (show poster only).
+- Ship with a replaceable asset path (`public/landing/hero-loop.mp4` + poster). If no final brand file yet, use a high-quality abstract/product-atmosphere placeholder and document swap instructions in the PRD.
+
+**Light 3D**
+
+- One decorative layer on a throttle scene (prefer Skills “콘텐츠 자동화” or Feature “문서·발표자료”): CSS 3D transform stack **or** a tiny r3f/three canvas with ≤1 floating object, no physics, pause when offscreen / reduced-motion.
+- Must not block LCP: lazy-mount below fold; hero video is the primary motion budget.
+
+**Acceptance**
+
+- Hero video plays on desktop/mobile with poster fallback; 3D accent visible on one scene without jank; reduced-motion disables both motion layers.
 
 ---
 
@@ -178,14 +251,17 @@
 
 ```
 Wave A: app shell flex clamp ──┐
-Wave B: isAdminSession + nav ──┼─► independent, ship first
+Wave B: isAdminSession + nav ──┼─► ship first (app)
 Wave C: auth callbacks + signup complete ─┐
 Wave D: SecurityPanel link/unlink ────────┴─► same User model
-Wave E: GeneralPanel UI (theme sync with shell)
-Wave F: FeatureShowcase scroll (landing only)
+Wave E: GeneralPanel UI
+Wave H: page.tsx IA order ──┐
+Wave F: FeatureShowcase    ─┼─► landing package (H wires F/G/I)
+Wave G: SkillsSection      ─┤
+Wave I: video + light 3D   ─┘
 ```
 
-C must land before or with D. E may use admin link from B. F is isolated.
+Landing waves **H wires F/G/I**; implement F/G components then mount via H, with I assets in Hero + one scene.
 
 ---
 
@@ -197,10 +273,12 @@ C must land before or with D. E may use admin link from B. F is isolated.
 | Types | `npx tsc --noEmit` |
 | Eval | `npm run eval:ai` (no regressions) |
 | Manual A | Resize desktop ~900px with panel open |
-| Manual B | Login as allowlisted admin; confirm sidebar links; MFA still gates security |
+| Manual B | Login as allowlisted admin; sidebar links; MFA still gates security |
 | Manual C/D | Google new user → password → both logins; link/unlink guards |
 | Manual E | General tab filled; theme sync |
-| Manual F | Scroll two features; reduced-motion fallback |
+| Manual F/G | Scroll feature + skills throttles; reduced-motion fallback |
+| Manual H | Section order matches IA; anchors work |
+| Manual I | Hero video + one 3D accent; reduced-motion posters only |
 
 ---
 
@@ -210,6 +288,6 @@ After **user approves this written spec**, invoke `writing-plans` to produce:
 
 `docs/superpowers/plans/2026-07-28-app-shell-auth-settings-landing.md`
 
-Executable bite-sized tasks per wave (024+ style optional under `plans/` if repo convention preferred).
+Executable bite-sized tasks per wave (024+ under `plans/` if repo convention preferred).
 
 **Do not start coding until the user explicitly approves this spec file.**
