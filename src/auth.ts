@@ -47,41 +47,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         code: { label: "Code", type: "text" },
       },
       async authorize(credentials, request) {
-        const email = String(credentials?.email ?? "").trim().toLowerCase();
-        const password = String(credentials?.password ?? "");
-        const code = String(credentials?.code ?? "").trim();
-        if (!email || !password) return null;
+        try {
+          const email = String(credentials?.email ?? "").trim().toLowerCase();
+          const password = String(credentials?.password ?? "");
+          const code = String(credentials?.code ?? "").trim();
+          if (!email || !password) return null;
 
-        // 계정 하나를 노린 분산 대입과, 한 IP가 여러 계정을 훑는 대입 둘 다 막는다.
-        // bcrypt 비교 자체가 어느 정도 느리긴 하지만 시도 횟수 제한이 따로 필요하다.
-        const ip = clientIp(request);
-        const [ipOk, emailOk] = await Promise.all([
-          checkRateLimit("login:ip", ip, { max: 20, windowSeconds: 300 }),
-          checkRateLimit("login:email", email, { max: 6, windowSeconds: 300 }),
-        ]);
-        if (!ipOk || !emailOk) return null;
+          // 계정 하나를 노린 분산 대입과, 한 IP가 여러 계정을 훑는 대입 둘 다 막는다.
+          // bcrypt 비교 자체가 어느 정도 느리긴 하지만 시도 횟수 제한이 따로 필요하다.
+          const ip = clientIp(request);
+          const [ipOk, emailOk] = await Promise.all([
+            checkRateLimit("login:ip", ip, { max: 20, windowSeconds: 300 }),
+            checkRateLimit("login:email", email, { max: 6, windowSeconds: 300 }),
+          ]);
+          if (!ipOk || !emailOk) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user?.passwordHash) return null;
+          const user = await prisma.user.findUnique({ where: { email } });
+          if (!user?.passwordHash) return null;
 
-        const ok = await bcrypt.compare(password, user.passwordHash);
-        if (!ok) return null;
+          const ok = await bcrypt.compare(password, user.passwordHash);
+          if (!ok) return null;
 
-        // 2단계 인증이 켜진 계정은 이메일로 받은 코드가 반드시 맞아야 로그인 완료.
-        // (미사용 계정은 이 분기를 건너뛰어 기존 로그인 동작이 그대로 유지된다.)
-        if (user.twoFactorEnabled) {
-          if (!code) return null;
-          const { verifyOtp } = await import("@/lib/otp");
-          const codeOk = await verifyOtp(email, "login-2fa", code);
-          if (!codeOk) return null;
+          // 2단계 인증이 켜진 계정은 이메일로 받은 코드가 반드시 맞아야 로그인 완료.
+          // (미사용 계정은 이 분기를 건너뛰어 기존 로그인 동작이 그대로 유지된다.)
+          if (user.twoFactorEnabled) {
+            if (!code) return null;
+            const { verifyOtp } = await import("@/lib/otp");
+            const codeOk = await verifyOtp(email, "login-2fa", code);
+            if (!codeOk) return null;
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        } catch (err) {
+          // DB/Edge failures must not surface as Auth.js "Configuration" (CallbackRouteError).
+          console.error("[auth] credentials authorize failed:", err);
+          return null;
         }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
       },
     }),
   ],
