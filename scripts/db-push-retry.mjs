@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { config as loadEnv } from "dotenv";
 import {
+  diagnoseDatabaseUrl,
   maskDatabaseUrl,
   resolveMigrateDatabaseUrl,
 } from "./supabaseDatabaseUrl.mjs";
@@ -62,6 +63,13 @@ async function main() {
   if (skip.skip) {
     console.log(`[db-push-retry] skipping prisma db push (${skip.reason})`);
     process.exit(0);
+  }
+
+  const rawUrl = process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
+  const diagnosis = diagnoseDatabaseUrl(rawUrl);
+  if (!diagnosis.ok) {
+    console.error(`[db-push-retry] ${diagnosis.message}`);
+    process.exit(1);
   }
 
   const migrateUrl = resolveMigrateDatabaseUrl();

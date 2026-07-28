@@ -19,6 +19,107 @@ export function extractSupabaseProjectRef(host: string): string | null {
   return null;
 }
 
+export function extractSupabaseProjectRefFromUsername(username: string): string | null {
+  const m = username.match(/^postgres\.([a-z0-9]+)$/i);
+  return m ? (m[1] ?? null) : null;
+}
+
+export function resolveSupabaseProjectRef(
+  parsed: URL,
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const fromHost = extractSupabaseProjectRef(parsed.hostname);
+  if (fromHost) return fromHost;
+
+  const fromUsername = extractSupabaseProjectRefFromUsername(parsed.username);
+  if (fromUsername) return fromUsername;
+
+  const envRef = env.SUPABASE_PROJECT_REF?.trim();
+  if (envRef) return envRef;
+
+  for (const key of ["DIRECT_URL", "DATABASE_URL"] as const) {
+    const raw = env[key]?.trim();
+    if (!raw) continue;
+    const fromDirectHost = raw.match(/db\.([a-z0-9]+)\.supabase\.co/i);
+    if (fromDirectHost) return fromDirectHost[1] ?? null;
+    const fromPoolerUser = raw.match(/postgres\.([a-z0-9]+)@/i);
+    if (fromPoolerUser) return fromPoolerUser[1] ?? null;
+  }
+
+  for (const key of ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"] as const) {
+    const raw = env[key]?.trim();
+    if (!raw) continue;
+    const fromProjectUrl = raw.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/i);
+    if (fromProjectUrl) return fromProjectUrl[1] ?? null;
+  }
+
+  return null;
+}
+
+function isSupabasePoolerHost(hostname: string): boolean {
+  return hostname.includes(".pooler.supabase.com");
+}
+
+function ensurePoolerUsername(parsed: URL, ref: string | null): void {
+  if (!ref) return;
+  if (parsed.username === "postgres") {
+    parsed.username = `postgres.${ref}`;
+  }
+}
+
+export type DatabaseUrlDiagnosis =
+  | { ok: true; ref: string | null; username: string; host: string }
+  | { ok: false; code: string; message: string };
+
+export function diagnoseDatabaseUrl(raw?: string | null): DatabaseUrlDiagnosis {
+  if (!raw?.trim()) {
+    return { ok: false, code: "missing", message: "DATABASE_URL is not set" };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return { ok: false, code: "invalid_url", message: "DATABASE_URL is not a valid URL" };
+  }
+
+  const host = parsed.hostname;
+  const isSupabase =
+    extractSupabaseProjectRef(host) !== null ||
+    isSupabasePoolerHost(host) ||
+    host.includes("supabase.co");
+  if (!isSupabase) {
+    return {
+      ok: false,
+      code: "unexpected_host",
+      message: `DATABASE_URL host looks wrong (${host}). Expected db.<ref>.supabase.co or *.pooler.supabase.com`,
+    };
+  }
+
+  const afterScheme = raw.trim().replace(/^postgresql:\/\//i, "");
+  const atCount = (afterScheme.match(/@/g) || []).length;
+  if (atCount > 1) {
+    return {
+      ok: false,
+      code: "unencoded_password",
+      message:
+        "DATABASE_URL appears to contain an unencoded @ in the password. Encode special characters (@ → %40, # → %23).",
+    };
+  }
+
+  const ref = resolveSupabaseProjectRef(parsed);
+  if (isSupabasePoolerHost(host) && parsed.username === "postgres" && !ref) {
+    return {
+      ok: false,
+      code: "pooler_username",
+      message:
+        "Supabase pooler requires username postgres.<project-ref>, not postgres. Use a direct URI (db.<ref>.supabase.co), set SUPABASE_PROJECT_REF, or paste the pooler URI from Supabase Connect.",
+    };
+  }
+
+  return { ok: true, ref, username: parsed.username, host };
+}
+
 function parsePostgresUrl(raw: string): URL | null {
   try {
     return new URL(raw);
@@ -48,15 +149,14 @@ function normalizeMigrateUrl(url: string, region: string): string {
   const parsed = parsePostgresUrl(url);
   if (!parsed) return url;
 
-  const ref = extractSupabaseProjectRef(parsed.hostname);
-  if (!ref) {
+  const ref = resolveSupabaseProjectRef(parsed);
+  ensurePoolerUsername(parsed, ref);
+
+  if (!extractSupabaseProjectRef(parsed.hostname)) {
     appendQueryParams(parsed, { sslmode: "require", connect_timeout: "30" });
     return parsed.toString();
   }
 
-  if (parsed.username === "postgres") {
-    parsed.username = `postgres.${ref}`;
-  }
   parsed.hostname = poolerHost(region);
   parsed.port = "5432";
   appendQueryParams(parsed, { sslmode: "require", connect_timeout: "30" });
@@ -74,9 +174,12 @@ export function resolveRuntimeDatabaseUrl(
   const parsed = parsePostgresUrl(url);
   if (!parsed) return url;
 
-  const ref = extractSupabaseProjectRef(parsed.hostname);
-  if (!ref) {
-    if (parsed.hostname.includes("pooler.supabase.com") && parsed.port === "5432") {
+  const ref = resolveSupabaseProjectRef(parsed);
+  ensurePoolerUsername(parsed, ref);
+
+  const directHost = extractSupabaseProjectRef(parsed.hostname);
+  if (!directHost) {
+    if (isSupabasePoolerHost(parsed.hostname) && parsed.port === "5432") {
       parsed.port = "6543";
       appendQueryParams(parsed, { pgbouncer: "true", sslmode: "require", connect_timeout: "30" });
       return parsed.toString();
@@ -85,9 +188,6 @@ export function resolveRuntimeDatabaseUrl(
     return parsed.toString();
   }
 
-  if (parsed.username === "postgres") {
-    parsed.username = `postgres.${ref}`;
-  }
   parsed.hostname = poolerHost(region);
   parsed.port = "6543";
   appendQueryParams(parsed, { pgbouncer: "true", sslmode: "require", connect_timeout: "30" });
