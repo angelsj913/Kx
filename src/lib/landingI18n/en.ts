@@ -6,12 +6,16 @@ const en: Record<keyof typeof ko, string> = {
   "nav.prototype": "Prototypes in Development",
   "nav.download": "Download",
   "nav.support": "Support",
+  "nav.skills": "Skills",
+  "nav.features": "Features",
+  "nav.pricing": "Pricing",
 
   "header.support": "Support",
   "header.login": "Log in",
   "header.language": "Language",
   "header.homeAria": "ZEFF AI Home",
   "header.menuAria": "Menu",
+  "header.sectionNavAria": "Landing sections",
 
   "hero.badge": "An AI workspace for study and work",
   "hero.title.line1": "Everything you need to study and work,",

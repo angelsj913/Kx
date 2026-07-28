@@ -6,12 +6,16 @@ const zh: Record<keyof typeof ko, string> = {
   "nav.prototype": "开发中的原型",
   "nav.download": "下载",
   "nav.support": "支持",
+  "nav.skills": "技能",
+  "nav.features": "功能",
+  "nav.pricing": "定价",
 
   "header.support": "支持",
   "header.login": "登录",
   "header.language": "语言",
   "header.homeAria": "ZEFF AI 首页",
   "header.menuAria": "菜单",
+  "header.sectionNavAria": "落地页分区",
 
   "hero.badge": "新一代 AI 工作空间",
   "hero.title.line1": "以思考的速度",

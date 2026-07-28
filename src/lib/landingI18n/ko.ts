@@ -4,12 +4,16 @@ const ko = {
   "nav.prototype": "개발중인 프로토타입",
   "nav.download": "다운로드",
   "nav.support": "지원",
+  "nav.skills": "스킬",
+  "nav.features": "기능",
+  "nav.pricing": "요금제",
 
   "header.support": "지원",
   "header.login": "로그인",
   "header.language": "언어",
   "header.homeAria": "ZEFF AI 홈",
   "header.menuAria": "메뉴",
+  "header.sectionNavAria": "랜딩 섹션",
 
   "hero.badge": "공부와 일을 위한 AI 워크스페이스",
   "hero.title.line1": "공부와 일에 필요한 것,",
