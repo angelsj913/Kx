@@ -12,6 +12,12 @@ export function getAuthEnvStatus() {
       process.env.NEXTAUTH_URL?.trim() ||
       process.env.VERCEL_URL,
   );
+  // Count only — never expose allowlisted emails.
+  const adminEmailCount = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+  const adminEmails = adminEmailCount > 0;
 
   const issues: string[] = [];
   if (!authSecret) {
@@ -26,6 +32,11 @@ export function getAuthEnvStatus() {
   if (!authUrl) {
     issues.push("AUTH_URL / NEXTAUTH_URL / VERCEL_URL missing — set AUTH_URL to your public site URL");
   }
+  if (!adminEmails) {
+    issues.push(
+      "ADMIN_EMAILS is empty — developer/admin panel will not appear for any user. Set ADMIN_EMAILS=zeff@zeffai.com (comma-separated) on Vercel Production, redeploy, then sign out and sign in again.",
+    );
+  }
 
   return {
     ok: authSecret && databaseUrl,
@@ -33,6 +44,8 @@ export function getAuthEnvStatus() {
     googleOAuth,
     databaseUrl,
     authUrl,
+    adminEmails,
+    adminEmailCount,
     issues,
   };
 }
