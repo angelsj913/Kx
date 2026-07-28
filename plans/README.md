@@ -28,6 +28,8 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [017](./017-rag-llm-rerank.md) | RAG LLM rerank top-20 → top-k | P1 | M | 010 | DONE |
 | [018](./018-ppt-domain-templates.md) | PPT domain templates + research rerank | P2 | M | 011, 017 | DONE |
 | [019](./019-ppt-outline-confirm.md) | PPT outline confirmation step | P2 | M | 011, 018 | DONE |
+| [020](./020-landing-ux-noto-login-skills.md) | Landing UX: Noto/white/blue, login loop, quality in +, 3 skills | P1 | L | — | TODO |
+| [021](./021-rag-engine-upgrade.md) | RAG: semantic chunk, BM25 hybrid, multi-query, assembler | P1 | L | 010, 017, 020 | TODO |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`
 
@@ -38,6 +40,8 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED 
 - **011** requires **010** so PPT outlines can use gated RAG + web context.
 - **014** is optional MVP; ship after **008** if bandwidth is tight.
 - **015** was **BLOCKED** until approval — unblocked 2026-07-27 via roadmap continuation.
+- **020** deliberately supersedes landing visuals from **005** (cream/red/Doto → Noto/white/blue). Product PRD: [`docs/PRD_PRODUCT_RAG_UPGRADE_2026-07.md`](../docs/PRD_PRODUCT_RAG_UPGRADE_2026-07.md).
+- **021** should follow **020** so UX wave ships before RAG engine changes; soft dependency only.
 
 ## Vetted findings (audit summary)
 
