@@ -68,6 +68,7 @@ android/*.keystore
 !.agents/skills/trust-calibration/
 !.agents/skills/animation-principles/
 !.agents/skills/color-system/
+!.agents/skills/motion-design/
 
 # local large dataset artifacts
 /docs/datasets/zeff-ai-training-100000.jsonl
