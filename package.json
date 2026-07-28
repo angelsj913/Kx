@@ -10,6 +10,7 @@
     "dev": "next dev",
     "build": "prisma generate && node scripts/db-push-retry.mjs && next build",
     "db:push": "node scripts/db-push-retry.mjs",
+    "db:verify": "node scripts/verify-db-cutover.mjs",
     "start": "next start",
     "lint": "eslint",
     "rag:index:zeff": "npx tsx scripts/index-zeff-rag.mjs",
@@ -87,8 +88,7 @@
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@google/genai": "^2.10.0",
-    "@neondatabase/serverless": "^1.1.0",
-    "@prisma/adapter-neon": "^7.8.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@vercel/blob": "^2.6.1",
     "@vercel/speed-insights": "^2.0.0",
@@ -104,6 +104,7 @@
     "next-auth": "^5.0.0-beta.32",
     "next-themes": "^0.4.6",
     "nodemailer": "^9.0.3",
+    "pg": "^8.16.0",
     "plotly.js-dist-min": "^2.35.3",
     "pptxgenjs": "^4.0.1",
     "prisma": "^7.8.0",
@@ -115,8 +116,7 @@
     "remark-math": "^6.0.0",
     "resend": "^6.17.2",
     "sharp": "^0.35.3",
-    "unpdf": "^1.6.2",
-    "ws": "^8.21.0"
+    "unpdf": "^1.6.2"
   },
   "devDependencies": {
     "@capacitor/android": "^8.4.1",

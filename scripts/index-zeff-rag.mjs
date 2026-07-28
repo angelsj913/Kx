@@ -26,12 +26,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 const { GoogleGenAI } = await import("@google/genai");
-const { neonConfig } = await import("@neondatabase/serverless");
-const { PrismaNeon } = await import("@prisma/adapter-neon");
-const ws = (await import("ws")).default;
+const { PrismaPg } = await import("@prisma/adapter-pg");
+const { resolveRuntimeDatabaseUrl } = await import("./supabaseDatabaseUrl.mjs");
 const { PrismaClient } = await import("../src/generated/prisma/client.ts");
-
-neonConfig.webSocketConstructor = ws;
 
 const EMBED_MODEL = "gemini-embedding-2";
 const LOCAL_DIM = 256;
@@ -207,8 +204,14 @@ if (!extractedText) {
   process.exit(1);
 }
 
+const connectionString = resolveRuntimeDatabaseUrl();
+if (!connectionString) {
+  console.error("DATABASE_URL이 없어 RAG 자동 색인을 실행할 수 없습니다.");
+  process.exit(1);
+}
+
 const prisma = new PrismaClient({
-  adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL }),
+  adapter: new PrismaPg({ connectionString }),
 });
 
 try {
