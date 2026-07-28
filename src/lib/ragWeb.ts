@@ -1,19 +1,11 @@
-export type EvidenceItem = {
-  sourceType: "web" | "library" | "note";
-  title: string;
-  url: string;
-  snippet: string;
-  score: number;
-};
+import { searchWeb as tavilySearchWeb } from "@/lib/webSearch";
+import type { EvidenceItem } from "@/lib/ragWeb";
 
-type RawWebRow = {
-  title: string;
-  url: string;
-  snippet: string;
-  score: number;
-};
+export type { EvidenceItem };
 
-export function normalizeWebResults(rows: RawWebRow[]): EvidenceItem[] {
+export function normalizeWebResults(
+  rows: Array<{ title: string; url: string; snippet: string; score: number }>,
+): EvidenceItem[] {
   return rows
     .filter((row) => row.title && row.url)
     .map((row) => ({
@@ -25,7 +17,14 @@ export function normalizeWebResults(rows: RawWebRow[]): EvidenceItem[] {
     }));
 }
 
-/** Web search transport — returns empty until external provider is wired. */
-export async function searchWeb(_query: string, _budget: number): Promise<EvidenceItem[]> {
-  return [];
+export async function searchWeb(query: string, budget: number): Promise<EvidenceItem[]> {
+  const hits = await tavilySearchWeb(query);
+  return normalizeWebResults(
+    hits.map((h, i) => ({
+      title: h.title,
+      url: h.url,
+      snippet: h.snippet,
+      score: Math.max(0.5, 1 - i * 0.08),
+    })),
+  ).slice(0, budget);
 }

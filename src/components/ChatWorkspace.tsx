@@ -32,6 +32,11 @@ import { getToolPlaceholder } from "@/lib/toolPlaceholders";
 import CopyButton from "@/components/CopyButton";
 import AnswerFeedbackButtons from "@/components/AnswerFeedbackButtons";
 import CitationCards, { parseCitationsFromResultData } from "@/components/CitationCards";
+import {
+  GenerativeResultPanel,
+  parseGenerativeFromResultData,
+  parseStructuredDataFromResultData,
+} from "@/components/GenerativeResultPanel";
 import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { wsFetch } from "@/lib/workspaceClient";
 import { useSession } from "next-auth/react";
@@ -1293,26 +1298,34 @@ export default function ChatWorkspace({
                   <div className="min-w-0 flex-1">
                     {(() => {
                       try {
-                        const data = JSON.parse(m.resultData);
-                        if (m.structuredKind === "pptOutline") {
-                          return (
-                            <StructuredResultView
-                              key={m.id}
-                              id={m.id}
-                              kind="pptOutline"
-                              data={data}
-                              confirming={loading}
-                              onConfirmFill={confirmPptFill}
-                            />
-                          );
+                        const generativeMeta = parseGenerativeFromResultData(m.resultData);
+                        const data = parseStructuredDataFromResultData(m.resultData);
+                        if (!data || typeof data !== "object") {
+                          throw new Error("invalid structured data");
                         }
                         return (
-                          <StructuredResultView
-                            key={m.id}
-                            id={m.id}
-                            kind={m.structuredKind as StructuredKind}
-                            data={data}
-                          />
+                          <>
+                            {generativeMeta && (
+                              <GenerativeResultPanel meta={generativeMeta} />
+                            )}
+                            {m.structuredKind === "pptOutline" ? (
+                              <StructuredResultView
+                                key={m.id}
+                                id={m.id}
+                                kind="pptOutline"
+                                data={data}
+                                confirming={loading}
+                                onConfirmFill={confirmPptFill}
+                              />
+                            ) : (
+                              <StructuredResultView
+                                key={m.id}
+                                id={m.id}
+                                kind={m.structuredKind as StructuredKind}
+                                data={data}
+                              />
+                            )}
+                          </>
                         );
                       } catch {
                         return (
@@ -1323,6 +1336,9 @@ export default function ChatWorkspace({
                       }
                     })()}
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
+                    {!m.streaming && (
+                      <CitationCards citations={parseCitationsFromResultData(m.resultData)} />
+                    )}
                     <ModelFeedback
                       messageId={m.id}
                       sessionId={sessionId}
@@ -1333,6 +1349,12 @@ export default function ChatWorkspace({
                   </div>
                 ) : (
                   <div className="min-w-0 max-w-[min(100%,40rem)] flex-1">
+                    {(() => {
+                      const generativeMeta = parseGenerativeFromResultData(m.resultData);
+                      return generativeMeta ? (
+                        <GenerativeResultPanel meta={generativeMeta} />
+                      ) : null;
+                    })()}
                     <div className="prose-ai rounded-2xl rounded-tl-sm border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-900/60">
                       <ChatMarkdown text={m.text} />
                       {!m.streaming && (

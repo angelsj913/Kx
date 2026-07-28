@@ -226,6 +226,11 @@ const KO = {
   "chat.quality.medium": "보통",
   "chat.quality.high": "정밀",
   "chat.citations.heading": "참고 출처",
+  "generative.skill.report": "리포트 초안",
+  "generative.skill.presentation": "발표 자료",
+  "generative.skill.study": "학습 자료",
+  "generative.skill.inline": "답변",
+  "generative.export.upgrade": "파일 내보내기는 Pro 이상에서 이용할 수 있습니다.",
 
   "moderation.sexual": "성적으로 노골적인 요청은 처리할 수 없어요. 다른 주제로 물어봐 주세요.",
   "moderation.csam": "해당 요청은 처리할 수 없어요.",
@@ -752,6 +757,11 @@ const EN: Record<keyof typeof KO, string> = {
   "chat.quality.medium": "Balanced",
   "chat.quality.high": "Deep",
   "chat.citations.heading": "Sources",
+  "generative.skill.report": "Report draft",
+  "generative.skill.presentation": "Presentation",
+  "generative.skill.study": "Study materials",
+  "generative.skill.inline": "Answer",
+  "generative.export.upgrade": "File export is available on Pro and above.",
 
   "moderation.sexual": "We can't process explicit sexual requests. Please ask about something else.",
   "moderation.csam": "This request cannot be processed.",

@@ -196,6 +196,14 @@ function selectSkill(
   return "inline";
 }
 
+export function shouldUseGenerativeRag(input: {
+  skill: GenerationSkill;
+  forceSkill?: GenerationSkill;
+}): boolean {
+  if (input.forceSkill) return true;
+  return input.skill !== "inline";
+}
+
 export function decideGenerativeRoute(
   query: string,
   opts: GenerativeRouteOptions,
