@@ -6,12 +6,16 @@ const ja: Record<keyof typeof ko, string> = {
   "nav.prototype": "開発中のプロトタイプ",
   "nav.download": "ダウンロード",
   "nav.support": "サポート",
+  "nav.skills": "スキル",
+  "nav.features": "機能",
+  "nav.pricing": "料金",
 
   "header.support": "サポート",
   "header.login": "ログイン",
   "header.language": "言語",
   "header.homeAria": "ZEFF AI ホーム",
   "header.menuAria": "メニュー",
+  "header.sectionNavAria": "ランディングセクション",
 
   "hero.badge": "次世代AIワークスペース",
   "hero.title.line1": "思考の速さで",
@@ -74,6 +78,21 @@ const ja: Record<keyof typeof ko, string> = {
   "lecture.highlight1": "画面・音声の同時分析",
   "lecture.highlight2": "板書と口頭説明の統合要約",
   "lecture.highlight3": "復習ポイントの自動抽出",
+
+  "features.title": "こんな時、Zeff",
+  "features.subtitle": "画面の中で実際に毎日使われる機能だけを厳選しました。",
+  "features.strip.summary.tag": "AI要約",
+  "features.strip.summary.title": "資料を入れると、要点だけが残ります",
+  "features.strip.lecture.tag": "講義分析",
+  "features.strip.lecture.title": "映像と音声を、一枚のノートに",
+  "features.docs.tag": "文書・発表資料",
+  "features.docs.title": "要点を伝えるだけで、下書きが完成します",
+  "features.docs.desc":
+    "必要な内容だけ伝えれば、Word・PPT・Excelの下書きを作成し、右側パネルですぐに開いてプレビューできます。",
+  "features.library.tag": "共有ライブラリ",
+  "features.library.title": "自分の資料とチームの資料を一か所で",
+  "features.library.desc":
+    "個人ライブラリとチームワークスペースの共有ライブラリを分けて管理し、Book Chatで文書とすぐに対話できます。",
 
   "grid.title": "ZEFF AI 機能一覧",
   "grid.subtitle": "ログイン後、ワークスペースですぐに使える機能です。",
@@ -150,6 +169,7 @@ const ja: Record<keyof typeof ko, string> = {
   "login.title": "ZEFF AI 統合アカウントログイン",
   "login.subtitle": "ログインすると、どのデバイスでも会話と成果物を引き続き利用できます。",
   "login.google": "Googleでログイン",
+  "login.googlePasswordSetup": "Googleログイン後、必要に応じてZEFFパスワードの設定を完了します。",
   "login.apple": "Appleでログイン(近日公開)",
   "login.or": "またはメールアドレスで続ける",
   "login.email": "メールアドレス",

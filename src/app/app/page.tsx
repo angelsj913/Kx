@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Menu } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useSessions } from "@/lib/sessions";
@@ -16,10 +17,14 @@ const ChatWorkspace = dynamic(() => import("@/components/ChatWorkspace"), {
 
 export default function AppWorkspace() {
   const t = useT();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
+  const [openLibrary, setOpenLibrary] = useState(false);
   const { sessions, loading, refetch, removeSession, createSession, upsertSession } = useSessions();
   const selectedForLoad = useRef(false);
+  const deepLinkHandled = useRef(false);
 
   const handleNewChat = useCallback(async () => {
     setMobileNav(false);
@@ -30,6 +35,22 @@ export default function AppWorkspace() {
       setActiveSessionId(null);
     }
   }, [createSession]);
+
+  useEffect(() => {
+    if (deepLinkHandled.current) return;
+
+    if (searchParams.get("newChat") === "1") {
+      deepLinkHandled.current = true;
+      void handleNewChat();
+      router.replace("/app");
+      return;
+    }
+    if (searchParams.get("library") === "1") {
+      deepLinkHandled.current = true;
+      setOpenLibrary(true);
+      router.replace("/app");
+    }
+  }, [searchParams, handleNewChat, router]);
 
   useEffect(() => {
     if (loading) {
@@ -136,6 +157,8 @@ export default function AppWorkspace() {
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
           <ChatWorkspace
             sessionId={activeSessionId}
+            openLibrary={openLibrary}
+            onLibraryOpened={() => setOpenLibrary(false)}
             onSessionCreated={(id) => {
               setActiveSessionId(id);
               upsertSession({

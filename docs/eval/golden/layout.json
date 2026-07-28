@@ -1,0 +1,22 @@
+[
+  {
+    "id": "clamp-ok",
+    "type": "chat_panel_clamp",
+    "input": { "containerWidth": 1200, "sidebarWidth": 288, "panelWidth": 400 },
+    "expectWidth": 400,
+    "expectCollapse": false
+  },
+  {
+    "id": "clamp-shrink",
+    "type": "chat_panel_clamp",
+    "input": { "containerWidth": 900, "sidebarWidth": 288, "panelWidth": 560 },
+    "expectWidth": 284,
+    "expectCollapse": false
+  },
+  {
+    "id": "clamp-collapse",
+    "type": "chat_panel_clamp",
+    "input": { "containerWidth": 700, "sidebarWidth": 288, "panelWidth": 320 },
+    "expectCollapse": true
+  }
+]

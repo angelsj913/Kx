@@ -4,12 +4,16 @@ const ko = {
   "nav.prototype": "개발중인 프로토타입",
   "nav.download": "다운로드",
   "nav.support": "지원",
+  "nav.skills": "스킬",
+  "nav.features": "기능",
+  "nav.pricing": "요금제",
 
   "header.support": "지원",
   "header.login": "로그인",
   "header.language": "언어",
   "header.homeAria": "ZEFF AI 홈",
   "header.menuAria": "메뉴",
+  "header.sectionNavAria": "랜딩 섹션",
 
   "hero.badge": "공부와 일을 위한 AI 워크스페이스",
   "hero.title.line1": "공부와 일에 필요한 것,",
@@ -75,6 +79,21 @@ const ko = {
   "lecture.highlight1": "화면·음성 동시 분석",
   "lecture.highlight2": "판서·구두 설명 통합 요약",
   "lecture.highlight3": "복습 포인트 자동 추출",
+
+  "features.title": "이럴 때, Zeff",
+  "features.subtitle": "화면 안에서 실제로 매일 쓰이는 기능만 골라 담았습니다.",
+  "features.strip.summary.tag": "AI 요약",
+  "features.strip.summary.title": "자료를 넣으면 핵심만 남습니다",
+  "features.strip.lecture.tag": "강의 분석",
+  "features.strip.lecture.title": "영상과 음성을 한 장의 노트로",
+  "features.docs.tag": "문서 · 발표자료",
+  "features.docs.title": "핵심만 말하면 초안이 나옵니다",
+  "features.docs.desc":
+    "필요한 내용만 알려 주면 워드·PPT·엑셀 초안을 만들고, 우측 패널에서 바로 열 수 있습니다.",
+  "features.library.tag": "공유 서재",
+  "features.library.title": "내 자료와 팀 자료를 한곳에서",
+  "features.library.desc":
+    "개인·팀 서재를 나눠 관리하고, Book Chat으로 문서와 바로 대화할 수 있습니다.",
 
   "grid.title": "ZEFF AI 기능 모음",
   "grid.subtitle": "채팅, 파일 생성·미리보기, 다국어 워크스페이스까지 — 로그인 후 바로 사용하세요.",
@@ -152,6 +171,7 @@ const ko = {
   "login.title": "ZEFF AI 통합 계정 로그인",
   "login.subtitle": "로그인하면 어느 기기에서든 대화와 결과물을 이어서 사용할 수 있어요.",
   "login.google": "구글로 로그인",
+  "login.googlePasswordSetup": "구글 로그인 후 필요한 경우 ZEFF 비밀번호 설정을 이어서 완료합니다.",
   "login.apple": "Apple로 로그인 (준비 중)",
   "login.or": "또는 이메일로 계속하기",
   "login.email": "이메일",

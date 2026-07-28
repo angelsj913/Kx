@@ -37,9 +37,13 @@ const arCore: Partial<Record<keyof typeof ko, string>> = {
   "login.signup": "إنشاء حساب",
   "login.findPassword": "نسيت كلمة المرور؟",
   "nav.about": "نبذة",
+  "nav.skills": "المهارات",
+  "nav.features": "الميزات",
+  "nav.pricing": "الأسعار",
   "nav.download": "تنزيل",
   "nav.support": "الدعم",
   "header.support": "الدعم",
+  "header.sectionNavAria": "أقسام الصفحة",
 };
 const ar: Record<keyof typeof ko, string> = { ...en, ...arCore };
 

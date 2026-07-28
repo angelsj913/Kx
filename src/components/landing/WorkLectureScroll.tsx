@@ -177,7 +177,7 @@ export default function WorkLectureScroll() {
 
   if (reducedMotion) {
     return (
-      <section className="py-20">
+      <section id="office" className="scroll-mt-24 py-20">
         <div className="mx-auto max-w-6xl space-y-16 px-6">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{t("office.title")}</h2>
@@ -200,7 +200,7 @@ export default function WorkLectureScroll() {
   }
 
   return (
-    <section ref={sectionRef} className="relative h-[420vh]">
+    <section ref={sectionRef} id="office" className="relative h-[420vh] scroll-mt-24">
       <div className="sticky top-0 flex min-h-[100svh] items-center py-16">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-6 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="relative">

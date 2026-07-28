@@ -28,6 +28,12 @@ import Logo from "@/components/ui/Logo";
 
 const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
 
+const SECTION_LINKS = [
+  { href: "/#skills", labelKey: "nav.skills" as const },
+  { href: "/#features", labelKey: "nav.features" as const },
+  { href: "/#pricing", labelKey: "nav.pricing" as const },
+] as const;
+
 const MENU_LINKS = [
   { href: "/about", icon: Building2, labelKey: "nav.about" as const },
   { href: "/vision", icon: TrendingUp, labelKey: "nav.potential" as const },
@@ -99,6 +105,18 @@ export default function Header() {
             <Link href="/" className="flex min-w-0 items-center overflow-hidden" aria-label={t("header.homeAria")}>
               <Logo size="lg" />
             </Link>
+
+            <nav className="ml-2 hidden items-center gap-1 lg:flex" aria-label={t("header.sectionNavAria")}>
+              {SECTION_LINKS.map(({ href, labelKey }) => (
+                <a
+                  key={href}
+                  href={href}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                >
+                  {t(labelKey)}
+                </a>
+              ))}
+            </nav>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -173,6 +191,17 @@ export default function Header() {
           {menuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className={`overflow-hidden border-b ${menuSurface}`}>
               <nav className="mx-auto flex max-w-6xl flex-col px-4 py-4 sm:px-6">
+                {SECTION_LINKS.map(({ href, labelKey }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300"
+                  >
+                    {t(labelKey)}
+                  </a>
+                ))}
+
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">
                     <Icon className="h-4 w-4" />

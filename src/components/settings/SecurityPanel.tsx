@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { signOut } from "next-auth/react";
-import { KeyRound, ShieldCheck, LogOut, MonitorSmartphone, Loader2 } from "lucide-react";
+import { signIn, signOut } from "next-auth/react";
+import { KeyRound, ShieldCheck, LogOut, MonitorSmartphone, Loader2, Link2 } from "lucide-react";
 import { useAppLanguage, type AppLanguage } from "@/lib/i18n";
 
 type SecCopy = {
@@ -15,6 +15,16 @@ type SecCopy = {
   pwCodeSent: string;
   pwSuccess: string;
   pwGoogleOnly: string;
+  accountsTitle: string;
+  accountsDesc: string;
+  googleProvider: string;
+  googleLinked: string;
+  googleNotLinked: string;
+  googleLink: string;
+  googleUnlink: string;
+  googleUnlinked: string;
+  googleSetPassword: string;
+  googleUnlinkPasswordRequired: string;
   twoFaTitle: string;
   twoFaDesc: string;
   statusOn: string;
@@ -48,6 +58,16 @@ const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy }
     pwCodeSent: "이메일로 인증번호를 보냈어요. 3분 안에 입력해 주세요.",
     pwSuccess: "비밀번호가 변경되었습니다.",
     pwGoogleOnly: "구글 로그인 계정입니다. 비밀번호는 구글 계정에서 관리해 주세요.",
+    accountsTitle: "연결된 계정",
+    accountsDesc: "Google 계정을 연결하면 다음 로그인부터 Google로도 접속할 수 있습니다.",
+    googleProvider: "Google",
+    googleLinked: "연결됨",
+    googleNotLinked: "연결 안 됨",
+    googleLink: "Google 연결",
+    googleUnlink: "연결 해제",
+    googleUnlinked: "Google 연결을 해제했습니다.",
+    googleSetPassword: "비밀번호 설정하기",
+    googleUnlinkPasswordRequired: "Google 연결을 해제하려면 먼저 비밀번호를 설정해 주세요.",
     twoFaTitle: "2단계 인증",
     twoFaDesc: "로그인할 때 이메일로 받은 6자리 코드를 추가로 입력합니다.",
     statusOn: "사용 중",
@@ -77,6 +97,16 @@ const COPY: Partial<Record<AppLanguage, SecCopy>> & { en: SecCopy; ko: SecCopy }
     pwCodeSent: "We emailed you a code. Enter it within 3 minutes.",
     pwSuccess: "Your password has been changed.",
     pwGoogleOnly: "This is a Google account. Manage your password in your Google account.",
+    accountsTitle: "Connected accounts",
+    accountsDesc: "Connect Google so you can sign in with Google next time.",
+    googleProvider: "Google",
+    googleLinked: "Connected",
+    googleNotLinked: "Not connected",
+    googleLink: "Connect Google",
+    googleUnlink: "Unlink",
+    googleUnlinked: "Google has been unlinked.",
+    googleSetPassword: "Set a password",
+    googleUnlinkPasswordRequired: "Set a password before unlinking Google.",
     twoFaTitle: "Two-factor authentication",
     twoFaDesc: "Enter a 6-digit code emailed to you each time you sign in.",
     statusOn: "On",
@@ -109,6 +139,10 @@ type RecentLogin = {
 type SecurityState = {
   twoFactorEnabled: boolean;
   hasPassword: boolean;
+  google: {
+    linked: boolean;
+    email?: string;
+  };
   recentLogins: RecentLogin[];
 };
 
@@ -160,13 +194,33 @@ export default function SecurityPanel() {
   const [twoFaBusy, setTwoFaBusy] = useState(false);
   const [twoFaNotice, setTwoFaNotice] = useState("");
 
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleNotice, setGoogleNotice] = useState("");
+
   const [logoutBusy, setLogoutBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/account/security");
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) setState(data as SecurityState);
+      const [securityRes, authMethodsRes] = await Promise.all([
+        fetch("/api/account/security"),
+        fetch("/api/account/auth-methods"),
+      ]);
+      const [securityData, authMethodsData] = await Promise.all([
+        securityRes.json().catch(() => ({})),
+        authMethodsRes.json().catch(() => ({})),
+      ]);
+      if (securityRes.ok && authMethodsRes.ok) {
+        setState({
+          ...(securityData as Omit<SecurityState, "google">),
+          hasPassword: !!authMethodsData?.hasPassword,
+          google: {
+            linked: !!authMethodsData?.google?.linked,
+            ...(authMethodsData?.google?.email
+              ? { email: String(authMethodsData.google.email) }
+              : {}),
+          },
+        });
+      }
     } catch {
       /* ignore — 화면은 로딩 상태 유지 */
     }
@@ -281,6 +335,33 @@ export default function SecurityPanel() {
       setError(c.genericError);
     } finally {
       setTwoFaBusy(false);
+    }
+  }
+
+  function onLinkGoogle() {
+    setError("");
+    setGoogleNotice("");
+    setGoogleBusy(true);
+    void signIn("google", { callbackUrl: "/app?settings=security" });
+  }
+
+  async function onUnlinkGoogle() {
+    setError("");
+    setGoogleNotice("");
+    setGoogleBusy(true);
+    try {
+      const res = await fetch("/api/account/oauth/google/unlink", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error === "password_required" ? c.googleUnlinkPasswordRequired : c.genericError);
+        return;
+      }
+      setGoogleNotice(c.googleUnlinked);
+      await load();
+    } catch {
+      setError(c.genericError);
+    } finally {
+      setGoogleBusy(false);
     }
   }
 
@@ -414,6 +495,78 @@ export default function SecurityPanel() {
           </form>
         ) : (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{c.pwGoogleOnly}</p>
+        )}
+      </section>
+
+      {/* 연결된 계정 */}
+      <section className={cardCls}>
+        <div className="flex items-center gap-2">
+          <Link2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+            {c.accountsTitle}
+          </h3>
+        </div>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{c.accountsDesc}</p>
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3 dark:border-slate-800 dark:bg-slate-800/40 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                {c.googleProvider}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  state.google.linked
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                    : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+                }`}
+              >
+                {state.google.linked ? c.googleLinked : c.googleNotLinked}
+              </span>
+            </div>
+            {state.google.email && (
+              <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                {state.google.email}
+              </p>
+            )}
+          </div>
+          {state.google.linked ? (
+            <button
+              type="button"
+              disabled={googleBusy || !state.hasPassword}
+              title={!state.hasPassword ? c.googleUnlinkPasswordRequired : undefined}
+              onClick={onUnlinkGoogle}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {googleBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {c.googleUnlink}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={googleBusy}
+              onClick={onLinkGoogle}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
+            >
+              {googleBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {c.googleLink}
+            </button>
+          )}
+        </div>
+        {!state.hasPassword && (
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {c.googleUnlinkPasswordRequired}{" "}
+            <a
+              href="/signup?from=google"
+              className="font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+            >
+              {c.googleSetPassword}
+            </a>
+          </p>
+        )}
+        {googleNotice && (
+          <p className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            {googleNotice}
+          </p>
         )}
       </section>
 

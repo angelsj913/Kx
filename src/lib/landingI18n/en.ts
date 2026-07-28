@@ -6,12 +6,16 @@ const en: Record<keyof typeof ko, string> = {
   "nav.prototype": "Prototypes in Development",
   "nav.download": "Download",
   "nav.support": "Support",
+  "nav.skills": "Skills",
+  "nav.features": "Features",
+  "nav.pricing": "Pricing",
 
   "header.support": "Support",
   "header.login": "Log in",
   "header.language": "Language",
   "header.homeAria": "ZEFF AI Home",
   "header.menuAria": "Menu",
+  "header.sectionNavAria": "Landing sections",
 
   "hero.badge": "An AI workspace for study and work",
   "hero.title.line1": "Everything you need to study and work,",
@@ -80,6 +84,21 @@ const en: Record<keyof typeof ko, string> = {
   "lecture.highlight1": "Simultaneous screen and audio analysis",
   "lecture.highlight2": "Unified summary of writing and spoken explanation",
   "lecture.highlight3": "Automatic extraction of review points",
+
+  "features.title": "This is where Zeff fits",
+  "features.subtitle": "We picked only the features people actually reach for every day.",
+  "features.strip.summary.tag": "AI Summary",
+  "features.strip.summary.title": "Drop in the material, keep what matters",
+  "features.strip.lecture.tag": "Lecture Analysis",
+  "features.strip.lecture.title": "Video and audio into one note",
+  "features.docs.tag": "Docs · Slides",
+  "features.docs.title": "Give the gist, get a draft",
+  "features.docs.desc":
+    "Tell it what you need and get Word, PPT, or Excel drafts — open them in the right panel to preview.",
+  "features.library.tag": "Shared Library",
+  "features.library.title": "Personal and team materials together",
+  "features.library.desc":
+    "Keep personal and team libraries separate, then chat with any document through Book Chat.",
 
   "grid.title": "The ZEFF AI feature set",
   "grid.subtitle": "Everything below is ready to use in your workspace the moment you log in.",
@@ -157,6 +176,7 @@ const en: Record<keyof typeof ko, string> = {
   "login.title": "Sign in to your ZEFF AI account",
   "login.subtitle": "Sign in to pick up your conversations and files on any device.",
   "login.google": "Continue with Google",
+  "login.googlePasswordSetup": "After Google sign-in, finish setting a ZEFF password if needed.",
   "login.apple": "Continue with Apple (coming soon)",
   "login.or": "or continue with email",
   "login.email": "Email",

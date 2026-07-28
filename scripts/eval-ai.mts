@@ -300,6 +300,30 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name, `${b64.length} chars`);
             passed++;
           } else fail(name, "empty docx");
+        } else if (c.type === "chat_panel_clamp") {
+          const { clampPanelWidth } = await import("../src/lib/chatPanelLayout.ts");
+          const input = c.input as {
+            containerWidth: number;
+            sidebarWidth: number;
+            panelWidth: number;
+            chatMin?: number;
+            panelMin?: number;
+            panelMax?: number;
+            gutter?: number;
+          };
+          const result = clampPanelWidth(input);
+          const widthOk =
+            c.expectWidth === undefined || result.width === Number(c.expectWidth);
+          const collapseOk = result.shouldCollapse === !!c.expectCollapse;
+          if (widthOk && collapseOk) {
+            pass(name, `width=${result.width} collapse=${result.shouldCollapse}`);
+            passed++;
+          } else {
+            fail(
+              name,
+              `width=${result.width} collapse=${result.shouldCollapse} (expected width=${String(c.expectWidth ?? "any")} collapse=${!!c.expectCollapse})`,
+            );
+          }
         } else if (c.type === "live_skip") {
           if (live && process.env.GEMINI_API_KEY) {
             pass(name, "live skipped in CI template");

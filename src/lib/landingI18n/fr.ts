@@ -6,12 +6,16 @@ const fr: Record<keyof typeof ko, string> = {
   "nav.prototype": "Prototypes en développement",
   "nav.download": "Télécharger",
   "nav.support": "Assistance",
+  "nav.skills": "Compétences",
+  "nav.features": "Fonctionnalités",
+  "nav.pricing": "Tarifs",
 
   "header.support": "Support",
   "header.login": "Connexion",
   "header.language": "Langue",
   "header.homeAria": "ZEFF AI Accueil",
   "header.menuAria": "Menu",
+  "header.sectionNavAria": "Sections de la page",
 
   "hero.badge": "Espace de travail IA nouvelle génération",
   "hero.title.line1": "Une IA qui travaille",
@@ -79,6 +83,21 @@ const fr: Record<keyof typeof ko, string> = {
   "lecture.highlight1": "Analyse simultanée de l'image et de l'audio",
   "lecture.highlight2": "Résumé unifié des notes au tableau et des explications orales",
   "lecture.highlight3": "Extraction automatique des points à réviser",
+
+  "features.title": "C'est là que Zeff intervient",
+  "features.subtitle": "Nous n'avons retenu que les fonctions réellement utilisées au quotidien.",
+  "features.strip.summary.tag": "Résumé IA",
+  "features.strip.summary.title": "Déposez le contenu, ne gardez que l'essentiel",
+  "features.strip.lecture.tag": "Analyse de cours",
+  "features.strip.lecture.title": "Vidéo et audio réunis en une seule note",
+  "features.docs.tag": "Documents · Présentations",
+  "features.docs.title": "Donnez l'essentiel, obtenez un brouillon",
+  "features.docs.desc":
+    "Indiquez simplement ce dont vous avez besoin pour obtenir des brouillons Word, PPT ou Excel, à ouvrir directement dans le panneau de droite pour les prévisualiser.",
+  "features.library.tag": "Bibliothèque partagée",
+  "features.library.title": "Vos documents et ceux de l'équipe, au même endroit",
+  "features.library.desc":
+    "Gérez séparément une bibliothèque personnelle et la bibliothèque partagée de l'espace de travail d'équipe, et discutez directement avec n'importe quel document via Book Chat.",
 
   "grid.title": "L'ensemble des fonctionnalités de ZEFF AI",
   "grid.subtitle": "Disponibles directement dans votre espace de travail dès la connexion.",
@@ -155,6 +174,7 @@ const fr: Record<keyof typeof ko, string> = {
   "login.title": "Connexion à votre compte unifié ZEFF AI",
   "login.subtitle": "Connectez-vous pour retrouver vos conversations et vos fichiers sur n'importe quel appareil.",
   "login.google": "Continuer avec Google",
+  "login.googlePasswordSetup": "Après la connexion Google, terminez la configuration d'un mot de passe ZEFF si nécessaire.",
   "login.apple": "Continuer avec Apple (bientôt disponible)",
   "login.or": "ou continuer avec un e-mail",
   "login.email": "E-mail",
