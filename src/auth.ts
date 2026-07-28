@@ -7,24 +7,38 @@ import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
+const authSecret =
+  process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || undefined;
+
+const googleClientId = process.env.AUTH_GOOGLE_ID?.trim();
+const googleClientSecret = process.env.AUTH_GOOGLE_SECRET?.trim();
+
+const googleProvider =
+  googleClientId && googleClientSecret
+    ? Google({
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+        // Same-email linking is allowed only because Google provider emails are verified.
+        allowDangerousEmailAccountLinking: true,
+        // Google 계정 이메일로 관리자 판별 — 이메일 scope 보장
+        authorization: {
+          params: {
+            scope: "openid email profile",
+            prompt: "select_account",
+            access_type: "online",
+            response_type: "code",
+          },
+        },
+      })
+    : null;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: authSecret,
   // 커스텀 도메인(www.zeffai.com)에서 세션 쿠키/호스트 검증이 깨지지 않도록
   trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google({
-      // Same-email linking is allowed only because Google provider emails are verified.
-      allowDangerousEmailAccountLinking: true,
-      // Google 계정 이메일로 관리자 판별 — 이메일 scope 보장
-      authorization: {
-        params: {
-          scope: "openid email profile",
-          prompt: "select_account",
-          access_type: "online",
-          response_type: "code",
-        },
-      },
-    }),
+    ...(googleProvider ? [googleProvider] : []),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
