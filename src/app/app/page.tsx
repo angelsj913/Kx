@@ -24,6 +24,7 @@ export default function AppWorkspace() {
   const [openLibrary, setOpenLibrary] = useState(false);
   const { sessions, loading, refetch, removeSession, createSession, upsertSession } = useSessions();
   const selectedForLoad = useRef(false);
+  const deepLinkHandled = useRef(false);
 
   const handleNewChat = useCallback(async () => {
     setMobileNav(false);
@@ -36,12 +37,16 @@ export default function AppWorkspace() {
   }, [createSession]);
 
   useEffect(() => {
+    if (deepLinkHandled.current) return;
+
     if (searchParams.get("newChat") === "1") {
+      deepLinkHandled.current = true;
       void handleNewChat();
       router.replace("/app");
       return;
     }
     if (searchParams.get("library") === "1") {
+      deepLinkHandled.current = true;
       setOpenLibrary(true);
       router.replace("/app");
     }
