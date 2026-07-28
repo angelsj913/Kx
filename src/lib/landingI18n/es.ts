@@ -108,6 +108,8 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.lead.pill3.title": "Archivos y biblioteca",
   "pricing.lead.pill3.desc": "Vista previa y almacenamiento se amplían con el plan.",
   "pricing.subtitle": "Elige el plan que se adapte a tus necesidades.",
+  "pricing.billingNote": "Pro y Professional se facturan cada 6 meses con renovación automática.",
+  "pricing.comingSoon": "Muy pronto",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Un punto de partida sin presión para explorar y realizar tareas básicas del día a día — suficiente para hacerse una idea real de lo que puede hacer el asistente principal de ZEFF AI.",
@@ -124,8 +126,8 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Unas 30 veces el límite del plan gratuito",
   "pricing.pro.desc":
     "Para quienes desean un entorno de trabajo más cómodo y recursos más flexibles. Suaviza el flujo de trabajo diario y ofrece notablemente más capacidad que el plan básico, disponible justo cuando la necesitas.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ mes",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6 meses",
   "pricing.pro.cta": "Suscribirse",
   "pricing.pro.bullet1": "Entorno de trabajo ampliado para tareas reales",
   "pricing.pro.bullet2": "Unas 30 veces el límite del plan gratuito",
@@ -139,8 +141,8 @@ const es: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Nuestro plan de mayor nivel para quienes lideran proyectos grandes y complejos y no quieren que los límites de recursos frenen sus ideas. Nuestro modelo de razonamiento más avanzado y su notable velocidad se integran por completo en tu forma de trabajar.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ mes",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6 meses",
   "pricing.professional.cta": "Suscribirse",
   "pricing.professional.bullet1": "Funciones Pro + límites ampliados",
   "pricing.professional.bullet2": "Unas 100 veces el límite del plan gratuito",

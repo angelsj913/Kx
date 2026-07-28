@@ -108,6 +108,8 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.lead.pill3.title": "Файлы и библиотека",
   "pricing.lead.pill3.desc": "Предпросмотр результатов и хранилище расширяются с планом.",
   "pricing.subtitle": "Выберите подходящий тариф.",
+  "pricing.billingNote": "Pro и Professional оплачиваются каждые 6 месяцев с автопродлением.",
+  "pricing.comingSoon": "Скоро",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Стартовый вариант для лёгкого знакомства и базовых повседневных задач. Позволяет без обязательств опробовать ключевые возможности ассистента ZEFF AI.",
@@ -124,8 +126,8 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Примерно в 30 раз больше лимита бесплатного плана",
   "pricing.pro.desc":
     "Тариф для тех, кому нужна более комфортная рабочая среда и гибкие ресурсы. Он делает повседневный рабочий процесс более плавным, органично предоставляя больше вычислительных ресурсов, чем базовая версия.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ мес",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6 мес",
   "pricing.pro.cta": "Оформить",
   "pricing.pro.bullet1": "Расширенная рабочая среда для реальных задач",
   "pricing.pro.bullet2": "Примерно в 30 раз больше лимита бесплатного плана",
@@ -139,8 +141,8 @@ const ru: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Топовый тариф для тех, кто ведёт крупные и сложные проекты и не хочет, чтобы ограничения ресурсов мешали воплощать идеи. Самая мощная модель рассуждений и впечатляющая скорость становятся частью вашей повседневной работы.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ мес",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6 мес",
   "pricing.professional.cta": "Оформить",
   "pricing.professional.bullet1": "Функции Pro + расширенные лимиты",
   "pricing.professional.bullet2": "Примерно в 100 раз больше лимита бесплатного плана",

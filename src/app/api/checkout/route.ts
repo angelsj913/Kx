@@ -38,9 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "알 수 없는 요금제입니다." }, { status: 400 });
     }
 
-    // 결제 주기: 연간(year)이면 연간가로 청구, 그 외는 월간. 연간가 미지원 플랜은 월간으로 폴백.
-    const isAnnual = body?.interval === "year" && plan.annualAmount != null;
-    const chargeAmount = isAnnual ? (plan.annualAmount as number) : plan.amount;
+    const chargeAmount = plan.amount;
 
     // 이미 유료 구독 중이면 결제를 새로 열지 않는다. 열면 구독이 2개가 되어 매달 두 번
     // 청구된다. grantedPlan(추천 보상)은 보지 않는다 — 보상으로 받은 사용자도 결제는 할 수 있어야 한다.
@@ -57,12 +55,10 @@ export async function POST(request: Request) {
 
     // 결제 불가 조건은 주문 발행 전에 거른다. 뒤로 미루면 결제할 수 없는 주문만
     // pending 으로 쌓인다.
-    const interval = isAnnual ? "year" : "month";
     const baseUrl = getBaseUrl();
     const widgetUrl = buildWidgetUrl({
       userId,
       plan: plan.id as "pro" | "professional",
-      interval,
       email: session?.user?.email ?? undefined,
       successUrl: `${baseUrl}/checkout/complete`,
       failureUrl: `${baseUrl}/checkout?plan=${plan.id}&canceled=1`,

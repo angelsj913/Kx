@@ -108,6 +108,8 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.lead.pill3.title": "Fichiers & bibliothèque",
   "pricing.lead.pill3.desc": "Aperçu des livrables et stockage étendus avec le plan.",
   "pricing.subtitle": "Choisissez le forfait adapté à vos besoins.",
+  "pricing.billingNote": "Pro et Professional sont facturés tous les 6 mois avec renouvellement automatique.",
+  "pricing.comingSoon": "Bientôt disponible",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Un point de départ tranquille pour explorer et gérer les tâches quotidiennes de base — de quoi se faire une véritable idée de ce que l'assistant central de ZEFF AI peut faire.",
@@ -124,8 +126,8 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Environ 30× le quota gratuit",
   "pricing.pro.desc":
     "Pour ceux qui veulent un peu plus de marge de manœuvre au travail. Il fluidifie le rythme quotidien des tâches, avec nettement plus de ressources que le plan de base — une capacité supplémentaire, disponible dès que vous en avez besoin.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ mois",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6 mois",
   "pricing.pro.cta": "S'abonner",
   "pricing.pro.bullet1": "Espace de travail élargi pour un usage réel",
   "pricing.pro.bullet2": "Environ 30× le quota gratuit",
@@ -139,8 +141,8 @@ const fr: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Notre forfait haut de gamme pour ceux qui pilotent de grands projets complexes et ne veulent pas que des limites de ressources freinent leurs idées. Notre modèle de raisonnement le plus puissant et sa vitesse remarquable s'intègrent naturellement à votre façon de travailler.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ mois",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6 mois",
   "pricing.professional.cta": "S'abonner",
   "pricing.professional.bullet1": "Fonctions Pro + limites étendues",
   "pricing.professional.bullet2": "Environ 100× le quota gratuit",

@@ -42,19 +42,19 @@ async function handle(params: Record<string, string>): Promise<NextResponse> {
   }
 
   if (type === PINGBACK_TYPE.PAYMENT) {
-    const match = params.goodsid ? planForProductId(params.goodsid) : undefined;
-    if (!match) {
+    const plan = params.goodsid ? planForProductId(params.goodsid) : undefined;
+    if (!plan) {
       console.error("paymentwall pingback: 알 수 없는 goodsid", { goodsid: params.goodsid });
       return new NextResponse("OK", { status: 200 });
     }
 
-    const def = PLANS[match.plan];
-    const amount = match.interval === "year" ? (def.annualAmount ?? def.amount) : def.amount;
+    const def = PLANS[plan];
+    const amount = def.amount;
 
     // 결제창을 연 시점의 주문을 찾아 잇는다. 없으면 만든다 — 돈은 이미 받았으므로
     // 주문 기록이 없다는 이유로 권한 부여를 거르면 안 된다.
     const pending = await prisma.order.findFirst({
-      where: { userId, plan: match.plan, status: "pending" },
+      where: { userId, plan, status: "pending" },
       orderBy: { createdAt: "desc" },
     });
 
@@ -64,7 +64,7 @@ async function handle(params: Record<string, string>): Promise<NextResponse> {
         data: {
           merchantUid,
           userId,
-          plan: match.plan,
+          plan,
           amount,
           currency: def.currency,
           status: "pending",

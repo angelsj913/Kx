@@ -524,7 +524,7 @@ const KO = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "결제창을 준비하는 중...",
   "checkout.subscribe": "구독",
-  "checkout.perMonth": "/ 월",
+  "checkout.perPeriod": "/ 6개월",
   "checkout.orderSummary": "주문 요약",
   "checkout.stubNote": "결제 플랫폼 연동 전입니다. 아래 버튼으로 결제 완료를 시뮬레이션하면 선택한 요금제 권한이 계정에 자동 부여됩니다.",
   "checkout.completeSim": "결제 완료 처리하기",
@@ -1041,7 +1041,7 @@ const EN: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "Preparing checkout...",
   "checkout.subscribe": "Subscribe",
-  "checkout.perMonth": "/ mo",
+  "checkout.perPeriod": "/ 6 mo",
   "checkout.orderSummary": "Order summary",
   "checkout.stubNote": "Payment platform is not fully connected yet. Completing below will simulate payment and apply the plan to your account.",
   "checkout.completeSim": "Complete payment (simulate)",
@@ -1537,7 +1537,7 @@ const JA: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "決済画面を準備しています...",
   "checkout.subscribe": "購読",
-  "checkout.perMonth": "/ 月",
+  "checkout.perPeriod": "/ 6か月",
   "checkout.orderSummary": "注文概要",
   "checkout.stubNote": "決済プラットフォーム連携前です。下のボタンで決済完了をシミュレートすると、選択したプランの権限が自動的にアカウントに付与されます。",
   "checkout.completeSim": "決済完了処理する",
@@ -2033,7 +2033,7 @@ const ZH: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "正在准备结算页面...",
   "checkout.subscribe": "订阅",
-  "checkout.perMonth": "/ 月",
+  "checkout.perPeriod": "/ 6か月",
   "checkout.orderSummary": "订单摘要",
   "checkout.stubNote": "支付平台尚未完全接入。点击下方按钮模拟完成支付，将自动为您的账户授予所选套餐权限。",
   "checkout.completeSim": "模拟完成支付",
@@ -2529,7 +2529,7 @@ const RU: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "Подготовка оформления заказа...",
   "checkout.subscribe": "Подписаться",
-  "checkout.perMonth": "/ мес",
+  "checkout.perPeriod": "/ 6 мес",
   "checkout.orderSummary": "Сводка заказа",
   "checkout.stubNote": "Платёжная платформа ещё не подключена. Нажатие кнопки ниже симулирует завершение оплаты и автоматически применит выбранный тариф к вашему аккаунту.",
   "checkout.completeSim": "Симулировать оплату",
@@ -3025,7 +3025,7 @@ const DE: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "Checkout wird vorbereitet...",
   "checkout.subscribe": "Abonnieren",
-  "checkout.perMonth": "/ Monat",
+  "checkout.perPeriod": "/ 6 Monate",
   "checkout.orderSummary": "Bestellübersicht",
   "checkout.stubNote": "Die Zahlungsplattform ist noch nicht vollständig angebunden. Mit der Schaltfläche unten wird die Zahlung simuliert und der gewählte Plan automatisch Ihrem Konto zugewiesen.",
   "checkout.completeSim": "Zahlung simulieren",
@@ -3521,7 +3521,7 @@ const FR: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "Préparation du paiement...",
   "checkout.subscribe": "S'abonner",
-  "checkout.perMonth": "/ mois",
+  "checkout.perPeriod": "/ 6 mois",
   "checkout.orderSummary": "Résumé de la commande",
   "checkout.stubNote": "La plateforme de paiement n'est pas encore entièrement connectée. Le bouton ci-dessous simule le paiement et applique automatiquement le forfait choisi à votre compte.",
   "checkout.completeSim": "Simuler le paiement",
@@ -4017,7 +4017,7 @@ const ES: Record<keyof typeof KO, string> = {
   // --- 결제 페이지 (src/app/checkout/page.tsx) ---
   "checkout.preparing": "Preparando el pago...",
   "checkout.subscribe": "Suscribirse",
-  "checkout.perMonth": "/ mes",
+  "checkout.perPeriod": "/ 6 meses",
   "checkout.orderSummary": "Resumen del pedido",
   "checkout.stubNote": "La plataforma de pago aún no está totalmente conectada. El botón de abajo simula el pago y aplica automáticamente el plan elegido a tu cuenta.",
   "checkout.completeSim": "Simular pago completado",

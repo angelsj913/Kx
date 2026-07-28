@@ -8,15 +8,13 @@
  * 서버 전용 — 시크릿 키를 읽으므로 클라이언트 컴포넌트에서 import 하지 말 것.
  */
 import crypto from "crypto";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { BILLING_PERIOD_MONTHS, PLANS, type PlanId } from "@/lib/plans";
 
 /** 공식 라이브러리 Config.js: WIDGET_BASE_URL + '/' + GOODS_CONTROLLER */
 const WIDGET_URL = "https://api.paymentwall.com/api/subscription";
 
 /** Config.js DEFAULT_SIGNATURE_VERSION = 3 (SHA256). 2는 MD5로 레거시다. */
 const SIGN_VERSION = 3;
-
-export type BillingInterval = "month" | "year";
 
 export type PaymentwallConfig = {
   projectKey: string;
@@ -76,9 +74,6 @@ export function verifyPingbackSignature(params: Record<string, string>): boolean
   if (!sig) return false;
 
   const version = Number(params.sign_version) || SIGN_VERSION;
-  // 대시보드는 v3(SHA256)로 설정돼 있어야 한다. v2(MD5)가 들어오면 설정이 바뀌었거나
-  // 다운그레이드를 시도하는 요청이므로 드러나게 남긴다. 검증 자체는 계속 진행한다 —
-  // 여기서 막았다가 Paymentwall 이 특정 이벤트만 v2 로 보내면 결제가 조용히 끊긴다.
   if (version !== SIGN_VERSION) {
     console.warn("paymentwall pingback: 예상과 다른 서명 버전", {
       received: version,
@@ -91,34 +86,36 @@ export function verifyPingbackSignature(params: Record<string, string>): boolean
 }
 
 /**
- * 플랜 × 주기 → Paymentwall 상품 id.
- * 구독 상품은 id 가 안정적이어야 하므로 주문번호가 아니라 플랜에서 파생시킨다.
- * pingback 의 goodsid 로 되돌아오며, 이 값으로 어떤 플랜이 결제됐는지 역산한다.
+ * 플랜 → Paymentwall 상품 id (6개월 구독).
+ * pingback goodsid 로 어떤 플랜이 결제됐는지 역산한다.
  */
-export function productIdFor(plan: Exclude<PlanId, "free">, interval: BillingInterval): string {
-  return `${plan}_${interval}`;
+export function productIdFor(plan: Exclude<PlanId, "free">): string {
+  return `${plan}_6month`;
 }
 
-/** goodsid → 플랜·주기 역방향 조회. 알 수 없는 값이면 undefined. */
-export function planForProductId(
-  goodsId: string,
-): { plan: Exclude<PlanId, "free">; interval: BillingInterval } | undefined {
+/** 이전 월/연 SKU — 기존 구독 pingback 호환 */
+const LEGACY_PRODUCT_IDS: Record<string, Exclude<PlanId, "free">> = {
+  pro_month: "pro",
+  pro_year: "pro",
+  professional_month: "professional",
+  professional_year: "professional",
+};
+
+/** goodsid → 플랜 역방향 조회. 알 수 없는 값이면 undefined. */
+export function planForProductId(goodsId: string): Exclude<PlanId, "free"> | undefined {
   for (const plan of ["pro", "professional"] as const) {
-    for (const interval of ["month", "year"] as const) {
-      if (productIdFor(plan, interval) === goodsId) return { plan, interval };
-    }
+    if (productIdFor(plan) === goodsId) return plan;
   }
-  return undefined;
+  return LEGACY_PRODUCT_IDS[goodsId];
 }
 
 /**
  * 결제 위젯 URL 생성.
- * amount 는 통화의 주 단위로 보낸다 — 우리 plans.ts 는 최소 단위(센트)로 저장하므로 100으로 나눈다.
+ * amount 는 통화의 주 단위로 보낸다 — plans.ts 는 최소 단위(센트)로 저장하므로 100으로 나눈다.
  */
 export function buildWidgetUrl(opts: {
   userId: string;
   plan: Exclude<PlanId, "free">;
-  interval: BillingInterval;
   email?: string;
   successUrl: string;
   failureUrl: string;
@@ -127,7 +124,7 @@ export function buildWidgetUrl(opts: {
   if (!config) return null;
 
   const def = PLANS[opts.plan];
-  const minorUnits = opts.interval === "year" ? def.annualAmount : def.amount;
+  const minorUnits = def.amount;
   if (minorUnits == null) return null;
 
   const params: SignParams = {
@@ -137,10 +134,10 @@ export function buildWidgetUrl(opts: {
     amount: (minorUnits / 100).toFixed(2),
     currencyCode: def.currency.toUpperCase(),
     ag_name: `ZEFF AI ${def.name}`,
-    ag_external_id: productIdFor(opts.plan, opts.interval),
+    ag_external_id: productIdFor(opts.plan),
     ag_type: "subscription",
-    ag_period_length: 1,
-    ag_period_type: opts.interval,
+    ag_period_length: BILLING_PERIOD_MONTHS,
+    ag_period_type: "month",
     ag_recurring: 1,
     success_url: opts.successUrl,
     failure_url: opts.failureUrl,

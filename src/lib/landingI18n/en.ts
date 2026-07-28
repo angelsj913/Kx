@@ -110,6 +110,8 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.lead.pill3.title": "Files & library",
   "pricing.lead.pill3.desc": "Preview generated artifacts and expand knowledge-base storage as you upgrade.",
   "pricing.subtitle": "Choose the plan that fits your needs.",
+  "pricing.billingNote": "Pro and Professional are billed every 6 months with auto-renewal.",
+  "pricing.comingSoon": "Coming soon",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "A relaxed starting point for casual exploration and everyday basics — enough to get a genuine feel for what ZEFF AI's core assistant can do.",
@@ -126,8 +128,8 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "About 30× free usage allowance",
   "pricing.pro.desc":
     "Built for anyone who wants a bit more room to breathe while they work. It smooths out the everyday rhythm of your tasks, with noticeably more headroom than the basic plan — extra capacity that's simply there when you need it.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ mo",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6 mo",
   "pricing.pro.cta": "Subscribe",
   "pricing.pro.bullet1": "Expanded workspace for real work",
   "pricing.pro.bullet2": "About 30× free usage allowance",
@@ -141,8 +143,8 @@ const en: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Our top-tier plan for anyone leading large, complex projects who doesn't want resource limits getting in the way of an idea. Our deepest reasoning model and its remarkable speed become part of how you naturally work.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ mo",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6 mo",
   "pricing.professional.cta": "Subscribe",
   "pricing.professional.bullet1": "Pro features + higher limits",
   "pricing.professional.bullet2": "About 100× free usage allowance",

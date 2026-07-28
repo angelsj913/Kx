@@ -3,22 +3,20 @@
  */
 export type PlanId = "free" | "pro" | "professional";
 
+/** 유료 플랜 결제·갱신 주기(월). Paymentwall ag_period_length 와 UI에 공유. */
+export const BILLING_PERIOD_MONTHS = 6;
+
 export interface PlanDef {
   id: PlanId;
   name: string;
   /** checkout / 결제창 표시명 */
   label: string;
   /**
-   * 월간 결제액 — 통화의 최소 단위. USD 는 센트(700 = $7), KRW 는 원(zero-decimal).
-   * 이 규칙을 지키면 통화가 섞여도 amount 하나로 표현된다.
+   * 결제 주기(6개월) 청구액 — 통화의 최소 단위. USD 는 센트(3500 = $35), KRW 는 원(zero-decimal).
    */
   amount: number;
-  /** 연간 결제액(최소 단위). 2개월 무료 관행 = 월×10. free/미지원은 null. */
-  annualAmount: number | null;
   currency: string;
   priceLabel: string;
-  /** 연간 표시가 (예: "$70"). 없으면 null. */
-  annualPriceLabel: string | null;
   periodLabel: string;
   description: string;
   bullets: string[];
@@ -54,10 +52,8 @@ export const PLANS: Record<PlanId, PlanDef> = {
     name: "free",
     label: "free",
     amount: 0,
-    annualAmount: null,
     currency: "usd",
     priceLabel: "$0",
-    annualPriceLabel: null,
     periodLabel: "/월",
     description: "가볍게 시작해 보는 기본 플랜",
     bullets: [
@@ -87,12 +83,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "pro",
     name: "Pro",
     label: "Pro",
-    amount: 700,
-    annualAmount: 7000,
+    amount: 3500,
     currency: "usd",
-    priceLabel: "$7",
-    annualPriceLabel: "$70",
-    periodLabel: "/월",
+    priceLabel: "$35",
+    periodLabel: "/6개월",
     description: "업무·학습을 본격적으로 돌리는 실무 플랜",
     bullets: [
       "실무에 맞춘 확장 작업 환경",
@@ -122,12 +116,10 @@ export const PLANS: Record<PlanId, PlanDef> = {
     id: "professional",
     name: "Professional",
     label: "Professional",
-    amount: 1000,
-    annualAmount: 10000,
+    amount: 5000,
     currency: "usd",
-    priceLabel: "$10",
-    annualPriceLabel: "$100",
-    periodLabel: "/월",
+    priceLabel: "$50",
+    periodLabel: "/6개월",
     description: "정밀 라우트와 시험 기능을 쓰는 프리미엄 플랜",
     bullets: [
       "Pro 기능 + 확장 한도",

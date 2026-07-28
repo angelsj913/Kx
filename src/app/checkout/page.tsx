@@ -15,10 +15,8 @@ function CheckoutInner() {
   const params = useSearchParams();
   const router = useRouter();
   const planId = params.get("plan") ?? "";
-  const interval = params.get("interval") === "year" ? "year" : "month";
   const canceled = params.get("canceled") === "1";
   const plan = isPlanId(planId) && planId !== "free" ? PLANS[planId as PlanId] : undefined;
-  const isAnnual = interval === "year" && plan?.annualAmount != null;
 
   // 앱·랜딩·결제창이 공유하는 languageStore 기반 (설정 언어는 아래 useEffect가 동기화)
   const ct = useT();
@@ -63,13 +61,13 @@ function CheckoutInner() {
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: planId, interval }),
+          body: JSON.stringify({ plan: planId }),
         });
         const data = await res.json();
         if (ignore) return;
         if (res.status === 401 || data?.needLogin) {
           router.replace(
-            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}&interval=${interval}`)}`,
+            `/login?callbackUrl=${encodeURIComponent(`/checkout?plan=${planId}`)}`,
           );
           return;
         }
@@ -94,9 +92,7 @@ function CheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
-  const amount = plan
-    ? formatAmount(isAnnual ? (plan.annualAmount as number) : plan.amount, plan.currency)
-    : "";
+  const amount = plan ? formatAmount(plan.amount, plan.currency) : "";
 
   function goComplete() {
     if (!merchantUid || paying) return;
@@ -138,7 +134,7 @@ function CheckoutInner() {
           </h1>
           {plan && (
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {amount} {ct("checkout.perMonth")}
+              {amount} {ct("checkout.perPeriod")}
             </p>
           )}
 

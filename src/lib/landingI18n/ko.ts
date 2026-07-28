@@ -105,6 +105,8 @@ const ko = {
   "pricing.lead.pill3.title": "문서·서재 확장",
   "pricing.lead.pill3.desc": "생성한 자료 미리보기와 지식 베이스 저장 공간이 플랜에 맞게 확장됩니다.",
   "pricing.subtitle": "필요에 맞는 플랜을 선택하세요.",
+  "pricing.billingNote": "Pro · Professional 유료 플랜은 6개월 단위로 결제·자동 갱신됩니다.",
+  "pricing.comingSoon": "곧 오픈",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "개인적인 탐색과 기본적인 일상 업무에 부담 없이 적합한 스타터 구성입니다. ZEFF AI의 핵심적인 어시스턴트 기능을 가볍게 경험해보실 수 있습니다.",
@@ -121,8 +123,8 @@ const ko = {
   "pricing.pro.badge": "무료 대비 약 30배 이용량",
   "pricing.pro.desc":
     "조금 더 몰입감 있는 작업 환경과 넉넉한 유연성이 필요한 분들을 위한 플랜입니다. 일상의 루틴한 업무 흐름을 한결 부드럽게 만들어 주며, 기본 환경보다 한층 더 여유로운 연산 자원이 유기적으로 지원됩니다.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ 월",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6개월",
   "pricing.pro.cta": "결제하기",
   "pricing.pro.bullet1": "실무에 맞춘 확장 작업 환경",
   "pricing.pro.bullet2": "무료 대비 약 30배 이용량",
@@ -136,8 +138,8 @@ const ko = {
   "pricing.professional.badge2": "정밀 AI 라우트 이용",
   "pricing.professional.desc":
     "깊은 분석과 시험·학습 도구까지 폭넓게 쓰는 분을 위한 상위 플랜입니다. 다중 AI 라우트와 넉넉한 이용량으로 작업 흐름을 이어 갑니다.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ 월",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6개월",
   "pricing.professional.cta": "결제하기",
   "pricing.professional.bullet1": "Pro 기능 + 확장 한도",
   "pricing.professional.bullet2": "무료 대비 약 100배 이용량",

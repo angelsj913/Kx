@@ -108,6 +108,8 @@ const de: Record<keyof typeof ko, string> = {
   "pricing.lead.pill3.title": "Dateien & Bibliothek",
   "pricing.lead.pill3.desc": "Vorschau und Speicher wachsen mit dem Plan.",
   "pricing.subtitle": "Wählen Sie den passenden Plan.",
+  "pricing.billingNote": "Pro und Professional werden alle 6 Monate abgerechnet und verlängern sich automatisch.",
+  "pricing.comingSoon": "Demnächst",
   "pricing.free.name": "free",
   "pricing.free.desc":
     "Ein entspannter Einstieg für lockeres Ausprobieren und grundlegende Alltagsaufgaben. So bekommen Sie einen echten Eindruck davon, was der ZEFF-AI-Kernassistent kann.",
@@ -124,8 +126,8 @@ const de: Record<keyof typeof ko, string> = {
   "pricing.pro.badge": "Rund das 30-Fache des kostenlosen Kontingents",
   "pricing.pro.desc":
     "Für alle, die etwas mehr Spielraum beim Arbeiten wünschen. Er glättet den täglichen Arbeitsablauf und stellt spürbar mehr Ressourcen bereit als der Basisplan — zusätzliche Kapazität, die einfach da ist, wenn Sie sie brauchen.",
-  "pricing.pro.price": "$7",
-  "pricing.pro.period": "/ Monat",
+  "pricing.pro.price": "$35",
+  "pricing.pro.period": "/ 6 Monate",
   "pricing.pro.cta": "Abonnieren",
   "pricing.pro.bullet1": "Erweiterter Arbeitsbereich für den echten Einsatz",
   "pricing.pro.bullet2": "Rund das 30-Fache des kostenlosen Kontingents",
@@ -139,8 +141,8 @@ const de: Record<keyof typeof ko, string> = {
   "pricing.professional.badge2": "Precision AI routing",
   "pricing.professional.desc":
     "Unser Top-Plan für alle, die große, komplexe Projekte leiten und keine Ressourcengrenzen wollen, die Ideen im Weg stehen. Unser leistungsstärkstes Reasoning-Modell und seine bemerkenswerte Geschwindigkeit werden Teil Ihres Arbeitsalltags.",
-  "pricing.professional.price": "$10",
-  "pricing.professional.period": "/ Monat",
+  "pricing.professional.price": "$50",
+  "pricing.professional.period": "/ 6 Monate",
   "pricing.professional.cta": "Abonnieren",
   "pricing.professional.bullet1": "Pro-Funktionen + erweiterte Limits",
   "pricing.professional.bullet2": "Rund das 100-Fache des kostenlosen Kontingents",
