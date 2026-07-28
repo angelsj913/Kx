@@ -1,5 +1,7 @@
 /** 하이브리드 RAG 점수 — 벡터 + BM25 스타일 키워드 (plan 021) */
 
+import type { EvidenceItem } from "@/lib/ragWeb";
+
 /** 벡터+키워드 하이브리드 점수 하한 — 미달 청크는 검색 결과에서 제외 */
 export const MIN_RETRIEVAL_SCORE = Number(process.env.MIN_RETRIEVAL_SCORE ?? "0.35");
 
@@ -110,4 +112,11 @@ export function hybridScore(vectorScore: number, keywordScore: number): number {
 
 export function passesRetrievalThreshold(score: number): boolean {
   return score >= MIN_RETRIEVAL_SCORE;
+}
+
+export function splitSourcesByType(items: EvidenceItem[]) {
+  return {
+    web: items.filter((item) => item.sourceType === "web"),
+    materials: items.filter((item) => item.sourceType !== "web"),
+  };
 }
