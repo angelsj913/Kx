@@ -30,6 +30,7 @@ export default function Sidebar({
 
   return (
     <aside
+      data-sidebar
       className={`flex h-full max-h-[100dvh] shrink-0 flex-col border-r border-[var(--workspace-border)] bg-[var(--workspace-surface)] transition-[width] duration-300 ${
         isCollapsed ? "w-16" : "w-72"
       }`}

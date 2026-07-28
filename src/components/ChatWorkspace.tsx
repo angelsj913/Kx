@@ -56,6 +56,7 @@ import ChatRightPanel, {
   type TerminalLine,
 } from "./ChatRightPanel";
 import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
+import { clampPanelWidth } from "@/lib/chatPanelLayout";
 
 // react-markdown + remark/rehype-katex 체인을 초기 번들에서 분리
 const ChatMarkdown = dynamic(() => import("./ChatMarkdown"));
@@ -508,11 +509,55 @@ export default function ChatWorkspace({
   const [panelOpen, setPanelOpen] = useState(() => readStoredOpen());
   const [mobileSheet, setMobileSheet] = useState(false);
   const [panelWidth, setPanelWidth] = useState(() => readStoredWidth());
+  const panelWidthRef = useRef(panelWidth);
+  const panelOpenRef = useRef(panelOpen);
   const [panelTab, setPanelTab] = useState<PanelTab>("files");
   const [previewArtifact, setPreviewArtifact] = useState<ChatArtifact | null>(null);
   const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const dragging = useRef(false);
+
+  useEffect(() => {
+    panelWidthRef.current = panelWidth;
+  }, [panelWidth]);
+
+  useEffect(() => {
+    panelOpenRef.current = panelOpen;
+  }, [panelOpen]);
+
+  // 창/사이드바 폭 변화 시 패널 폭 재클램프 (채팅 최소 폭 보장)
+  useEffect(() => {
+    const apply = () => {
+      const shell = layoutRef.current;
+      const containerWidth = shell?.clientWidth ?? window.innerWidth;
+      const sidebarEl = document.querySelector<HTMLElement>("[data-sidebar]");
+      const sidebarWidth = shell ? 0 : (sidebarEl?.offsetWidth ?? 288);
+      const { width, shouldCollapse } = clampPanelWidth({
+        containerWidth,
+        sidebarWidth,
+        panelWidth: panelWidthRef.current,
+      });
+      if (shouldCollapse && panelOpenRef.current) {
+        setPanelOpen(false);
+        window.localStorage.setItem(PANEL_OPEN_KEY, "0");
+      } else if (width !== panelWidthRef.current) {
+        setPanelWidth(width);
+        window.localStorage.setItem(PANEL_WIDTH_KEY, String(width));
+      }
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    const shellEl = layoutRef.current;
+    let ro: ResizeObserver | null = null;
+    if (shellEl && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => apply());
+      ro.observe(shellEl);
+    }
+    return () => {
+      window.removeEventListener("resize", apply);
+      ro?.disconnect();
+    };
+  }, [panelOpen]);
 
   const pushTerminal = useCallback((text: string, level: TerminalLine["level"] = "info") => {
     setTerminalLines((prev) => [
@@ -1029,7 +1074,7 @@ export default function ChatWorkspace({
   }
 
   return (
-    <div ref={layoutRef} className="flex h-full min-w-0">
+    <div id="app-chat-shell" ref={layoutRef} className="flex h-full min-w-0">
       {/* 채팅 영역 */}
       <div className="flex min-w-0 flex-1 flex-col px-3 py-3 sm:px-5 sm:py-4">
         <div className="mb-2 flex items-center justify-end md:hidden">
@@ -1211,7 +1256,7 @@ export default function ChatWorkspace({
                     <img
                       src={m.fileUrl}
                       alt={m.text || t("artifact.image")}
-                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800"
+                      className="max-w-full h-auto w-full rounded-2xl border border-slate-200 dark:border-slate-800"
                     />
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <p className="text-sm text-slate-600 dark:text-slate-300">{m.text}</p>
