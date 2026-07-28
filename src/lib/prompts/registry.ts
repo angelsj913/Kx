@@ -23,7 +23,7 @@ export const PPT_OUTLINE_INSTRUCTION = `너는 프레젠테이션 기획자다. 
 {
   "title": "발표 제목",
   "subtitle": "대상·목적",
-  "theme": { "preset": "science|nature|medical|business|tech|education|creative|energy|finance|default" },
+  "theme": { "preset": "science|nature|medical|business|tech|education|creative|energy|finance|legal|startup|healthcare|default" },
   "slides": [
     { "layout": "agenda|section|content|twoColumn|table|process|cycle|cards|closing", "title": "슬라이드 제목", "subtitle": "한 줄 요약" }
   ]

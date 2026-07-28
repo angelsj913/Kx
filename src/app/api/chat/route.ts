@@ -111,6 +111,8 @@ export async function POST(request: Request) {
   let qualityTier: QualityTier = "medium";
   const uploads: File[] = [];
   let libraryItemIdsRaw: string[] = [];
+  let pptStage: "full" | "outline" | "fill" | null = null;
+  let pptOutlineJson: string | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
@@ -121,6 +123,17 @@ export async function POST(request: Request) {
     editMessageId = (form.get("editMessageId") as string) || null;
     qualityTier = parseQualityTier(form.get("qualityTier"));
     libraryItemIdsRaw = parseLibraryItemIds(form.get("libraryItemIds"));
+    const stageRaw = String(form.get("pptStage") ?? "").trim();
+    if (stageRaw === "outline" || stageRaw === "fill" || stageRaw === "full") {
+      pptStage = stageRaw;
+    } else if (form.get("confirmOutline") === "1") {
+      pptStage = "outline";
+    }
+    const outlineRaw = form.get("pptOutline");
+    if (typeof outlineRaw === "string" && outlineRaw.trim()) {
+      pptOutlineJson = outlineRaw.trim();
+      if (!pptStage) pptStage = "fill";
+    }
     for (const entry of form.getAll("files")) {
       if (entry instanceof File) uploads.push(entry);
     }
@@ -146,6 +159,15 @@ export async function POST(request: Request) {
     editMessageId = typeof body?.editMessageId === "string" ? body.editMessageId : null;
     qualityTier = parseQualityTier(body?.qualityTier);
     libraryItemIdsRaw = parseLibraryItemIds(body?.libraryItemIds);
+    if (body?.pptStage === "outline" || body?.pptStage === "fill" || body?.pptStage === "full") {
+      pptStage = body.pptStage;
+    } else if (body?.confirmOutline === true || body?.confirmOutline === "1") {
+      pptStage = "outline";
+    }
+    if (typeof body?.pptOutline === "string" && body.pptOutline.trim()) {
+      pptOutlineJson = body.pptOutline.trim();
+      if (!pptStage) pptStage = "fill";
+    }
   }
 
   // 재생성: 새 텍스트 없이 세션의 마지막 사용자 메시지를 그대로 재사용한다(아래에서 채움).
@@ -216,8 +238,10 @@ export async function POST(request: Request) {
     }
     modelTier = effectiveModelTier(getPlanOrFree(settings?.plan).modelTier, qualityTier);
     userLanguage = settings?.language ?? null;
+    const isPptFill = quickToolId === "ppt" && (pptStage === "fill" || !!pptOutlineJson);
     quota = await assertAndConsumeQuota(userId, quickToolId, {
       isNewSession: !sessionId,
+      skipToolQuota: isPptFill,
     });
   } catch (err) {
     await releaseReservations();
@@ -677,12 +701,31 @@ export async function POST(request: Request) {
             }
           }
 
+          const resolvedPptStage =
+            quickToolId === "ppt"
+              ? pptStage ?? (pptOutlineJson ? "fill" : "outline")
+              : undefined;
+
+          if (resolvedPptStage === "fill" && pptOutlineJson) {
+            try {
+              const { parsePptOutline } = await import("@/lib/pptOutline");
+              const draft = parsePptOutline(pptOutlineJson);
+              if (draft.sourceText.trim()) {
+                toolText = draft.sourceText.trim();
+              }
+            } catch {
+              /* keep toolText */
+            }
+          }
+
           const result = await runToolGeneration({
             toolId: quickToolId,
             text: toolText,
             userId,
             workspaceId: chatSession.workspaceId ?? null,
             modelTier,
+            pptStage: resolvedPptStage,
+            pptOutlineJson: pptOutlineJson ?? undefined,
             audio:
               quickTool?.inputType === "audio"
                 ? inlineFiles[0]
@@ -719,7 +762,10 @@ export async function POST(request: Request) {
               fileName = result.file.filename;
             }
           } else if (result.outputType === "structured") {
-            replyText = `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
+            replyText =
+              result.structuredKind === "pptOutline"
+                ? "PPT 구성을 잡았어요. 슬라이드 제목·순서를 확인한 뒤 만들기를 눌러 주세요."
+                : `${result.tool.short} 초안을 완성했어요. 아래에서 바로 확인하고 편집할 수 있어요.`;
             resultData = result.resultData;
             structuredKind = result.structuredKind;
           } else if (result.outputType === "pptx") {

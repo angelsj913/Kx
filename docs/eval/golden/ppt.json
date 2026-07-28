@@ -40,5 +40,34 @@
   { "id": "ppt-parse-5", "type": "ppt_parse", "input": { "title": "D", "slides": [{ "layout": "content", "title": "t", "bullets": ["long bullet one here", "long bullet two here", "long bullet three"] }, { "layout": "content", "title": "t2", "bullets": ["a", "b", "c"] }, { "layout": "closing", "title": "end" }] } },
   { "id": "ppt-parse-6", "type": "ppt_parse", "input": { "title": "E", "slides": [{ "layout": "agenda", "title": "목차", "bullets": ["1", "2", "3", "4", "5"] }, { "layout": "section", "title": "S" }, { "layout": "content", "title": "C", "bullets": ["x", "y", "z"] }, { "layout": "closing", "title": "Q" }] } },
   { "id": "ppt-parse-7", "type": "ppt_parse", "input": { "title": "F", "slides": [{ "layout": "table", "title": "T", "table": { "headers": ["H1", "H2"], "rows": [["a", "b"], ["c", "d"], ["e", "f"]] }, "bullets": ["note"] }, { "layout": "content", "title": "c", "bullets": ["1", "2", "3"] }, { "layout": "closing", "title": "end" }] } },
+  {
+    "id": "ppt-outline-parse-1",
+    "type": "ppt_outline_parse",
+    "sourceText": "법률 계약 교육",
+    "input": {
+      "title": "계약 실무",
+      "subtitle": "법무팀",
+      "theme": { "preset": "legal" },
+      "slides": [
+        { "layout": "agenda", "title": "목차", "subtitle": "개요" },
+        { "layout": "content", "title": "핵심 조항", "subtitle": "주의점" },
+        { "layout": "closing", "title": "마무리" }
+      ]
+    },
+    "expectSlides": 3,
+    "expectPreset": "legal"
+  },
+  {
+    "id": "ppt-outline-parse-2",
+    "type": "ppt_outline_parse",
+    "input": {
+      "title": "피치",
+      "themePreset": "startup",
+      "slides": [{ "layout": "section", "title": "문제" }],
+      "sourceText": "시드 투자 피치"
+    },
+    "expectSlides": 1,
+    "expectPreset": "startup"
+  },
   { "id": "ppt-live-skip", "type": "live_skip", "note": "2-pass PPT generation requires API" }
 ]

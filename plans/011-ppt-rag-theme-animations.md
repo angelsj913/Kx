@@ -24,7 +24,7 @@ User wants PPT with varied animations/colors and topic-matched templates. PPT qu
 
 ## RAG-external quality boosts (document in PR)
 
-1. User outline confirmation step (optional modal)
+1. User outline confirmation step (optional modal) — **DONE** (plan 019, inline panel)
 2. Reference PPT upload → extract colors/fonts
 3. Domain template JSON in `src/data/ppt-templates/*.json` — **DONE** (plan 018)
 

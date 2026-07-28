@@ -266,6 +266,14 @@ function seedPlanSteps(
       { id: "answer", label: t("panel.plan.step.answer"), status: "pending" },
     ];
   }
+  if (quickToolId === "ppt") {
+    return [
+      { id: "outline", label: t("panel.plan.step.outline"), status: "active" },
+      { id: "confirm", label: t("panel.plan.step.confirm"), status: "pending" },
+      { id: "fill", label: t("panel.plan.step.fill"), status: "pending" },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ];
+  }
   if (quickToolId) {
     return [
       { id: "tool", label: t("panel.plan.step.tool"), status: "active", detail: quickToolId },
@@ -317,6 +325,8 @@ function advancePlanSteps(
   ) {
     if (steps.some((s) => s.id === "answer")) return markThrough("answer");
     if (steps.some((s) => s.id === "generate")) return markThrough("generate");
+    if (steps.some((s) => s.id === "fill")) return markThrough("fill");
+    if (steps.some((s) => s.id === "outline")) return markThrough("outline");
     if (steps.some((s) => s.id === "tool")) return markThrough("tool");
     if (steps.some((s) => s.id === "save")) return markThrough("save");
   }
@@ -650,13 +660,19 @@ export default function ChatWorkspace({
 
   async function runGeneration(
     buildForm: () => FormData,
-    opts: { spokenTurn?: boolean; quickToolId?: string | null } = {},
+    opts: {
+      spokenTurn?: boolean;
+      quickToolId?: string | null;
+      preservePlan?: boolean;
+    } = {},
   ) {
     const spokenTurn = !!opts.spokenTurn;
     setError("");
     setLoading(true);
     setStatusKey("status.agent.selecting");
-    setPlanSteps(seedPlanSteps(opts.quickToolId ?? null, t));
+    if (!opts.preservePlan) {
+      setPlanSteps(seedPlanSteps(opts.quickToolId ?? null, t));
+    }
     setPanelTab((prev) => (prev === "terminal" ? prev : "plan"));
 
     const controller = new AbortController();
@@ -766,6 +782,16 @@ export default function ChatWorkspace({
             "ok",
           );
         }
+        if (doneMessage.structuredKind === "pptOutline") {
+          setPlanSteps((prev) => {
+            if (!prev.some((s) => s.id === "confirm")) return prev;
+            return prev.map((s) => {
+              if (s.id === "outline") return { ...s, status: "done" as const };
+              if (s.id === "confirm") return { ...s, status: "active" as const };
+              return s;
+            });
+          });
+        }
       } else {
         setPlanSteps((prev) => finishPlanSteps(prev, true));
       }
@@ -852,6 +878,7 @@ export default function ChatWorkspace({
         form.append("text", text);
         if (sessionId) form.append("sessionId", sessionId);
         if (quickToolId) form.append("quickToolId", quickToolId);
+        if (quickToolId === "ppt") form.append("pptStage", "outline");
         if (attachedLibrary.length) {
           form.append(
             "libraryItemIds",
@@ -862,6 +889,34 @@ export default function ChatWorkspace({
         return form;
       },
       { spokenTurn, quickToolId },
+    );
+  }
+
+  async function confirmPptFill(draft: import("@/lib/pptOutline").PptOutlineDraft) {
+    if (loading || !sessionId) return;
+    const userText = t("structured.pptOutline.confirmUserMsg");
+    setPlanSteps([
+      { id: "outline", label: t("panel.plan.step.outline"), status: "done" },
+      { id: "confirm", label: t("panel.plan.step.confirm"), status: "done" },
+      { id: "fill", label: t("panel.plan.step.fill"), status: "active" },
+      { id: "save", label: t("panel.plan.step.save"), status: "pending" },
+    ]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `local-${Date.now()}`, role: "user", text: userText },
+    ]);
+    pushTerminal("$ zeff ppt fill — confirmed outline", "info");
+    await runGeneration(
+      () => {
+        const form = new FormData();
+        form.append("text", userText);
+        form.append("sessionId", sessionId);
+        form.append("quickToolId", "ppt");
+        form.append("pptStage", "fill");
+        form.append("pptOutline", JSON.stringify(draft));
+        return form;
+      },
+      { quickToolId: "ppt", preservePlan: true },
     );
   }
 
@@ -1183,6 +1238,18 @@ export default function ChatWorkspace({
                     {(() => {
                       try {
                         const data = JSON.parse(m.resultData);
+                        if (m.structuredKind === "pptOutline") {
+                          return (
+                            <StructuredResultView
+                              key={m.id}
+                              id={m.id}
+                              kind="pptOutline"
+                              data={data}
+                              confirming={loading}
+                              onConfirmFill={confirmPptFill}
+                            />
+                          );
+                        }
                         return (
                           <StructuredResultView
                             key={m.id}

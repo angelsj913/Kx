@@ -8,6 +8,7 @@ import LectureNotesView from "./LectureNotesView";
 import ResearchDraftView from "./ResearchDraftView";
 import ExamAnalysisView from "./ExamAnalysisView";
 import PracticeSetView from "./PracticeSetView";
+import PptOutlineView from "./PptOutlineView";
 import type {
   MeetingMinutes,
   WeeklyReport,
@@ -17,6 +18,7 @@ import type {
   PracticeSet,
   MathGraph,
 } from "@/lib/structured";
+import type { PptOutlineDraft } from "@/lib/pptOutline";
 
 // Plotly가 window/canvas를 만지므로 SSR 불가 — 이 뷰만 예외적으로 dynamic import.
 const GraphView = dynamic(() => import("./GraphView"), {
@@ -33,7 +35,14 @@ type Props =
   | { id: string; kind: "researchDraft"; data: ResearchDraft }
   | { id: string; kind: "examAnalysis"; data: ExamAnalysis }
   | { id: string; kind: "practiceSet"; data: PracticeSet }
-  | { id: string; kind: "mathGraph"; data: MathGraph };
+  | { id: string; kind: "mathGraph"; data: MathGraph }
+  | {
+      id: string;
+      kind: "pptOutline";
+      data: PptOutlineDraft;
+      onConfirmFill?: (draft: PptOutlineDraft) => void;
+      confirming?: boolean;
+    };
 
 /** structuredKind에 맞는 편집기를 골라 렌더링한다. 항목이 바뀌면 호출부에서 key={id}로 리마운트시켜야 한다. */
 export default function StructuredResultView(props: Props) {
@@ -55,6 +64,15 @@ export default function StructuredResultView(props: Props) {
         <GraphErrorBoundary>
           <GraphView id={props.id} initial={props.data} />
         </GraphErrorBoundary>
+      );
+    case "pptOutline":
+      return (
+        <PptOutlineView
+          id={props.id}
+          initial={props.data}
+          onConfirmFill={props.onConfirmFill}
+          confirming={props.confirming}
+        />
       );
   }
 }

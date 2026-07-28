@@ -3,6 +3,8 @@
 
 import { extractJson } from "./fileTypes";
 import { sample2D, sample3D, generatePrimitive } from "./mathGraph";
+import type { PptOutlineDraft } from "./pptOutline";
+import { parsePptOutline } from "./pptOutline";
 
 export type StructuredKind =
   | "meeting"
@@ -11,7 +13,8 @@ export type StructuredKind =
   | "researchDraft"
   | "examAnalysis"
   | "practiceSet"
-  | "mathGraph";
+  | "mathGraph"
+  | "pptOutline";
 
 // ── 회의록 ──
 
@@ -472,7 +475,8 @@ export type StructuredData =
   | { kind: "researchDraft"; data: ResearchDraft }
   | { kind: "examAnalysis"; data: ExamAnalysis }
   | { kind: "practiceSet"; data: PracticeSet }
-  | { kind: "mathGraph"; data: MathGraph };
+  | { kind: "mathGraph"; data: MathGraph }
+  | { kind: "pptOutline"; data: PptOutlineDraft };
 
 export function parseStructured(kind: StructuredKind, raw: string): StructuredData {
   switch (kind) {
@@ -490,5 +494,7 @@ export function parseStructured(kind: StructuredKind, raw: string): StructuredDa
       return { kind, data: parsePracticeSet(raw) };
     case "mathGraph":
       return { kind, data: parseMathGraph(raw) };
+    case "pptOutline":
+      return { kind, data: parsePptOutline(raw) };
   }
 }

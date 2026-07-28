@@ -99,6 +99,27 @@ if (!existsSync(GOLDEN_DIR)) {
           parseDeck(JSON.stringify(c.input));
           pass(name);
           passed++;
+        } else if (c.type === "ppt_outline_parse") {
+          const { parsePptOutline } = await import("../src/lib/pptOutline.ts");
+          const draft = parsePptOutline(
+            JSON.stringify(c.input),
+            typeof c.sourceText === "string" ? c.sourceText : "",
+          );
+          const expectSlides = Number(c.expectSlides ?? 0);
+          const expectPreset = typeof c.expectPreset === "string" ? c.expectPreset : null;
+          if (
+            draft.slides.length === expectSlides &&
+            (expectPreset == null || draft.themePreset === expectPreset) &&
+            (typeof c.sourceText !== "string" || draft.sourceText === c.sourceText || !!draft.sourceText)
+          ) {
+            pass(name, `${draft.themePreset}/${draft.slides.length}`);
+            passed++;
+          } else {
+            fail(
+              name,
+              `slides=${draft.slides.length} preset=${draft.themePreset} source=${draft.sourceText.slice(0, 20)}`,
+            );
+          }
         } else if (c.type === "ppt_validate") {
           const { validateDeck } = await import("../src/lib/pptValidate.ts");
           const { parseDeck } = await import("../src/lib/pptx.ts");

@@ -113,7 +113,7 @@ Evidence verified at `9d8b25f`. Full table: [`plans/README.md`](../plans/README.
 ## 6. PPT/Excel/Word quality (beyond RAG)
 
 1. RAG-informed outline + footnotes — plan 011
-2. Optional user outline confirmation — future
+2. Optional user outline confirmation — plan 019
 3. Domain template library `src/data/ppt-templates/*.json` — plan 018
 
 ---
