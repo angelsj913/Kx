@@ -205,7 +205,7 @@ function normalizeMigrateUrl(url: string, region: string): string {
   return parsed.toString();
 }
 
-/** Transaction pooler (6543) — serverless runtime (Vercel) */
+/** Session pooler (5432) — serverless runtime (Vercel). Same pooler mode as migrate/build. */
 export function resolveRuntimeDatabaseUrl(
   raw?: string | null,
   region = DEFAULT_REGION,
@@ -221,18 +221,19 @@ export function resolveRuntimeDatabaseUrl(
 
   const directHost = extractSupabaseProjectRef(parsed.hostname);
   if (!directHost) {
-    if (isSupabasePoolerHost(parsed.hostname) && parsed.port === "5432") {
-      parsed.port = "6543";
-      appendQueryParams(parsed, { pgbouncer: "true", sslmode: "require", connect_timeout: "30" });
-      return parsed.toString();
+    if (isSupabasePoolerHost(parsed.hostname)) {
+      // Session mode (5432) — transaction pooler (6543) hit TLS errors on Vercel runtime.
+      parsed.port = "5432";
+      parsed.searchParams.delete("pgbouncer");
     }
     appendQueryParams(parsed, { sslmode: "require", connect_timeout: "30" });
     return parsed.toString();
   }
 
   parsed.hostname = poolerHost(region);
-  parsed.port = "6543";
-  appendQueryParams(parsed, { pgbouncer: "true", sslmode: "require", connect_timeout: "30" });
+  parsed.port = "5432";
+  parsed.searchParams.delete("pgbouncer");
+  appendQueryParams(parsed, { sslmode: "require", connect_timeout: "30" });
   return parsed.toString();
 }
 
