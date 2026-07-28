@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /** 야간 피드백 집계 — UserAiProfile 업데이트 */
 import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { resolveRuntimeDatabaseUrl } from "./supabaseDatabaseUrl.mjs";
 
 const { PrismaClient } = await import("../src/generated/prisma/client.js");
-const { PrismaNeon } = await import("@prisma/adapter-neon");
-const { neonConfig, Pool } = await import("@neondatabase/serverless");
-const ws = (await import("ws")).default;
 
-neonConfig.webSocketConstructor = ws;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaNeon(pool);
-const prisma = new PrismaClient({ adapter });
+const connectionString = resolveRuntimeDatabaseUrl();
+if (!connectionString) {
+  console.error("DATABASE_URL missing");
+  process.exit(1);
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 const { aggregateFeedbackForUser } = await import("../src/lib/userLearning.ts");
 
@@ -33,4 +35,3 @@ for (const { userId } of users) {
 
 console.log(`Aggregated profiles for ${ok}/${users.length} users`);
 await prisma.$disconnect();
-await pool.end();
