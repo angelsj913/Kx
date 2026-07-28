@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertRateLimit, RateLimitError } from "@/lib/rateLimit";
-import { requireSecurityAdmin, runAndPersistScan } from "@/lib/security/program";
+import { requireSecurityAdmin } from "@/lib/security/program";
+import { runAndPersistScan } from "@/lib/security/scan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
