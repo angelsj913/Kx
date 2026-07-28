@@ -17,10 +17,11 @@ export interface PptOutlineDraft {
   slides: PptOutlineSlide[];
   /** fill 시 원 요청문 — UI에는 숨김, autosave 포함 */
   sourceText: string;
-  /** Reference PPT에서 추출한 색 (fill까지 유지) */
+  /** Reference PPT에서 추출한 색/글꼴 (fill까지 유지) */
   primary?: string;
   secondary?: string;
   accent?: string;
+  fontFace?: string;
 }
 
 function asSlide(v: unknown): PptOutlineSlide {
@@ -61,6 +62,12 @@ export function parsePptOutline(raw: string, sourceText = ""): PptOutlineDraft {
           ? theme.secondary
           : undefined,
     accent: typeof obj.accent === "string" ? obj.accent : typeof theme.accent === "string" ? theme.accent : undefined,
+    fontFace:
+      typeof obj.fontFace === "string"
+        ? obj.fontFace
+        : typeof theme.fontFace === "string"
+          ? theme.fontFace
+          : undefined,
   };
 }
 
@@ -74,6 +81,7 @@ export function formatOutlineForFill(draft: PptOutlineDraft): string {
       ...(draft.primary ? { primary: draft.primary } : {}),
       ...(draft.secondary ? { secondary: draft.secondary } : {}),
       ...(draft.accent ? { accent: draft.accent } : {}),
+      ...(draft.fontFace ? { fontFace: draft.fontFace } : {}),
     },
     slides: draft.slides.map((s) => ({
       layout: s.layout,

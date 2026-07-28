@@ -457,6 +457,7 @@ async function runPptxGeneration(
         primary: input.themeOverride.primary ?? draft.primary,
         secondary: input.themeOverride.secondary ?? draft.secondary,
         accent: input.themeOverride.accent ?? draft.accent,
+        fontFace: input.themeOverride.fontFace ?? draft.fontFace,
       };
     }
     return {
@@ -481,12 +482,13 @@ async function runPptxGeneration(
     try {
       const draft = parsePptOutline(input.pptOutlineJson, queryText);
       outlineForFill = formatOutlineForFill(draft);
-      if (draft.primary || draft.secondary || draft.accent) {
+      if (draft.primary || draft.secondary || draft.accent || draft.fontFace) {
         fillThemeFromOutline = {
           preset: draft.themePreset,
           primary: draft.primary,
           secondary: draft.secondary,
           accent: draft.accent,
+          fontFace: draft.fontFace,
         };
       }
     } catch {
@@ -569,7 +571,7 @@ async function runPptxGeneration(
     ...(fillThemeFromOutline ?? {}),
     ...(input.themeOverride ?? {}),
   };
-  if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset) {
+  if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset || themeMerge.fontFace) {
     deck = {
       ...deck,
       theme: {
@@ -610,7 +612,7 @@ async function runPptxGeneration(
           model: retry.model,
           attempts: meta.attempts + retry.attempts,
         };
-        if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset) {
+        if (themeMerge.primary || themeMerge.secondary || themeMerge.accent || themeMerge.preset || themeMerge.fontFace) {
           deck = {
             ...deck,
             theme: { ...(deck.theme ?? {}), ...themeMerge },

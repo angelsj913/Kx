@@ -80,7 +80,7 @@ PRD §5 items from prior overhaul (threshold 0.35, web fallback, LLM rerank) rem
 
 - Live Higgsfield / Instagram generation pipeline
 - Cross-encoder hosting / paid rerank quota
-- Reference PPT upload — **DONE** plan 022 (colors)
+- Reference PPT upload — **DONE** plan 022 (colors) + **023** (fontFace)
 - Legal business registration fields (owner-blocked)
 - Reverting app dark mode system-wide (landing/login light shell only unless already shared tokens)
 

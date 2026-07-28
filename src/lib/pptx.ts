@@ -31,10 +31,13 @@ export interface ResolvedPalette {
   surface: string;
   surfaceAlt: string;
   name: string;
+  /** Reference PPT 또는 DeckTheme에서 지정한 글꼴 */
+  fontFace: string;
 }
 
-/** 주제별 기본 팔레트 */
-const PRESETS: Record<string, ResolvedPalette> = {
+/** 주제별 기본 팔레트 (fontFace는 resolvePalette에서 채움) */
+type PalettePreset = Omit<ResolvedPalette, "fontFace">;
+const PRESETS: Record<string, PalettePreset> = {
   science: {
     name: "science",
     primary: "0369A1",
@@ -186,6 +189,13 @@ export function inferThemePreset(title: string, subtitle?: string): string {
   return "default";
 }
 
+/** OOXML `+mj-lt` 등 플레이스홀더·이상치는 기본 글꼴로 폴백 */
+export function resolveFontFace(theme: DeckTheme | undefined): string {
+  const f = theme?.fontFace?.trim();
+  if (!f || f.startsWith("+") || f.length > 80) return FONT;
+  return f;
+}
+
 export function resolvePalette(theme: DeckTheme | undefined, title: string, subtitle?: string): ResolvedPalette {
   const presetKey = String(theme?.preset || inferThemePreset(title, subtitle)).toLowerCase();
   const base = PRESETS[presetKey] ?? domainPaletteById(presetKey) ?? PRESETS.default;
@@ -194,6 +204,7 @@ export function resolvePalette(theme: DeckTheme | undefined, title: string, subt
     primary: hex(theme?.primary, base.primary),
     secondary: hex(theme?.secondary, base.secondary),
     accent: hex(theme?.accent, base.accent),
+    fontFace: resolveFontFace(theme),
   };
 }
 
@@ -296,6 +307,7 @@ export function parseDeck(raw: string): Deck {
       primary: typeof th.primary === "string" ? th.primary : undefined,
       secondary: typeof th.secondary === "string" ? th.secondary : undefined,
       accent: typeof th.accent === "string" ? th.accent : undefined,
+      fontFace: typeof th.fontFace === "string" ? th.fontFace : undefined,
     };
   } else if (typeof obj.theme === "string") {
     theme = { preset: obj.theme };
@@ -365,7 +377,7 @@ function addFooter(
     w: sourceLine ? 6.5 : 8,
     h: 0.28,
     fontSize: 9,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: muted,
   });
   if (sourceLine) {
@@ -375,7 +387,7 @@ function addFooter(
       w: 3.5,
       h: 0.28,
       fontSize: 8,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       color: pal.primary,
       align: "right",
     });
@@ -386,7 +398,7 @@ function addFooter(
     w: 1.5,
     h: 0.28,
     fontSize: 9,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: muted,
     align: "right",
   });
@@ -490,7 +502,7 @@ function addHeaderBand(
     w: 3,
     h: 0.26,
     fontSize: 10,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.primary,
     charSpacing: 2,
@@ -501,7 +513,7 @@ function addHeaderBand(
     w: 12,
     h: 0.5,
     fontSize: 22,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.text,
   });
@@ -512,7 +524,7 @@ function addHeaderBand(
       w: 12,
       h: 0.3,
       fontSize: 12,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       color: pal.muted,
     });
   }
@@ -558,7 +570,7 @@ function drawTable(
       { pt: 0.5, color: pal.primarySoft },
       { pt: 0.5, color: pal.primarySoft },
     ],
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     fontSize: 12,
     rowH: 0.42,
   });
@@ -599,7 +611,7 @@ function drawProcess(
       w: 0.56,
       h: 0.45,
       fontSize: 14,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.white,
       align: "center",
@@ -610,7 +622,7 @@ function drawProcess(
       w: boxW - 0.24,
       h: 0.7,
       fontSize: 13,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
       align: "center",
@@ -623,7 +635,7 @@ function drawProcess(
         w: boxW - 0.24,
         h: 0.55,
         fontSize: 11,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
         align: "center",
         valign: "top",
@@ -685,7 +697,7 @@ function drawCycle(
       w: 4.3,
       h: 0.55,
       fontSize: 15,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
     });
@@ -696,7 +708,7 @@ function drawCycle(
         w: 4.3,
         h: 0.7,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
       });
     }
@@ -743,7 +755,7 @@ function drawCards(
       w: boxW - 0.45,
       h: 0.55,
       fontSize: 14,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       bold: true,
       color: pal.text,
     });
@@ -754,7 +766,7 @@ function drawCards(
         w: boxW - 0.45,
         h: boxH - 1.15,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         color: pal.muted,
         valign: "top",
       });
@@ -809,7 +821,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8,
     h: 0.35,
     fontSize: 12,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.accent,
     charSpacing: 4,
@@ -820,7 +832,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8.5,
     h: 1.7,
     fontSize: 34,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     bold: true,
     color: pal.white,
     valign: "middle",
@@ -832,7 +844,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
       w: 8.5,
       h: 0.45,
       fontSize: 15,
-      fontFace: FONT,
+      fontFace: pal.fontFace,
       color: "CBD5E1",
     });
   }
@@ -850,7 +862,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 8,
     h: 0.35,
     fontSize: 12,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: "94A3B8",
   });
   cover.addText(`1 / ${totalPages}`, {
@@ -859,7 +871,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
     w: 1.5,
     h: 0.3,
     fontSize: 11,
-    fontFace: FONT,
+    fontFace: pal.fontFace,
     color: "E2E8F0",
     align: "right",
   });
@@ -886,7 +898,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: 11,
         h: 0.35,
         fontSize: 12,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.accent,
         charSpacing: 3,
@@ -897,7 +909,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: 11,
         h: 1.2,
         fontSize: 30,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.white,
       });
@@ -908,7 +920,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: 11,
           h: 0.5,
           fontSize: 15,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: "CBD5E1",
         });
       }
@@ -934,7 +946,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
         w: W - 1.6,
         h: 0.9,
         fontSize: 34,
-        fontFace: FONT,
+        fontFace: pal.fontFace,
         bold: true,
         color: pal.white,
         align: "center",
@@ -946,7 +958,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: W - 3,
           h: 0.5,
           fontSize: 16,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: "CBD5E1",
           align: "center",
         });
@@ -961,7 +973,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: W - 5,
             h: 2,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: "94A3B8",
             align: "center",
           },
@@ -1011,7 +1023,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 12,
             h: 1.4,
             fontSize: 13,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 6,
             valign: "top",
@@ -1035,7 +1047,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 12,
             h: 0.9,
             fontSize: 13,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 4,
             valign: "top",
@@ -1079,7 +1091,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 5.45,
             h: 4.1,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 8,
             valign: "top",
@@ -1095,7 +1107,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
             w: 5.45,
             h: 4.1,
             fontSize: 14,
-            fontFace: FONT,
+            fontFace: pal.fontFace,
             color: pal.text,
             paraSpaceAfter: 8,
             valign: "top",
@@ -1117,7 +1129,7 @@ export async function buildPptxBase64(deck: Deck): Promise<string> {
           w: 12,
           h: 4.7,
           fontSize: layout === "agenda" ? 16 : 14,
-          fontFace: FONT,
+          fontFace: pal.fontFace,
           color: pal.text,
           paraSpaceAfter: 8,
           valign: "top",

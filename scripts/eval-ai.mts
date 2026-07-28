@@ -136,6 +136,24 @@ if (!existsSync(GOLDEN_DIR)) {
           } else {
             fail(name, JSON.stringify(theme));
           }
+        } else if (c.type === "ppt_theme_font") {
+          const { parseLatinFontFromThemeXml } = await import(
+            "../src/lib/pptThemeExtract.ts"
+          );
+          const { resolveFontFace } = await import("../src/lib/pptx.ts");
+          const raw = parseLatinFontFromThemeXml(String(c.xml ?? ""));
+          const resolved = resolveFontFace(raw ? { fontFace: raw } : undefined);
+          const expect = c.expectFont as string | null;
+          const ok =
+            expect == null
+              ? resolved === "Malgun Gothic"
+              : resolved === expect;
+          if (ok) {
+            pass(name, resolved);
+            passed++;
+          } else {
+            fail(name, `raw=${raw} resolved=${resolved}`);
+          }
         } else if (c.type === "ppt_validate") {
           const { validateDeck } = await import("../src/lib/pptValidate.ts");
           const { parseDeck } = await import("../src/lib/pptx.ts");

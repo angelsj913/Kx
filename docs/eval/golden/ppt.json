@@ -77,6 +77,18 @@
     "expectAccent": "F59E0B"
   },
   {
+    "id": "ppt-theme-font-1",
+    "type": "ppt_theme_font",
+    "xml": "<a:majorFont><a:latin typeface=\"Montserrat\"/></a:majorFont><a:minorFont><a:latin typeface=\"Calibri\"/></a:minorFont>",
+    "expectFont": "Montserrat"
+  },
+  {
+    "id": "ppt-theme-font-placeholder",
+    "type": "ppt_theme_font",
+    "xml": "<a:majorFont><a:latin typeface=\"+mj-lt\"/></a:majorFont>",
+    "expectFont": null
+  },
+  {
     "id": "ppt-theme-scheme-2",
     "type": "ppt_theme_scheme",
     "xml": "<a:accent1><a:sysClr val=\"windowText\" lastClr=\"112233\"/></a:accent1><a:accent2><a:srgbClr val=\"AABBCC\"/></a:accent2>",
