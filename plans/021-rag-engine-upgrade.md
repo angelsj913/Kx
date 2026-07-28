@@ -6,7 +6,7 @@
 
 ## Status
 
-- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Depends on**: 010, 017, **020** (soft — can start after 020 ships) | **Category**: direction | **Planned at**: `a78c6d6` | **Status**: TODO
+- **Priority**: P1 | **Effort**: L | **Risk**: MED | **Depends on**: 010, 017, **020** (soft — can start after 020 ships) | **Category**: direction | **Planned at**: `a78c6d6` | **Status**: DONE | **Done**: 2026-07-28
 
 ## Why this matters
 
@@ -73,12 +73,12 @@ Prior work closed PRD §5 basics (threshold, web fallback, LLM rerank). This pla
 
 ## Done criteria
 
-- [ ] Header/paragraph-aware chunking with goldens
-- [ ] BM25-style hybrid blended; goldens green
-- [ ] Multi-query with kill switch
-- [ ] Rerank on agent knowledge_search + math RAG
-- [ ] Flashcard/review uses retrieved chunks when indexed
-- [ ] `npm run lint` / `npx tsc --noEmit` / `npm run eval:ai` pass
+- [x] Header/paragraph-aware chunking with goldens
+- [x] BM25-style hybrid blended; goldens green
+- [x] Multi-query with kill switch
+- [x] Rerank on agent knowledge_search + math RAG
+- [x] Flashcard/review uses retrieved chunks when indexed
+- [x] `npm run lint` / `npx tsc --noEmit` / `npm run eval:ai` pass
 
 ## STOP conditions
 
