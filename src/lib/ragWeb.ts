@@ -1,7 +1,7 @@
 import { searchWeb as tavilySearchWeb } from "@/lib/webSearch";
-import type { EvidenceItem } from "@/lib/ragWeb";
+import type { EvidenceItem } from "@/lib/ragEvidenceItems";
 
-export type { EvidenceItem };
+export type { EvidenceItem } from "@/lib/ragEvidenceItems";
 
 export function normalizeWebResults(
   rows: Array<{ title: string; url: string; snippet: string; score: number }>,

@@ -1,4 +1,5 @@
 import { chatReplyWithFallback } from "@/lib/ai";
+import { composeGenerativeResult, type GenerativeResult } from "@/lib/generativeCompose";
 import type { GenerativeRouteDecision } from "@/lib/generativeRouter";
 import type { GenerativeBudget } from "@/lib/generativeBudgets";
 import type { EvidenceBundle } from "@/lib/ragEvidenceItems";

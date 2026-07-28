@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useT, type AppDictKey } from "@/lib/i18n";
 
 export type GenerativeMeta = {
   skill: string;
@@ -10,12 +10,12 @@ export type GenerativeMeta = {
   body: string;
 };
 
-const SKILL_LABEL_KEYS: Record<string, string> = {
+const SKILL_LABEL_KEYS = {
   report: "generative.skill.report",
   presentation: "generative.skill.presentation",
   study: "generative.skill.study",
   inline: "generative.skill.inline",
-};
+} as const satisfies Record<string, AppDictKey>;
 
 export function parseGenerativeFromResultData(
   resultData?: string | null,
@@ -47,7 +47,9 @@ export function GenerativeResultPanel({
   exportBlocked?: boolean;
 }) {
   const t = useT();
-  const skillKey = SKILL_LABEL_KEYS[meta.skill] ?? "generative.skill.report";
+  const skillKey: AppDictKey =
+    SKILL_LABEL_KEYS[meta.skill as keyof typeof SKILL_LABEL_KEYS] ??
+    "generative.skill.report";
   const skillLabel = t(skillKey);
 
   return (

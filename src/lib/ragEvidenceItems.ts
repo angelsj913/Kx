@@ -1,4 +1,10 @@
-import type { EvidenceItem } from "@/lib/ragWeb";
+export type EvidenceItem = {
+  sourceType: "web" | "library";
+  title: string;
+  url: string;
+  snippet: string;
+  score: number;
+};
 
 export type EvidenceBundle = {
   web: EvidenceItem[];

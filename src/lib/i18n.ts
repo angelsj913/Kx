@@ -1591,6 +1591,11 @@ const JA: Record<keyof typeof KO, string> = {
   "checkout.canceled": "決済がキャンセルされました。",
   "checkout.retry": "再試行",
   "checkout.unknownPlan": "不明なプランです。",
+  "generative.skill.report": "レポート草案",
+  "generative.skill.presentation": "プレゼン資料",
+  "generative.skill.study": "学習資料",
+  "generative.skill.inline": "回答",
+  "generative.export.upgrade": "ファイルのエクスポートは Pro 以上で利用できます。",
   "checkout.prepareFail": "決済の準備に失敗しました。",
 };
 
@@ -2099,6 +2104,11 @@ const ZH: Record<keyof typeof KO, string> = {
   "checkout.canceled": "支付已取消。",
   "checkout.retry": "重试",
   "checkout.unknownPlan": "未知的套餐。",
+  "generative.skill.report": "报告草案",
+  "generative.skill.presentation": "演示文稿",
+  "generative.skill.study": "学习资料",
+  "generative.skill.inline": "回答",
+  "generative.export.upgrade": "文件导出功能需 Pro 及以上套餐。",
   "checkout.prepareFail": "结算准备失败。",
 };
 
@@ -2607,6 +2617,11 @@ const RU: Record<keyof typeof KO, string> = {
   "checkout.canceled": "Оплата отменена.",
   "checkout.retry": "Повторить",
   "checkout.unknownPlan": "Неизвестный тариф.",
+  "generative.skill.report": "Черновик отчёта",
+  "generative.skill.presentation": "Презентация",
+  "generative.skill.study": "Учебные материалы",
+  "generative.skill.inline": "Ответ",
+  "generative.export.upgrade": "Экспорт файлов доступен на тарифе Pro и выше.",
   "checkout.prepareFail": "Не удалось подготовить оформление заказа.",
 };
 
@@ -3115,6 +3130,11 @@ const DE: Record<keyof typeof KO, string> = {
   "checkout.canceled": "Die Zahlung wurde storniert.",
   "checkout.retry": "Erneut versuchen",
   "checkout.unknownPlan": "Unbekannter Plan.",
+  "generative.skill.report": "Berichtsentwurf",
+  "generative.skill.presentation": "Präsentation",
+  "generative.skill.study": "Lernmaterial",
+  "generative.skill.inline": "Antwort",
+  "generative.export.upgrade": "Dateiexport ist ab Pro verfügbar.",
   "checkout.prepareFail": "Vorbereitung des Checkouts fehlgeschlagen.",
 };
 
@@ -3623,6 +3643,11 @@ const FR: Record<keyof typeof KO, string> = {
   "checkout.canceled": "Le paiement a été annulé.",
   "checkout.retry": "Réessayer",
   "checkout.unknownPlan": "Forfait inconnu.",
+  "generative.skill.report": "Brouillon de rapport",
+  "generative.skill.presentation": "Présentation",
+  "generative.skill.study": "Matériel d'étude",
+  "generative.skill.inline": "Réponse",
+  "generative.export.upgrade": "L'export de fichiers est disponible avec Pro et plus.",
   "checkout.prepareFail": "Échec de la préparation du paiement.",
 };
 
@@ -4131,6 +4156,11 @@ const ES: Record<keyof typeof KO, string> = {
   "checkout.canceled": "El pago fue cancelado.",
   "checkout.retry": "Reintentar",
   "checkout.unknownPlan": "Plan desconocido.",
+  "generative.skill.report": "Borrador de informe",
+  "generative.skill.presentation": "Presentación",
+  "generative.skill.study": "Material de estudio",
+  "generative.skill.inline": "Respuesta",
+  "generative.export.upgrade": "La exportación de archivos está disponible en Pro y superiores.",
   "checkout.prepareFail": "No se pudo preparar el pago.",
 };
 

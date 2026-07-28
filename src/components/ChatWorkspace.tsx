@@ -49,6 +49,7 @@ import {
   type ToolDef,
 } from "@/lib/tools";
 import type { StructuredKind } from "@/lib/structured";
+import { parseStructured } from "@/lib/structured";
 import FileResultPanel from "./FileResultPanel";
 import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
@@ -1299,32 +1300,29 @@ export default function ChatWorkspace({
                     {(() => {
                       try {
                         const generativeMeta = parseGenerativeFromResultData(m.resultData);
-                        const data = parseStructuredDataFromResultData(m.resultData);
-                        if (!data || typeof data !== "object") {
+                        const rawData = parseStructuredDataFromResultData(m.resultData);
+                        if (!rawData || typeof rawData !== "object") {
                           throw new Error("invalid structured data");
                         }
+                        const kind = m.structuredKind as StructuredKind;
+                        const structured = parseStructured(kind, JSON.stringify(rawData));
                         return (
                           <>
                             {generativeMeta && (
                               <GenerativeResultPanel meta={generativeMeta} />
                             )}
-                            {m.structuredKind === "pptOutline" ? (
-                              <StructuredResultView
-                                key={m.id}
-                                id={m.id}
-                                kind="pptOutline"
-                                data={data}
-                                confirming={loading}
-                                onConfirmFill={confirmPptFill}
-                              />
-                            ) : (
-                              <StructuredResultView
-                                key={m.id}
-                                id={m.id}
-                                kind={m.structuredKind as StructuredKind}
-                                data={data}
-                              />
-                            )}
+                            <StructuredResultView
+                              key={m.id}
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              {...({
+                                id: m.id,
+                                kind: structured.kind,
+                                data: structured.data,
+                                ...(structured.kind === "pptOutline"
+                                  ? { confirming: loading, onConfirmFill: confirmPptFill }
+                                  : {}),
+                              } as any)}
+                            />
                           </>
                         );
                       } catch {
