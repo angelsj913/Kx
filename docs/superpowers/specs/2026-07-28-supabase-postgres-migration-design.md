@@ -80,8 +80,9 @@ Rewriting that during DB cutover would mix infra risk with identity risk.
 5. Update production `DATABASE_URL`.
 6. Redeploy.
 7. Run P0 smoke tests.
-8. Re-open traffic.
-9. Revoke Neon credentials.
+8. Run review gates: `/review-bugbot`, `/review-security`, accessibility audit.
+9. Re-open traffic.
+10. Revoke Neon credentials.
 
 ## Connection/config notes to resolve during implementation
 
@@ -96,4 +97,12 @@ Rewriting that during DB cutover would mix infra risk with identity risk.
 - Supabase Auth
 - Supabase Storage
 - `@supabase/server` route refactors
+
+## Release gate
+
+Do not mark the migration complete until all three pass on the migrated app:
+
+- Bugbot review
+- Security review
+- Accessibility audit
 

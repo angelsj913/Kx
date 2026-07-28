@@ -225,6 +225,9 @@ Rollback is only reliable because this wave does **not** change auth model or ap
 - [ ] `/api/checkout` creates pending order
 - [ ] Paymentwall pingback updates plan/order
 - [ ] Workspace create/invite/join flow succeeds
+- [ ] `/review-bugbot` on the migration branch after DB cutover code is complete
+- [ ] `/review-security` on the migration branch after DB cutover code is complete
+- [ ] accessibility audit on the migrated app after DB cutover and smoke tests
 
 ---
 
@@ -238,4 +241,5 @@ If implementation is approved later, deliverables should include:
 - Production cutover runbook
 - Rollback runbook
 - Post-cutover verification notes
+- Review artifacts / findings for Bugbot, security review, and accessibility audit
 
