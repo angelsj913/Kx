@@ -105,7 +105,7 @@ Evidence verified at `9d8b25f`. Full table: [`plans/README.md`](../plans/README.
 | # | Approach | Priority |
 |---|----------|----------|
 | 1 | Relevance threshold ≥ 0.35 | P0 — plan 010 |
-| 2 | LLM rerank top-20 → top-3 | P1 — follow-up |
+| 2 | LLM rerank top-20 → top-3 | P1 — plan 017 |
 | 3 | Web search fallback | P0 — plan 010 |
 
 ---

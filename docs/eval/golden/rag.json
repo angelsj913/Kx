@@ -13,5 +13,9 @@
   { "id": "rag-hybrid-12", "type": "hybrid_score", "query": "cosine 유사도", "content": "topK로 코사인 유사도 상위 k개를 반환", "vectorScore": 0.36, "expectPass": true },
   { "id": "rag-hybrid-13", "type": "hybrid_score", "query": "근거 부족", "content": "점수 미달 시 빈 결과와 거절 메시지", "vectorScore": 0.22, "expectPass": false },
   { "id": "rag-hybrid-14", "type": "hybrid_score", "query": "한국어 토큰", "content": "한국어 바이그램 키워드 매칭", "vectorScore": 0.5, "expectPass": true },
-  { "id": "rag-hybrid-15", "type": "hybrid_score", "query": "zeff context", "content": "buildZeffRuntimeInstruction에서 RAG 주입", "vectorScore": 0.45, "expectPass": true }
+  { "id": "rag-hybrid-15", "type": "hybrid_score", "query": "zeff context", "content": "buildZeffRuntimeInstruction에서 RAG 주입", "vectorScore": 0.45, "expectPass": true },
+  { "id": "rag-rerank-json", "type": "rerank_parse", "raw": "[3,1,2]", "candidateCount": 3, "expected": [3, 1, 2] },
+  { "id": "rag-rerank-fence", "type": "rerank_parse", "raw": "Here you go:\n```json\n[2,1]\n```", "candidateCount": 2, "expected": [2, 1] },
+  { "id": "rag-rerank-dup", "type": "rerank_parse", "raw": "[1,1,2,9]", "candidateCount": 3, "expected": [1, 2] },
+  { "id": "rag-rerank-bad", "type": "rerank_parse", "raw": "no ranks", "candidateCount": 3, "expected": null }
 ]

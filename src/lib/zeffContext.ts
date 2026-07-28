@@ -1,5 +1,6 @@
 import { retrieveChunks } from "@/lib/ragSearch";
 import { MIN_CITATION_SCORE } from "@/lib/ragHybrid";
+import { isRagRerankEnabled } from "@/lib/ragRerank";
 import {
   rankedChunksToCitations,
   webHitsToCitations,
@@ -13,7 +14,7 @@ import {
   shouldUseWebSearch,
 } from "@/lib/webSearch";
 
-const RAG_TOP_K = 4;
+const RAG_TOP_K = 3;
 
 // 응답 언어 규칙: UI 설정 언어를 강요하지 않고, "사용자가 방금 입력한 언어"에 맞춰
 // 답한다. 설정이 영어인데 한국어로 물으면 영어를 강요해 언어가 섞이던 버그를 없앤다.
@@ -81,6 +82,7 @@ export async function buildZeffRuntimeContext(args: {
         query,
         k: RAG_TOP_K,
         ...(scopedIds.length ? { libraryItemIds: scopedIds } : {}),
+        rerank: isRagRerankEnabled(),
       });
 
       const ragRelevant =

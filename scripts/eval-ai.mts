@@ -126,6 +126,22 @@ if (!existsSync(GOLDEN_DIR)) {
             pass(name, `score=${score.toFixed(3)}`);
             passed++;
           }
+        } else if (c.type === "rerank_parse") {
+          const { parseRerankOrder } = await import("../src/lib/ragRerank.ts");
+          const got = parseRerankOrder(String(c.raw ?? ""), Number(c.candidateCount ?? 0));
+          const expected = c.expected as number[] | null;
+          const same =
+            expected === null
+              ? got === null
+              : Array.isArray(got) &&
+                got.length === expected.length &&
+                got.every((n, i) => n === expected[i]);
+          if (same) {
+            pass(name, JSON.stringify(got));
+            passed++;
+          } else {
+            fail(name, `got ${JSON.stringify(got)}`);
+          }
         } else if (c.type === "math_verify") {
           const { verifyMathSolve } = await import("../src/lib/mathVerify.ts");
           const result = verifyMathSolve(c.text);

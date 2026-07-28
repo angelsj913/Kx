@@ -25,6 +25,7 @@ Each plan is self-contained for an executor with zero prior context. Run in orde
 | [014](./014-workspace-panel-context-dock.md) | Workspace right panel — Context Dock MVP | P3 | M | 008 | DONE |
 | [015](./015-image-gen-quality-spike.md) | Image generation quality spike (approval gate) | P2 | M | — | DONE |
 | [016](./016-workspace-panel-timeline-plan.md) | Output Timeline + Plan/Execute panel | P3 | M | 014 | DONE |
+| [017](./017-rag-llm-rerank.md) | RAG LLM rerank top-20 → top-k | P1 | M | 010 | DONE |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED (reason)` | `REJECTED (reason)`
 
