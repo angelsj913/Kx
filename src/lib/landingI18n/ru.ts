@@ -153,6 +153,7 @@ const ru: Record<keyof typeof ko, string> = {
   "login.title": "Вход в единый аккаунт ZEFF AI",
   "login.subtitle": "Войдите, чтобы продолжить диалоги и работу с файлами на любом устройстве.",
   "login.google": "Войти через Google",
+  "login.googlePasswordSetup": "После входа через Google при необходимости завершите настройку пароля ZEFF.",
   "login.apple": "Войти через Apple (скоро)",
   "login.or": "или продолжить через email",
   "login.email": "Email",

@@ -137,6 +137,9 @@ function LoginCard() {
           <GoogleIcon />
           {t("login.google")}
         </button>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {t("login.googlePasswordSetup")}
+        </p>
 
         <div className="mt-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />

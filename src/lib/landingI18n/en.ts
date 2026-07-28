@@ -155,6 +155,7 @@ const en: Record<keyof typeof ko, string> = {
   "login.title": "Sign in to your ZEFF AI account",
   "login.subtitle": "Sign in to pick up your conversations and files on any device.",
   "login.google": "Continue with Google",
+  "login.googlePasswordSetup": "After Google sign-in, finish setting a ZEFF password if needed.",
   "login.apple": "Continue with Apple (coming soon)",
   "login.or": "or continue with email",
   "login.email": "Email",

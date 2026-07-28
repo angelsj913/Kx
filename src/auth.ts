@@ -13,9 +13,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Google({
+      // Same-email linking is allowed only because Google provider emails are verified.
+      allowDangerousEmailAccountLinking: true,
       // Google 계정 이메일로 관리자 판별 — 이메일 scope 보장
       authorization: {
         params: {
+          scope: "openid email profile",
           prompt: "select_account",
           access_type: "online",
           response_type: "code",

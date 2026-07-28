@@ -145,6 +145,7 @@ const zh: Record<keyof typeof ko, string> = {
   "login.title": "登录 ZEFF AI 统一账户",
   "login.subtitle": "登录后即可在任意设备上继续你的对话与成果。",
   "login.google": "使用 Google 登录",
+  "login.googlePasswordSetup": "使用 Google 登录后，如有需要请继续设置 ZEFF 密码。",
   "login.apple": "使用 Apple 登录(即将推出)",
   "login.or": "或继续使用邮箱",
   "login.email": "邮箱",

@@ -148,6 +148,7 @@ const ja: Record<keyof typeof ko, string> = {
   "login.title": "ZEFF AI 統合アカウントログイン",
   "login.subtitle": "ログインすると、どのデバイスでも会話と成果物を引き続き利用できます。",
   "login.google": "Googleでログイン",
+  "login.googlePasswordSetup": "Googleログイン後、必要に応じてZEFFパスワードの設定を完了します。",
   "login.apple": "Appleでログイン(近日公開)",
   "login.or": "またはメールアドレスで続ける",
   "login.email": "メールアドレス",

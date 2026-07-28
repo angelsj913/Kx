@@ -153,6 +153,7 @@ const fr: Record<keyof typeof ko, string> = {
   "login.title": "Connexion à votre compte unifié ZEFF AI",
   "login.subtitle": "Connectez-vous pour retrouver vos conversations et vos fichiers sur n'importe quel appareil.",
   "login.google": "Continuer avec Google",
+  "login.googlePasswordSetup": "Après la connexion Google, terminez la configuration d'un mot de passe ZEFF si nécessaire.",
   "login.apple": "Continuer avec Apple (bientôt disponible)",
   "login.or": "ou continuer avec un e-mail",
   "login.email": "E-mail",

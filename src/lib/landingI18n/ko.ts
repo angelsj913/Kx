@@ -150,6 +150,7 @@ const ko = {
   "login.title": "ZEFF AI 통합 계정 로그인",
   "login.subtitle": "로그인하면 어느 기기에서든 대화와 결과물을 이어서 사용할 수 있어요.",
   "login.google": "구글로 로그인",
+  "login.googlePasswordSetup": "구글 로그인 후 필요한 경우 ZEFF 비밀번호 설정을 이어서 완료합니다.",
   "login.apple": "Apple로 로그인 (준비 중)",
   "login.or": "또는 이메일로 계속하기",
   "login.email": "이메일",

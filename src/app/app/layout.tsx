@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
+import { requirePasswordComplete } from "@/lib/authComplete";
 import { WorkspaceProvider } from "@/lib/workspaceClient";
 
 export default async function AppLayout({
@@ -12,6 +13,7 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/login?callbackUrl=/app");
   }
+  await requirePasswordComplete();
 
   // key=userId: 다른 계정으로 로그인하면 클라이언트 상태(프로필/워크스페이스)를 통째로 리셋
   return (
