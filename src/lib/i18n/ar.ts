@@ -45,6 +45,7 @@ const AR_CORE: Partial<Record<AppDictKey, string>> = {
   "chat.editCancel": "إلغاء",
   "chat.editSave": "حفظ",
   "chat.regenerate": "إعادة التوليد",
+  "chat.moreActions": "More actions",
   "chat.copy": "نسخ",
   "chat.copied": "تم النسخ",
   "chat.download": "تنزيل",

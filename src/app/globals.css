@@ -11,8 +11,11 @@
 /* 기본(라이트) — 초기 진입은 항상 라이트 */
 :root {
   color-scheme: light;
-  --landing-bg: #ffffff;
-  --landing-bg-soft: #f8fafc;
+  --landing-bg: #f8fafc;
+  --landing-bg-soft: #f1f5f9;
+  --landing-bg-top: #ffffff;
+  --landing-bg-mid: #f8fafc;
+  --landing-bg-bottom: #f1f5f9;
   --landing-gradient-start: #ffffff;
   --landing-gradient: linear-gradient(
     180deg,
@@ -29,6 +32,9 @@
   color-scheme: dark;
   --landing-bg: #0a1120;
   --landing-bg-soft: #0f172a;
+  --landing-bg-top: #0a1120;
+  --landing-bg-mid: #0f172a;
+  --landing-bg-bottom: #0a1120;
   --landing-gradient-start: #0a1120;
   --landing-gradient: linear-gradient(
     180deg,
@@ -194,12 +200,15 @@ body {
 
 /* ── Landing tokens (plan 020) — Noto / white / blue; supersedes nothing-design cream/red ── */
 .landing-shell {
-  --landing-bg: #ffffff;
+  --landing-bg: #f8fafc;
+  --landing-bg-top: #ffffff;
+  --landing-bg-mid: #f8fafc;
+  --landing-bg-bottom: #f1f5f9;
   --landing-text-primary: #0f172a;
   --landing-text-muted: #64748b;
   --landing-accent: #2563eb;
   --landing-accent-muted: rgba(37, 99, 235, 0.1);
-  --landing-border: rgba(226, 232, 240, 0.8);
+  --landing-border: rgba(148, 163, 184, 0.8);
   --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(37, 99, 235, 0.08), transparent 65%);
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
   --landing-enter-duration: 280ms;
@@ -208,11 +217,14 @@ body {
 }
 .dark .landing-shell {
   --landing-bg: #0a1120;
+  --landing-bg-top: #0a1120;
+  --landing-bg-mid: #0f172a;
+  --landing-bg-bottom: #0a1120;
   --landing-text-primary: rgba(248, 250, 252, 0.94);
   --landing-text-muted: rgba(148, 163, 184, 0.85);
   --landing-accent: #3b82f6;
   --landing-accent-muted: rgba(59, 130, 246, 0.14);
-  --landing-border: rgba(51, 65, 85, 0.6);
+  --landing-border: rgba(71, 85, 105, 0.75);
   --landing-glow: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 65%);
 }
 .landing-label {
@@ -236,7 +248,12 @@ body {
    background-attachment: fixed 는 iOS Safari에서 깨지므로 쓰지 않는다. fixed 레이어를
    새로 늘리지 않고 기존 레이어가 칠하는 내용만 바꾼 것이라 iOS 페인트 부담도 그대로다. */
 .landing-shell {
-  background: var(--landing-bg);
+  background: linear-gradient(
+    to bottom,
+    var(--landing-bg-top),
+    var(--landing-bg-mid) 45%,
+    var(--landing-bg-bottom) 100%
+  );
   position: relative;
 }
 .landing-shell::before {
@@ -265,14 +282,14 @@ body {
   z-index: 1;
 }
 .landing-card {
-  border: 1px solid rgb(226 232 240 / 0.8);
+  border: 1px solid rgb(203 213 225 / 0.9);
   background: rgb(255 255 255 / 0.72);
   /* 미접두 backdrop-filter는 Safari 18+ 전용 — 구버전 iOS를 위해 접두어를 함께 둔다. */
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 .dark .landing-card {
-  border-color: rgb(51 65 85 / 0.6);
+  border-color: rgb(71 85 105 / 0.75);
   background: rgb(15 23 42 / 0.72);
 }
 

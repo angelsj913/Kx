@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight, Shield, Wrench } from "lucide-react";
+import { Plus, MessageSquare, Trash2, ChevronLeft, ChevronRight, Wrench } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import ProfileMenu from "./ProfileMenu";
 import Logo from "@/components/ui/Logo";
@@ -142,39 +142,21 @@ export default function Sidebar({
           }`}
         >
           {isCollapsed ? (
-            <>
-              <Link
-                href="/admin"
-                title={t("profile.adminPanel")}
-                className="flex h-10 w-full items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-400"
-              >
-                <Wrench size={ICON} />
-              </Link>
-              <Link
-                href="/admin/security"
-                title={t("profile.securityPanel")}
-                className="flex h-10 w-full items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-400"
-              >
-                <Shield size={ICON} />
-              </Link>
-            </>
+            <Link
+              href="/admin"
+              title={t("profile.adminPanel")}
+              className="flex h-10 w-full items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-400"
+            >
+              <Wrench size={ICON} />
+            </Link>
           ) : (
-            <>
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-300"
-              >
-                <Wrench size={ICON} className="shrink-0" />
-                {t("profile.adminPanel")}
-              </Link>
-              <Link
-                href="/admin/security"
-                className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-300"
-              >
-                <Shield size={ICON} className="shrink-0" />
-                {t("profile.securityPanel")}
-              </Link>
-            </>
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-[var(--workspace-bg)] dark:text-blue-300"
+            >
+              <Wrench size={ICON} className="shrink-0" />
+              {t("profile.adminPanel")}
+            </Link>
           )}
         </div>
       )}

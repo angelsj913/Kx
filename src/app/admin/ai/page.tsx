@@ -12,7 +12,16 @@ type AiAdminState = {
     sessions24h: number;
     disabledUsers: number;
     estTokens24h: number;
+    estTokensMonth?: number;
   };
+  providerQuotas?: {
+    provider: string;
+    envKey: string;
+    configured: boolean;
+    monthlyLimit: number | null;
+    estTokensMonth: number;
+    remaining: number | null;
+  }[];
   topUsage: {
     userId: string;
     feature: string;
@@ -152,6 +161,14 @@ export default function AdminAiPage() {
                 label: "추정 토큰(24h)",
                 value: data.stats.estTokens24h.toLocaleString(),
               },
+              ...(data.stats.estTokensMonth != null
+                ? [
+                    {
+                      label: "추정 토큰(당월)",
+                      value: data.stats.estTokensMonth.toLocaleString(),
+                    },
+                  ]
+                : []),
             ].map((c) => (
               <div
                 key={c.label}
@@ -162,6 +179,51 @@ export default function AdminAiPage() {
               </div>
             ))}
           </div>
+
+          {data.providerQuotas && data.providerQuotas.length > 0 && (
+            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-sm font-semibold">연동 AI 토큰 현황</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                API 키 연동 여부, env 월 한도, 당월 추정 사용량입니다. 한도 env: *_MONTHLY_TOKEN_LIMIT
+              </p>
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[32rem] text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500 dark:border-slate-700">
+                      <th className="py-2 pr-3 font-semibold">Provider</th>
+                      <th className="py-2 pr-3 font-semibold">API 키</th>
+                      <th className="py-2 pr-3 font-semibold">월 한도</th>
+                      <th className="py-2 pr-3 font-semibold">당월 추정</th>
+                      <th className="py-2 font-semibold">잔여</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.providerQuotas.map((p) => (
+                      <tr key={p.provider} className="border-b border-slate-100 dark:border-slate-800">
+                        <td className="py-2.5 pr-3 font-medium capitalize">{p.provider}</td>
+                        <td className="py-2.5 pr-3">
+                          {p.configured ? (
+                            <span className="text-emerald-600">연동됨</span>
+                          ) : (
+                            <span className="text-slate-400">미설정</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 pr-3 tabular-nums">
+                          {p.monthlyLimit != null ? p.monthlyLimit.toLocaleString() : "—"}
+                        </td>
+                        <td className="py-2.5 pr-3 tabular-nums">
+                          {p.configured ? p.estTokensMonth.toLocaleString() : "—"}
+                        </td>
+                        <td className="py-2.5 tabular-nums">
+                          {p.remaining != null ? p.remaining.toLocaleString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-sm font-semibold">일일 요청 상한 (참고 설정)</h2>

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import crypto from "crypto";
 
 const COOKIE = "zeff_admin_mfa";
-const TTL_MS = 8 * 60 * 60 * 1000;
+/** NextAuth session maxAge(30일)와 동일 — 보안 페이지는 세션당 1회 MFA */
+const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function sign(payload: string, secret: string) {
   return crypto.createHmac("sha256", secret).update(payload).digest("hex");

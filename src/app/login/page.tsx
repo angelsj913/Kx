@@ -22,7 +22,7 @@ function GoogleIcon() {
 }
 
 /** same-origin relative path only */
-function safeCallbackUrl(raw: string | null | undefined, fallback = "/app"): string {
+function safeCallbackUrl(raw: string | null | undefined, fallback = "/"): string {
   if (!raw) return fallback;
   const v = raw.trim();
   if (!v.startsWith("/") || v.startsWith("//") || v.includes("://")) return fallback;
@@ -38,7 +38,7 @@ function LoginCard() {
     () =>
       safeCallbackUrl(
         searchParams.get("callbackUrl"),
-        isDesktop ? "/app" : "/app",
+        isDesktop ? "/" : "/",
       ),
     [searchParams, isDesktop],
   );

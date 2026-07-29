@@ -2,7 +2,7 @@
 
 import { useLandingT } from "@/lib/landingI18n";
 import SupportShell from "@/components/support/SupportShell";
-import { TERMS, INTERNATIONAL, PRIVACY, CONSENT, COMPANY_INFO, type LegalArticle } from "@/lib/legalContent";
+import { TERMS, INTERNATIONAL, PRIVACY, CONSENT, REFUND, COMPANY_INFO, type LegalArticle } from "@/lib/legalContent";
 
 function Article({ article }: { article: LegalArticle }) {
   return (
@@ -91,6 +91,24 @@ export default function SupportLegalPage() {
               <Article key={a.id} article={a} />
             ))}
           </div>
+        </section>
+
+        {/* 환불 정책 — Paymentwall 제출용 상세 */}
+        <section className="border-t border-slate-200 pt-8 dark:border-slate-800">
+          <h2 id="refund" className="scroll-mt-20 text-xl font-bold sm:text-2xl">
+            {t("footer.refund")}
+          </h2>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            {t("legal.effectiveDate")} 2026년 7월
+          </p>
+          <div className="mt-4 space-y-4">
+            {REFUND.map((a) => (
+              <Article key={a.id} article={a} />
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            {t("footer.contact")}: zeff@zeffai.com
+          </p>
         </section>
 
         {/* 사업자 정보 */}

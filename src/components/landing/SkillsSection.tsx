@@ -23,7 +23,7 @@ type SkillScene = {
 };
 
 function SceneBackground({ sceneId, progress }: { sceneId: string; progress: number }) {
-  const fade = 0.35 + progress * 0.45;
+  const fade = 0.4 + progress * 0.45;
 
   if (sceneId === "design") {
     return (
@@ -122,11 +122,11 @@ function SceneContent({
   );
 }
 
-function BandPanel({ appHref, scrollFade = 1 }: { appHref: string; scrollFade?: number }) {
+function BandPanel({ scrollFade = 1 }: { scrollFade?: number }) {
   const t = useLandingT();
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col items-start gap-5 px-6 sm:flex-row sm:items-center sm:justify-between"
+      className="mx-auto w-full max-w-6xl px-6"
       style={{ opacity: scrollFade }}
     >
       <div className="max-w-2xl">
@@ -137,13 +137,6 @@ function BandPanel({ appHref, scrollFade = 1 }: { appHref: string; scrollFade?: 
           {t("skills.band.subtitle")}
         </p>
       </div>
-      <Link
-        href={appHref}
-        className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full bg-[var(--landing-accent)] px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
-      >
-        {t("header.startWeb")}
-        <ArrowRight className="h-4 w-4" />
-      </Link>
     </div>
   );
 }
@@ -179,7 +172,7 @@ function ReducedMotionSkills({ scenes, appHref }: { scenes: SkillScene[]; appHre
       </section>
 
       <section className="py-14 sm:py-16">
-        <BandPanel appHref={appHref} />
+        <BandPanel />
       </section>
     </>
   );
@@ -228,7 +221,7 @@ export default function SkillsSection() {
   }
 
   const activeScene = scenes[activeIdx]!;
-  const bandFade = Math.min(1, 0.35 + bandP * 0.65);
+  const bandFade = Math.min(1, 0.6 + bandP * 0.4);
 
   return (
     <>
@@ -238,7 +231,7 @@ export default function SkillsSection() {
           {scenes.map((scene, i) => {
             const sceneP = sceneLocalProgress(p, SCENE_COUNT, i);
             const isActive = i === activeIdx;
-            const opacity = isActive ? Math.min(1, 0.15 + sceneP * 0.85) : 0;
+            const opacity = isActive ? Math.min(1, 0.4 + sceneP * 0.6) : 0;
             return (
               <div
                 key={scene.id}
@@ -293,7 +286,7 @@ export default function SkillsSection() {
       {/* Throttle 2 — 서재 근거 CTA (sticky 한 화면) */}
       <section ref={bandRef} className="relative scroll-mt-24" style={{ height: `${BAND_TRACK_VH}vh` }}>
         <div className="sticky top-0 flex min-h-[100svh] items-center py-14 sm:py-16">
-          <BandPanel appHref={appHref} scrollFade={bandFade} />
+          <BandPanel scrollFade={bandFade} />
         </div>
       </section>
     </>

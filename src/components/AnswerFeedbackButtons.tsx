@@ -9,6 +9,8 @@ interface Props {
   sessionId?: string | null;
   toolId?: string | null;
   disabled?: boolean;
+  /** true면 상위 액션 바에 일렬 배치 (여백·래퍼 최소화) */
+  inline?: boolean;
 }
 
 export default function AnswerFeedbackButtons({
@@ -16,6 +18,7 @@ export default function AnswerFeedbackButtons({
   sessionId,
   toolId,
   disabled,
+  inline = false,
 }: Props) {
   const [rating, setRating] = useState<1 | -1 | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,7 +74,7 @@ export default function AnswerFeedbackButtons({
   );
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5">
+    <div className={inline ? "flex flex-col gap-1.5" : "mt-2 flex flex-col gap-1.5"}>
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"

@@ -191,17 +191,6 @@ export default function Header() {
           {menuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className={`overflow-hidden border-b ${menuSurface}`}>
               <nav className="mx-auto flex max-w-6xl flex-col px-4 py-4 sm:px-6">
-                {SECTION_LINKS.map(({ href, labelKey }) => (
-                  <a
-                    key={href}
-                    href={href}
-                    onClick={() => setMenuOpen(false)}
-                    className="rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300"
-                  >
-                    {t(labelKey)}
-                  </a>
-                ))}
-
                 {MENU_LINKS.map(({ href, icon: Icon, labelKey }) => (
                   <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-900/5 hover:text-blue-600 dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-blue-300">
                     <Icon className="h-4 w-4" />

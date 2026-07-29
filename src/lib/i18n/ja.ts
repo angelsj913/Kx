@@ -97,6 +97,7 @@ const JA: Record<AppDictKey, string> = {
   "chat.editCancel": "キャンセル",
   "chat.editSave": "保存して再送信",
   "chat.regenerate": "再生成",
+  "chat.moreActions": "More actions",
   "chat.copy": "コピー",
   "chat.copied": "コピーしました",
   "chat.refining": "推敲中…",

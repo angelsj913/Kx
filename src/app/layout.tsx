@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import RootSessionProvider from "@/components/RootSessionProvider";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
@@ -107,7 +108,10 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <RootSessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            {children}
+            <CookieConsentBanner />
+          </ThemeProvider>
         </RootSessionProvider>
         <SpeedInsights />
       </body>

@@ -165,7 +165,7 @@ export default function Hero() {
             <source src="/landing/hero-loop.mp4" type="video/mp4" />
           </video>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/65 to-white dark:from-slate-950/85 dark:via-slate-950/75 dark:to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/80 to-white dark:from-slate-950/85 dark:via-slate-950/75 dark:to-slate-950" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 text-center">

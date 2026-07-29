@@ -16,20 +16,14 @@ import {
   Volume2,
   PanelRight,
   Download,
-  Printer,
   Pencil,
   Check,
-  RotateCcw,
   BookOpen,
 } from "lucide-react";
-import {
-  downloadTextFile,
-  openPrintableHtml,
-} from "@/lib/textExport";
 import { useT, useAppLanguage, toolUiLabel, featureGroupLabel, type AppDictKey } from "@/lib/i18n";
 import { LANGUAGE_LABELS, LANGUAGE_ORDER, type AppLanguage } from "@/lib/languages";
 import { getToolPlaceholder } from "@/lib/toolPlaceholders";
-import CopyButton from "@/components/CopyButton";
+import MessageActions from "@/components/MessageActions";
 import AnswerFeedbackButtons from "@/components/AnswerFeedbackButtons";
 import CitationCards, { parseCitationsFromResultData } from "@/components/CitationCards";
 import {
@@ -109,12 +103,6 @@ const ATTACH_FORMATS: {
   { id: "other", labelKey: "chat.attach.other", accept: "*/*", icon: Paperclip },
 ];
 
-function feedbackToolId(agentId?: string | null, outputType?: string): string | null {
-  if (agentId?.startsWith("quicktool:")) return agentId.replace("quicktool:", "");
-  if (outputType && outputType !== "chat") return outputType;
-  return null;
-}
-
 function ModelFeedback({
   messageId,
   sessionId,
@@ -129,11 +117,14 @@ function ModelFeedback({
   streaming?: boolean;
 }) {
   if (streaming || messageId.startsWith("temp-")) return null;
+  const toolId =
+    agentId?.startsWith("quicktool:") ? agentId.replace("quicktool:", "") :
+    outputType && outputType !== "chat" ? outputType : null;
   return (
     <AnswerFeedbackButtons
       chatHistoryId={messageId}
       sessionId={sessionId}
-      toolId={feedbackToolId(agentId, outputType)}
+      toolId={toolId}
     />
   );
 }
@@ -834,7 +825,7 @@ export default function ChatWorkspace({
         } else {
           setMessages((prev) => [...prev, finalMessage]);
         }
-        if (spokenTurn && doneMessage.text) speak(doneMessage.text);
+        // 마이크 입력 후 AI 답변은 텍스트 채팅으로만 출력 (TTS 자동 재생 없음)
         pushTerminal(doneInterrupted ? "done ✱ interrupted" : "done ✓ response ready", "ok");
         setPlanSteps((prev) => finishPlanSteps(prev, !doneInterrupted));
         if (
@@ -1377,88 +1368,23 @@ export default function ChatWorkspace({
                         {t("chat.interrupted")}
                       </p>
                     )}
-                    {/* 짧은 답변: 복사만 / 긴 문서: 저장·인쇄 도구 */}
-                    {!m.streaming && m.text && m.text.length > 0 && m.text.length <= 80 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <CopyButton text={m.text} iconOnly />
-                        {m.id === lastModelMessageId &&
+                    {!m.streaming && m.text && m.text.length > 0 && !m.id.startsWith("temp-") && (
+                      <MessageActions
+                        messageId={m.id}
+                        sessionId={sessionId}
+                        agentId={m.agentId}
+                        outputType={m.outputType}
+                        text={m.text}
+                        fileUrl={m.fileUrl}
+                        fileName={m.fileName}
+                        showRegenerate={
+                          m.id === lastModelMessageId &&
                           (m.outputType === "chat" || !m.outputType) &&
-                          !loading && (
-                            <button
-                              type="button"
-                              onClick={() => void regenerateLast()}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                              title={t("chat.regenerate")}
-                              aria-label={t("chat.regenerate")}
-                            >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                      </div>
+                          !loading
+                        }
+                        onRegenerate={() => void regenerateLast()}
+                      />
                     )}
-                    {!m.streaming && m.text && m.text.length > 80 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {m.fileUrl && m.fileName && (
-                          <a
-                            href={m.fileUrl}
-                            download={m.fileName}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center justify-center rounded-lg border border-blue-500/40 bg-blue-600/10 p-1.5 text-blue-700 dark:text-blue-300"
-                            title={t("chat.saveMd")}
-                            aria-label={t("chat.saveMd")}
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                        <CopyButton text={m.text} iconOnly />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            downloadTextFile(
-                              `${(m.fileName ?? "zeff-note").replace(/\.[^.]+$/, "")}.txt`,
-                              m.text,
-                            )
-                          }
-                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("resultPanel.saveTxt")}
-                          aria-label={t("resultPanel.saveTxt")}
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openPrintableHtml(m.fileName ?? t("chat.zeffDocument"), m.text)
-                          }
-                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                          title={t("chat.printPdf")}
-                          aria-label={t("chat.printPdf")}
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                        </button>
-                        {m.id === lastModelMessageId &&
-                          (m.outputType === "chat" || !m.outputType) &&
-                          !loading && (
-                            <button
-                              type="button"
-                              onClick={() => void regenerateLast()}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
-                              title={t("chat.regenerate")}
-                              aria-label={t("chat.regenerate")}
-                            >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                      </div>
-                    )}
-                    <ModelFeedback
-                      messageId={m.id}
-                      sessionId={sessionId}
-                      agentId={m.agentId}
-                      outputType={m.outputType}
-                      streaming={m.streaming}
-                    />
                   </div>
                 )}
               </div>

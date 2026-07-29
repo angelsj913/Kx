@@ -99,6 +99,7 @@ const KO = {
   "chat.editCancel": "취소",
   "chat.editSave": "저장 후 재전송",
   "chat.regenerate": "재생성",
+  "chat.moreActions": "더보기",
   "chat.copy": "복사",
   "chat.copied": "복사됨",
   "chat.refining": "다듬는 중…",

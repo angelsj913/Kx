@@ -97,6 +97,7 @@ const DE: Record<AppDictKey, string> = {
   "chat.editCancel": "Abbrechen",
   "chat.editSave": "Speichern & erneut senden",
   "chat.regenerate": "Neu generieren",
+  "chat.moreActions": "More actions",
   "chat.copy": "Kopieren",
   "chat.copied": "Kopiert",
   "chat.refining": "Wird verfeinert…",

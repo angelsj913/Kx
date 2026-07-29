@@ -97,6 +97,7 @@ const ZH: Record<AppDictKey, string> = {
   "chat.editCancel": "取消",
   "chat.editSave": "保存并重新发送",
   "chat.regenerate": "重新生成",
+  "chat.moreActions": "More actions",
   "chat.copy": "复制",
   "chat.copied": "已复制",
   "chat.refining": "正在润色…",

@@ -63,5 +63,5 @@ export type LandingDictKey = keyof typeof ko;
 
 export function useLandingT() {
   const { language } = useLandingLanguage();
-  return useCallback((key: LandingDictKey) => DICT[language][key], [language]);
+  return useCallback((key: LandingDictKey) => DICT[language][key] ?? ko[key] ?? key, [language]);
 }
