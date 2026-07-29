@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import { GEO_COOKIE } from "@/lib/constants";
 
 /**
- * Next.js 16 proxy(구 middleware) — 세 가지를 한 곳에서 처리한다.
+ * Next.js 16 proxy(구 middleware) — 한 곳에서 처리한다.
+ *  0) 공사 중 게이트: 관리자 외 방문자를 /under-construction 으로 (MAINTENANCE_MODE=0 이면 해제)
  *  1) /app 보호: 미로그인 접근은 로그인으로 리다이렉트 (Auth.js는 /app 에서만 실행)
  *  2) 보안 응답 헤더(CSP/HSTS/X-Content-Type-Options 등) — 모든 HTML
  *  3) 접속 국가 기반 "기본" 언어 쿠키(사용자가 고른 언어가 항상 우선)
@@ -73,13 +74,38 @@ function applyGeoLangCookie(req: NextRequest, res: NextResponse) {
   }
 }
 
+/** 기본 ON. 공개 재오픈 시 Vercel env MAINTENANCE_MODE=0 */
+function maintenanceEnabled(): boolean {
+  return process.env.MAINTENANCE_MODE !== "0";
+}
+
+function isMaintenancePublicPath(pathname: string): boolean {
+  return pathname === "/under-construction" || pathname === "/login";
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isDev = process.env.NODE_ENV === "development";
 
-  // Auth.js JWT decode only for /app — marketing pages skip session work at the edge.
+  let session: Awaited<ReturnType<typeof auth>> | null | undefined;
+
+  // 0) 공사 중 앞문 — 관리자만 통과 (기존 페이지는 그대로, 리다이렉트만)
+  if (maintenanceEnabled() && !isMaintenancePublicPath(pathname)) {
+    session = await auth();
+    if (session?.user?.isAdmin !== true) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/under-construction";
+      url.search = "";
+      const redirectRes = NextResponse.redirect(url);
+      applySecurityHeaders(redirectRes, isDev);
+      applyGeoLangCookie(req, redirectRes);
+      return redirectRes;
+    }
+  }
+
+  // 1) Auth.js JWT decode only for /app — marketing pages skip session work at the edge.
   if (pathname.startsWith("/app")) {
-    const session = await auth();
+    session = session ?? (await auth());
     if (!session?.user) {
       const loginUrl = new URL("/login", req.nextUrl);
       loginUrl.searchParams.set("callbackUrl", pathname);
