@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
+import { isAdminSession } from "@/lib/admin";
 import Logo from "@/components/ui/Logo";
 
 export const metadata = {
@@ -10,7 +13,12 @@ export const metadata = {
  * 사이트 앞문 — 본 서비스 UI는 그대로 두고, 방문자는 여기서 막힌다.
  * 관리자는 /login 으로 들어가 세션을 만든 뒤 전체 사이트에 접근한다.
  */
-export default function UnderConstructionPage() {
+export default async function UnderConstructionPage() {
+  const session = await auth();
+  if (isAdminSession(session)) {
+    redirect("/");
+  }
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-[#0a1f4e] px-6 text-center text-slate-200">
       <Logo size="lg" />
