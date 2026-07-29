@@ -33,7 +33,6 @@ import CopyButton from "@/components/CopyButton";
 import AnswerFeedbackButtons from "@/components/AnswerFeedbackButtons";
 import CitationCards, { parseCitationsFromResultData } from "@/components/CitationCards";
 import {
-  GenerativeResultPanel,
   parseGenerativeFromResultData,
   parseStructuredDataFromResultData,
 } from "@/components/GenerativeResultPanel";
@@ -50,22 +49,28 @@ import {
 } from "@/lib/tools";
 import type { StructuredKind } from "@/lib/structured";
 import { parseStructured } from "@/lib/structured";
-import FileResultPanel from "./FileResultPanel";
-import StructuredResultView from "./structured/StructuredResultView";
 import Logo from "@/components/ui/Logo";
 import type { QualityTier } from "@/lib/qualityTier";
-import ChatRightPanel, {
-  type ChatArtifact,
-  type ContextSource,
-  type PanelTab,
-  type PlanStep,
-  type TerminalLine,
+import type {
+  ChatArtifact,
+  ContextSource,
+  PanelTab,
+  PlanStep,
+  TerminalLine,
 } from "./ChatRightPanel";
-import KnowledgeBaseSheet from "./KnowledgeBaseSheet";
 import { clampPanelWidth } from "@/lib/chatPanelLayout";
 
-// react-markdown + remark/rehype-katex 체인을 초기 번들에서 분리
+// Heavy panels — keep out of the initial chat shell chunk
 const ChatMarkdown = dynamic(() => import("./ChatMarkdown"));
+const FileResultPanel = dynamic(() => import("./FileResultPanel"));
+const StructuredResultView = dynamic(
+  () => import("./structured/StructuredResultView"),
+);
+const ChatRightPanel = dynamic(() => import("./ChatRightPanel"));
+const KnowledgeBaseSheet = dynamic(() => import("./KnowledgeBaseSheet"));
+const GenerativeResultPanel = dynamic(() =>
+  import("@/components/GenerativeResultPanel").then((m) => m.GenerativeResultPanel),
+);
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useSession, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -10,8 +11,10 @@ import Image from "next/image";
 import { useThemePreference } from "@/lib/themePreference";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/useSettings";
-import SettingsModal, { type SettingsTab } from "./SettingsModal";
+import type { SettingsTab } from "./SettingsModal";
 import ThemeToggle from "@/components/ThemeToggle";
+
+const SettingsModal = dynamic(() => import("./SettingsModal"), { ssr: false });
 
 const PLAN_LABEL_KEY = {
   free: "sidebar.plan.free",
@@ -229,11 +232,13 @@ export default function ProfileMenu({
         )}
       </AnimatePresence>
 
-      <SettingsModal
-        initialTab={settingsInitialTab}
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      {settingsOpen && (
+        <SettingsModal
+          initialTab={settingsInitialTab}
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }
