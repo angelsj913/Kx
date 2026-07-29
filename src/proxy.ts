@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { GEO_COOKIE } from "@/lib/constants";
 
@@ -87,7 +88,7 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isDev = process.env.NODE_ENV === "development";
 
-  let session: Awaited<ReturnType<typeof auth>> | null | undefined;
+  let session: Session | null | undefined;
 
   // 0) 공사 중 앞문 — 관리자만 통과 (기존 페이지는 그대로, 리다이렉트만)
   if (maintenanceEnabled() && !isMaintenancePublicPath(pathname)) {
