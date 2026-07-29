@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
+import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function requirePasswordComplete() {
-  const session = await auth();
+/** Google OAuth users must set a password before using /app. */
+export async function requirePasswordComplete(
+  existingSession?: Session | null,
+) {
+  const session = existingSession === undefined ? await auth() : existingSession;
   if (!session?.user?.id) return;
 
   const user = await prisma.user.findUnique({

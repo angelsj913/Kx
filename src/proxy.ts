@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { GEO_COOKIE } from "@/lib/constants";
 
 /**
  * Next.js 16 proxy(구 middleware) — 세 가지를 한 곳에서 처리한다.
- *  1) /app 보호: 미로그인 접근은 로그인으로 리다이렉트
- *  2) 보안 응답 헤더(CSP/HSTS/X-Content-Type-Options 등)
+ *  1) /app 보호: 미로그인 접근은 로그인으로 리다이렉트 (Auth.js는 /app 에서만 실행)
+ *  2) 보안 응답 헤더(CSP/HSTS/X-Content-Type-Options 등) — 모든 HTML
  *  3) 접속 국가 기반 "기본" 언어 쿠키(사용자가 고른 언어가 항상 우선)
  *
  * CSP script-src 정책 — 왜 nonce/strict-dynamic을 쓰지 않는가:
@@ -21,22 +21,9 @@ import { GEO_COOKIE } from "@/lib/constants";
  * 데이터를 인라인 script로 주입하기 때문). 진짜 nonce CSP가 필요하면 랜딩을 동적 렌더링으로
  * 전환하는 별도 작업이 선행돼야 한다.
  */
-export const proxy = auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isDev = process.env.NODE_ENV === "development";
-
-  // 1) /app 보호 (기존 동작 유지)
-  const isLoggedIn = !!req.auth;
-  if (pathname.startsWith("/app") && !isLoggedIn) {
-    const loginUrl = new URL("/login", req.nextUrl);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 2) 보안 응답 헤더
+function applySecurityHeaders(res: NextResponse, isDev: boolean) {
   const csp = [
     "default-src 'self'",
-    // 개발 모드는 HMR이 eval을 쓴다. 프로덕션은 unsafe-eval 없이 unsafe-inline만 허용.
     isDev
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'",
@@ -56,8 +43,6 @@ export const proxy = auth((req) => {
     .replace(/\s{2,}/g, " ")
     .trim();
 
-  const res = NextResponse.next();
-
   res.headers.set("Content-Security-Policy", csp);
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -72,24 +57,44 @@ export const proxy = auth((req) => {
       "max-age=63072000; includeSubDomains; preload",
     );
   }
+}
 
-  // 3) 접속 국가 기반 기본 언어 — 한국이면 ko, 그 외 en. 사용자 선택(localStorage)이 항상 우선.
-  // 국가 헤더가 있으면 매 방문마다 재계산해 덮어써 스스로 교정되게 한다.
+function applyGeoLangCookie(req: NextRequest, res: NextResponse) {
   const country = (req.headers.get("x-vercel-ip-country") || "").toUpperCase();
-  if (country) {
-    const geoLang = country === "KR" ? "ko" : "en";
-    if (req.cookies.get(GEO_COOKIE)?.value !== geoLang) {
-      res.cookies.set(GEO_COOKIE, geoLang, {
-        path: "/",
-        maxAge: 60 * 60 * 24 * 365,
-        sameSite: "lax",
-        httpOnly: false, // 클라이언트(document.cookie)에서 읽어야 함
-      });
+  if (!country) return;
+  const geoLang = country === "KR" ? "ko" : "en";
+  if (req.cookies.get(GEO_COOKIE)?.value !== geoLang) {
+    res.cookies.set(GEO_COOKIE, geoLang, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
+}
+
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const isDev = process.env.NODE_ENV === "development";
+
+  // Auth.js JWT decode only for /app — marketing pages skip session work at the edge.
+  if (pathname.startsWith("/app")) {
+    const session = await auth();
+    if (!session?.user) {
+      const loginUrl = new URL("/login", req.nextUrl);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      const redirectRes = NextResponse.redirect(loginUrl);
+      applySecurityHeaders(redirectRes, isDev);
+      applyGeoLangCookie(req, redirectRes);
+      return redirectRes;
     }
   }
 
+  const res = NextResponse.next();
+  applySecurityHeaders(res, isDev);
+  applyGeoLangCookie(req, res);
   return res;
-});
+}
 
 export const config = {
   // 페이지 전반에서 동작하되 API·_next·정적 파일(점 포함 경로)은 제외.

@@ -13,11 +13,11 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/login?callbackUrl=/app");
   }
-  await requirePasswordComplete();
+  await requirePasswordComplete(session);
 
   // key=userId: 다른 계정으로 로그인하면 클라이언트 상태(프로필/워크스페이스)를 통째로 리셋
   return (
-    <SessionProvider session={session} refetchOnWindowFocus>
+    <SessionProvider session={session} refetchOnWindowFocus={false}>
       <WorkspaceProvider key={session.user.id}>{children}</WorkspaceProvider>
     </SessionProvider>
   );
