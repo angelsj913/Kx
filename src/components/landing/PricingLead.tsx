@@ -17,15 +17,17 @@ export default function PricingLead() {
   ];
 
   return (
-    <section className="landing-section-rule py-16 sm:py-20">
-      <div className="mx-auto max-w-6xl px-6 text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
-          {t("pricing.lead.title")}
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
-          {t("pricing.lead.subtitle")}
-        </p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+    <section className="landing-section-rule py-10 sm:py-12">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="max-w-2xl">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+            {t("pricing.lead.title")}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
+            {t("pricing.lead.subtitle")}
+          </p>
+        </div>
+        <div className="mt-7 grid gap-3 sm:grid-cols-3">
           {pills.map(({ titleKey, descKey }, i) => {
             const Icon = PILL_ICONS[i]!;
             return (
