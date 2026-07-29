@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useLandingT } from "@/lib/landingI18n";
@@ -172,8 +171,8 @@ function ReducedMotionSkills({ scenes, appHref }: { scenes: SkillScene[]; appHre
 
 export default function SkillsSection() {
   const t = useLandingT();
-  const { status } = useSession();
-  const appHref = status === "authenticated" ? "/app" : "/login?callbackUrl=%2Fapp";
+  // /app is proxy-protected — guests redirect to login without a session fetch here.
+  const appHref = "/app";
   const { sectionRef, p, reducedMotion, mounted } = useScrollProgress<HTMLElement>({ topOffset: 72 });
   const prevIdx = useRef(0);
   const [activeIdx, setActiveIdx] = useState(0);

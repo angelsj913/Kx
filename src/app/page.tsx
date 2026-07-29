@@ -1,17 +1,10 @@
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import Footer from "@/components/landing/Footer";
 import AdminDeniedBanner from "@/components/landing/AdminDeniedBanner";
 import LandingViewportScale from "@/components/landing/LandingViewportScale";
-
-const SkillsSection = dynamic(() => import("@/components/landing/SkillsSection"));
-const FeatureShowcase = dynamic(() => import("@/components/landing/FeatureShowcase"));
-const WorkLectureScroll = dynamic(() => import("@/components/landing/WorkLectureScroll"));
-const WorkspaceIntro = dynamic(() => import("@/components/landing/WorkspaceIntro"));
-const PricingLead = dynamic(() => import("@/components/landing/PricingLead"));
-const Pricing = dynamic(() => import("@/components/landing/Pricing"));
+import LandingBelowFold from "@/components/landing/LandingBelowFold";
 
 export default function Landing() {
   return (
@@ -23,12 +16,7 @@ export default function Landing() {
         </Suspense>
         <main>
           <Hero />
-          <SkillsSection />
-          <FeatureShowcase />
-          <WorkLectureScroll />
-          <WorkspaceIntro />
-          <PricingLead />
-          <Pricing />
+          <LandingBelowFold />
         </main>
         <Footer />
       </div>

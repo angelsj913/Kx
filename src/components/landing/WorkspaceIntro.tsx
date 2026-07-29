@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ArrowRight, MessagesSquare, FileStack, Library } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import { useLandingT } from "@/lib/landingI18n";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
@@ -15,9 +14,8 @@ const PILLARS = [
 
 export default function WorkspaceIntro() {
   const t = useLandingT();
-  const { status } = useSession();
   const reducedMotion = useReducedMotion();
-  const appHref = status === "authenticated" ? "/app" : "/login?callbackUrl=%2Fapp";
+  const appHref = "/app";
 
   return (
     <section className="landing-section-rule scroll-mt-24 py-16 sm:py-20">

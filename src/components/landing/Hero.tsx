@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { Download, Apple, Smartphone, X, ArrowRight } from "lucide-react";
 import {
   WINDOWS_DOWNLOAD_URL,
@@ -27,10 +26,9 @@ const SHOW_DOWNLOAD_CTA = process.env.NEXT_PUBLIC_SHOW_DOWNLOAD_CTA === "1";
 
 export default function Hero() {
   const t = useLandingT();
-  const { status } = useSession();
   const reducedMotion = useReducedMotion();
-  const isLoggedIn = status === "authenticated";
-  const startHref = isLoggedIn ? "/app" : "/login?callbackUrl=%2Fapp";
+  // /app is proxy-protected — guests redirect to login without a session fetch here.
+  const startHref = "/app";
   const [selected, setSelected] = useState<OS | null>(null);
 
   const playReady = Boolean(PLAY_STORE_URL);
