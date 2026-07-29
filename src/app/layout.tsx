@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
-import RootSessionProvider from "@/components/RootSessionProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
@@ -106,9 +105,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansKr.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <RootSessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
-        </RootSessionProvider>
+        <ThemeProvider>{children}</ThemeProvider>
         <SpeedInsights />
       </body>
     </html>

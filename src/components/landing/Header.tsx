@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Menu,
@@ -12,7 +12,6 @@ import {
   TrendingUp,
   FlaskConical,
   Download,
-  Wrench,
   LifeBuoy,
   Languages,
 } from "lucide-react";
@@ -23,6 +22,8 @@ import {
   LANGUAGE_ORDER,
   type LandingLanguage,
 } from "@/lib/landingI18n";
+import { useHasSessionCookie } from "@/lib/useHasSessionCookie";
+import { subscribeLandingScroll } from "@/lib/landingScroll";
 import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/ui/Logo";
 
@@ -47,13 +48,7 @@ const MENU_LINKS = [
 export default function Header() {
   const t = useLandingT();
   const { language, setLanguage } = useLandingLanguage();
-  
-  // useSession 안전하게 사용 (prerender 에러 방지)
-  const sessionResult = useSession?.();
-  const session = sessionResult?.data ?? null;
-  const status = sessionResult?.status ?? "unauthenticated";
-  const isLoggedIn = status === "authenticated";
-  const isAdmin = isLoggedIn && session?.user?.isAdmin === true;
+  const isLoggedIn = useHasSessionCookie();
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -62,10 +57,9 @@ export default function Header() {
 
   useEffect(() => {
     // 8px는 너무 빨라 살짝만 움직여도 배경이 튀었다. 헤더 높이 근처에서 바꾼다.
-    function onScroll() { setScrolled(window.scrollY > 48); }
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    return subscribeLandingScroll(() => {
+      setScrolled(window.scrollY > 48);
+    });
   }, []);
 
   useEffect(() => {
@@ -120,19 +114,6 @@ export default function Header() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {isAdmin && (
-              // 일반 <a> 로 전체 페이지 이동 — soft navigation 후 silent redirect 가
-              // 홈에서 '버튼 무반응'처럼 보이던 문제 방지
-              <a
-                href="/admin"
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-blue-500/50 bg-blue-600/10 px-3 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white dark:border-blue-400/50 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
-                title={t("header.adminPanel")}
-              >
-                <Wrench className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">{t("header.admin")}</span>
-              </a>
-            )}
-
             <ThemeToggle />
 
             {/* 언어 선택 — 모바일에서는 폭을 차지해 로그인을 밀어내므로 햄버거 메뉴로 옮겼다 */}
@@ -154,15 +135,12 @@ export default function Header() {
               </AnimatePresence>
             </div>
 
-            {/* 로그인 상태에 따른 버튼 (안전하게 처리) */}
+            {/* 세션 쿠키만으로 분기 — 랜딩에서 /api/auth/session 호출 없음 */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
-                <span className="hidden max-w-[8rem] truncate text-xs font-medium text-slate-600 sm:inline dark:text-slate-300">
-                  {session?.user?.name || session?.user?.email || t("header.profile")}
-                </span>
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => void signOut({ callbackUrl: "/" })}
                   className="hidden text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 sm:inline dark:text-slate-300 dark:hover:text-white"
                 >
                   {t("header.logout")}
@@ -208,17 +186,6 @@ export default function Header() {
                     {t(labelKey)}
                   </Link>
                 ))}
-
-                {isAdmin && (
-                  <a
-                    href="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2.5 rounded-lg px-2 py-3 text-left text-sm font-medium text-blue-700 transition-colors hover:bg-blue-600/10 dark:text-blue-300 dark:hover:bg-blue-600/10"
-                  >
-                    <Wrench className="h-4 w-4" />
-                    {t("header.adminPanel")}
-                  </a>
-                )}
 
                 {/* 언어 — 헤더에서 밀려난 모바일 전용. 데스크톱은 헤더 드롭다운이 그대로 있다 */}
                 <div className="mt-2 border-t border-slate-900/[0.06] pt-3 sm:hidden dark:border-white/[0.08]">

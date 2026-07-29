@@ -2,6 +2,40 @@
 
 import { useEffect, useRef, useState } from "react";
 
+type ScrollBusListener = () => void;
+
+let busListeners = new Set<ScrollBusListener>();
+let busAttached = false;
+
+function onBusScroll() {
+  busListeners.forEach((listener) => listener());
+}
+
+function ensureScrollBus() {
+  if (busAttached || typeof window === "undefined") return;
+  busAttached = true;
+  window.addEventListener("scroll", onBusScroll, { passive: true });
+  window.addEventListener("resize", onBusScroll, { passive: true });
+}
+
+function maybeDetachScrollBus() {
+  if (!busAttached || busListeners.size > 0) return;
+  busAttached = false;
+  window.removeEventListener("scroll", onBusScroll);
+  window.removeEventListener("resize", onBusScroll);
+}
+
+/** One window scroll/resize listener shared by all sticky landing sections. */
+export function subscribeLandingScroll(listener: ScrollBusListener): () => void {
+  ensureScrollBus();
+  busListeners.add(listener);
+  listener();
+  return () => {
+    busListeners.delete(listener);
+    maybeDetachScrollBus();
+  };
+}
+
 /** 섹션 내부 스크롤 진행도 p (0→1), RAF 보간 + reduced-motion 대응 */
 export function useScrollProgress<T extends HTMLElement>(opts?: { topOffset?: number }) {
   const topOffset = opts?.topOffset ?? 72;
@@ -56,13 +90,10 @@ export function useScrollProgress<T extends HTMLElement>(opts?: { topOffset?: nu
     };
 
     mq.addEventListener("change", onMq);
-    read();
-    window.addEventListener("scroll", read, { passive: true });
-    window.addEventListener("resize", read);
+    const unsubscribe = subscribeLandingScroll(read);
     return () => {
       mq.removeEventListener("change", onMq);
-      window.removeEventListener("scroll", read);
-      window.removeEventListener("resize", read);
+      unsubscribe();
       if (raf.current != null) cancelAnimationFrame(raf.current);
     };
   }, [topOffset]);
