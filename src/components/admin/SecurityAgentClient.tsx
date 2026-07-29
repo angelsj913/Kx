@@ -75,7 +75,7 @@ export default function SecurityAgentClient() {
           보안 에이전트
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          스캔·Finding·큐레이션 스킬만 근거로 답합니다. 공격/해킹 요청은 거절합니다.
+          스캔·Finding·큐레이션 스킬만 근거로 답합니다.
         </p>
       </div>
 

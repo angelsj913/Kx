@@ -29,8 +29,11 @@ export async function runAndPersistScan(createdById: string) {
   await logSecurityEvent("scan_started", createdById, { scanId: scan.id });
 
   try {
+    // Relative path required: turbopackIgnore bypasses Next alias resolution, so
+    // `@/lib/...` is treated as an npm package and fails with
+    // "Cannot find package '@/lib'" on Vercel.
     const { runSecurityChecks } = await import(
-      /* turbopackIgnore: true */ "@/lib/security/checks"
+      /* turbopackIgnore: true */ "./checks"
     );
     const outcomes = await runSecurityChecks(enabled.length ? enabled : null);
     const score = scoreFromOutcomes(outcomes);
