@@ -180,6 +180,7 @@ const ko = {
   "login.findId": "아이디 찾기",
   "login.findPassword": "비밀번호 찾기",
   "login.error": "이메일 또는 비밀번호가 올바르지 않습니다.",
+  "login.serverError": "일시적인 서버 오류입니다. 잠시 후 다시 시도해 주세요.",
   "login.2fa.title": "2단계 인증",
   "login.2fa.hint": "이메일로 보낸 6자리 인증번호를 입력해 주세요.",
   "login.2fa.code": "인증번호 6자리",

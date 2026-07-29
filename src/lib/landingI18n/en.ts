@@ -185,6 +185,7 @@ const en: Record<keyof typeof ko, string> = {
   "login.findId": "Find ID",
   "login.findPassword": "Find password",
   "login.error": "Incorrect email or password.",
+  "login.serverError": "A temporary server error occurred. Please try again in a moment.",
   "login.2fa.title": "Two-factor authentication",
   "login.2fa.hint": "Enter the 6-digit code we emailed you.",
   "login.2fa.code": "6-digit code",

@@ -46,8 +46,9 @@ export async function POST(request: Request) {
 
       // find-password: 계정 존재 여부를 응답으로 드러내지 않는다 — 존재하지 않으면
       // 코드를 실제로 발급하지 않지만, 응답은 존재할 때와 동일하게 반환한다.
+      // Google 전용 계정(passwordHash 없음)도 비밀번호를 새로 설정할 수 있게 발급한다.
       const user = await prisma.user.findUnique({ where: { email: identifier } });
-      if (user?.passwordHash) {
+      if (user) {
         const { devCode } = await issueOtp(identifier, purpose);
         return NextResponse.json({ ok: true, devCode });
       }

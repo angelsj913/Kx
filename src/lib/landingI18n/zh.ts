@@ -175,6 +175,7 @@ const zh: Record<keyof typeof ko, string> = {
   "login.findId": "查找账号",
   "login.findPassword": "找回密码",
   "login.error": "邮箱或密码不正确。",
+  "login.serverError": "服务器暂时出错，请稍后再试。",
   "login.2fa.title": "两步验证",
   "login.2fa.hint": "请输入我们发送到您邮箱的6位验证码。",
   "login.2fa.code": "6位验证码",

@@ -183,6 +183,7 @@ const de: Record<keyof typeof ko, string> = {
   "login.findId": "ID finden",
   "login.findPassword": "Passwort vergessen",
   "login.error": "E-Mail oder Passwort ist falsch.",
+  "login.serverError": "Vorübergehender Serverfehler. Bitte versuchen Sie es gleich noch einmal.",
   "login.2fa.title": "Zwei-Faktor-Authentifizierung",
   "login.2fa.hint": "Geben Sie den 6-stelligen Code aus unserer E-Mail ein.",
   "login.2fa.code": "6-stelliger Code",

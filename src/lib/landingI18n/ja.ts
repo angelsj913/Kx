@@ -178,6 +178,7 @@ const ja: Record<keyof typeof ko, string> = {
   "login.findId": "IDを探す",
   "login.findPassword": "パスワードを探す",
   "login.error": "メールまたはパスワードが正しくありません。",
+  "login.serverError": "一時的なサーバーエラーです。しばらくしてからもう一度お試しください。",
   "login.2fa.title": "2段階認証",
   "login.2fa.hint": "メールに送信された6桁の認証コードを入力してください。",
   "login.2fa.code": "認証コード6桁",

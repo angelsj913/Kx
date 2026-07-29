@@ -183,6 +183,7 @@ const ru: Record<keyof typeof ko, string> = {
   "login.findId": "Найти логин",
   "login.findPassword": "Забыли пароль",
   "login.error": "Неверный e-mail или пароль.",
+  "login.serverError": "Временная ошибка сервера. Попробуйте ещё раз чуть позже.",
   "login.2fa.title": "Двухфакторная аутентификация",
   "login.2fa.hint": "Введите 6-значный код, отправленный на вашу почту.",
   "login.2fa.code": "6-значный код",

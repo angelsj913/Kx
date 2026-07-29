@@ -21,15 +21,19 @@ function createClient() {
   } catch {
     // keep original string
   }
+  // Serverless: one connection per isolate. Session pooler exhausted at pool_size=15
+  // when many Vercel functions each opened a multi-connection Pool.
   const adapter = new PrismaPg({
     connectionString: normalizedUrl,
     ssl: { rejectUnauthorized: false },
+    max: 1,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 15_000,
   });
   return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma ?? createClient();
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Reuse across warm serverless invocations (avoids opening a new Pool each cold path).
+globalForPrisma.prisma = prisma;

@@ -64,7 +64,12 @@ function LoginCard() {
       callbackUrl,
     });
     if (res?.error) {
-      setError(stage === "2fa" ? t("login.2fa.error") : t("login.error"));
+      // Configuration/DB failures must not look like a wrong password.
+      if (res.error === "Configuration") {
+        setError(t("login.serverError"));
+      } else {
+        setError(stage === "2fa" ? t("login.2fa.error") : t("login.error"));
+      }
       setLoading(false);
       return;
     }

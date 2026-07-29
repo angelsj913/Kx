@@ -183,6 +183,7 @@ const es: Record<keyof typeof ko, string> = {
   "login.findId": "Recuperar usuario",
   "login.findPassword": "Recuperar contraseña",
   "login.error": "Correo o contraseña incorrectos.",
+  "login.serverError": "Error temporal del servidor. Inténtalo de nuevo en un momento.",
   "login.2fa.title": "Verificación en dos pasos",
   "login.2fa.hint": "Introduce el código de 6 dígitos que enviamos a tu correo.",
   "login.2fa.code": "Código de 6 dígitos",
