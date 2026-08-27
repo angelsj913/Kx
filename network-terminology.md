@@ -20,6 +20,7 @@
 11. [클라우드 네트워크](#11-클라우드-네트워크)
 12. [진단 명령어 모음](#12-진단-명령어-모음)
 13. [연습 문제](#13-연습-문제)
+14. [테더링 감지 우회 심화](#14-테더링-감지-우회-심화)
 
 ---
 
@@ -926,5 +927,195 @@ Port 22
    
 6. **TTL 문제 (테더링 감지)**: 
    - `netsh int ipv4 set global defaultcurhoplimit=65`로 TTL 조정 후 재시도
+
+</details>
+
+---
+
+## 14. 테더링 감지 우회 심화
+
+### 통신사의 테더링 감지 방법
+
+통신사는 다음 3가지 방법으로 테더링을 감지한다:
+
+| 감지 방법 | 원리 | 우회 난이도 |
+|---|---|---|
+| **TTL 분석** | 테더링된 기기의 패킷은 핫스팟 폰을 거치며 TTL이 1 감소하여 직접 발신과 다른 값이 됨 | 쉬움 |
+| **DPI (Deep Packet Inspection)** | HTTP 헤더의 User-Agent에서 데스크톱 브라우저 식별자를 탐지 | 중간 (VPN으로 우회) |
+| **APN 분리** | iOS/Android가 핫스팟을 켜면 테더링 전용 APN을 사용하여 통신사가 별도 계량/차단 | 어려움 |
+
+### TTL을 이용한 테더링 감지 원리 (상세)
+
+```
+[정상 — 아이폰이 직접 통신]
+아이폰(TTL=64) → 기지국 도착(TTL=63) ← 통신사: "정상 모바일 트래픽"
+
+[테더링 감지 — PC가 아이폰 핫스팟 경유]
+PC(TTL=128) → 아이폰(TTL=127) → 기지국 도착(TTL=126) ← 통신사: "128에서 시작했네? 테더링이다"
+PC(TTL=64)  → 아이폰(TTL=63)  → 기지국 도착(TTL=62)  ← 통신사: "62? 64에서 시작해서 2홉? 테더링이다"
+
+[TTL 우회 — PC에서 TTL을 65로 설정]
+PC(TTL=65) → 아이폰(TTL=64) → 기지국 도착(TTL=63) ← 통신사: "64에서 시작한 정상 트래픽"
+```
+
+### 플랫폼별 TTL 변경 방법
+
+#### Windows (관리자 PowerShell)
+
+```powershell
+# TTL을 65로 설정 (IPv4 + IPv6)
+netsh int ipv4 set global defaultcurhoplimit=65
+netsh int ipv6 set global defaultcurhoplimit=65
+
+# 확인
+netsh int ipv4 show global
+# "기본 홉 제한 : 65개 홉" 이면 성공
+
+# 되돌리기
+netsh int ipv4 set global defaultcurhoplimit=128
+netsh int ipv6 set global defaultcurhoplimit=128
+```
+
+- 재부팅하면 기본값(128)으로 자동 복원
+- 시스템에 부작용 없음
+
+#### Android (루팅 필요, Termux에서 실행)
+
+**일회성 적용 (재부팅 시 초기화):**
+```bash
+su
+iptables -t mangle -A POSTROUTING -j TTL --ttl-set 65
+ip6tables -t mangle -A POSTROUTING -j HL --hl-set 65
+
+# 확인
+iptables -t mangle -L POSTROUTING -n -v
+# "TTL set to 65" 규칙이 보이면 적용 완료
+```
+
+**영구 적용 (재부팅 후에도 유지, Magisk 루팅 환경):**
+```bash
+su
+cat > /data/adb/service.d/ttl65.sh << 'EOF'
+#!/system/bin/sh
+sleep 30
+iptables -t mangle -A POSTROUTING -j TTL --ttl-set 65
+ip6tables -t mangle -A POSTROUTING -j HL --hl-set 65
+EOF
+chmod 755 /data/adb/service.d/ttl65.sh
+```
+
+이 스크립트는 Magisk가 매 부팅마다 자동 실행한다. Termux와는 무관 — Termux는 스크립트를 만드는 도구일 뿐이고, 실행 주체는 Magisk 데몬이다.
+
+```
+부팅 순서:
+커널 로드 → 안드로이드 시스템 시작 → Magisk 데몬 시작
+→ /data/adb/service.d/ttl65.sh 자동 실행 ← TTL 설정 적용
+→ 홈 화면 표시
+(Termux는 이 과정에 관여하지 않음)
+```
+
+**되돌리기:**
+```bash
+su
+rm /data/adb/service.d/ttl65.sh
+# 재부팅하면 TTL이 기본값(64)으로 복원
+```
+
+기존 시스템 파일을 수정하는 것이 아니라 **스크립트 파일 하나를 추가/삭제**하는 것이므로, 삭제 후 재부팅하면 완전히 원상복구된다.
+
+#### iOS (아이폰)
+탈옥(Jailbreak) 없이는 TTL 변경 불가능. iOS는 시스템 접근이 완전히 차단되어 있다.
+
+### 루팅 (Rooting) 이란?
+
+안드로이드 기기에서 **운영체제의 최고 관리자(root) 권한을 획득**하는 것.
+
+```
+일반 사용자  = 아파트 세입자  → 가구 배치 자유, 벽 철거 불가
+루팅한 사용자 = 건물주        → 벽 철거, 배관 변경 등 모든 것 가능
+```
+
+**루팅하면 할 수 있는 것:**
+- iptables로 TTL 변경
+- 선탑재 앱(통신사/제조사 블로트웨어) 삭제
+- 시스템 파일 직접 수정
+
+**루팅의 리스크:**
+- 보증 무효 (제조사/통신사 AS 거부 가능)
+- 보안 취약 (악성 앱이 root 권한 획득 가능)
+- 벽돌화 (잘못하면 부팅 불가)
+- 뱅킹 앱 차단 (토스, 카카오뱅크 등 금융 앱이 루팅 감지 시 실행 거부)
+- OTA 업데이트 불가
+
+**iOS의 동일 개념:** 탈옥(Jailbreak). 원리는 같지만 iOS가 더 폐쇄적이라 난이도가 훨씬 높고, 최신 iOS는 탈옥 자체가 거의 불가능.
+
+### 기타 우회 방법
+
+#### VPN으로 DPI 우회 (안드로이드)
+안드로이드에서 VPN을 켜고 핫스팟을 사용하면, iOS와 달리 **VPN이 테더링 트래픽도 커버하는 경우가 많다** (기기/OS 버전에 따라 다름).
+
+```
+PC → 안드로이드 핫스팟 → [VPN 터널로 암호화] → 통신사
+                         통신사는 암호화된 덩어리만 보임
+                         TTL, User-Agent 등 판별 불가
+```
+
+iOS는 VPN이 아이폰 자체 트래픽만 터널링하고 핫스팟 트래픽은 커버하지 않는다.
+
+#### APN에서 dun 제거 (안드로이드)
+```
+설정 → 연결 → 모바일 네트워크 → 액세스 포인트 이름(APN)
+→ 기존 APN 선택 → "APN 유형"에서 "dun"을 제거하고 "default,supl"만 남기기
+```
+`dun`은 테더링을 의미하는 APN 유형. 제거하면 통신사가 테더링 트래픽을 별도 식별하기 어려워진다. 통신사에 따라 잠겨있거나 초기화될 수 있다.
+
+---
+
+### 연습 문제 (추가)
+
+**문제 13.** 안드로이드 폰에서 `iptables -t mangle -A POSTROUTING -j TTL --ttl-set 65` 명령의 각 부분이 의미하는 바를 설명하시오.
+
+<details>
+<summary>정답 보기</summary>
+
+| 부분 | 의미 |
+|---|---|
+| `iptables` | 리눅스 커널의 패킷 필터링/조작 도구 |
+| `-t mangle` | mangle 테이블 사용 (패킷 헤더를 수정하는 용도의 테이블) |
+| `-A POSTROUTING` | POSTROUTING 체인에 규칙을 추가 (패킷이 나가기 직전에 적용) |
+| `-j TTL` | TTL 타겟으로 점프 (TTL 값을 조작하겠다는 뜻) |
+| `--ttl-set 65` | TTL 값을 65로 강제 설정 |
+
+종합: "이 기기에서 나가는 모든 패킷의 TTL을 65로 강제 설정하라."
+핫스팟을 거치면 1 감소하여 64가 되므로, 통신사는 직접 발신(TTL=64)과 구별할 수 없다.
+
+</details>
+
+---
+
+**문제 14.** `/data/adb/service.d/ttl65.sh` 스크립트에 `sleep 30`이 있는 이유는?
+
+<details>
+<summary>정답 보기</summary>
+
+부팅 직후에는 네트워크 인터페이스와 iptables 모듈이 아직 완전히 초기화되지 않았을 수 있다. `sleep 30`은 시스템이 충분히 부팅된 후에 iptables 규칙을 적용하기 위한 대기 시간이다. 이 대기 없이 바로 실행하면 네트워크 모듈이 준비되지 않아 규칙 적용이 실패할 수 있다.
+
+</details>
+
+---
+
+**문제 15.** Windows에서 `defaultcurhoplimit=65`로 설정하는 것과 안드로이드에서 `iptables`로 TTL을 65로 설정하는 것의 차이점은?
+
+<details>
+<summary>정답 보기</summary>
+
+| 구분 | Windows (netsh) | Android (iptables) |
+|---|---|---|
+| 적용 대상 | PC에서 생성되는 패킷의 초기 TTL 값 변경 | 기기를 통과하는 모든 패킷의 TTL을 강제 덮어쓰기 |
+| 재부팅 후 | 기본값(128)으로 초기화 | 일회성이면 초기화, Magisk 스크립트면 유지 |
+| 테더링 시 | PC 자신의 TTL만 바뀜 → 핫스팟 폰을 거치면 64가 됨 | 핫스팟으로 들어온 다른 기기의 패킷도 전부 65로 고정 → 통신사 도착 시 64 |
+| 핵심 차이 | PC 쪽에서 설정하면 **핫스팟 폰(아이폰)에서는 설정 불가** → PC에서만 가능 | 안드로이드 폰에서 설정하면 **연결된 모든 기기의 TTL을 한꺼번에 처리** |
+
+즉, 안드로이드 iptables 방식이 더 강력하다: 핫스팟에 연결된 어떤 기기든(PC, 태블릿, 다른 폰) 추가 설정 없이 TTL이 자동 조정된다.
 
 </details>
