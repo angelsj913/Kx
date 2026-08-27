@@ -21,6 +21,8 @@
 12. [진단 명령어 모음](#12-진단-명령어-모음)
 13. [연습 문제](#13-연습-문제)
 14. [테더링 감지 우회 심화](#14-테더링-감지-우회-심화)
+15. [ADB (Android Debug Bridge) 완전 가이드](#15-adb-android-debug-bridge-완전-가이드)
+16. [스마트폰 잠금 해제 — 비공식 방법](#16-스마트폰-잠금-해제--비공식-방법)
 
 ---
 
@@ -1117,5 +1119,536 @@ iOS는 VPN이 아이폰 자체 트래픽만 터널링하고 핫스팟 트래픽�
 | 핵심 차이 | PC 쪽에서 설정하면 **핫스팟 폰(아이폰)에서는 설정 불가** → PC에서만 가능 | 안드로이드 폰에서 설정하면 **연결된 모든 기기의 TTL을 한꺼번에 처리** |
 
 즉, 안드로이드 iptables 방식이 더 강력하다: 핫스팟에 연결된 어떤 기기든(PC, 태블릿, 다른 폰) 추가 설정 없이 TTL이 자동 조정된다.
+
+</details>
+
+---
+
+## 15. ADB (Android Debug Bridge) 완전 가이드
+
+### ADB란?
+
+ADB(Android Debug Bridge)는 PC에서 안드로이드 기기를 **명령줄로 제어**하는 도구다. Google이 개발자용으로 만든 공식 도구이며, 앱 설치/삭제, 파일 전송, 시스템 로그 확인, 셸 접속 등 거의 모든 작업을 PC에서 원격으로 수행할 수 있다.
+
+```
+[PC] ←── USB 또는 Wi-Fi ──→ [안드로이드 기기]
+  adb 클라이언트                 adbd 데몬 (기기 내부에서 실행)
+       ↕
+  adb 서버 (PC에서 백그라운드 실행, 포트 5037)
+```
+
+### ADB 구성 요소
+
+| 구성 요소 | 위치 | 역할 |
+|---|---|---|
+| `adb.exe` (클라이언트) | PC | 사용자가 명령을 입력하는 프로그램 |
+| `adb server` | PC (백그라운드) | 클라이언트와 기기 사이의 통신을 중개 (포트 5037) |
+| `adbd` (데몬) | 안드로이드 기기 내부 | PC에서 오는 명령을 실제로 실행 |
+
+### ADB 설치 및 설정
+
+#### 1. PC에 ADB 설치
+
+**Windows:**
+developer.android.com/tools/releases/platform-tools 에서 다운로드 → 압축 해제 (예: `C:\platform-tools`)
+
+**Linux:**
+```bash
+sudo apt install adb
+```
+
+**macOS:**
+```bash
+brew install android-platform-tools
+```
+
+#### 2. PATH 환경변수 등록 (Windows)
+
+매번 폴더 경로를 치지 않고 어디서든 `adb` 명령을 쓰기 위한 설정.
+
+```powershell
+# 현재 세션에서만 (PowerShell 닫으면 초기화)
+$env:PATH += ";C:\platform-tools"
+
+# 영구 등록 (새 PowerShell 창부터 적용)
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\platform-tools", "User")
+```
+
+**등록 확인:**
+```powershell
+# PATH에 등록됐는지 확인
+$env:PATH -split ";" | Select-String "platform-tools"
+
+# adb 실행 확인
+adb version
+# 출력 예: Android Debug Bridge version 1.0.41
+```
+
+#### 3. 안드로이드에서 USB 디버깅 활성화
+
+```
+설정 → 휴대전화 정보 → 소프트웨어 정보 → "빌드 번호" 7번 연타
+→ "개발자 모드가 활성화되었습니다" 메시지 확인
+→ 설정 → 개발자 옵션 → "USB 디버깅" ON
+```
+
+#### 4. USB 연결 및 인증
+
+```
+폰을 USB 케이블로 PC에 연결
+→ 폰 화면에 "USB 디버깅을 허용하시겠습니까?" 팝업
+→ "이 컴퓨터에서 항상 허용" 체크 → 허용
+```
+
+```powershell
+adb devices
+# List of devices attached
+# XXXXXXXXXX    device         ← 정상 연결
+# XXXXXXXXXX    unauthorized   ← 폰에서 허용 팝업을 아직 안 누른 상태
+# XXXXXXXXXX    offline        ← 연결 불안정, 케이블/드라이버 문제
+# (아무것도 안 뜸)             ← USB 디버깅이 꺼져 있거나 드라이버 미설치
+```
+
+### ADB 핵심 명령어 사전
+
+#### 연결/상태
+
+| 명령어 | 설명 |
+|---|---|
+| `adb devices` | 연결된 기기 목록 |
+| `adb devices -l` | 연결된 기기 상세 정보 (모델명, 전송 방식 등) |
+| `adb kill-server` | ADB 서버 종료 (연결 문제 시 리셋용) |
+| `adb start-server` | ADB 서버 시작 |
+| `adb reconnect` | 기기 재연결 |
+| `adb -s <시리얼> <명령>` | 여러 기기 연결 시 특정 기기 지정 |
+
+#### 셸 접속
+
+```powershell
+# 기기 셸 진입 (일반 사용자)
+adb shell
+
+# 루팅된 기기에서 root 셸
+adb shell
+su
+
+# 셸에 진입하지 않고 명령 하나만 실행
+adb shell ls /sdcard/
+adb shell pm list packages
+adb shell getprop ro.build.version.release    # 안드로이드 버전 확인
+```
+
+#### 파일 전송
+
+```powershell
+# PC → 기기 (push)
+adb push C:\파일경로\파일.txt /sdcard/Download/
+
+# 기기 → PC (pull)
+adb pull /sdcard/Download/파일.txt C:\저장경로\
+
+# 예시: 스크린샷 가져오기
+adb shell screencap /sdcard/screenshot.png
+adb pull /sdcard/screenshot.png .
+```
+
+#### 앱 관리
+
+```powershell
+# 앱 설치
+adb install 앱이름.apk
+
+# 앱 업데이트 설치 (기존 데이터 유지)
+adb install -r 앱이름.apk
+
+# 앱 삭제
+adb uninstall 패키지명
+
+# 설치된 앱 목록
+adb shell pm list packages
+
+# 특정 키워드로 앱 검색
+adb shell pm list packages | findstr samsung
+
+# 앱 강제 종료
+adb shell am force-stop 패키지명
+
+# 앱 데이터 초기화
+adb shell pm clear 패키지명
+
+# 앱 비활성화 (삭제 안 하고 숨기기, 블로트웨어 제거에 유용)
+adb shell pm disable-user --user 0 패키지명
+
+# 비활성화한 앱 복원
+adb shell pm enable 패키지명
+```
+
+#### 시스템 정보
+
+```powershell
+# 기기 모델
+adb shell getprop ro.product.model
+
+# 안드로이드 버전
+adb shell getprop ro.build.version.release
+
+# API 레벨
+adb shell getprop ro.build.version.sdk
+
+# 배터리 상태
+adb shell dumpsys battery
+
+# 화면 해상도
+adb shell wm size
+
+# 화면 DPI
+adb shell wm density
+
+# 네트워크 정보
+adb shell ifconfig
+adb shell ip addr show
+
+# 실시간 시스템 로그 (디버깅 필수)
+adb logcat
+
+# 로그 필터 (에러만)
+adb logcat *:E
+
+# 로그를 파일로 저장
+adb logcat > log.txt
+```
+
+#### 화면/입력 제어
+
+```powershell
+# 스크린샷 촬영 후 PC로 가져오기
+adb shell screencap /sdcard/screen.png && adb pull /sdcard/screen.png .
+
+# 화면 녹화 (최대 3분)
+adb shell screenrecord /sdcard/video.mp4
+# Ctrl+C로 중지 후
+adb pull /sdcard/video.mp4 .
+
+# 터치 시뮬레이션 (x=500, y=1000 좌표 터치)
+adb shell input tap 500 1000
+
+# 스와이프 (x1,y1 → x2,y2 를 300ms 동안)
+adb shell input swipe 500 1500 500 500 300
+
+# 텍스트 입력 (영문만, 한글 불가)
+adb shell input text "hello"
+
+# 키 이벤트
+adb shell input keyevent 26     # 전원 버튼
+adb shell input keyevent 3      # 홈 버튼
+adb shell input keyevent 4      # 뒤로가기
+adb shell input keyevent 187    # 최근 앱
+adb shell input keyevent 82     # 메뉴
+adb shell input keyevent 24     # 볼륨 업
+adb shell input keyevent 25     # 볼륨 다운
+adb shell input keyevent 164    # 음소거
+```
+
+#### 네트워크 (Wi-Fi ADB)
+
+USB 없이 같은 Wi-Fi에서 무선으로 ADB 사용:
+
+```powershell
+# 1. USB로 연결한 상태에서 TCP 모드 전환
+adb tcpip 5555
+
+# 2. 기기의 IP 확인
+adb shell ip route | findstr "src"
+# 예: ... src 192.168.0.100
+
+# 3. USB 케이블 분리 후 Wi-Fi로 연결
+adb connect 192.168.0.100:5555
+
+# 4. 확인
+adb devices
+# 192.168.0.100:5555    device
+
+# 5. 다시 USB 모드로 돌아가기
+adb usb
+```
+
+#### 백업/복원
+
+```powershell
+# 전체 백업 (앱 + 데이터)
+adb backup -apk -shared -all -f backup.ab
+
+# 복원
+adb restore backup.ab
+```
+
+#### 부팅 모드 전환
+
+```powershell
+adb reboot              # 일반 재부팅
+adb reboot bootloader   # 부트로더/Fastboot 모드
+adb reboot recovery     # 리커버리 모드
+adb reboot download     # 삼성 다운로드 모드 (Odin용)
+```
+
+#### Fastboot (부트로더 모드에서 사용)
+
+```powershell
+# 부트로더 잠금 해제 (OEM Unlock — 공장 초기화됨)
+fastboot oem unlock
+
+# 커스텀 리커버리 설치
+fastboot flash recovery recovery.img
+
+# 부트 이미지 플래시
+fastboot flash boot boot.img
+
+# 재부팅
+fastboot reboot
+```
+
+### ADB가 활성화되지 않은 안드로이드 — 우회 방법
+
+USB 디버깅이 꺼져 있고 화면 잠금도 걸린 상태에서의 접근법:
+
+#### 방법 1: 리커버리 모드에서 ADB 활성화
+
+일부 커스텀 리커버리(TWRP 등)는 ADB를 자체적으로 허용한다:
+```
+전원 끄기 → 전원 + 볼륨 상 동시 길게 누르기
+→ 리커버리 모드 진입
+→ TWRP가 설치된 경우: "Advanced" → "ADB Sideload" 또는 자동으로 ADB 활성화
+```
+
+TWRP 리커버리에서:
+```powershell
+adb devices          # TWRP 상태에서 기기가 잡히는지 확인
+adb shell            # 셸 접속 가능 (root 권한)
+
+# 잠금 해제 관련 파일 삭제
+adb shell rm /data/system/gesture.key        # 패턴 잠금
+adb shell rm /data/system/password.key       # 비밀번호 잠금
+adb shell rm /data/system/locksettings.db    # 잠금 설정 DB
+adb shell rm /data/system/locksettings.db-wal
+adb shell rm /data/system/locksettings.db-shm
+adb reboot
+```
+
+순정 리커버리(제조사 기본)에서는 ADB가 차단되어 있어 이 방법이 안 된다.
+
+#### 방법 2: 삼성 — 다운로드 모드 + Odin
+
+삼성 기기는 리커버리 대신 다운로드 모드(Odin 모드)를 통해 펌웨어를 직접 플래시할 수 있다:
+```
+전원 끄기 → 볼륨 하 + 전원 동시 길게 (USB 연결 상태)
+→ 다운로드 모드 진입
+→ PC에서 Odin 실행 → 펌웨어 또는 커스텀 리커버리(TWRP) 플래시
+→ TWRP에서 잠금 파일 삭제
+```
+
+#### 방법 3: Fastboot (OEM Unlock이 미리 켜져 있는 경우)
+
+```
+전원 끄기 → 전원 + 볼륨 하 동시 길게
+→ Fastboot/부트로더 모드 진입
+```
+
+```powershell
+fastboot devices                # 기기 인식 확인
+fastboot oem unlock             # 부트로더 잠금 해제 (데이터 전부 삭제됨!)
+```
+
+"OEM 잠금 해제"가 개발자 옵션에서 미리 켜져 있어야만 작동한다. 꺼져 있으면 이 방법은 불가능.
+
+#### 방법 4: 구글 계정 인증 (Android 4.4 이하)
+
+안드로이드 4.4(KitKat) 이하에서는 비밀번호를 5회 틀리면 "비밀번호를 잊으셨나요?" 옵션이 뜨고, 구글 계정으로 잠금 해제 가능. 안드로이드 5.0 이상에서는 이 기능이 삭제됨.
+
+#### 현실적 정리
+
+| 상황 | 가능한 방법 |
+|---|---|
+| USB 디버깅 ON + 화면 잠금 | ADB로 잠금 파일 삭제 |
+| USB 디버깅 OFF + TWRP 설치됨 | 리커버리에서 ADB 사용 → 잠금 파일 삭제 |
+| USB 디버깅 OFF + OEM Unlock ON | Fastboot으로 부트로더 해제 → 초기화 (데이터 삭제) |
+| USB 디버깅 OFF + 삼성 | 다운로드 모드 → Odin으로 TWRP 플래시 → 잠금 삭제 |
+| 전부 OFF + 순정 상태 | Google/삼성 원격 초기화, 또는 리커버리 모드 공장 초기화 (데이터 삭제) |
+
+---
+
+## 16. 스마트폰 잠금 해제 — 비공식 방법
+
+> 아래 방법들은 **본인 소유 기기**에서만 사용해야 한다. 타인의 기기에 무단으로 적용하면 법적 문제가 발생한다.
+
+### Android 비공식 잠금 해제
+
+#### 1. ADB 잠금 파일 삭제 (USB 디버깅 ON 필수)
+
+```powershell
+adb shell
+su
+rm /data/system/gesture.key
+rm /data/system/password.key
+rm /data/system/locksettings.db
+rm /data/system/locksettings.db-wal
+rm /data/system/locksettings.db-shm
+reboot
+```
+재부팅 후 잠금 화면이 뜨더라도 **아무 패턴/비밀번호나 입력**하면 풀린다.
+
+#### 2. TWRP 리커버리 경유 (USB 디버깅 OFF여도 가능)
+
+TWRP가 설치되어 있거나, Odin/Fastboot로 TWRP를 새로 설치할 수 있다면:
+```
+리커버리 모드 진입 → TWRP 파일 관리자
+→ /data/system/ 이동
+→ gesture.key, password.key, locksettings.db 삭제
+→ 재부팅
+```
+
+또는 TWRP 터미널에서:
+```bash
+# TWRP → Advanced → Terminal
+rm /data/system/gesture.key
+rm /data/system/password.key
+rm /data/system/locksettings.db*
+reboot
+```
+
+#### 3. Magisk 모듈 — 자동 잠금 해제
+
+Magisk가 설치된 루팅 기기에서, 미리 잠금 해제 모듈을 설치해두면 비상시 리커버리 경유로 잠금을 제거할 수 있다 (사전 준비 필요).
+
+### iPhone 비공식 잠금 해제
+
+iOS는 안드로이드보다 잠금 우회가 훨씬 어렵다. Apple의 보안 체인(Secure Enclave, 활성화 잠금)이 하드웨어 수준에서 보호하기 때문.
+
+#### 1. checkm8 / checkra1n (하드웨어 취약점 이용)
+
+**대상:** iPhone 5s ~ iPhone X (A7~A11 칩)
+
+checkm8은 부트 ROM(하드웨어)의 취약점을 이용한 익스플로잇으로, Apple이 소프트웨어 업데이트로 패치할 수 없다 (하드웨어에 새겨진 코드라서).
+
+```
+PC에 checkra1n 설치 (Linux 또는 macOS)
+→ iPhone을 DFU 모드로 진입:
+  전원 + 홈(또는 볼륨 하) 길게 → 화면 꺼지면 전원만 떼고 홈(볼륨 하) 계속
+→ checkra1n이 자동으로 탈옥 진행
+→ 탈옥된 상태에서 SSH/파일 관리자로 잠금 관련 파일 접근 가능
+```
+
+제한 사항:
+- iPhone XS/XR(A12) 이후 기기에서는 작동하지 않음
+- 재부팅하면 탈옥이 풀림 (semi-tethered)
+- 활성화 잠금(iCloud Lock)은 별도 문제 — checkm8으로 화면 잠금은 풀어도 Apple ID 잠금은 유지됨
+
+#### 2. 상용 잠금 해제 도구
+
+| 도구 | 대상 | 방식 | 비용 |
+|---|---|---|---|
+| Tenorshare 4uKey | iOS/Android | 복원 모드 강제 진입 → 초기화 후 잠금 제거 | 유료 ($30~50) |
+| iMyFone LockWiper | iOS | DFU/복원 모드 → 잠금 제거 | 유료 ($30~50) |
+| Dr.Fone Unlock | iOS/Android | 복원 모드 → 잠금 제거 | 유료 ($40~60) |
+
+주의: 이 도구들 대부분은 내부적으로 **Apple의 복원(Restore) 프로세스를 자동화**한 것이다. 즉 데이터가 삭제된다. "데이터 유지하면서 잠금 해제"를 광고하는 도구가 있지만, iOS에서는 기술적으로 불가능에 가깝다.
+
+#### 3. DFU 모드 복원 (수동)
+
+상용 도구 없이 직접 하는 방법:
+
+```
+1. iPhone을 PC에 USB로 연결
+2. DFU 모드 진입:
+   - iPhone 8 이후:
+     볼륨 상 짧게 → 볼륨 하 짧게
+     → 전원 버튼 길게 (화면 꺼짐)
+     → 전원 누른 채로 볼륨 하도 같이 5초
+     → 전원만 떼고 볼륨 하 계속 (15초)
+     → 화면은 완전히 검은데 iTunes가 "복구 모드 기기 감지" 표시하면 성공
+   - iPhone 7: 전원 + 볼륨 하 동시 (위와 유사)
+   - iPhone 6s 이전: 전원 + 홈 버튼 동시
+3. iTunes/Finder에서 "복원" 선택
+4. 최신 iOS가 다운로드되고 기기가 초기화됨
+```
+
+DFU 복원 후에도 **활성화 잠금(Activation Lock)**이 걸려있으면 기존 Apple ID/비밀번호를 입력해야 한다. 이걸 우회하는 것은 checkm8 대상 기기(A11 이하)에서만 일부 가능하다.
+
+#### 4. 활성화 잠금(iCloud Lock) 우회
+
+화면 잠금과 별개로, Apple ID에 연결된 활성화 잠금은 가장 어려운 보안 계층이다.
+
+| 기기 | 우회 가능 여부 |
+|---|---|
+| A7~A11 (iPhone 5s ~ X) | checkm8 기반 도구로 제한적 우회 가능 (Wi-Fi만, 셀룰러 불가 등 기능 제한) |
+| A12 이후 (XS, 11, 12, 13, 14, 15, 16) | 현재까지 알려진 우회 방법 없음 |
+
+### iPhone vs Android 잠금 해제 비교
+
+| 구분 | Android | iPhone |
+|---|---|---|
+| 데이터 살리면서 해제 | 가능 (ADB/TWRP로 잠금 파일만 삭제) | 거의 불가능 (복원 = 초기화) |
+| 루팅/탈옥 없이 해제 | 삼성 Find My Mobile (데이터 유지) | 불가능 |
+| 하드웨어 익스플로잇 | 거의 불필요 (소프트웨어로 대부분 가능) | A11 이하만 checkm8 |
+| 활성화 잠금 우회 | FRP → 여러 우회법 존재 | A12 이후 사실상 불가능 |
+| 전체적 난이도 | 상대적으로 쉬움 | 매우 어려움 |
+
+### 사전 대비 권장 사항
+
+잠겨버리기 전에 미리 해둘 것:
+1. **ADB USB 디버깅 켜두기** (안드로이드)
+2. **"OEM 잠금 해제" 활성화** (안드로이드 개발자 옵션)
+3. **TWRP 커스텀 리커버리 설치** (안드로이드 루팅 기기)
+4. **iCloud/Google 백업 활성화** (양쪽 다)
+5. **삼성 계정 / Apple ID 비밀번호를 별도 기록** (비밀번호 관리자 등)
+
+---
+
+### 연습 문제 (추가)
+
+**문제 16.** `adb shell pm disable-user --user 0 com.samsung.bloatware` 명령이 하는 일과, `adb uninstall`과의 차이를 설명하시오.
+
+<details>
+<summary>정답 보기</summary>
+
+`pm disable-user --user 0`은 앱을 **비활성화**한다. 시스템에서 숨겨지고 실행되지 않지만, APK 파일은 기기에 남아있다. `pm enable 패키지명`으로 언제든 복원 가능. 시스템 앱(블로트웨어)은 `uninstall`로 삭제가 안 되는 경우가 많아서 이 방법을 쓴다.
+
+`adb uninstall`은 앱을 **완전히 삭제**한다. 사용자가 설치한 앱은 삭제 가능하지만, `/system/app/`에 있는 시스템 앱은 root 권한 없이 삭제 불가.
+
+</details>
+
+---
+
+**문제 17.** iPhone X(A11)와 iPhone 13(A15)에 화면 잠금이 걸렸다. 각각 데이터를 살릴 수 있는 방법이 있는지 설명하시오.
+
+<details>
+<summary>정답 보기</summary>
+
+**iPhone X (A11):** checkm8 하드웨어 취약점 대상이므로 checkra1n으로 탈옥 → 파일 시스템 접근 가능 → 잠금 관련 파일 수정/삭제로 데이터를 살리면서 잠금 해제가 가능할 수 있다 (보장은 아님). 단, 재부팅하면 탈옥이 풀리고(semi-tethered), 활성화 잠금은 별도.
+
+**iPhone 13 (A15):** checkm8이 작동하지 않음 (A12 이상). 현재 알려진 비공식 우회법이 없으며, DFU 복원(데이터 전부 삭제)이 유일한 방법. iCloud에 백업이 있다면 복원 후 백업에서 데이터 복구 가능.
+
+결론: A11 이하는 데이터 살릴 가능성 있음, A12 이상은 사실상 불가능.
+
+</details>
+
+---
+
+**문제 18.** ADB로 Wi-Fi 무선 디버깅을 설정하는 과정을 순서대로 설명하시오. 보안상 주의점은?
+
+<details>
+<summary>정답 보기</summary>
+
+**순서:**
+1. USB로 기기를 PC에 연결한 상태에서 `adb tcpip 5555` (TCP 모드 전환)
+2. `adb shell ip route` 로 기기의 Wi-Fi IP 확인 (예: 192.168.0.100)
+3. USB 케이블 분리
+4. `adb connect 192.168.0.100:5555` 로 무선 연결
+5. `adb devices`로 연결 확인
+
+**보안 주의점:**
+- ADB over TCP는 **인증/암호화가 없다.** 같은 Wi-Fi에 있는 누구든 `adb connect`로 내 기기에 접속할 수 있다.
+- 공용 Wi-Fi(카페, 도서관)에서는 절대 사용 금지.
+- 작업 끝나면 반드시 `adb usb`로 USB 모드로 복귀하거나 기기를 재부팅해서 TCP 모드를 끈다.
+- Android 11 이상은 "무선 디버깅" 기능이 내장되어 페어링 코드 기반 인증을 제공하므로 더 안전.
 
 </details>
