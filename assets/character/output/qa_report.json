@@ -1,0 +1,99 @@
+{
+  "objects": {
+    "Body_Head": {
+      "triangles": 2324,
+      "vertices": 1166,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Suit": {
+      "triangles": 5964,
+      "vertices": 2992,
+      "shells": 5,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Gloves": {
+      "triangles": 1656,
+      "vertices": 832,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Boots": {
+      "triangles": 2640,
+      "vertices": 1332,
+      "shells": 6,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Helmet": {
+      "triangles": 994,
+      "vertices": 503,
+      "shells": 3,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "GasMask": {
+      "triangles": 4220,
+      "vertices": 2114,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "GasMask_Lenses": {
+      "triangles": 720,
+      "vertices": 364,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Hose": {
+      "triangles": 2348,
+      "vertices": 1176,
+      "shells": 1,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "OxyTank": {
+      "triangles": 748,
+      "vertices": 378,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Straps": {
+      "triangles": 392,
+      "vertices": 200,
+      "shells": 2,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    },
+    "Knife": {
+      "triangles": 368,
+      "vertices": 190,
+      "shells": 3,
+      "inverted_shells": 0,
+      "non_manifold_edges": 0
+    }
+  },
+  "total_triangles": 22374,
+  "total_vertices": 11247,
+  "inverted_shells": 0,
+  "non_manifold_edges": 0,
+  "bbox_m": {
+    "height": 1.0,
+    "width": 0.6018,
+    "depth": 0.306
+  },
+  "texture": {
+    "atlas_px": 2048,
+    "texel_density_px_per_m": 1058.4,
+    "maps": [
+      "char_basecolor.png",
+      "char_roughness.png",
+      "char_normal.png"
+    ]
+  }
+}
